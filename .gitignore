@@ -21,3 +21,5 @@
 go.work
 
 bin/
+
+dist/
