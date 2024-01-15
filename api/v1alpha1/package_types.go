@@ -40,6 +40,7 @@ type PackageStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:resource:scope=Cluster
 
 // Package is the Schema for the packages API
 type Package struct {
