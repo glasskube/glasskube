@@ -23,7 +23,7 @@ SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
 
 .PHONY: all
-all: build
+all: build build-cli
 
 ##@ General
 
@@ -84,7 +84,11 @@ lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes
 
 .PHONY: build
 build: manifests generate fmt vet ## Build manager binary.
-	go build -o bin/manager ./cmd/package-operator/main.go
+	go build -o dist/package-operator ./cmd/package-operator/main.go
+
+.PHONY: build-cli
+build-cli: fmt vet ## Build cli binary.
+	go build -o dist/glasskube ./cmd/glasskube/main.go
 
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
