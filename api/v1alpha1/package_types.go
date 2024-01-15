@@ -23,19 +23,27 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+type PackageInfoTemplate struct {
+	// Name of the package to install
+	Name string `json:"name,omitempty"`
+	// Optional URL of the repository to pull the package from
+	RepositoryUrl string `json:"repositoryUrl,omitempty"`
+}
+
 // PackageSpec defines the desired state of Package
 type PackageSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of Package. Edit package_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	PackageInfo PackageInfoTemplate `json:"packageInfo,omitempty"`
 }
 
 // PackageStatus defines the observed state of Package
 type PackageStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 }
 
 //+kubebuilder:object:root=true
