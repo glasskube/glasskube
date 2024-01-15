@@ -11,7 +11,7 @@ jobs:
     name: Build Glasskube CLI
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-      - uses: actions/setup-go@bfd2fb341f32be7281829126376a12a780ca79fc # v5
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5
         with:
           go-version: 1.21.x
           cache-dependency-path: |
@@ -28,7 +28,7 @@ jobs:
     name: Build package-operator
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-      - uses: actions/setup-go@bfd2fb341f32be7281829126376a12a780ca79fc # v5
+      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5
         with:
           go-version: 1.21.x
           cache-dependency-path: |
