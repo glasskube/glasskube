@@ -12,7 +12,7 @@ spec:
     listKind: PackageList
     plural: packages
     singular: package
-  scope: Namespaced
+  scope: Cluster
   versions:
   - name: v1alpha1
     schema:
