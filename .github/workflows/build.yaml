@@ -1,0 +1,41 @@
+name: Build
+
+on:
+  push:
+    paths-ignore:
+      - website/**
+
+jobs:
+  cli:
+    runs-on: ubuntu-latest
+    name: Build Glasskube CLI
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - uses: actions/setup-go@bfd2fb341f32be7281829126376a12a780ca79fc # v5
+        with:
+          go-version: 1.21.x
+          cache-dependency-path: |
+            **/go.sum
+            **/go.mod
+      - run: make build-cli
+      - uses: actions/upload-artifact@1eb3cb2b3e0f29609092a73eb033bb759a334595 # v4
+        with:
+          name: glasskube
+          path: dist/*
+
+  operator:
+    runs-on: ubuntu-latest
+    name: Build package-operator
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - uses: actions/setup-go@bfd2fb341f32be7281829126376a12a780ca79fc # v5
+        with:
+          go-version: 1.21.x
+          cache-dependency-path: |
+            **/go.sum
+            **/go.mod
+      - run: make build
+      - uses: actions/upload-artifact@1eb3cb2b3e0f29609092a73eb033bb759a334595 # v4
+        with:
+          name: package-operator
+          path: dist/*
