@@ -1,0 +1,27 @@
+name: Check commit message format
+
+on:
+  pull_request:
+
+jobs:
+  commit-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@b39b52d1213e96004bfcb1c61a8a6fa8ab84f3e8 # v4.0.1
+        with:
+          node-version: '20.9'
+      - name: Install commitlint
+        run: |
+          npm install @commitlint/cli@17.7.1 @commitlint/config-conventional
+          echo "module.exports = {
+            extends: ['@commitlint/config-conventional'],
+            rules: {
+              'body-max-line-length': [2, 'always', 1000]
+            }
+          }" > commitlint.config.js
+      - name: Validate PR commits with commitlint
+        run: |
+          npx commitlint --from ${{ github.event.pull_request.head.sha }}~${{ github.event.pull_request.commits }} --to ${{ github.event.pull_request.head.sha }} --verbose
