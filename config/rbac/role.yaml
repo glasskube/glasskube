@@ -7,6 +7,32 @@ rules:
 - apiGroups:
   - packages.glasskube.dev
   resources:
+  - packageinfos
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - packages.glasskube.dev
+  resources:
+  - packageinfos/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - packages.glasskube.dev
+  resources:
+  - packageinfos/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - packages.glasskube.dev
+  resources:
   - packages
   verbs:
   - create

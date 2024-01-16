@@ -1,0 +1,27 @@
+# permissions for end users to view packageinfos.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: packageinfo-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: glasskube
+    app.kubernetes.io/part-of: glasskube
+    app.kubernetes.io/managed-by: kustomize
+  name: packageinfo-viewer-role
+rules:
+- apiGroups:
+  - packages.glasskube.dev
+  resources:
+  - packageinfos
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - packages.glasskube.dev
+  resources:
+  - packageinfos/status
+  verbs:
+  - get
