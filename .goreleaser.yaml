@@ -36,7 +36,6 @@ dockers:
     dockerfile: release.Dockerfile
     image_templates:
       - "ghcr.io/glasskube/package-operator:{{ .Tag }}"
-    skip_push: false
 
 nfpms:
   - file_name_template: '{{ .ProjectName }}_{{ .Tag }}_{{ .Arch }}'

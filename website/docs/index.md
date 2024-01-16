@@ -8,7 +8,7 @@ sidebar_position: 1
 
 🤯 Using **traditional package managers** or applying manifests can be **super confusing**.
 
-😍 Using the **Glasskube UI** for reduces complexity and increases transparency.
+😍 Using the **Glasskube UI** for reduced complexity and increased transparency.
 
 🧑‍💻 Still providing a **brew inspired CLI** for advanced users.
 
@@ -18,7 +18,7 @@ sidebar_position: 1
 
 
 
-> Glasskube is an open-source Kubernetes package manager the simplifies package management for Kubernetes.
+> Glasskube is an open-source Kubernetes package manager that simplifies package management for Kubernetes.
 
 
 ## Fast Track ⏱️ {#fast-track}
@@ -39,10 +39,10 @@ Start the package manager:
 glasskube serve
 ```
 
-Open [`http://localhost:80805`](http://localhost:80805) and explore available packages.
+Open [`http://localhost:8580`](http://localhost:8580) and explore available packages.
 
 
-For more installation options 
+For more installation options see the [Getting started](getting-started/install) section.
 
 ## Architecture 📏 {#architecture}
 
