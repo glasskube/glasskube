@@ -43,7 +43,11 @@ spec:
                     description: Optional URL of the repository to pull the package
                       from
                     type: string
+                required:
+                - name
                 type: object
+            required:
+            - packageInfo
             type: object
           status:
             description: PackageStatus defines the observed state of Package

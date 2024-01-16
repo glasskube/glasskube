@@ -25,24 +25,20 @@ import (
 
 type PackageInfoTemplate struct {
 	// Name of the package to install
-	Name string `json:"name,omitempty"`
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
 	// Optional URL of the repository to pull the package from
 	RepositoryUrl string `json:"repositoryUrl,omitempty"`
 }
 
 // PackageSpec defines the desired state of Package
 type PackageSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	PackageInfo PackageInfoTemplate `json:"packageInfo,omitempty"`
+	// +kubebuilder:validation:Required
+	PackageInfo PackageInfoTemplate `json:"packageInfo"`
 }
 
 // PackageStatus defines the observed state of Package
 type PackageStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 }
 
