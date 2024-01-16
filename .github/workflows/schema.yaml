@@ -1,0 +1,24 @@
+name: Schema validation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - schema/**
+  pull_request:
+    branches:
+      - main
+    paths:
+      - schema/**
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - name: Validate Package Manifest Schema
+        uses: cardinalby/schema-validator-action@76c68bfc941bd2dc82859f2528984999d1df36a4 # v3
+        with:
+          file: "test/package-manifest/example.yaml"
+          schema: "./schema/package-manifest/schema.json"

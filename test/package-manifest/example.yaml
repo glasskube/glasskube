@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=../../schema/package-manifest/schema.json
+name: example
+shortDescription: |
+  1-2 sentences describing your package
+iconUrl: https://example.com/image.png
+defaultNamespace: example-system
+helm:
+  repositoryUrl: https://charts.example.com
+  chartName: example
+  chartVersion: v1.0.0
+  values:
+    foo: bar
+entrypoints:
+  - serviceName: example
+    port: 8080
