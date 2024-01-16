@@ -1,91 +1,134 @@
-# glasskube
-// TODO(user): Add simple overview of use/purpose
+[![GitHub Repo stars](https://img.shields.io/github/stars/glasskube/glasskube)](https://github.com/glasskube/glasskube)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Docs](https://img.shields.io/badge/docs-glasskube.dev%2Fdocs-blue)](https://glasskube.dev/docs/)
+[![](https://dcbadge.vercel.app/api/server/SxH6KUCGH7?style=flat)](https://discord.gg/SxH6KUCGH7) 
+![scarf](https://img.shields.io/static/v1?label=Scarf:%20Downloads&message=8/month&style=flat&color=0572F1&labelColor=374151)
+[![twitter](https://img.shields.io/twitter/follow/glasskube?style=social)](https://twitter.com/intent/follow?screen_name=glasskube)
 
-## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+<br>
+<div align="center">
+  <a href="https://glasskube.dev/">
+    <img src="https://raw.githubusercontent.com/glasskube/.github/main/images/glasskube-logo.png" alt="Glasskube Logo" height="160">
+  </a>
 
-## Getting Started
+<h3 align="center">Kubernetes Package Management the easy way </h3>
 
-### Prerequisites
-- go version v1.20.0+
-- docker version 17.03+.
-- kubectl version v1.11.3+.
-- Access to a Kubernetes v1.11.3+ cluster.
+  <p align="center">
+    <a href="https://glasskube.dev/docs/getting-started/install"><strong>Getting started »</strong></a>
+    <br> <br>
+    <a href="https://glasskube.dev/"><strong>Explore our website »</strong></a>
+    <br>
+    <br>
+    <a href="https://github.com/glasskube" target="_blank">GitHub</a>
+    .
+    <a href="https://hub.docker.com/u/glasskube" target="_blank">Docker Hub</a>
+    .
+    <a href="https://artifacthub.io/packages/search?org=glasskube" target="_blank">Artifact Hub</a>
+    .
+    <a href="https://www.linkedin.com/company/glasskube/" target="_blank">LinkedIn</a>
+    . 
+     <a href="https://x.com/glasskube?s=20" target="_blank">Twitter</a>
+  </p>
+</div>
 
-### To Deploy on the cluster
-**Build and push your image to the location specified by `IMG`:**
+<hr>
 
-```sh
-make docker-build docker-push IMG=<some-registry>/glasskube:tag
+## ⭐️ Why Glasskube?
+Using **traditional package managers** or applying manifests can be **super confusing**. Therefore, Glasskube will help you to **install your favorite Kubernetes packages**  using the **Glasskube UI** to reduce complexity and increases transparency. We are also providing a **brew inspired CLI** for advanced users. Our **packages are dependency aware**, as you would expect from a package manager. Designed as a cloud native application, so you can follow your **DevOps approach**.
+
+## ✨ Features
+- 💡 **Streamlined UI and CLI Experience**:
+<br> We've stripped away unnecessary complexities, providing a simple yet powerful user interface and command-line interface for easy package management.
+- 🔄 **Automated Updates**: 
+<br> Glasskube ensures your Kubernetes packages and apps are always up-to-date, minimizing the manual effort required for maintenance.
+- 🤝 **Dependency Awareness**: 
+<br> We understand the interconnected nature of Kubernetes packages. Glasskube intelligently manages dependencies.
+- 🛠️ **GitOps Ready** with ArgoCD or Flux: 
+<br> Seamlessly integrate Glasskube into your GitOps workflow with support for popular tools like ArgoCD or Flux.
+- 📦 **Central Package Register**: 
+<br> Keep track of all your packages in one central register, enhancing visibility and control over your Kubernetes environment.
+- 🔍 **Cluster Scan** (Version 1.0.0): 
+<br> Introducing the Cluster Scan feature in version 1.0.0, which allows you to detect packages in your cluster, providing valuable insights for better management.
+- 🔐 **Version Pinning** (Version 1.0.0): 
+<br> With version 1.0.0, Glasskube introduces Version Pinning, empowering you to maintain precise control over your package versions for enhanced stability.
+
+## 🗄️ Table Of Contents
+- [Quick Start](https://github.com/glasskube/#-quick-start)
+- [Supported Tools](https://github.com/glasskube/glasskube#-supported-tools)
+- [Screencast](https://github.com/glasskube/glasskube#-screencast)
+- [Need help?](https://github.com/glasskube/glasskube#-need-help)
+- [Related projects](https://github.com/glasskube/glasskube#-related-projects)
+- [How to Contribute](https://github.com/glasskube/glasskube#-how-to-contribute) 
+- [Supported by](https://github.com/glasskube/glasskube#-supported-by)
+
+## 🚀 Quick Start - Install your first package in less than 5 minutes.
+
+
+Install Glasskube via [Homebrew](https://brew.sh/):
+
+```bash
+brew tap glasskube/glasskube
+brew install glasskube
 ```
 
-**NOTE:** This image ought to be published in the personal registry you specified. 
-And it is required to have access to pull the image from the working environment. 
-Make sure you have the proper permission to the registry if the above commands don’t work.
+Start the package manager:
 
-**Install the CRDs into the cluster:**
-
-```sh
-make install
+```bash
+glasskube serve
 ```
 
-**Deploy the Manager to the cluster with the image specified by `IMG`:**
+Open [`http://localhost:80805`](http://localhost:80805) and explore available packages.
 
-```sh
-make deploy IMG=<some-registry>/glasskube:tag
-```
+## 📦 Supported Packages  
+- Cert Manager [`cert-manager/cert-manager`](https://github.com/cert-manager/cert-manager)
+- Ingress-NGINX Controller [`kubernetes/ingress-nginx`](https://github.com/kubernetes/ingress-nginx) 
+- Kubernetes Dashboard [`kubernetes/dashboard`](https://github.com/kubernetes/dashboard)
+- Kube-Prometheus-Stack [`kubernetes/dashboard`](https://github.com/kubernetes/dashboard)
+- Velero [`vmware-tanzu/velero`](https://github.com/vmware-tanzu/velero)
 
-> **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin 
-privileges or be logged in as admin.
+### Coming Soon
+- K8sgpt [`k8sgpt-ai/k8sgpt`](https://github.com/k8sgpt-ai/k8sgpt)
+- Keptn [`keptn/lifecycle-toolkit`](https://github.com/keptn/lifecycle-toolkit)
+- CCloudNativePG [`cloudnative-pg/cloudnative-pg`](https://github.com/cloudnative-pg/cloudnative-pg])
+- MariaDB Operator[`cmariadb-operator/mariadb-operator`](https://github.com/mariadb-operator/mariadb-operator])
+- Glasskube Apps Operator [`glasskube/operator`](https://github.com/glasskube/operator/)(with version 1.0.0)
+    - Gitea [`go-gitea/gitea`](https://github.com/go-gitea/gitea)
+    - GitLab [`gitlab.com/gitlab-org/gitlab`](https://gitlab.com/gitlab-org/gitlab)
+    - GlitchTip [`gitlab.com/glitchtip/glitchtip`](https://gitlab.com/glitchtip)
+    - Keycloak [`keycloak/keycloak`](https://github.com/keycloak/keycloak)
+    - Matomo [`matomo-org/matomo`](https://github.com/matomo-org/matomo)
+    - Metabase [`metabase/metabase`](https://github.com/metabase/metabase)
+    - Nextcloud [`nextcloud/server`](https://github.com/nextcloud/server)
+    - Odoo [`odoo/odoo`](https://github.com/odoo/odoo)
+    - Plane [`makeplane/plane`](https://github.com/makeplane/plane)
+    - Vault [`hashicorp/vault`](https://github.com/hashicorp/vault)
 
-**Create instances of your solution**
-You can apply the samples (examples) from the config/sample:
+> Can't find a package or want your app included in the list? We are always adding new supported packages & apps, so just join us on [Discord](https://discord.gg/SxH6KUCGH7) or open up a new issue and let us know what is missing!
 
-```sh
-kubectl apply -k config/samples/
-```
+## 🎬 How to install you first package
 
->**NOTE**: Ensure that the samples has default values to test it out.
+> insert video
 
-### To Uninstall
-**Delete the instances (CRs) from the cluster:**
+## ☝️ Need Help?
+If you encounter any problems, we will be happy to support you wherever we can. If you encounter any bugs or issues while working on this project, feel free to contact us on [Discord](https://discord.gg/SxH6KUCGH7). We are happy to assist you with anything related to the project.
 
-```sh
-kubectl delete -k config/samples/
-```
+## 📎 Related Projects
 
-**Delete the APIs(CRDs) from the cluster:**
+- Glasskube Apps Operator [`glasskube/operator`](https://github.com/glasskube/operator/)
 
-```sh
-make uninstall
-```
+## 🤝 How to Contribute
 
-**UnDeploy the controller from the cluster:**
+See [the contributing guide](CONTRIBUTING.md) for detailed instructions.
 
-```sh
-make undeploy
-```
 
-## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
+## 🤩 Thanks to all our Contributors 
 
-**NOTE:** Run `make --help` for more information on all potential `make` targets
+Thanks to everyone, that is supporting this project. We are thankful, for evey contribution, no matter its size! 
 
-More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
+<a href="https://github.com/glasskube/glasskube/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=glasskube/glasskube" />
+</a>
 
-## License
+## 📘 License 
 
-Copyright 2024.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
+The Glasskube is licensed under the Apache 2.0 license. For more information check the [LICENSE](https://github.com/glasskube/glasskube/blob/main/LICENSE) file for details.
