@@ -36,11 +36,12 @@ dockers:
     dockerfile: release.Dockerfile
     image_templates:
       - "ghcr.io/glasskube/package-operator:{{ .Tag }}"
-    skip_push: true
+    skip_push: false
 
 nfpms:
   - file_name_template: '{{ .ProjectName }}_{{ .Tag }}_{{ .Arch }}'
     homepage: https://glasskube.dev
+    maintainer: 'Philip Miglinci <pmig@glasskube.eu>'
     description: >-
       Glasskube is a cloud native package manager for Kubernetes. It includes an UI and CLI, is dependency aware and GitOps ready.
     license: "Apache-2.0"
@@ -55,6 +56,24 @@ nfpms:
         dst: /usr/share/doc/nfpm/copyright
         file_info:
           mode: 0644
+
+brews:
+  - name: glasskube
+    homepage: https://glasskube.dev
+    description: >-
+      Glasskube is a cloud native package manager for Kubernetes. It includes an UI and CLI, is dependency aware and GitOps ready.
+    license: "Apache-2.0"
+    repository:
+      owner: glasskube
+      name: homebrew-glasskube
+    url_template: "https://releases.dl.glasskube.dev/{{ .ArtifactName }}"
+    commit_author:
+      name: glasskube-bot
+      email: githubbot@glasskube.eu
+    commit_msg_template: "chore: brew formula update for {{ .ProjectName }} version {{ .Tag }}"
+    install: |
+      bin.install "glasskube"
+
 
 archives:
   - format: tar.gz
