@@ -82,7 +82,7 @@ Start the package manager:
 glasskube serve
 ```
 
-Open [`http://localhost:80805`](http://localhost:80805) and explore available packages.
+Open [`http://localhost:8580`](http://localhost:8580) and explore available packages.
 
 ## 📦 Supported Packages
 

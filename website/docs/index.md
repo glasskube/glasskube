@@ -70,13 +70,17 @@ Currently only the glasskube packages repository is supported: [`glasskube/packa
 
 ## Commands
 
-### `glasskube`
+### `glasskube serve`
 
-Will start the UI server and opens a local browser on localhost:80805.
+Will start the UI server and opens a local browser on [http://localhost:8580](http://localhost:8580).
 
 ### `glasskube bootstrap`
 
 ### `glasskube install`
+
+Install the given package in your cluster. 
+By default, the cluster given in `~/.kube/config` (`current-context`) will be used. 
+An alternative kube config can be passed with the `--kubeconfig` flag. 
 
 ```
 

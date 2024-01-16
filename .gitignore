@@ -25,3 +25,5 @@ go.work
 bin/
 
 dist/
+
+.idea/
