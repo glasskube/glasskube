@@ -38,6 +38,8 @@ spec:
                 type: string
               repositoryUrl:
                 type: string
+            required:
+            - name
             type: object
           status:
             description: PackageInfoStatus defines the observed state of PackageInfo
