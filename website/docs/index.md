@@ -4,9 +4,47 @@ sidebar_position: 1
 
 # Welcome
 
-Glasskube is an open-source Kubernetes package manager the simplifies package management for Kuberenetes.
+📦️ Glasskube will help you to **install your favorite Kubernetes packages**.
 
-# Architecture
+🤯 Using **traditional package managers** or applying manifests can be **super confusing**.
+
+😍 Using the **Glasskube UI** for reduces complexity and increases transparency.
+
+🧑‍💻 Still providing a **brew inspired CLI** for advanced users.
+
+🏗️ Glasskube **packages are dependency aware**, as you would expect from a package manager.
+
+🤖  Designed as a cloud native application, so you can follow your **DevOps approach**.
+
+
+
+> Glasskube is an open-source Kubernetes package manager the simplifies package management for Kubernetes.
+
+
+## Fast Track ⏱️ {#fast-track}
+
+Install your first package in 5 minutes.
+
+
+Install Glasskube via [Homebrew](https://brew.sh/):
+
+```bash
+brew tap glasskube/glasskube
+brew install glasskube
+```
+
+Start the package manager:
+
+```bash
+glasskube serve
+```
+
+Open [`http://localhost:80805`](http://localhost:80805) and explore available packages.
+
+
+For more installation options 
+
+## Architecture 📏 {#architecture}
 
 Glasskube uses multiple components, most notably a client and a package operator.
 
@@ -23,11 +61,12 @@ They client creates packages in the form of Kubernetes Resources via the Kuberne
 The package operator has two controllers:
 
 1. The Package Controller (managing packages)
-2. The PackageInfo Controller (syncing package infos from a registry)
+2. The PackageInfo Controller (syncing package infos from a repository)
 
-### Package Repo
+### Packages Repository
 
-A place where `PackageInfo`s are stored, searched and maintained.
+A place where `PackageManifest`s are stored, searched and maintained.
+Currently only the glasskube packages repository is supported: [`glasskube/packages`](https://github.com/glasskube/packages)
 
 ## Commands
 
