@@ -14,7 +14,7 @@ sidebar_position: 1
 
 🏗️ Glasskube **packages are dependency aware**, as you would expect from a package manager.
 
-🤖  Designed as a cloud native application, so you can follow your **DevOps approach**.
+🤖  Designed as a cloud native application, so you can follow your **GitOps approach**.
 
 
 
