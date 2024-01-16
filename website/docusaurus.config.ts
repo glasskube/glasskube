@@ -77,6 +77,7 @@ const config: Config = {
           position: 'left',
           label: 'Docs',
         },
+        {to: '/roadmap', label: 'Roadmap', position: 'left'},
         {to: '/blog', label: 'Blog', position: 'left'},
         {
           href: 'https://github.com/glasskube/glasskube',
@@ -94,6 +95,10 @@ const config: Config = {
             {
               label: 'Architecture',
               to: '/docs/',
+            },
+            {
+              label: 'Getting started',
+              to: '/docs/getting-started/install',
             },
           ],
         },
