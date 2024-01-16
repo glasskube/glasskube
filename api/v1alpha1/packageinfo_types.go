@@ -25,17 +25,14 @@ import (
 
 // PackageInfoSpec defines the desired state of PackageInfo
 type PackageInfoSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of PackageInfo. Edit packageinfo_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	Name          string `json:"name,omitempty"`
+	RepositoryUrl string `json:"repositoryUrl,omitempty"`
 }
 
 // PackageInfoStatus defines the observed state of PackageInfo
 type PackageInfoStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	Manifest   PackageManifest    `json:"manifest,omitempty"`
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 }
 
 //+kubebuilder:object:root=true

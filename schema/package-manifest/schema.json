@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/glasskube/glasskube/api/v1alpha1/package-manifest",
+  "$ref": "#/$defs/PackageManifest",
+  "$defs": {
+    "HelmManifest": {
+      "properties": {
+        "repositoryUrl": {
+          "type": "string"
+        },
+        "chartName": {
+          "type": "string"
+        },
+        "chartVersion": {
+          "type": "string"
+        },
+        "values": {
+          "$ref": "#/$defs/JSON"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "repositoryUrl",
+        "chartName",
+        "chartVersion"
+      ]
+    },
+    "JSON": {
+      "additionalProperties": true,
+      "type": "object"
+    },
+    "KustomizeManifest": {
+      "properties": {},
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "PackageEntrypoint": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "serviceName": {
+          "type": "string"
+        },
+        "port": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "serviceName",
+        "port"
+      ]
+    },
+    "PackageManifest": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "shortDescription": {
+          "type": "string"
+        },
+        "iconUrl": {
+          "type": "string"
+        },
+        "helm": {
+          "$ref": "#/$defs/HelmManifest"
+        },
+        "kustomize": {
+          "$ref": "#/$defs/KustomizeManifest"
+        },
+        "defaultNamespace": {
+          "type": "string"
+        },
+        "entrypoints": {
+          "items": {
+            "$ref": "#/$defs/PackageEntrypoint"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name",
+        "defaultNamespace"
+      ]
+    }
+  }
+}
