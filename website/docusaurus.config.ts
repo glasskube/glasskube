@@ -63,6 +63,15 @@ const config: Config = {
     ]
   ],
   themeConfig: {
+    colorMode : {
+      respectPrefersColorScheme: true,
+    },
+    announcementBar: {
+      id: 'announcementBar-0', // Increment on change
+      // content: '⭐️ If you like <code>glasskube</code>, give it a star on <a target="_blank" rel="noopener noreferrer" href="https://github.com/glasskube/glasskube">GitHub</a> and follow us on <a target="_blank" rel="noopener noreferrer" href="https://x.com/glasskube">X</a> ⭐️',
+      content: `🎉️ <a target="_blank" href="https://github.com/glasskube/glasskube"><code>glasskube</code></a> is pre launching on GitHub 🥳️`,
+      isCloseable: false
+    },
     image: 'img/glasskube-social-card.jpg',
     navbar: {
       title: 'Glasskube',

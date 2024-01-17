@@ -4,6 +4,15 @@
  * work well for content-centric websites.
  */
 
+/*$main-1: #0c263b;*/
+/*$main-2: #174c76;*/
+/*$main-3: #00b5eb;*/
+/*$main-light: #ebf8fb;*/
+/*$grey-0: #101010;*/
+/*$grey-7: #fbfbfb;*/
+/*$red: #ff4136;*/
+/*$pink: #e03466;*/
+
 /* You can override the default Infima variables here. */
 :root {
   --ifm-color-primary: #174c76;
@@ -42,4 +51,12 @@
 [data-theme='dark'] .hero--primary {
   --ifm-hero-background-color: var(--ifm-color-primary-darker);
   --ifm-hero-text-color: var(--ifm-font-color-base);
+}
+
+
+div[class^='announcementBar_'] {
+  font-size: 20px;
+  color: var(--ifm-font-color-base);
+  background: linear-gradient(to right, #e03466, #63c5e3);
+  font-weight: bold;
 }
