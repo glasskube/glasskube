@@ -89,26 +89,9 @@ Open [`http://localhost:80805`](http://localhost:80805) and explore available pa
 - Cert Manager [`cert-manager/cert-manager`](https://github.com/cert-manager/cert-manager)
 - Ingress-NGINX Controller [`kubernetes/ingress-nginx`](https://github.com/kubernetes/ingress-nginx)
 - Kubernetes Dashboard [`kubernetes/dashboard`](https://github.com/kubernetes/dashboard)
-- Kube-Prometheus-Stack [`kubernetes/dashboard`](https://github.com/kubernetes/dashboard)
-- Velero [`vmware-tanzu/velero`](https://github.com/vmware-tanzu/velero)
 
 ### Coming Soon
-
-- K8sGPT [`k8sgpt-ai/k8sgpt`](https://github.com/k8sgpt-ai/k8sgpt)
-- Keptn [`keptn/lifecycle-toolkit`](https://github.com/keptn/lifecycle-toolkit)
-- CloudNativePG [`cloudnative-pg/cloudnative-pg`](https://github.com/cloudnative-pg/cloudnative-pg])
-- MariaDB Operator[`cmariadb-operator/mariadb-operator`](https://github.com/mariadb-operator/mariadb-operator])
-- Glasskube Apps Operator [`glasskube/operator`](https://github.com/glasskube/operator/)([planned](https://glasskube.dev/roadmap/?utm_source=github))
-  - Gitea [`go-gitea/gitea`](https://github.com/go-gitea/gitea)
-  - GitLab [`gitlab.com/gitlab-org/gitlab`](https://gitlab.com/gitlab-org/gitlab)
-  - GlitchTip [`gitlab.com/glitchtip/glitchtip`](https://gitlab.com/glitchtip)
-  - Keycloak [`keycloak/keycloak`](https://github.com/keycloak/keycloak)
-  - Matomo [`matomo-org/matomo`](https://github.com/matomo-org/matomo)
-  - Metabase [`metabase/metabase`](https://github.com/metabase/metabase)
-  - Nextcloud [`nextcloud/server`](https://github.com/nextcloud/server)
-  - Odoo [`odoo/odoo`](https://github.com/odoo/odoo)
-  - Plane [`makeplane/plane`](https://github.com/makeplane/plane)
-  - Vault [`hashicorp/vault`](https://github.com/hashicorp/vault)
+In the next versions you will be able to install more packages like the [Kube-Prometheus-Stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack), [Velero](https://github.com/vmware-tanzu/velero) and the [CloudNativePG](https://github.com/cloudnative-pg/cloudnative-pg]). With v0.1.0 you will also be able to install apps like [GitLab](https://gitlab.com/gitlab-org/gitlab), [Keycloak](https://github.com/keycloak/keycloak) or [Hashicorp Vault](https://github.com/hashicorp/vault) with the [Glasskube Apps Operator](https://github.com/glasskube/operator/). You can find the full list and release schedule in our [roadmap](https://glasskube.dev/roadmap/#packages-and-apps-schedule?utm_source=github)  
 
 > Can't find a package or want your app included in the list? We are always adding new supported packages & apps,
 > so just join us on [Discord](https://discord.gg/SxH6KUCGH7) or open up a new issue and let us know what is missing!
