@@ -12,11 +12,11 @@ Our pre releases are technical proof of concepts that aim to inspire technical f
 
 | 	        |                                           Features                                                                                 	                                           |     Timeline        	     |   Status     	   |
 |----------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:-------------------------:|:----------------:|
-| v0.0.1 	 | - initial project setup<br/>- first version of website<br/>- first working PackageOperator<br/>- first working client (UI & CLI)<br/>- install first packages (cert-manager) 	 | started on january 11th 	 | in development 	 |
-| v0.0.2 	 |                  - `glasskube bootstrap` command<br/>- handle package dependencies<br/>- increase supported trivial packages                                	                  |             	             |   planned    	   |
-| v0.0.3 	 |                             - package configuration<br/>- support packages with dependencies                                                     	                             |             	             |   planned    	   |
-| v0.0.4 	 |                                   - support backups<br/>- handle secrets                                                                  	                                    |             	             |   planned    	   |
-| v0.0.5 	 |                              - support version pinning<br/>- support glasskube suspension                                                       	                              |             	             |   planned    	   |
+| v0.0.0-alpha.1 | - initial project setup<br/>- first version of website<br/>- first working PackageOperator<br/>- first working client (UI & CLI)<br/>- install first packages (cert-manager) 	 | started on january 11th 	 | in development 	 |
+| v0.0.1 	 |                  - `glasskube bootstrap` command<br/>- handle package dependencies<br/>- increase supported trivial packages                                	                  |             	             |   planned    	   |
+| v0.0.2 	 |                             - package configuration<br/>- support packages with dependencies                                                     	                             |             	             |   planned    	   |
+| v0.0.3 	 |                                   - support backups<br/>- handle secrets                                                                  	                                    |             	             |   planned    	   |
+| v0.0.4 	 |                              - support version pinning<br/>- support glasskube suspension                                                       	                              |             	             |   planned    	   |
 
 ## First Releases from v0.1.0 {#first-release}
 
@@ -29,6 +29,31 @@ It will include all features we think are necessary for `glasskube` to become th
 
 ## Stable Releases {#stable}
 
-Becoming a stable software from a point where interfaces, manifests and functionality doesn't change anymore usually takes ages, a dedicated community and a big user base.
-As we are working towards this goal we will need to iterate fast and things will break.
-Although we are trying to provide automated upgrade paths as we don't want your packages to break!
+Becoming a stable software from a point where interfaces, manifests, and functionality remain unchanged, typically requires significant time, a dedicated community and a big user base.
+As we are working towards this goal we will need to iterate fast and things will break. However, already from the beginning we want to provide stable automated upgrade paths so your packages don´t break! 
+
+## Packages and Apps schedule 
+> Can't find a package or want your app included in the list? We are always adding new supported packages & apps,
+> so just join us on [Discord](https://discord.gg/SxH6KUCGH7) or open up a new issue and let us know what is missing!
+
+| Version | Package/ App                                                                                                                                                                                                                          |   |
+|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---|
+| v0.0.1   | Cert Manager[ `cert-manager/cert-manager` ]( https://github.com/cert-manager/cert-manager ) <br/>  Ingress-NGINX Controller[ `kubernetes/ingress-nginx` ]( https://github.com/kubernetes/ingress-nginx ) <br/> Kubernetes Dashboard[ `kubernetes/dashboard` ]( https://github.com/kubernetes/dashboard ) |   |
+| v0.0.2   | Kube-Prometheus-Stack[ `prometheus-community/kube-prometheus-stack` ]( https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack )  <br/> K8sGPT[ `k8sgpt-ai/k8sgpt` ]( https://github.com/k8sgpt-ai/k8sgpt )                        |   |
+| v0.0.3   | Velero[ `vmware-tanzu/velero` ]( https://github.com/vmware-tanzu/velero )                                                                                                                                                             |   |
+| v0.0.4   | CloudNativePG[ `cloudnative-pg/cloudnative-pg` ]( https://github.com/cloudnative-pg/cloudnative-pg] ) <br/> MariaDB Operator[ `cmariadb-operator/mariadb-operator` ]( https://github.com/mariadb-operator/mariadb-operator] )                                             |   |
+| v0.0.5   | Keptn[ `keptn/lifecycle-toolkit` ]( https://github.com/keptn/lifecycle-toolkit )                                                                                                                                                           |   |
+| v0.1.0   | Glasskube Apps Operator[ `glasskube/operator` ]( https://github.com/glasskube/operator/ )                                                                                                                                                                    |   |
+
+### Glasskube Apps Operator
+The [Glasskube Apps Operator](https://github.com/glasskube/operator/) supports the following Apps:
+- Gitea [`go-gitea/gitea`](https://github.com/go-gitea/gitea)
+- GitLab [`gitlab.com/gitlab-org/gitlab`](https://gitlab.com/gitlab-org/gitlab)
+- GlitchTip [`gitlab.com/glitchtip/glitchtip`](https://gitlab.com/glitchtip)
+- Keycloak [`keycloak/keycloak`](https://github.com/keycloak/keycloak)
+- Matomo [`matomo-org/matomo`](https://github.com/matomo-org/matomo)
+- Metabase [`metabase/metabase`](https://github.com/metabase/metabase)
+- Nextcloud [`nextcloud/server`](https://github.com/nextcloud/server)
+- Odoo [`odoo/odoo`](https://github.com/odoo/odoo)
+- Plane [`makeplane/plane`](https://github.com/makeplane/plane)
+- Vault [`hashicorp/vault`](https://github.com/hashicorp/vault)
