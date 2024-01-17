@@ -32,8 +32,9 @@ type PackageInfoSpec struct {
 
 // PackageInfoStatus defines the observed state of PackageInfo
 type PackageInfoStatus struct {
-	Manifest   PackageManifest    `json:"manifest,omitempty"`
-	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
+	Manifest            *PackageManifest   `json:"manifest,omitempty"`
+	Conditions          []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
+	LastUpdateTimestamp *metav1.Time       `json:"lastUpdateTimestamp,omitempty"`
 }
 
 //+kubebuilder:object:root=true

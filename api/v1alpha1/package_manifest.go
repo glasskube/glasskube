@@ -64,9 +64,9 @@ type PackageManifest struct {
 	ShortDescription string `json:"shortDescription,omitempty"`
 	IconUrl          string `json:"iconUrl,omitempty"`
 	// Helm instructs the controller to create a helm release when installing this package.
-	Helm HelmManifest `json:"helm,omitempty"`
+	Helm *HelmManifest `json:"helm,omitempty"`
 	// Kustomize instructs the controller to apply a kustomization when installing this package [PLACEHOLDER].
-	Kustomize KustomizeManifest `json:"kustomize,omitempty"`
+	Kustomize *KustomizeManifest `json:"kustomize,omitempty"`
 	// DefaultNamespace to install the package. May be overridden.
 	DefaultNamespace string              `json:"defaultNamespace,omitempty" jsonschema:"required"`
 	Entrypoints      []PackageEntrypoint `json:"entrypoints,omitempty"`

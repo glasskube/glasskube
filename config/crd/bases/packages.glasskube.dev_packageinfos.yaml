@@ -112,6 +112,9 @@ spec:
                   - type
                   type: object
                 type: array
+              lastUpdateTimestamp:
+                format: date-time
+                type: string
               manifest:
                 properties:
                   defaultNamespace:
