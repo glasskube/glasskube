@@ -23,8 +23,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -57,8 +59,13 @@ func (r *PackageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	var pkg packagesv1alpha1.Package
 
 	if err := r.Get(ctx, req.NamespacedName, &pkg); err != nil {
-		log.Error(err, "Failed to fetch Package")
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+		if apierrors.IsNotFound(err) {
+			log.V(1).Info("Failed to fetch Package: " + err.Error())
+			return ctrl.Result{}, nil
+		} else {
+			log.Error(err, "Failed to fetch Package")
+			return ctrl.Result{}, err
+		}
 	}
 
 	// Initialize the status conditions
@@ -119,21 +126,36 @@ func (r *PackageReconciler) desiredPackageInfo(pkg *packagesv1alpha1.Package) (*
 			RepositoryUrl: pkg.Spec.PackageInfo.RepositoryUrl,
 		},
 	}
-	err := controllerutil.SetControllerReference(pkg, packageInfo, r.Scheme)
+	err := controllerutil.SetOwnerReference(pkg, packageInfo, r.Scheme)
 	return packageInfo, err
 }
 
 func (r *PackageReconciler) updatePackageInfoIfNeeded(ctx context.Context, pkg *packagesv1alpha1.Package, desiredPackageInfo, actualPackageInfo *packagesv1alpha1.PackageInfo) error {
 	log := log.FromContext(ctx)
 
+	updateNeeded := false
+
 	if actualPackageInfo.Spec.Name != desiredPackageInfo.Spec.Name ||
 		actualPackageInfo.Spec.RepositoryUrl != desiredPackageInfo.Spec.RepositoryUrl {
-
-		log.V(1).Info("Updating PackageInfo", "packageinfo", actualPackageInfo.Name)
-
+		log.V(1).Info("spec is out of date", "packageinfo", actualPackageInfo.Name)
 		actualPackageInfo.Spec.Name = desiredPackageInfo.Spec.Name
 		actualPackageInfo.Spec.RepositoryUrl = desiredPackageInfo.Spec.RepositoryUrl
+		updateNeeded = true
+	}
 
+	if owned, err := objHasOwner(actualPackageInfo, pkg); err != nil {
+		return err
+	} else if !owned {
+		log.V(1).Info("owner is missing", "packageinfo", actualPackageInfo.Name)
+		// add the current pkg as owner
+		if err := controllerutil.SetOwnerReference(pkg, actualPackageInfo, r.Scheme); err != nil {
+			return err
+		}
+		updateNeeded = true
+	}
+
+	if updateNeeded {
+		log.V(1).Info("Updating PackageInfo", "packageinfo", actualPackageInfo.Name)
 		if err := r.Update(ctx, actualPackageInfo); err != nil {
 			log.Error(err, "Failed update PackageInfo")
 			return err
@@ -145,10 +167,25 @@ func (r *PackageReconciler) updatePackageInfoIfNeeded(ctx context.Context, pkg *
 	return nil
 }
 
+func objHasOwner(obj, owner client.Object) (bool, error) {
+	refs := obj.GetOwnerReferences()
+	for _, ref := range refs {
+		if ref.Name != owner.GetName() {
+			continue
+		}
+		if gv, err := schema.ParseGroupVersion(ref.APIVersion); err != nil {
+			return false, err
+		} else if owner.GetObjectKind().GroupVersionKind() == gv.WithKind(ref.Kind) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *PackageReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&packagesv1alpha1.Package{}).
-		Owns(&packagesv1alpha1.PackageInfo{}).
+		Owns(&packagesv1alpha1.PackageInfo{}, builder.MatchEveryOwner).
 		Complete(r)
 }
