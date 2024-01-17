@@ -4,7 +4,8 @@ import styles from './styles.module.css';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faGitAlt} from '@fortawesome/free-brands-svg-icons';
 import {IconDefinition} from '@fortawesome/free-regular-svg-icons';
-import {faCodeBranch, faDisplay} from '@fortawesome/free-solid-svg-icons'; // Import the FontAwesomeIcon component.
+import {faBoxes, faCodeBranch, faDisplay, faMagnifyingGlass, faSync} from '@fortawesome/free-solid-svg-icons';
+import {faParachuteBox} from '@fortawesome/free-solid-svg-icons/faParachuteBox'; // Import the FontAwesomeIcon component.
 
 type FeatureItem = {
   title: string;
@@ -43,13 +44,43 @@ const FeatureList: FeatureItem[] = [
       </>
     ),
   },
+  {
+    title: 'Automated updates',
+    Icon: faSync,
+    description: (
+      <>
+        Glasskube ensures your Kubernetes packages and apps are always up-to-date, minimizing the
+        manual effort required for maintenance.
+      </>
+    ),
+  },
+  {
+    title: 'Central package repository',
+    Icon: faBoxes,
+    description: (
+      <>
+        Keep track of all your packages in one central repository, which a planned feature for custom repositories.
+        (planned)
+      </>
+    ),
+  },
+  {
+    title: 'Cluster Scan',
+    Icon: faMagnifyingGlass,
+    description: (
+      <>
+        Introducing the Cluster Scan feature in a future version, which allows you to detect packages in your cluster,
+        providing valuable insights for better management and upgrade paths.
+      </>
+    ),
+  },
 ];
 
 function Feature({title, Icon, description}: FeatureItem) {
   return (
     <div className={clsx('col col--4', 'margin-top--lg')}>
       <div className="text--center">
-        <FontAwesomeIcon icon={Icon} size="4x" className={styles.h64} />
+        <FontAwesomeIcon icon={Icon} size="4x" className={styles.h64}/>
       </div>
       <div className="text--center padding-horiz--md margin-top--lg">
         <Heading as="h3" className="">{title}</Heading>
