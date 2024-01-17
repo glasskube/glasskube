@@ -18,6 +18,7 @@
   /* --ifm-menu-color: #101010; */
   --ifm-menu-color-background-active: #ebf8fb;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+
 }
 
 .footer--dark {
@@ -36,9 +37,9 @@
   --ifm-font-color-base: #ebf8fb;
   --ifm-menu-color-background-active: #174c76;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
 
-  .hero--primary {
-    --ifm-hero-background-color: var(--ifm-color-primary-darker);
-    --ifm-hero-text-color: var(--ifm-font-color-base);
-  }
+[data-theme='dark'] .hero--primary {
+  --ifm-hero-background-color: var(--ifm-color-primary-darker);
+  --ifm-hero-text-color: var(--ifm-font-color-base);
 }

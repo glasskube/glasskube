@@ -21,3 +21,8 @@
   align-items: center;
   justify-content: center;
 }
+
+.hero--primary {
+  --ifm-hero-background-color: var(--ifm-color-primary-darker);
+  --ifm-hero-text-color: var(--ifm-font-color-base);
+}
