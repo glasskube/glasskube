@@ -33,6 +33,7 @@ import (
 
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/api/v1alpha1/condition"
+	"github.com/glasskube/glasskube/internal/controller/requeue"
 )
 
 // PackageReconciler reconciles a Package object
@@ -61,10 +62,10 @@ func (r *PackageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if err := r.Get(ctx, req.NamespacedName, &pkg); err != nil {
 		if apierrors.IsNotFound(err) {
 			log.V(1).Info("Failed to fetch Package: " + err.Error())
-			return ctrl.Result{}, nil
+			return requeue.Never(ctx, nil)
 		} else {
 			log.Error(err, "Failed to fetch Package")
-			return ctrl.Result{}, err
+			return requeue.Always(ctx, err)
 		}
 	}
 
@@ -75,18 +76,16 @@ func (r *PackageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			metav1.Condition{Type: condition.Ready, Status: metav1.ConditionUnknown, Reason: "Reconciling", Message: "Starting reconciliation"},
 		)
 		if err := r.Status().Update(ctx, &pkg); err != nil {
-			log.Error(err, "Failed to update Package status")
-			return ctrl.Result{}, err
+			return requeue.Always(ctx, err)
 		}
 		if err := r.Get(ctx, req.NamespacedName, &pkg); err != nil {
-			log.Error(err, "Failed to re-fetch Package")
-			return ctrl.Result{}, err
+			return requeue.Always(ctx, err)
 		}
 	}
 
 	desiredPackageInfo, err := r.desiredPackageInfo(&pkg)
 	if err != nil {
-		return ctrl.Result{}, err
+		return requeue.Always(ctx, err)
 	}
 
 	var actualPackageInfo packagesv1alpha1.PackageInfo
@@ -96,14 +95,14 @@ func (r *PackageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		if err != nil {
 			log.Error(err, "Failed to create PackageInfo", "packageinfo", desiredPackageInfo.Name)
 		}
-		return ctrl.Result{}, err
+		return requeue.Always(ctx, err)
 	} else if err != nil {
 		log.Error(err, "Failed to fetch PackageInfo", "packageinfo", desiredPackageInfo.Name)
-		return ctrl.Result{Requeue: true}, err
+		return requeue.Always(ctx, err)
 	}
 
 	if err = r.updatePackageInfoIfNeeded(ctx, &pkg, desiredPackageInfo, &actualPackageInfo); err != nil {
-		return ctrl.Result{}, err
+		return requeue.Always(ctx, err)
 	}
 
 	if meta.IsStatusConditionTrue(actualPackageInfo.Status.Conditions, condition.Ready) {
@@ -113,7 +112,7 @@ func (r *PackageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		log.V(1).Info("PackageInfo is not ready", "packageinfo", desiredPackageInfo.Name)
 	}
 
-	return ctrl.Result{}, nil
+	return requeue.Always(ctx, nil)
 }
 
 func (r *PackageReconciler) desiredPackageInfo(pkg *packagesv1alpha1.Package) (*packagesv1alpha1.PackageInfo, error) {

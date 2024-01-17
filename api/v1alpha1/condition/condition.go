@@ -1,5 +1,6 @@
 package condition
 
 var (
-	Ready = "Ready"
+	Ready  = "Ready"
+	Failed = "Failed"
 )
