@@ -46,7 +46,7 @@ const config: Config = {
           editUrl: 'https://github.com/glasskube/glasskube/tree/main/website/',
         },
         theme: {
-          customCss: './src/css/custom.css',
+          customCss: [ './src/css/custom.css']
         },
       } satisfies Preset.Options,
     ],
@@ -69,7 +69,7 @@ const config: Config = {
     announcementBar: {
       id: 'announcementBar-0', // Increment on change
       // content: '⭐️ If you like <code>glasskube</code>, give it a star on <a target="_blank" rel="noopener noreferrer" href="https://github.com/glasskube/glasskube">GitHub</a> and follow us on <a target="_blank" rel="noopener noreferrer" href="https://x.com/glasskube">X</a> ⭐️',
-      content: `🎉️ <a target="_blank" href="https://github.com/glasskube/glasskube"><code>glasskube</code></a> is pre launching on GitHub 🥳️`,
+      content: `🎉️ <a target="_blank" href="https://github.com/glasskube/glasskube"><code>glasskube/glasskube</code></a> is pre launching on GitHub 🥳️`,
       isCloseable: false
     },
     image: 'img/glasskube-social-card.jpg',
@@ -91,6 +91,11 @@ const config: Config = {
         {
           href: 'https://github.com/glasskube/glasskube',
           label: 'GitHub',
+          position: 'right',
+        },
+        {
+          href: 'https://x.com/glasskube',
+          label: 'Twitter / X',
           position: 'right',
         },
       ],

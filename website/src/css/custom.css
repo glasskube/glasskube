@@ -25,6 +25,7 @@
   --ifm-code-font-size: 95%;
   --ifm-font-color-base: #101010;
   /* --ifm-menu-color: #101010; */
+  --ifm-pre-background: rgba(255, 255, 255, 0.1);
   --ifm-menu-color-background-active: #ebf8fb;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
 
@@ -56,7 +57,20 @@
 
 div[class^='announcementBar_'] {
   font-size: 20px;
+  height: 40px;
   color: var(--ifm-font-color-base);
   background: linear-gradient(to right, #e03466, #63c5e3);
+  font-weight: bold;
+}
+
+.hero__title {
+  font-size: 1.6rem;
+}
+.hero__subtitle {
+  font-size: 1.4rem;
+}
+
+.typewriter-command {
+  color: #63c5e3;
   font-weight: bold;
 }

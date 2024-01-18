@@ -4,7 +4,7 @@
  */
 
 .heroBanner {
-  padding: 4rem 0;
+  padding: 1rem 2rem;
   text-align: center;
   position: relative;
   overflow: hidden;
@@ -22,7 +22,22 @@
   justify-content: center;
 }
 
-.hero--primary {
-  --ifm-hero-background-color: var(--ifm-color-primary-darker);
-  --ifm-hero-text-color: var(--ifm-font-color-base);
+.twitterButton,
+.githubButton {
+  margin: 0.2rem;
+  display: inline;
+}
+
+.socialButtons {
+  text-align: end;
+
+  a {
+    margin: 0 0.5rem;
+    padding: 0.2rem 0.5rem;
+  }
+}
+
+.pink {
+  color: #63c5e3;
+  font-weight: bold;
 }
