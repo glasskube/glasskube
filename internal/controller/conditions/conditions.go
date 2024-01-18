@@ -2,6 +2,7 @@ package conditions
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/glasskube/glasskube/pkg/condition"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -20,6 +21,8 @@ func SetInitialAndUpdate(ctx context.Context, client client.Client, obj client.O
 }
 
 func SetUnknown(ctx context.Context, obj client.Object, objConditions *[]metav1.Condition, reason condition.Reason, message string) bool {
+	log := log.FromContext(ctx)
+	log.V(1).Info("set condition to unknown: " + message)
 	return setStatusConditions(obj, objConditions,
 		metav1.Condition{Type: string(condition.Ready), Status: metav1.ConditionUnknown, Reason: string(reason), Message: message},
 		metav1.Condition{Type: string(condition.Failed), Status: metav1.ConditionUnknown, Reason: string(reason), Message: message},
@@ -36,7 +39,7 @@ func SetUnknownAndUpdate(ctx context.Context, client client.Client, obj client.O
 // SetReady sets the Ready condition to Status=True and the Failed condition to Status=False.
 func SetReady(ctx context.Context, obj client.Object, objConditions *[]metav1.Condition, reason condition.Reason, message string) bool {
 	log := log.FromContext(ctx)
-	log.V(1).Info("set condition to ready")
+	log.V(1).Info("set condition to ready: " + message)
 	return setStatusConditions(obj, objConditions,
 		metav1.Condition{Type: string(condition.Ready), Status: metav1.ConditionTrue, Reason: string(reason), Message: message},
 		metav1.Condition{Type: string(condition.Failed), Status: metav1.ConditionFalse, Reason: string(reason), Message: message},
@@ -52,7 +55,7 @@ func SetReadyAndUpdate(ctx context.Context, client client.Client, obj client.Obj
 
 func SetFailed(ctx context.Context, obj client.Object, objConditions *[]metav1.Condition, reason condition.Reason, message string) bool {
 	log := log.FromContext(ctx)
-	log.V(1).Info("set condition to failed")
+	log.V(1).Info("set condition to failed: " + message)
 	return setStatusConditions(obj, objConditions,
 		metav1.Condition{Type: string(condition.Ready), Status: metav1.ConditionFalse, Reason: string(reason), Message: message},
 		metav1.Condition{Type: string(condition.Failed), Status: metav1.ConditionTrue, Reason: string(reason), Message: message},
@@ -67,32 +70,14 @@ func SetFailedAndUpdate(ctx context.Context, client client.Client, obj client.Ob
 	return nil
 }
 
-func setStatusConditionsAndUpdate(ctx context.Context, cl client.Client, obj client.Object, objConditions *[]metav1.Condition, conditions ...metav1.Condition) error {
-	log := log.FromContext(ctx)
-	if setStatusConditions(obj, objConditions, conditions...) {
-		log.V(1).Info("Updating status after conditions changed")
-		if err := cl.Status().Update(ctx, obj); err != nil {
-			log.Error(err, "Failed to update PackageInfo status")
-			return err
-		}
-		if err := cl.Get(ctx, client.ObjectKeyFromObject(obj), obj); err != nil {
-			log.Error(err, "Failed to re-fetch PackageInfo")
-			return err
-		}
-	}
-	return nil
-}
-
 func updateAfterConditionsChanged(ctx context.Context, cl client.Client, obj client.Object) error {
 	log := log.FromContext(ctx)
 	log.V(1).Info("Updating status after conditions changed")
 	if err := cl.Status().Update(ctx, obj); err != nil {
-		log.Error(err, "Failed to update PackageInfo status")
-		return err
+		return fmt.Errorf("failed to update PackageInfo status: %w", err)
 	}
 	if err := cl.Get(ctx, client.ObjectKeyFromObject(obj), obj); err != nil {
-		log.Error(err, "Failed to re-fetch PackageInfo")
-		return err
+		return fmt.Errorf("failed to re-fetch PackageInfo: %w", err)
 	}
 	return nil
 }

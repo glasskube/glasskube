@@ -21,10 +21,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
-// JSON wraps the apiextensionsv1.JSON type so we can create a custom JSONSchema function
-type JSON struct {
-	apiextensionsv1.JSON `json:"-"`
-}
+type JSON apiextensionsv1.JSON
 
 func (JSON) JSONSchema() *jsonschema.Schema {
 	return &jsonschema.Schema{
@@ -42,7 +39,7 @@ type HelmManifest struct {
 	// ChartVersion of the chart that should be installed.
 	ChartVersion string `json:"chartVersion" jsonschema:"required"`
 	// Values that should be used for the helm release
-	Values JSON `json:"values,omitempty"`
+	Values *JSON `json:"values,omitempty"`
 }
 
 type KustomizeManifest struct {

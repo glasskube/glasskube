@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -34,13 +35,16 @@ import (
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/controller/conditions"
 	"github.com/glasskube/glasskube/internal/controller/requeue"
+	"github.com/glasskube/glasskube/internal/manifest"
 	"github.com/glasskube/glasskube/pkg/condition"
 )
 
 // PackageReconciler reconciles a Package object
 type PackageReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme    *runtime.Scheme
+	Helm      manifest.ManifestAdapter
+	Kustomize manifest.ManifestAdapter
 }
 
 //+kubebuilder:rbac:groups=packages.glasskube.dev,resources=packages,verbs=get;list;watch;create;update;patch;delete
@@ -65,8 +69,7 @@ func (r *PackageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			log.V(1).Info("Failed to fetch Package: " + err.Error())
 			return requeue.Never(ctx, nil)
 		} else {
-			log.Error(err, "Failed to fetch Package")
-			return requeue.Always(ctx, err)
+			return requeue.Always(ctx, fmt.Errorf("failed to fetch package: %w", err))
 		}
 	}
 
@@ -81,12 +84,69 @@ func (r *PackageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	if meta.IsStatusConditionTrue(actualPackageInfo.Status.Conditions, string(condition.Ready)) {
 		log.V(1).Info("PackageInfo is ready", "packageinfo", actualPackageInfo.Name)
-		// TODO: Handle PackageInfo with condition Ready=True
+		piManifest := actualPackageInfo.Status.Manifest
+		if piManifest == nil {
+			err := conditions.SetFailedAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.UnsupportedFormat, "manifest must not be nil")
+			return requeue.Always(ctx, err)
+		}
+
+		if piManifest.Helm != nil {
+			if r.Helm != nil {
+				err := r.reconcileManifestWithAdapter(ctx, r.Helm, pkg, piManifest)
+				return requeue.Always(ctx, err)
+			} else {
+				err := conditions.SetFailedAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.UnsupportedFormat, "helm manifest not supported")
+				return requeue.Always(ctx, err)
+			}
+		} else if piManifest.Kustomize != nil {
+			if r.Kustomize != nil {
+				err := r.reconcileManifestWithAdapter(ctx, r.Kustomize, pkg, piManifest)
+				return requeue.Always(ctx, err)
+			} else {
+				err := conditions.SetFailedAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.UnsupportedFormat, "kustomize manifest not supported")
+				return requeue.Always(ctx, err)
+			}
+		} else {
+			err := conditions.SetReadyAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.UpToDate, "PackageInfo has nothing to apply (no helm or kustomize manifest present)")
+			return requeue.Always(ctx, err)
+		}
+	} else if meta.IsStatusConditionFalse(actualPackageInfo.Status.Conditions, string(condition.Ready)) {
+		packageInfoCondition := meta.FindStatusCondition(actualPackageInfo.Status.Conditions, string(condition.Ready))
+		err := conditions.SetFailedAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.Reason(packageInfoCondition.Reason), packageInfoCondition.Message)
+		return requeue.Always(ctx, err)
 	} else {
-		log.V(1).Info("PackageInfo is not ready", "packageinfo", actualPackageInfo.Name)
+		err := conditions.SetUnknownAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.Pending, "PackageInfo status is unknown")
+		return requeue.Always(ctx, err)
+	}
+}
+
+func (r *PackageReconciler) reconcileManifestWithAdapter(ctx context.Context, adapter manifest.ManifestAdapter, pkg packagesv1alpha1.Package, piManifest *packagesv1alpha1.PackageManifest) error {
+	log := log.FromContext(ctx)
+
+	if result, err := adapter.Reconcile(ctx, r.Client, &pkg, piManifest); err != nil {
+		log.Error(err, "could reconcile manifest")
+		err = conditions.SetFailedAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.UnsupportedFormat, "error during manifest reconciliation")
+		if err != nil {
+			return fmt.Errorf("could not set conditions: %w", err)
+		}
+	} else if result.IsReady() {
+		conditions.SetReadyAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.InstallationSucceeded, result.Message)
+		if err != nil {
+			return fmt.Errorf("could not set conditions: %w", err)
+		}
+	} else if result.IsWaiting() {
+		conditions.SetReadyAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.Pending, result.Message)
+		if err != nil {
+			return fmt.Errorf("could not set conditions: %w", err)
+		}
+	} else {
+		conditions.SetUnknownAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.UnsupportedFormat, result.Message)
+		if err != nil {
+			return fmt.Errorf("could not set conditions: %w", err)
+		}
 	}
 
-	return requeue.Always(ctx, nil)
+	return nil
 }
 
 func (r *PackageReconciler) desiredPackageInfo(pkg *packagesv1alpha1.Package) (*packagesv1alpha1.PackageInfo, error) {
@@ -118,7 +178,7 @@ func (r *PackageReconciler) ensurePackageInfo(ctx context.Context, pkg packagesv
 		if err != nil {
 			log.Error(err, "Failed to create PackageInfo", "packageinfo", desiredPackageInfo.Name)
 		}
-		return nil, err
+		return desiredPackageInfo, err
 	} else if err != nil {
 		log.Error(err, "Failed to fetch PackageInfo", "packageinfo", desiredPackageInfo.Name)
 		return nil, err
@@ -185,8 +245,14 @@ func objHasOwner(obj, owner client.Object) (bool, error) {
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *PackageReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&packagesv1alpha1.Package{}).
+	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&packagesv1alpha1.Package{})
+	if r.Helm != nil {
+		r.Helm.ControllerInit(controllerBuilder)
+	}
+	if r.Kustomize != nil {
+		r.Kustomize.ControllerInit(controllerBuilder)
+	}
+	return controllerBuilder.
 		Owns(&packagesv1alpha1.PackageInfo{}, builder.MatchEveryOwner).
 		Complete(r)
 }
