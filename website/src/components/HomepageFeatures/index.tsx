@@ -5,7 +5,6 @@ import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {faGitAlt} from '@fortawesome/free-brands-svg-icons';
 import {IconDefinition} from '@fortawesome/free-regular-svg-icons';
 import {faBoxes, faCodeBranch, faDisplay, faMagnifyingGlass, faSync} from '@fortawesome/free-solid-svg-icons';
-import {faParachuteBox} from '@fortawesome/free-solid-svg-icons/faParachuteBox'; // Import the FontAwesomeIcon component.
 
 type FeatureItem = {
   title: string;
