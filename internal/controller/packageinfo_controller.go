@@ -84,7 +84,7 @@ func (r *PackageInfoReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	if shouldSyncFromRepo(packageInfo) {
 		if err := fetchManifestFromRepo(ctx, &packageInfo); err != nil {
 			log.Error(err, "could not fetch package manifest")
-			if err := r.setStatusConditionFailedAndUpdate(ctx, &packageInfo); err != nil {
+			if err := r.setStatusConditionFailedAndUpdate(ctx, &packageInfo, err.Error()); err != nil {
 				return requeue.Always(ctx, err)
 			}
 		} else {
@@ -122,12 +122,12 @@ func (r *PackageInfoReconciler) setStatusConditionReady(ctx context.Context, pi 
 	)
 }
 
-func (r *PackageInfoReconciler) setStatusConditionFailedAndUpdate(ctx context.Context, pi *packagesv1alpha1.PackageInfo) error {
+func (r *PackageInfoReconciler) setStatusConditionFailedAndUpdate(ctx context.Context, pi *packagesv1alpha1.PackageInfo, message string) error {
 	log := log.FromContext(ctx)
 	log.V(1).Info("set condition to failed")
 	return r.setStatusConditionsAndUpdate(ctx, pi,
-		metav1.Condition{Type: condition.Ready, Status: metav1.ConditionFalse, Reason: "SyncCompleted"},
-		metav1.Condition{Type: condition.Failed, Status: metav1.ConditionTrue, Reason: "SyncFailed"},
+		metav1.Condition{Type: condition.Ready, Status: metav1.ConditionFalse, Reason: "SyncFailed", Message: message},
+		metav1.Condition{Type: condition.Failed, Status: metav1.ConditionTrue, Reason: "SyncFailed", Message: message},
 	)
 }
 
