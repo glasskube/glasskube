@@ -162,7 +162,7 @@ spec:
                         type: string
                       values:
                         description: Values that should be used for the helm release
-                        type: object
+                        x-kubernetes-preserve-unknown-fields: true
                     required:
                     - chartName
                     - chartVersion
