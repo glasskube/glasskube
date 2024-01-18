@@ -6,7 +6,7 @@ toolchain go1.21.5
 
 require (
 	github.com/invopop/jsonschema v0.12.0
-	github.com/onsi/ginkgo/v2 v2.14.0
+	github.com/onsi/ginkgo/v2 v2.15.0
 	github.com/onsi/gomega v1.30.0
 	github.com/spf13/cobra v1.8.0
 	k8s.io/apiextensions-apiserver v0.29.0
