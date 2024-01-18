@@ -32,8 +32,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
-	"github.com/glasskube/glasskube/api/v1alpha1/condition"
+	"github.com/glasskube/glasskube/internal/controller/conditions"
 	"github.com/glasskube/glasskube/internal/controller/requeue"
+	"github.com/glasskube/glasskube/pkg/condition"
 )
 
 // PackageReconciler reconciles a Package object
@@ -69,47 +70,20 @@ func (r *PackageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 	}
 
-	// Initialize the status conditions
-	if pkg.Status.Conditions == nil || len(pkg.Status.Conditions) == 0 {
-		meta.SetStatusCondition(
-			&pkg.Status.Conditions,
-			metav1.Condition{Type: condition.Ready, Status: metav1.ConditionUnknown, Reason: "Reconciling", Message: "Starting reconciliation"},
-		)
-		if err := r.Status().Update(ctx, &pkg); err != nil {
-			return requeue.Always(ctx, err)
-		}
-		if err := r.Get(ctx, req.NamespacedName, &pkg); err != nil {
-			return requeue.Always(ctx, err)
-		}
+	if err := conditions.SetInitialAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions); err != nil {
+		return requeue.Always(ctx, err)
 	}
 
-	desiredPackageInfo, err := r.desiredPackageInfo(&pkg)
+	actualPackageInfo, err := r.ensurePackageInfo(ctx, pkg)
 	if err != nil {
 		return requeue.Always(ctx, err)
 	}
 
-	var actualPackageInfo packagesv1alpha1.PackageInfo
-	if err := r.Get(ctx, types.NamespacedName{Name: pkg.Spec.PackageInfo.Name}, &actualPackageInfo); apierrors.IsNotFound(err) {
-		log.V(1).Info("Creating PackageInfo", "packageinfo", desiredPackageInfo.Name)
-		err = r.Create(ctx, desiredPackageInfo)
-		if err != nil {
-			log.Error(err, "Failed to create PackageInfo", "packageinfo", desiredPackageInfo.Name)
-		}
-		return requeue.Always(ctx, err)
-	} else if err != nil {
-		log.Error(err, "Failed to fetch PackageInfo", "packageinfo", desiredPackageInfo.Name)
-		return requeue.Always(ctx, err)
-	}
-
-	if err = r.updatePackageInfoIfNeeded(ctx, &pkg, desiredPackageInfo, &actualPackageInfo); err != nil {
-		return requeue.Always(ctx, err)
-	}
-
-	if meta.IsStatusConditionTrue(actualPackageInfo.Status.Conditions, condition.Ready) {
-		log.V(1).Info("PackageInfo is ready", "packageinfo", desiredPackageInfo.Name)
+	if meta.IsStatusConditionTrue(actualPackageInfo.Status.Conditions, string(condition.Ready)) {
+		log.V(1).Info("PackageInfo is ready", "packageinfo", actualPackageInfo.Name)
 		// TODO: Handle PackageInfo with condition Ready=True
 	} else {
-		log.V(1).Info("PackageInfo is not ready", "packageinfo", desiredPackageInfo.Name)
+		log.V(1).Info("PackageInfo is not ready", "packageinfo", actualPackageInfo.Name)
 	}
 
 	return requeue.Always(ctx, nil)
@@ -127,6 +101,34 @@ func (r *PackageReconciler) desiredPackageInfo(pkg *packagesv1alpha1.Package) (*
 	}
 	err := controllerutil.SetOwnerReference(pkg, packageInfo, r.Scheme)
 	return packageInfo, err
+}
+
+func (r *PackageReconciler) ensurePackageInfo(ctx context.Context, pkg packagesv1alpha1.Package) (*packagesv1alpha1.PackageInfo, error) {
+	log := log.FromContext(ctx)
+
+	desiredPackageInfo, err := r.desiredPackageInfo(&pkg)
+	if err != nil {
+		return nil, err
+	}
+
+	var actualPackageInfo packagesv1alpha1.PackageInfo
+	if err := r.Get(ctx, types.NamespacedName{Name: pkg.Spec.PackageInfo.Name}, &actualPackageInfo); apierrors.IsNotFound(err) {
+		log.V(1).Info("Creating PackageInfo", "packageinfo", desiredPackageInfo.Name)
+		err = r.Create(ctx, desiredPackageInfo)
+		if err != nil {
+			log.Error(err, "Failed to create PackageInfo", "packageinfo", desiredPackageInfo.Name)
+		}
+		return nil, err
+	} else if err != nil {
+		log.Error(err, "Failed to fetch PackageInfo", "packageinfo", desiredPackageInfo.Name)
+		return nil, err
+	}
+
+	if err = r.updatePackageInfoIfNeeded(ctx, &pkg, desiredPackageInfo, &actualPackageInfo); err != nil {
+		return nil, err
+	}
+
+	return &actualPackageInfo, nil
 }
 
 func (r *PackageReconciler) updatePackageInfoIfNeeded(ctx context.Context, pkg *packagesv1alpha1.Package, desiredPackageInfo, actualPackageInfo *packagesv1alpha1.PackageInfo) error {

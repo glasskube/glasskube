@@ -1,0 +1,107 @@
+package conditions
+
+import (
+	"context"
+
+	"github.com/glasskube/glasskube/pkg/condition"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+)
+
+// SetInitialAndUpdate initializes the Conditions slice and updates the resource if the conditions slice is nil or empty.
+// Types Ready and Failed are initialized with Status Unknown.
+func SetInitialAndUpdate(ctx context.Context, client client.Client, obj client.Object, objConditions *[]metav1.Condition) error {
+	if objConditions == nil || len(*objConditions) == 0 {
+		return SetUnknownAndUpdate(ctx, client, obj, objConditions, condition.Reconciling, "Starting reconciliation")
+	}
+	return nil
+}
+
+func SetUnknown(ctx context.Context, obj client.Object, objConditions *[]metav1.Condition, reason condition.Reason, message string) bool {
+	return setStatusConditions(obj, objConditions,
+		metav1.Condition{Type: string(condition.Ready), Status: metav1.ConditionUnknown, Reason: string(reason), Message: message},
+		metav1.Condition{Type: string(condition.Failed), Status: metav1.ConditionUnknown, Reason: string(reason), Message: message},
+	)
+}
+
+func SetUnknownAndUpdate(ctx context.Context, client client.Client, obj client.Object, objConditions *[]metav1.Condition, reason condition.Reason, message string) error {
+	if SetUnknown(ctx, obj, objConditions, reason, message) {
+		return updateAfterConditionsChanged(ctx, client, obj)
+	}
+	return nil
+}
+
+// SetReady sets the Ready condition to Status=True and the Failed condition to Status=False.
+func SetReady(ctx context.Context, obj client.Object, objConditions *[]metav1.Condition, reason condition.Reason, message string) bool {
+	log := log.FromContext(ctx)
+	log.V(1).Info("set condition to ready")
+	return setStatusConditions(obj, objConditions,
+		metav1.Condition{Type: string(condition.Ready), Status: metav1.ConditionTrue, Reason: string(reason), Message: message},
+		metav1.Condition{Type: string(condition.Failed), Status: metav1.ConditionFalse, Reason: string(reason), Message: message},
+	)
+}
+
+func SetReadyAndUpdate(ctx context.Context, client client.Client, obj client.Object, objConditions *[]metav1.Condition, reason condition.Reason, message string) error {
+	if SetReady(ctx, obj, objConditions, reason, message) {
+		return updateAfterConditionsChanged(ctx, client, obj)
+	}
+	return nil
+}
+
+func SetFailed(ctx context.Context, obj client.Object, objConditions *[]metav1.Condition, reason condition.Reason, message string) bool {
+	log := log.FromContext(ctx)
+	log.V(1).Info("set condition to failed")
+	return setStatusConditions(obj, objConditions,
+		metav1.Condition{Type: string(condition.Ready), Status: metav1.ConditionFalse, Reason: string(reason), Message: message},
+		metav1.Condition{Type: string(condition.Failed), Status: metav1.ConditionTrue, Reason: string(reason), Message: message},
+	)
+}
+
+// SetFailedAndUpdate sets the Ready condition to Status=False and the Failed condition to Status=True, then updates the resource if the conditions have changed.
+func SetFailedAndUpdate(ctx context.Context, client client.Client, obj client.Object, objConditions *[]metav1.Condition, reason condition.Reason, message string) error {
+	if SetFailed(ctx, obj, objConditions, reason, message) {
+		return updateAfterConditionsChanged(ctx, client, obj)
+	}
+	return nil
+}
+
+func setStatusConditionsAndUpdate(ctx context.Context, cl client.Client, obj client.Object, objConditions *[]metav1.Condition, conditions ...metav1.Condition) error {
+	log := log.FromContext(ctx)
+	if setStatusConditions(obj, objConditions, conditions...) {
+		log.V(1).Info("Updating status after conditions changed")
+		if err := cl.Status().Update(ctx, obj); err != nil {
+			log.Error(err, "Failed to update PackageInfo status")
+			return err
+		}
+		if err := cl.Get(ctx, client.ObjectKeyFromObject(obj), obj); err != nil {
+			log.Error(err, "Failed to re-fetch PackageInfo")
+			return err
+		}
+	}
+	return nil
+}
+
+func updateAfterConditionsChanged(ctx context.Context, cl client.Client, obj client.Object) error {
+	log := log.FromContext(ctx)
+	log.V(1).Info("Updating status after conditions changed")
+	if err := cl.Status().Update(ctx, obj); err != nil {
+		log.Error(err, "Failed to update PackageInfo status")
+		return err
+	}
+	if err := cl.Get(ctx, client.ObjectKeyFromObject(obj), obj); err != nil {
+		log.Error(err, "Failed to re-fetch PackageInfo")
+		return err
+	}
+	return nil
+}
+
+func setStatusConditions(obj client.Object, statusConditions *[]metav1.Condition, newConditions ...metav1.Condition) bool {
+	needsUpdate := false
+	for _, condition := range newConditions {
+		changed := meta.SetStatusCondition(statusConditions, condition)
+		needsUpdate = changed || needsUpdate
+	}
+	return needsUpdate
+}
