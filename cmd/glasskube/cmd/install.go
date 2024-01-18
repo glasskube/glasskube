@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/glasskube/glasskube/api/v1alpha1/condition"
+
 	"github.com/glasskube/glasskube/cmd/glasskube/config"
 	"github.com/glasskube/glasskube/pkg/client"
+	"github.com/glasskube/glasskube/pkg/condition"
 	"github.com/glasskube/glasskube/pkg/install"
 	"github.com/spf13/cobra"
 )
@@ -25,7 +26,7 @@ var installCmd = &cobra.Command{
 		}
 		if status != nil {
 			switch (*status).Status {
-			case condition.Ready:
+			case string(condition.Ready):
 				fmt.Println("Installed successfully.")
 			default:
 				fmt.Printf("Installation has status %v, reason: %v\nMessage: %v\n",
