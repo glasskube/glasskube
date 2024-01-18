@@ -25,7 +25,6 @@ import (
 	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -34,8 +33,9 @@ import (
 	"sigs.k8s.io/yaml"
 
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
-	"github.com/glasskube/glasskube/api/v1alpha1/condition"
+	"github.com/glasskube/glasskube/internal/controller/conditions"
 	"github.com/glasskube/glasskube/internal/controller/requeue"
+	"github.com/glasskube/glasskube/pkg/condition"
 )
 
 // PackageInfoReconciler reconciles a PackageInfo object
@@ -77,20 +77,20 @@ func (r *PackageInfoReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		}
 	}
 
-	if err := r.setStatusConditionInitialAndUpdate(ctx, &packageInfo); err != nil {
+	if err := conditions.SetInitialAndUpdate(ctx, r.Client, &packageInfo, &packageInfo.Status.Conditions); err != nil {
 		return requeue.Always(ctx, err)
 	}
 
 	if shouldSyncFromRepo(packageInfo) {
 		if err := fetchManifestFromRepo(ctx, &packageInfo); err != nil {
 			log.Error(err, "could not fetch package manifest")
-			if err := r.setStatusConditionFailedAndUpdate(ctx, &packageInfo, err.Error()); err != nil {
+			if err := conditions.SetFailedAndUpdate(ctx, r.Client, &packageInfo, &packageInfo.Status.Conditions, condition.SyncFailed, err.Error()); err != nil {
 				return requeue.Always(ctx, err)
 			}
 		} else {
 			now := metav1.Now()
 			packageInfo.Status.LastUpdateTimestamp = &now
-			r.setStatusConditionReady(ctx, &packageInfo)
+			conditions.SetReady(ctx, &packageInfo, &packageInfo.Status.Conditions, condition.SyncCompleted, "")
 			if err := r.Status().Update(ctx, &packageInfo); err != nil {
 				return requeue.Always(ctx, err)
 			}
@@ -98,62 +98,6 @@ func (r *PackageInfoReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	return requeue.Always(ctx, nil)
-}
-
-func (r *PackageInfoReconciler) setStatusConditionInitialAndUpdate(ctx context.Context, pi *packagesv1alpha1.PackageInfo) error {
-	if pi.Status.Conditions == nil || len(pi.Status.Conditions) == 0 {
-		log := log.FromContext(ctx)
-		log.V(1).Info("set initial conditions")
-		return r.setStatusConditionsAndUpdate(ctx, pi,
-			metav1.Condition{Type: condition.Ready, Status: metav1.ConditionUnknown, Reason: "Reconciling", Message: "Starting reconciliation"},
-			metav1.Condition{Type: condition.Failed, Status: metav1.ConditionUnknown, Reason: "Reconciling", Message: "Starting reconciliation"},
-		)
-	} else {
-		return nil
-	}
-}
-
-func (r *PackageInfoReconciler) setStatusConditionReady(ctx context.Context, pi *packagesv1alpha1.PackageInfo) bool {
-	log := log.FromContext(ctx)
-	log.V(1).Info("set condition to ready")
-	return setStatusConditions(pi,
-		metav1.Condition{Type: condition.Ready, Status: metav1.ConditionTrue, Reason: "SyncCompleted"},
-		metav1.Condition{Type: condition.Failed, Status: metav1.ConditionFalse, Reason: "SyncCompleted"},
-	)
-}
-
-func (r *PackageInfoReconciler) setStatusConditionFailedAndUpdate(ctx context.Context, pi *packagesv1alpha1.PackageInfo, message string) error {
-	log := log.FromContext(ctx)
-	log.V(1).Info("set condition to failed")
-	return r.setStatusConditionsAndUpdate(ctx, pi,
-		metav1.Condition{Type: condition.Ready, Status: metav1.ConditionFalse, Reason: "SyncFailed", Message: message},
-		metav1.Condition{Type: condition.Failed, Status: metav1.ConditionTrue, Reason: "SyncFailed", Message: message},
-	)
-}
-
-func setStatusConditions(pi *packagesv1alpha1.PackageInfo, conditions ...metav1.Condition) bool {
-	needsUpdate := false
-	for _, condition := range conditions {
-		changed := meta.SetStatusCondition(&pi.Status.Conditions, condition)
-		needsUpdate = changed || needsUpdate
-	}
-	return needsUpdate
-}
-
-func (r *PackageInfoReconciler) setStatusConditionsAndUpdate(ctx context.Context, pi *packagesv1alpha1.PackageInfo, conditions ...metav1.Condition) error {
-	log := log.FromContext(ctx)
-	if setStatusConditions(pi, conditions...) {
-		log.V(1).Info("Updating status after conditions changed")
-		if err := r.Status().Update(ctx, pi); err != nil {
-			log.Error(err, "Failed to update PackageInfo status")
-			return err
-		}
-		if err := r.Get(ctx, client.ObjectKeyFromObject(pi), pi); err != nil {
-			log.Error(err, "Failed to re-fetch PackageInfo")
-			return err
-		}
-	}
-	return nil
 }
 
 func getManifestUrl(pi packagesv1alpha1.PackageInfo) (string, error) {

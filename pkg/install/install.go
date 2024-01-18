@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/glasskube/glasskube/api/v1alpha1"
-	"github.com/glasskube/glasskube/api/v1alpha1/condition"
 	"github.com/glasskube/glasskube/pkg/client"
+	"github.com/glasskube/glasskube/pkg/condition"
 	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 )
@@ -53,11 +54,11 @@ func awaitInstall(pkgClient *client.PackageV1Alpha1Client, ctx context.Context, 
 }
 
 func getStatus(status *v1alpha1.PackageStatus) *client.PackageStatus {
-	readyCnd := meta.FindStatusCondition((*status).Conditions, condition.Ready)
+	readyCnd := meta.FindStatusCondition((*status).Conditions, string(condition.Ready))
 	if readyCnd != nil && readyCnd.Status == v1.ConditionTrue {
 		return newPackageStatus(readyCnd)
 	}
-	failedCnd := meta.FindStatusCondition((*status).Conditions, condition.Failed)
+	failedCnd := meta.FindStatusCondition((*status).Conditions, string(condition.Failed))
 	if failedCnd != nil && failedCnd.Status == v1.ConditionTrue {
 		return newPackageStatus(failedCnd)
 	}
