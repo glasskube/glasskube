@@ -30,14 +30,28 @@
 
 .socialButtons {
   text-align: end;
+}
 
-  a {
-    margin: 0 0.5rem;
-    padding: 0.2rem 0.5rem;
-  }
+.socialButtonsLink {
+  margin: 0 0.5rem;
+  padding: 0.2rem 0.5rem;
 }
 
 .pink {
   color: #63c5e3;
   font-weight: bold;
+}
+.backgroundSecondary {
+  background-color: var(--ifm-color-primary-dark);
+}
+
+.lottieFallback {
+  width: 100%;
+  height: 480px;
+}
+
+.emailInput {
+  padding: 12px 20px;
+  margin: 8px 0;
+  box-sizing: border-box;
 }
