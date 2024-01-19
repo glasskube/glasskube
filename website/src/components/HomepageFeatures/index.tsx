@@ -29,7 +29,7 @@ const FeatureList: FeatureItem[] = [
     description: (
       <>
         Glasskube packages are dependency aware. If two packages require the same dependency,
-        Glasskube makes sure it only gets installed onced.
+        Glasskube makes sure it only gets installed once.
       </>
     ),
   },
@@ -38,7 +38,7 @@ const FeatureList: FeatureItem[] = [
     Icon: faGitAlt,
     description: (
       <>
-        All packages are stored in custom resources, which can easily managed with your favorit
+        All packages are stored in custom resources, which can easily be managed with your favorite
         GitOps tool like ArgoCD or Flux.
       </>
     ),
@@ -58,8 +58,7 @@ const FeatureList: FeatureItem[] = [
     Icon: faBoxes,
     description: (
       <>
-        Keep track of all your packages in one central repository, which a planned feature for custom repositories.
-        (planned)
+        Keep track of all your packages in one central repository, with a planned feature for custom repositories.
       </>
     ),
   },

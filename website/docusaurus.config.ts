@@ -124,8 +124,8 @@ const config: Config = {
               href: 'https://discord.gg/SxH6KUCGH7',
             },
             {
-              label: 'Twitter',
-              href: 'https://twitter.com/glasskube',
+              label: 'Twitter / X',
+              href: 'https://x.com/glasskube',
             },
           ],
         },
@@ -143,7 +143,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} Glasskube<br>Built with Docusaurus.`,
+      copyright: `<img src="/img/glasskube-logo-white.png" width="25%" style="margin: 2rem"/><br>Copyright © ${new Date().getFullYear()} Glasskube<br>Built with Docusaurus.`,
     },
     prism: {
       theme: prismThemes.github,

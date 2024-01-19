@@ -43,27 +43,24 @@ function HomepageHeader() {
               <Typewriter
                 onInit={(typewriter) => {
                   typewriter
+                    .changeDeleteSpeed(25)
+                    .changeDelay(75)
                     .typeString('brew tap <span class="typewriter-command">glasskube/glasskube</span>')
-                    .pauseFor(2500)
-                    .deleteAll()
+                    .pauseFor(1500)
+                    .deleteAll(25)
                     .typeString('brew install <span class="typewriter-command">glasskube</span>')
-                    .pauseFor(2500)
-                    .deleteAll()
+                    .pauseFor(1500)
+                    .deleteAll(25)
                     .typeString('glasskube install ')
                     .typeString('<span class="typewriter-command">cert-manager</span>')
-                    .pauseFor(2500)
+                    .pauseFor(1500)
                     .deleteChars('cert-manager'.length)
-                    .pauseFor(2500)
                     .typeString('<span class="typewriter-command">ingress-nginx</span>')
+                    .pauseFor(1500)
                     .deleteChars('ingress-nginx'.length)
-                    .pauseFor(2500)
                     .typeString('<span class="typewriter-command">kubernetes-dashboard</span>')
                     .deleteChars('kubernetes-dashboard'.length)
-                    .pauseFor(2500)
                     .typeString('<span class="typewriter-command">[your-package]</span>')
-                    .callFunction(() => {
-                      console.log('All strings were deleted');
-                    })
                     .start();
                 }}
               />
@@ -112,7 +109,7 @@ function HomepageVideo() {
         <div className="row">
           <div className="col col--6 col--offset-3 margin-vert--lg">
             <div>
-              <Heading as={'h2'}>
+              <Heading as={'h2'} className={styles.colorWhite}>
                 Check it out with our mock-up video.
               </Heading>
               <video src="https://github.com/glasskube/operator/assets/3041752/24ed5f92-5a16-48c9-aafd-05559089a481"

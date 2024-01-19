@@ -44,6 +44,9 @@
 .backgroundSecondary {
   background-color: var(--ifm-color-primary-dark);
 }
+.colorWhite {
+  color: #FFF;
+}
 
 .lottieFallback {
   width: 100%;
