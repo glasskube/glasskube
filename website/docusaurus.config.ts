@@ -28,7 +28,10 @@ const config: Config = {
     defaultLocale: 'en',
     locales: ['en'],
   },
-  plugins: ['docusaurus-plugin-matomo'],
+  plugins: [
+    'docusaurus-plugin-matomo',
+    '@docusaurus/theme-mermaid'
+  ],
   presets: [
     [
       'classic',
@@ -59,9 +62,12 @@ const config: Config = {
         hashed: true,
         indexBlog: false,
         docsRouteBasePath: '/'
-      }),
+      })
     ]
   ],
+  markdown: {
+    mermaid: true,
+  },
   themeConfig: {
     colorMode : {
       respectPrefersColorScheme: true,

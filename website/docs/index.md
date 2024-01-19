@@ -82,45 +82,30 @@ Install the given package in your cluster.
 By default, the cluster given in `~/.kube/config` (`current-context`) will be used. 
 An alternative kube config can be passed with the `--kubeconfig` flag. 
 
+```mermaid
+---
+title: glasskube install [package]
+---
+flowchart TD
+  UI([UI])-- via local server<br>http://localhost:8580 ---Client(Client)
+  CLI([CLI])-- cobra cli ---Client
+  Client-- 1. validate package -->Repo[(Public Glasskube<br>Package Repo)]
+  Client-- 2. create<br>`Package` CR -->Kubernetes(((Kubernetes API)))
+  subgraph Cluster
+    Kubernetes-- 3. reconcile<br>`Package` -->PackageController
+    PackageController-- 4. create `PackageInfo`<br>if not present-->Kubernetes
+    Kubernetes-- 5. reconcile<br>`PackageInfo`-->PackageInfoController
+    end
+  PackageInfoController<-- 6. update package manifest -->Repo
+  subgraph Cluster
+    PackageInfoController-- 7. update manifest<br>in `PackageInfo` -->Kubernetes
+    Kubernetes-- 8. reconcile<br>`PackageInfo` -->PackageController
+    PackageController-- 9. deploy package -->Kubernetes
+  end
+
+  Kubernetes-- 10. package status -->Client 
+  
 ```
-
-                                          glasskube install <package>
-
-
-
-                               1. validate package
-                                                 ┌────────────────┐
-                                                 │                │     6. pull package info from repo (and keep up to date)
-                               ┌───────────────► │    Repo        │ ◄─────────────────────────────────────────────────────────────┐
-                               │                 │                │                                                               │
-                               │                 └────────────────┘                                                               │
-                               │                                                                                       ┌──────────┴──────────────┐
-                               │                                                    5. reconcile `PackageInfo`         │                         │
-                               │                                               ┌──────────────────────────────────────►│  PackageInfoController  │
-                               │                                               │                                       │                         │
-                               │                                               │                                       └─────────────────────────┘
-┌────────┐                     │                                               │
-│        │                     │                                               │
-│  UI    │                     │                                               │             3. reconcile `Pacakge`
-│        │                     │                                               │            ─────────────────────────►
-└────────┘                     │                                               │             4. create `PackageInfo`
-    ▲                          │                                               │                if not present
-    │  via local server        │                                               │            ◄──────────────────────────
-    │  localhost:80805   ┌─────┴────┐  2. create `Package` CR          ┌───────┴──────────┐                             ┌─────────────────────┐
-    └────────────────────┤          │ ────────────────────────────────►│                  │  7. reconcile `PacakgeInfo` │                     │
-                         │  client  │  10. pull latest `Package` status│  Kubernetes API  │ ─────────────────────────►  │  PackageController  │
-    ┌────────────────────┤          │      and finish inststall cmd    │                  │  9. update `Package` status │                     │
-    │ cobra cli          └──────────┘ ────────────────────────────────►└──────────────────┘ ◄────────────────────────── └─────────────────────┘
-    │                                                                                                                     8. create `Release`
-    ▼
-┌────────┐
-│        │
-│  CLI   │
-│        │
-└────────┘
-```
-
-To edit use: https://asciiflow.com/#/
 
 ### `glasskube uninstall <package>`
 
