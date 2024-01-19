@@ -4,7 +4,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
   title: 'Glasskube.dev',
-  tagline: 'Kubernetes Package Management the easy way',
+  tagline: '🧊 Kubernetes Package Management the easy way 🔥',
   favicon: 'img/favicon.png',
 
   // Set the production url of your site here
