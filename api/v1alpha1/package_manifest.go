@@ -33,7 +33,7 @@ type KustomizeManifest struct {
 
 // PackageEntrypoint defines a service port a user may use to access the package
 type PackageEntrypoint struct {
-	// Name of this entrypoint. Used for "glasskube open [package-name] [entypoint-name]" if more
+	// Name of this entrypoint. Used for "glasskube open [package-name] [entrypoint-name]" if more
 	// than one entrypoint exists. Optional if the package only has one entrypoint.
 	Name string `json:"name,omitempty"`
 	// ServiceName is the name of a service that is part of
