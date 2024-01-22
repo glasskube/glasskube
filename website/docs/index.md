@@ -76,9 +76,10 @@ Will start the UI server and opens a local browser on [http://localhost:8580](ht
 
 ### `glasskube bootstrap`
 
-### `glasskube install`
+### `glasskube install <package>`
 
 Install the given package in your cluster. 
+
 By default, the cluster given in `~/.kube/config` (`current-context`) will be used. 
 An alternative kube config can be passed with the `--kubeconfig` flag. 
 
@@ -108,6 +109,11 @@ flowchart TD
 ```
 
 ### `glasskube uninstall <package>`
+
+Remove the given package from your cluster.
+
+By default, the cluster given in `~/.kube/config` (`current-context`) will be used.
+An alternative kube config can be passed with the `--kubeconfig` flag.
 
 ### `glasskube search <name>`
 

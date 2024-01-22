@@ -15,7 +15,9 @@ type PackageV1Alpha1Client struct {
 
 type PackageInterface interface {
 	Create(ctx context.Context, p *v1alpha1.Package) error
+	Get(ctx context.Context, pkgName string, p *v1alpha1.Package) error
 	Watch(ctx context.Context) (watch.Interface, error)
+	Delete(ctx context.Context, pkg *v1alpha1.Package) error
 }
 
 type packageClient struct {
@@ -52,6 +54,20 @@ func (c *packageClient) Watch(ctx context.Context) (watch.Interface, error) {
 		Resource(PackageGVR.Resource).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Watch(ctx)
+}
+
+func (c *packageClient) Get(ctx context.Context, pkgName string, result *v1alpha1.Package) error {
+	return c.restClient.Get().
+		Resource(PackageGVR.Resource).
+		Name(pkgName).
+		Do(ctx).Into(result)
+}
+
+func (c *packageClient) Delete(ctx context.Context, pkg *v1alpha1.Package) error {
+	return c.restClient.Delete().
+		Resource(PackageGVR.Resource).
+		Name(pkg.Name).
+		Do(ctx).Into(nil)
 }
 
 // NewPackage instantiates a new v1alpha1.Package struct with the given package name
