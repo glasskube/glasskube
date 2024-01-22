@@ -74,10 +74,10 @@ func updateAfterConditionsChanged(ctx context.Context, cl client.Client, obj cli
 	log := log.FromContext(ctx)
 	log.V(1).Info("Updating status after conditions changed")
 	if err := cl.Status().Update(ctx, obj); err != nil {
-		return fmt.Errorf("failed to update PackageInfo status: %w", err)
+		return fmt.Errorf("could not set conditions: failed to update PackageInfo status: %w", err)
 	}
 	if err := cl.Get(ctx, client.ObjectKeyFromObject(obj), obj); err != nil {
-		return fmt.Errorf("failed to re-fetch PackageInfo: %w", err)
+		return fmt.Errorf("could not set conditions: failed to re-fetch PackageInfo: %w", err)
 	}
 	return nil
 }

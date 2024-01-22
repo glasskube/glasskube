@@ -16,8 +16,12 @@ github.com/evanphx/json-patch v4.12.0+incompatible h1:4onqiflcdA9EOZ4RxV643DvftH
 github.com/evanphx/json-patch v4.12.0+incompatible/go.mod h1:50XU6AFN0ol/bzJsmQLiYLvXMP4fmwYFNcr97nuDLSk=
 github.com/evanphx/json-patch/v5 v5.8.0 h1:lRj6N9Nci7MvzrXuX6HFzU8XjmhPiXPlsKEy1u0KQro=
 github.com/evanphx/json-patch/v5 v5.8.0/go.mod h1:VNkHZ/282BpEyt/tObQO8s5CMPmYYq14uClGH4abBuQ=
+github.com/fluxcd/helm-controller/api v0.37.2 h1:tkLezpRdqPDz7HoKHFu92sV+ppOCVDxkjFTh8/lpff8=
+github.com/fluxcd/helm-controller/api v0.37.2/go.mod h1:BuXZhAX9blQviil6yUN5zNM4RB753yhyBTJXxXff7Mo=
 github.com/fluxcd/pkg/apis/acl v0.1.0 h1:EoAl377hDQYL3WqanWCdifauXqXbMyFuK82NnX6pH4Q=
 github.com/fluxcd/pkg/apis/acl v0.1.0/go.mod h1:zfEZzz169Oap034EsDhmCAGgnWlcWmIObZjYMusoXS8=
+github.com/fluxcd/pkg/apis/kustomize v1.2.0 h1:vkVs+OumxaWso0jNCqdgFFfMHdh+qtZhykTkjl7OgmA=
+github.com/fluxcd/pkg/apis/kustomize v1.2.0/go.mod h1:VF7tR/WuVFeum+HaMTHwp+eCtsHiiQlY6ihgqtAnW/M=
 github.com/fluxcd/pkg/apis/meta v1.2.0 h1:O766PzGAdMdQKybSflGL8oV0+GgCNIkdsxfalRyzeO8=
 github.com/fluxcd/pkg/apis/meta v1.2.0/go.mod h1:fU/Az9AoVyIxC0oI4ihG0NVMNnvrcCzdEym3wxjIQsc=
 github.com/fluxcd/source-controller/api v1.2.3 h1:71mXv3Qg9HEhcpqOq1ObmoE+P/HuZNaAvxfI7dqZMo8=
@@ -86,10 +90,6 @@ github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/onsi/ginkgo/v2 v2.15.0 h1:79HwNRBAZHOEwrczrgSOPy+eFTTlIGELKy5as+ClttY=
 github.com/onsi/ginkgo/v2 v2.15.0/go.mod h1:HlxMHtYF57y6Dpf+mc5529KKmSq9h2FpCF+/ZkwUxKM=
-github.com/onsi/gomega v1.30.0 h1:hvMK7xYz4D3HapigLTeGdId/NcfQx1VHMJc60ew99+8=
-github.com/onsi/gomega v1.30.0/go.mod h1:9sxs+SwGrKI0+PWe4Fxa9tFQQBG5xSsSbMXOI8PPpoQ=
-github.com/onsi/gomega v1.31.0 h1:54UJxxj6cPInHS3a35wm6BK/F9nHYueZ1NVujHDrnXE=
-github.com/onsi/gomega v1.31.0/go.mod h1:DW9aCi7U6Yi40wNVAvT6kzFnEVEI5n3DloYBiKiT6zk=
 github.com/onsi/gomega v1.31.1 h1:KYppCUK+bUgAZwHOu7EXVBKyQA6ILvOESHkn/tgoqvo=
 github.com/onsi/gomega v1.31.1/go.mod h1:y40C95dwAD1Nz36SsEnxvfFe8FFfNxzI5eJ0EYGyAy0=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
