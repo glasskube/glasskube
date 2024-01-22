@@ -237,10 +237,14 @@ func objHasOwner(obj, owner client.Object) (bool, error) {
 func (r *PackageReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&packagesv1alpha1.Package{})
 	if r.Helm != nil {
-		r.Helm.ControllerInit(controllerBuilder)
+		if err := r.Helm.ControllerInit(controllerBuilder); err != nil {
+			return err
+		}
 	}
 	if r.Kustomize != nil {
-		r.Kustomize.ControllerInit(controllerBuilder)
+		if err := r.Kustomize.ControllerInit(controllerBuilder); err != nil {
+			return err
+		}
 	}
 	return controllerBuilder.
 		Owns(&packagesv1alpha1.PackageInfo{}, builder.MatchEveryOwner).

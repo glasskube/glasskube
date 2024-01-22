@@ -29,12 +29,17 @@ func NewAdapter(scheme *runtime.Scheme) manifest.ManifestAdapter {
 	return &FluxHelmAdapter{scheme: scheme}
 }
 
-func (a FluxHelmAdapter) ControllerInit(builder *builder.Builder) {
-	sourcev1beta2.AddToScheme(a.scheme)
-	helmv1beta2.AddToScheme(a.scheme)
+func (a FluxHelmAdapter) ControllerInit(builder *builder.Builder) error {
+	if err := sourcev1beta2.AddToScheme(a.scheme); err != nil {
+		return err
+	}
+	if err := helmv1beta2.AddToScheme(a.scheme); err != nil {
+		return err
+	}
 	builder.Owns(&sourcev1beta2.HelmRepository{})
 	builder.Owns(&helmv1beta2.HelmRelease{})
 	builder.Owns(&corev1.Namespace{})
+	return nil
 }
 
 func (a FluxHelmAdapter) Reconcile(ctx context.Context, client client.Client, pkg *packagesv1alpha1.Package, manifest *packagesv1alpha1.PackageManifest) (*result.ReconcileResult, error) {

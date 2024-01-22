@@ -10,6 +10,6 @@ import (
 )
 
 type ManifestAdapter interface {
-	ControllerInit(builder *builder.Builder)
+	ControllerInit(builder *builder.Builder) error
 	Reconcile(ctx context.Context, client client.Client, pkg *packagesv1alpha1.Package, manifest *packagesv1alpha1.PackageManifest) (*result.ReconcileResult, error)
 }
