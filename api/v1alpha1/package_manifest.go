@@ -16,20 +16,6 @@ limitations under the License.
 
 package v1alpha1
 
-import (
-	"github.com/invopop/jsonschema"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-)
-
-type JSON apiextensionsv1.JSON
-
-func (JSON) JSONSchema() *jsonschema.Schema {
-	return &jsonschema.Schema{
-		Type:                 "object",
-		AdditionalProperties: jsonschema.TrueSchema,
-	}
-}
-
 type HelmManifest struct {
 	// RepositoryUrl is the remote URL of the helm repository. This is the same URL you would use
 	// if you use "helm repo add ...".
