@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/glasskube/glasskube/cmd/glasskube/config"
+	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/spf13/cobra"
 )
@@ -16,5 +19,5 @@ var (
 
 func init() {
 	RootCmd.PersistentFlags().StringVar(&config.Kubeconfig, "kubeconfig", "",
-		"path to the kubeconfig file, whose current-context will be used (defaults to ~/.kube/config)")
+		fmt.Sprintf("path to the kubeconfig file, whose current-context will be used (defaults to %v)", clientcmd.RecommendedHomeFile))
 }

@@ -27,3 +27,4 @@ bin/
 dist/
 
 .idea/
+.vscode/
