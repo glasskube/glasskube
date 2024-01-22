@@ -84,7 +84,7 @@ func (r *PackageInfoReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		} else {
 			now := metav1.Now()
 			packageInfo.Status.LastUpdateTimestamp = &now
-			conditions.SetReady(ctx, &packageInfo, &packageInfo.Status.Conditions, condition.SyncCompleted, "")
+			conditions.SetReady(ctx, &packageInfo.Status.Conditions, condition.SyncCompleted, "")
 			if err := r.Status().Update(ctx, &packageInfo); err != nil {
 				return requeue.Always(ctx, err)
 			}

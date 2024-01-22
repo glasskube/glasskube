@@ -20,43 +20,43 @@ func SetInitialAndUpdate(ctx context.Context, client client.Client, obj client.O
 	return nil
 }
 
-func SetUnknown(ctx context.Context, obj client.Object, objConditions *[]metav1.Condition, reason condition.Reason, message string) bool {
+func SetUnknown(ctx context.Context, objConditions *[]metav1.Condition, reason condition.Reason, message string) bool {
 	log := log.FromContext(ctx)
 	log.V(1).Info("set condition to unknown: " + message)
-	return setStatusConditions(obj, objConditions,
+	return setStatusConditions(objConditions,
 		metav1.Condition{Type: string(condition.Ready), Status: metav1.ConditionUnknown, Reason: string(reason), Message: message},
 		metav1.Condition{Type: string(condition.Failed), Status: metav1.ConditionUnknown, Reason: string(reason), Message: message},
 	)
 }
 
 func SetUnknownAndUpdate(ctx context.Context, client client.Client, obj client.Object, objConditions *[]metav1.Condition, reason condition.Reason, message string) error {
-	if SetUnknown(ctx, obj, objConditions, reason, message) {
+	if SetUnknown(ctx, objConditions, reason, message) {
 		return updateAfterConditionsChanged(ctx, client, obj)
 	}
 	return nil
 }
 
 // SetReady sets the Ready condition to Status=True and the Failed condition to Status=False.
-func SetReady(ctx context.Context, obj client.Object, objConditions *[]metav1.Condition, reason condition.Reason, message string) bool {
+func SetReady(ctx context.Context, objConditions *[]metav1.Condition, reason condition.Reason, message string) bool {
 	log := log.FromContext(ctx)
 	log.V(1).Info("set condition to ready: " + message)
-	return setStatusConditions(obj, objConditions,
+	return setStatusConditions(objConditions,
 		metav1.Condition{Type: string(condition.Ready), Status: metav1.ConditionTrue, Reason: string(reason), Message: message},
 		metav1.Condition{Type: string(condition.Failed), Status: metav1.ConditionFalse, Reason: string(reason), Message: message},
 	)
 }
 
 func SetReadyAndUpdate(ctx context.Context, client client.Client, obj client.Object, objConditions *[]metav1.Condition, reason condition.Reason, message string) error {
-	if SetReady(ctx, obj, objConditions, reason, message) {
+	if SetReady(ctx, objConditions, reason, message) {
 		return updateAfterConditionsChanged(ctx, client, obj)
 	}
 	return nil
 }
 
-func SetFailed(ctx context.Context, obj client.Object, objConditions *[]metav1.Condition, reason condition.Reason, message string) bool {
+func SetFailed(ctx context.Context, objConditions *[]metav1.Condition, reason condition.Reason, message string) bool {
 	log := log.FromContext(ctx)
 	log.V(1).Info("set condition to failed: " + message)
-	return setStatusConditions(obj, objConditions,
+	return setStatusConditions(objConditions,
 		metav1.Condition{Type: string(condition.Ready), Status: metav1.ConditionFalse, Reason: string(reason), Message: message},
 		metav1.Condition{Type: string(condition.Failed), Status: metav1.ConditionTrue, Reason: string(reason), Message: message},
 	)
@@ -64,7 +64,7 @@ func SetFailed(ctx context.Context, obj client.Object, objConditions *[]metav1.C
 
 // SetFailedAndUpdate sets the Ready condition to Status=False and the Failed condition to Status=True, then updates the resource if the conditions have changed.
 func SetFailedAndUpdate(ctx context.Context, client client.Client, obj client.Object, objConditions *[]metav1.Condition, reason condition.Reason, message string) error {
-	if SetFailed(ctx, obj, objConditions, reason, message) {
+	if SetFailed(ctx, objConditions, reason, message) {
 		return updateAfterConditionsChanged(ctx, client, obj)
 	}
 	return nil
@@ -82,7 +82,7 @@ func updateAfterConditionsChanged(ctx context.Context, cl client.Client, obj cli
 	return nil
 }
 
-func setStatusConditions(obj client.Object, statusConditions *[]metav1.Condition, newConditions ...metav1.Condition) bool {
+func setStatusConditions(statusConditions *[]metav1.Condition, newConditions ...metav1.Condition) bool {
 	needsUpdate := false
 	for _, condition := range newConditions {
 		changed := meta.SetStatusCondition(statusConditions, condition)
