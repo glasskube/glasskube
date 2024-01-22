@@ -50,6 +50,9 @@ type PackageReconciler struct {
 //+kubebuilder:rbac:groups=packages.glasskube.dev,resources=packages,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=packages.glasskube.dev,resources=packages/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=packages.glasskube.dev,resources=packages/finalizers,verbs=update
+//+kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update
+//+kubebuilder:rbac:groups=helm.toolkit.fluxcd.io,resources=helmreleases,verbs=get;list;watch;create;update
+//+kubebuilder:rbac:groups=source.toolkit.fluxcd.io,resources=helmrepositories,verbs=get;list;watch;create;update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.

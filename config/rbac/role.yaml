@@ -5,6 +5,26 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - create
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - helm.toolkit.fluxcd.io
+  resources:
+  - helmreleases
+  verbs:
+  - create
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
   - packages.glasskube.dev
   resources:
   - packageinfos
@@ -56,3 +76,13 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - source.toolkit.fluxcd.io
+  resources:
+  - helmrepositories
+  verbs:
+  - create
+  - get
+  - list
+  - update
+  - watch
