@@ -121,32 +121,19 @@ func (r *PackageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 }
 
 func (r *PackageReconciler) reconcileManifestWithAdapter(ctx context.Context, adapter manifest.ManifestAdapter, pkg packagesv1alpha1.Package, piManifest *packagesv1alpha1.PackageManifest) error {
-	log := log.FromContext(ctx)
-
 	if result, err := adapter.Reconcile(ctx, r.Client, &pkg, piManifest); err != nil {
+		log := log.FromContext(ctx)
 		log.Error(err, "could reconcile manifest")
-		err = conditions.SetFailedAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.UnsupportedFormat, "error during manifest reconciliation")
-		if err != nil {
-			return fmt.Errorf("could not set conditions: %w", err)
-		}
+		return conditions.SetFailedAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.UnsupportedFormat, "error during manifest reconciliation: "+err.Error())
 	} else if result.IsReady() {
-		conditions.SetReadyAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.InstallationSucceeded, result.Message)
-		if err != nil {
-			return fmt.Errorf("could not set conditions: %w", err)
-		}
+		return conditions.SetReadyAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.InstallationSucceeded, result.Message)
 	} else if result.IsWaiting() {
-		conditions.SetReadyAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.Pending, result.Message)
-		if err != nil {
-			return fmt.Errorf("could not set conditions: %w", err)
-		}
+		return conditions.SetUnknownAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.Pending, result.Message)
+	} else if result.IsFailed() {
+		return conditions.SetFailedAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.InstallationFailed, result.Message)
 	} else {
-		conditions.SetUnknownAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.UnsupportedFormat, result.Message)
-		if err != nil {
-			return fmt.Errorf("could not set conditions: %w", err)
-		}
+		return conditions.SetUnknownAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.UnsupportedFormat, result.Message)
 	}
-
-	return nil
 }
 
 func (r *PackageReconciler) desiredPackageInfo(pkg *packagesv1alpha1.Package) (*packagesv1alpha1.PackageInfo, error) {
