@@ -127,7 +127,7 @@ spec:
                       properties:
                         name:
                           description: Name of this entrypoint. Used for "glasskube
-                            open [package-name] [entypoint-name]" if more than one
+                            open [package-name] [entrypoint-name]" if more than one
                             entrypoint exists. Optional if the package only has one
                             entrypoint.
                           type: string

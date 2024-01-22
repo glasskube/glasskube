@@ -36,7 +36,6 @@ func FetchPackageManifest(ctx context.Context, pi *packagesv1alpha1.PackageInfo)
 		return err
 	}
 	var manifest packagesv1alpha1.PackageManifest
-	// TODO: Figure out why Helm.Values is not unmarshalled
 	if err := yaml.Unmarshal(body, &manifest); err != nil {
 		return err
 	}
