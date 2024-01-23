@@ -1,6 +1,7 @@
 {
   "packages": {
     ".": {
+      "initial-version": "0.0.1",
       "changelog-path": "CHANGELOG.md",
       "release-type": "go",
       "prerelease": false,
