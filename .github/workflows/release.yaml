@@ -2,15 +2,51 @@ name: Release
 
 on:
   push:
+    branches:
+      - main
+      - '[0-9]+.[0-9]+.x'
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+.*' # also matches v0.0.0-alpha.1
+      - '*-[alpha|beta|rc].[0-9]+'  # pre-release tags
+
+  workflow_dispatch:
 
 defaults:
   run:
     shell: bash
 
 jobs:
+  release-please:
+    permissions:
+      contents: write  # for google-github-actions/release-please-action to create release commit
+      pull-requests: write  # for google-github-actions/release-please-action to create release PR
+    runs-on: ubuntu-latest
+    outputs:
+      releases_created: ${{ steps.release.outputs.releases_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    # Release-please creates a PR that tracks all changes
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+
+      - name: Check if tag is for a pre-release
+        id: prerelease_check
+        run: |
+          if [[ ${{ github.ref }} == *"alpha"* || ${{ github.ref }} == *"beta"* ]]; then
+            echo "PRE_RELEASE=true" >> $GITHUB_ENV
+          else
+            echo "PRE_RELEASE=false" >> $GITHUB_ENV
+          fi
+
+      - uses: google-github-actions/release-please-action@cc61a07e2da466bebbc19b3a7dd01d6aecb20d1e # v4.0.2
+        id: release
+        with:
+          command: manifest
+          token: ${{secrets.GITHUB_TOKEN}}
+          default-branch: main
+          pre-release: ${{ env.PRE_RELEASE }}
+
   goreleaser:
+    if: needs.release-please.outputs.releases_created == 'true'
     permissions:
       contents: write
     runs-on: ubuntu-latest
