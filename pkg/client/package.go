@@ -16,6 +16,7 @@ type PackageV1Alpha1Client struct {
 type PackageInterface interface {
 	Create(ctx context.Context, p *v1alpha1.Package) error
 	Get(ctx context.Context, pkgName string, p *v1alpha1.Package) error
+	GetAll(ctx context.Context, result *v1alpha1.PackageList) error
 	Watch(ctx context.Context) (watch.Interface, error)
 	Delete(ctx context.Context, pkg *v1alpha1.Package) error
 }
@@ -63,6 +64,12 @@ func (c *packageClient) Get(ctx context.Context, pkgName string, result *v1alpha
 		Do(ctx).Into(result)
 }
 
+func (c *packageClient) GetAll(ctx context.Context, result *v1alpha1.PackageList) error {
+	return c.restClient.Get().
+		Resource(PackageGVR.Resource).
+		Do(ctx).Into(result)
+}
+
 func (c *packageClient) Delete(ctx context.Context, pkg *v1alpha1.Package) error {
 	return c.restClient.Delete().
 		Resource(PackageGVR.Resource).
@@ -82,10 +89,4 @@ func NewPackage(packageName string) *v1alpha1.Package {
 			},
 		},
 	}
-}
-
-type PackageStatus struct {
-	Status  string
-	Reason  string
-	Message string
 }
