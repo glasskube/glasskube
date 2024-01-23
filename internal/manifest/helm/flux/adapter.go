@@ -114,7 +114,11 @@ func ensureHelmRelease(ctx context.Context, client client.Client, pkg *packagesv
 		helmRelease.Spec.Chart.Spec.Version = manifest.Helm.ChartVersion
 		helmRelease.Spec.Chart.Spec.SourceRef.Kind = "HelmRepository"
 		helmRelease.Spec.Chart.Spec.SourceRef.Name = manifest.Name
-		helmRelease.Spec.Values = &apiextensionsv1.JSON{Raw: manifest.Helm.Values.Raw[:]}
+		if manifest.Helm.Values != nil {
+			helmRelease.Spec.Values = &apiextensionsv1.JSON{Raw: manifest.Helm.Values.Raw[:]}
+		} else {
+			helmRelease.Spec.Values = nil
+		}
 		helmRelease.Spec.Interval = metav1.Duration{Duration: 5 * time.Minute}
 		return controllerutil.SetOwnerReference(pkg, &helmRelease, client.Scheme())
 	})
