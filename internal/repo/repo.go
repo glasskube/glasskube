@@ -15,6 +15,15 @@ var (
 	defaultRepositoryUrl = "https://packages.dl.glasskube.dev/packages/"
 )
 
+type PackageRepoIndex struct {
+	Packages []PackageTeaser
+}
+
+type PackageTeaser struct {
+	Name             string `json:"name"`
+	ShortDescription string `json:"shortDescription,omitempty"`
+}
+
 func FetchPackageManifest(ctx context.Context, pi *packagesv1alpha1.PackageInfo) error {
 	log := log.FromContext(ctx)
 	url, err := getPackageManifestUrl(*pi)
@@ -22,25 +31,49 @@ func FetchPackageManifest(ctx context.Context, pi *packagesv1alpha1.PackageInfo)
 		log.Error(err, "can not get manifest url")
 		return err
 	}
-	log.Info("starting to fetch manifest from " + url)
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return errors.New("could not fetch package manifest: " + resp.Status)
-	}
-	body, err := io.ReadAll(resp.Body)
+	body, err := doFetch(ctx, url)
 	if err != nil {
 		return err
 	}
 	var manifest packagesv1alpha1.PackageManifest
-	if err := yaml.Unmarshal(body, &manifest); err != nil {
+	if err = yaml.Unmarshal(body, &manifest); err != nil {
 		return err
 	}
 	pi.Status.Manifest = &manifest
 	return nil
+}
+
+func FetchPackageRepoIndex(ctx context.Context, repoUrl string) (*PackageRepoIndex, error) {
+	if len(repoUrl) == 0 {
+		repoUrl = defaultRepositoryUrl
+	}
+	url, err := url.JoinPath(repoUrl, "index.yaml")
+	if err != nil {
+		return nil, err
+	}
+	body, err := doFetch(ctx, url)
+	if err != nil {
+		return nil, err
+	}
+	var index PackageRepoIndex
+	if err = yaml.Unmarshal(body, &index); err != nil {
+		return nil, err
+	}
+	return &index, nil
+}
+
+func doFetch(ctx context.Context, url string) ([]byte, error) {
+	log := log.FromContext(ctx)
+	log.Info("starting to fetch " + url)
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New("failed to fetch " + url + " : " + resp.Status)
+	}
+	return io.ReadAll(resp.Body)
 }
 
 func getPackageManifestUrl(pi packagesv1alpha1.PackageInfo) (string, error) {

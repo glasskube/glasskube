@@ -7,9 +7,6 @@ import (
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/pkg/client"
-	"github.com/glasskube/glasskube/pkg/condition"
-	"k8s.io/apimachinery/pkg/api/meta"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 )
@@ -42,7 +39,7 @@ func awaitInstall(pkgClient *client.PackageV1Alpha1Client, ctx context.Context, 
 	for event := range watcher.ResultChan() {
 		if obj, ok := event.Object.(*v1alpha1.Package); ok && obj.GetUID() == pkgUID {
 			if event.Type == watch.Added || event.Type == watch.Modified {
-				if status := getStatus(&obj.Status); status != nil {
+				if status := client.GetStatus(&obj.Status); status != nil {
 					return status, nil
 				}
 			} else if event.Type == watch.Deleted {
@@ -51,24 +48,4 @@ func awaitInstall(pkgClient *client.PackageV1Alpha1Client, ctx context.Context, 
 		}
 	}
 	return nil, errors.New("failed to confirm package installation status")
-}
-
-func getStatus(status *v1alpha1.PackageStatus) *client.PackageStatus {
-	readyCnd := meta.FindStatusCondition((*status).Conditions, string(condition.Ready))
-	if readyCnd != nil && readyCnd.Status == v1.ConditionTrue {
-		return newPackageStatus(readyCnd)
-	}
-	failedCnd := meta.FindStatusCondition((*status).Conditions, string(condition.Failed))
-	if failedCnd != nil && failedCnd.Status == v1.ConditionTrue {
-		return newPackageStatus(failedCnd)
-	}
-	return nil
-}
-
-func newPackageStatus(cnd *v1.Condition) *client.PackageStatus {
-	return &client.PackageStatus{
-		Status:  cnd.Type,
-		Reason:  cnd.Reason,
-		Message: cnd.Message,
-	}
 }

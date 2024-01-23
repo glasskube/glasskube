@@ -70,6 +70,9 @@ Currently only the glasskube packages repository is supported: [`glasskube/packa
 
 ## Commands
 
+For any command by default, the cluster given in `~/.kube/config` (`current-context`) will be used.
+An alternative kube config can be passed with the `--kubeconfig` flag.
+
 ### `glasskube serve`
 
 Will start the UI server and opens a local browser on [http://localhost:8580](http://localhost:8580).
@@ -78,10 +81,7 @@ Will start the UI server and opens a local browser on [http://localhost:8580](ht
 
 ### `glasskube install <package>`
 
-Install the given package in your cluster. 
-
-By default, the cluster given in `~/.kube/config` (`current-context`) will be used. 
-An alternative kube config can be passed with the `--kubeconfig` flag. 
+Installs the given package in your cluster.
 
 ```mermaid
 ---
@@ -110,16 +110,15 @@ flowchart TD
 
 ### `glasskube uninstall <package>`
 
-Remove the given package from your cluster.
-
-By default, the cluster given in `~/.kube/config` (`current-context`) will be used.
-An alternative kube config can be passed with the `--kubeconfig` flag.
+Removes the given package from your cluster.
 
 ### `glasskube search <name>`
 
-### `glasskube list`
+### `glasskube ls`
 
-Lists all installed packages
+Lists packages. Aliases are `glasskube l` and `glasskube list`. By default, all packages available in the configured repository are shown, including their installation status in the given cluster.
+
+With the `--installed` flag you can restrict the list of packages to the once installed in your cluster.
 
 ### `glasskube --version`
 
