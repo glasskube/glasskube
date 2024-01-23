@@ -31,7 +31,7 @@ jobs:
       - name: Check if tag is for a pre-release
         id: prerelease_check
         run: |
-          if [[ ${{ github.ref }} == *"alpha"* || ${{ github.ref }} == *"beta"* ]]; then
+          if [[ ${{ github.ref }} == *"alpha"* || ${{ github.ref }} == *"beta"* || ${{ github.ref == *"rc"* }} ]]; then
             echo "PRE_RELEASE=true" >> $GITHUB_ENV
           else
             echo "PRE_RELEASE=false" >> $GITHUB_ENV
