@@ -18,7 +18,7 @@ jobs:
             **/go.sum
             **/go.mod
       - run: make build-cli
-      - uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4
+      - uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4
         with:
           name: glasskube
           path: dist/*
@@ -35,7 +35,7 @@ jobs:
             **/go.sum
             **/go.mod
       - run: make build
-      - uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4
+      - uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4
         with:
           name: package-operator
           path: dist/*
