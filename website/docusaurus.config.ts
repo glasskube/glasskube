@@ -133,6 +133,14 @@ const config: Config = {
               label: 'Twitter / X',
               href: 'https://x.com/glasskube',
             },
+            {
+              label: 'LinkedIn',
+              href: 'https://www.linkedin.com/company/glasskube/',
+            },
+            {
+              label: 'GitHub',
+              href: 'https://github.com/glasskube/glasskube',
+            },
           ],
         },
         {
@@ -143,8 +151,12 @@ const config: Config = {
               to: '/blog',
             },
             {
-              label: 'GitHub',
-              href: 'https://github.com/glasskube/glasskube',
+              label: 'Imprint',
+              to: '/imprint',
+            },
+            {
+              label: 'Data privacy policy',
+              to: '/data-privacy',
             },
           ],
         },
