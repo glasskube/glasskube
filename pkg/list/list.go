@@ -16,6 +16,15 @@ type PackageTeaserWithStatus struct {
 	IconUrl          string
 }
 
+func Get(client *client.PackageV1Alpha1Client, ctx context.Context, name string) (*v1alpha1.Package, error) {
+	var pkg v1alpha1.Package
+	err := client.Packages().Get(ctx, name, &pkg)
+	if err != nil {
+		return nil, err
+	}
+	return &pkg, nil
+}
+
 func GetInstalled(client *client.PackageV1Alpha1Client, ctx context.Context) (*v1alpha1.PackageList, error) {
 	ls := &v1alpha1.PackageList{}
 	err := client.Packages().GetAll(ctx, ls)

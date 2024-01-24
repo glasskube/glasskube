@@ -41,7 +41,8 @@
   </div>
 </nav>
 
-<div class="container-lg mt-4">
+<form action="/" method="post">
+  <div class="container-lg mt-4">
     <div class="row row-cols-3 row-cols-xl-4 g-2">
       {{range .}}
         <div class="col">
@@ -68,23 +69,41 @@
                 </div>
               </div>
               {{if eq .Status nil}}
-              <button type="button" class="btn btn-primary btn-sm fw-medium m-1 mt-auto">Install</button>
+              <button type="submit" name="packageName" value="{{ .PackageName }}" class="btn btn-primary btn-sm fw-medium m-1 mt-auto">Install</button>
               {{else if eq .Status.Status "Pending"}}
-              <button type="button" class="btn btn-primary btn-sm fw-medium m-1 mt-auto" disabled>Pending</button>
+              <button type="button" class="btn btn-primary btn-sm fw-medium m-1 mt-auto" disabled>Pending - Refresh to update</button>
               {{else if eq .Status.Status "Failed"}}
-              <button type="button" class="btn btn-danger btn-sm fw-medium m-1 mt-auto" disabled>Installation Failed</button>
+              <div class="btn-group fw-medium m-1 mt-auto">
+                <button type="button" class="btn btn-danger btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                  <span>Installation Failed</span>
+                </button>
+                <ul class="dropdown-menu">
+                  <li><button class="dropdown-item btn btn-sm"
+                              onclick="if(!confirm('Do you really want to uninstall {{ .PackageName }}?')) { event.preventDefault() }"
+                              type="submit" name="packageName" value="{{ .PackageName }}">Uninstall {{ .PackageName }}</button></li>
+                </ul>
+              </div>
               {{else}}
-              <button type="button" class="btn btn-success btn-sm fw-medium m-1 mt-auto">
-                <i class="bi bi-check-lg"></i>
-                <span>Installed</span>
-              </button>
+              <div class="btn-group fw-medium m-1 mt-auto">
+                <button type="button" class="btn btn-success btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                  <i class="bi bi-check-lg"></i>
+                  <span>Installed</span>
+                </button>
+                <ul class="dropdown-menu">
+                  <li><button class="dropdown-item btn btn-sm"
+                              onclick="if(!confirm('Do you really want to uninstall {{ .PackageName }}?')) { event.preventDefault() }"
+                              type="submit" name="packageName" value="{{ .PackageName }}">Uninstall {{ .PackageName }}</button></li>
+                </ul>
+              </div>
               {{end}}
             </div>
           </div>
         </div>
       {{end}}
     </div>
+  </div>
+</form>
 
-</div>
+<script src="static/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

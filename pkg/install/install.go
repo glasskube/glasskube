@@ -11,22 +11,30 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 )
 
-// Install creates a new v1alpha1.Package custom resource in the cluster, and blocks until this resource has either
-// status Ready or Failed.
-func Install(pkgClient *client.PackageV1Alpha1Client, ctx context.Context, packageName string) (*client.PackageStatus, error) {
+// InstallBlocking creates a new v1alpha1.Package custom resource in the cluster and waits until
+// the package has either status Ready or Failed.
+func InstallBlocking(pkgClient *client.PackageV1Alpha1Client, ctx context.Context, packageName string) (*client.PackageStatus, error) {
+	pkg, err := Install(pkgClient, ctx, packageName)
+	if err != nil {
+		return nil, err
+	}
+
+	status, err := awaitInstall(pkgClient, ctx, pkg.GetUID())
+	if err != nil {
+		return nil, err
+	}
+	return status, nil
+}
+
+// Install creates a new v1alpha1.Package custom resource in the cluster.
+func Install(pkgClient *client.PackageV1Alpha1Client, ctx context.Context, packageName string) (*v1alpha1.Package, error) {
 	pkg := client.NewPackage(packageName)
 	err := pkgClient.Packages().Create(ctx, pkg)
 	if err != nil {
 		return nil, err
 	}
 	fmt.Printf("Installing %v.\n", packageName)
-
-	status, err := awaitInstall(pkgClient, ctx, pkg.GetUID())
-	if err != nil {
-		return nil, err
-	}
-
-	return status, nil
+	return pkg, err
 }
 
 func awaitInstall(pkgClient *client.PackageV1Alpha1Client, ctx context.Context, pkgUID types.UID) (*client.PackageStatus, error) {

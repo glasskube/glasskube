@@ -7,6 +7,7 @@ import (
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/pkg/client"
+	"github.com/glasskube/glasskube/pkg/list"
 	"github.com/glasskube/glasskube/pkg/uninstall"
 	"github.com/spf13/cobra"
 )
@@ -19,13 +20,23 @@ var uninstallCmd = &cobra.Command{
 	PreRun: cliutils.SetupClientContext,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := client.FromContext(cmd.Context())
-		ok, err := uninstall.Uninstall(client, cmd.Context(), args[0], config.ForceUninstall)
+		pkgName := args[0]
+		pkg, err := list.Get(client, cmd.Context(), pkgName)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "An error occurred during uninstallation:\n\n%v\n", err)
+			fmt.Fprintf(os.Stderr, "Could not get installed package %v:\n%v\n", pkgName, err)
 			os.Exit(1)
 			return
 		}
-		if ok {
+		proceed := config.ForceUninstall || cliutils.YesNoPrompt(
+			fmt.Sprintf("%v will be removed from your cluster. Are you sure?", pkgName), false)
+		if proceed {
+			fmt.Printf("Uninstalling %v.\n", pkgName)
+			err = uninstall.Uninstall(client, cmd.Context(), pkg)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "An error occurred during uninstallation:\n\n%v\n", err)
+				os.Exit(1)
+				return
+			}
 			fmt.Println("Uninstalled successfully.")
 		} else {
 			fmt.Println("Uninstallation cancelled.")
