@@ -1,0 +1,179 @@
+---
+title: Install cert-manager
+slug: cert-manager
+description: 'Install cert-manager for Kubernetes with Glasskube package manager including a GUI, CLI and automatic package updates'
+---
+
+
+
+
+
+
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Install cert-manager for Kubernetes
+
+Learn how to install [cert-manager](https://cert-manager.io/) using the [`glasskube`](https://github.com/glasskube/glasskube) package manager.
+
+## Prerequisites
+
+- Kubernetes cluster (e.g. locally via [Minikube](https://minikube.sigs.k8s.io/docs/start/) or a cloud provider)
+- [`kubectl`](https://kubernetes.io/docs/tasks/tools/) is strictly speaking an *optional dependency*,
+but is the recommended way to interact with the cluster. Installation instructions are available for
+[macOS](https://kubernetes.io/docs/tasks/tools/install-kubectl-macos/),
+[Linux](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/)
+and [Windows](https://kubernetes.io/docs/tasks/tools/install-kubectl-windows/).
+
+## About cert-manager
+
+<br/>
+
+```mermaid
+flowchart LR
+
+  cert-manager(((cert-manager))) <--> Issuers
+  cert-manager <--> Certificates
+
+  subgraph Issuers [Issuers can be created via custom resources]
+  letsencrypt-staging
+  letsencrypt-prod
+  end
+
+  subgraph Certificates
+  foo.bar.com --> keypair1[signed keypair]
+  example.com --> keypair2[signed keypair]
+  end
+```
+
+<br/>
+
+:::info
+
+Cert-Manager is a widely used tool for managing certificates, specifically made for Kubernetes.
+It simplifies the process of getting, renewing, and using SSL/TLS certificates.
+Cert-Manager can interact with different certificate authorities (Issuer) such as Let's Encrypt,
+and it can automatically issue valid certificates.
+Additionally, it can handle the automatic renewal of certificates before they expire.
+
+These certificates can then be used by various applications like ingress controllers or deployments.
+:::
+
+
+## Installation
+
+Installing cert-manager can easily be achieved with the Glasskube package manager.
+
+### Install Glasskube
+
+If you already installed `glasskube` you can skip this step.
+If not the Glasskube client can easily be installed the way you usually install packages for your operating system.
+
+<Tabs groupId="operating-systems">
+  <TabItem value="mac" label="macOS">
+    ```bash
+    brew tap glasskube/glasskube
+    brew install glasskube
+    ```
+  </TabItem>
+  <TabItem value="linux" label="Linux">
+    <details>
+      <summary>RPM-based installation (RedHat/CentOS/Fedora)</summary>
+
+      <!---x-release-please-start-version-->
+      ```
+      curl -LO https://github.com/glasskube/glasskube/releases/download/v0.0.0/glasskube.rpm
+      sudo rpm -ivh -i glasskube.rpm
+      ```
+      <!---x-release-please-end-->
+    </details>
+
+    <details>
+      <summary>DEB-based installation (Ubuntu/Debian)</summary>
+
+      <!---x-release-please-start-version-->
+      ```
+      curl -LO https://github.com/glasskube/glasskube/releases/download/v0.0.0/glasskube.deb
+      sudo dpkg -i glasskube.deb
+      ```
+      <!---x-release-please-end-->
+    </details>
+
+    <details>
+      <summary>APK-based installation (Alpine)</summary>
+      <!---x-release-please-start-version-->
+      ```
+      curl -LO https://github.com/glasskube/glasskube/releases/download/v0.0.0/glasskube.apk
+      apk add glasskube.apk
+      ```
+      <!---x-release-please-end-->
+    </details>
+
+    *32-bit installations can be found on our [Releases](https://github.com/glasskube/glasskube/releases) section.*
+  </TabItem>
+
+  <TabItem value="win" label="Windows">
+    Download the latest from executable from our [Releases](https://github.com/glasskube/glasskube/releases): Exelink + release please version
+  </TabItem>
+</Tabs>
+
+### Install cert-manager
+
+
+
+<Tabs groupId="interface">
+  <TabItem value="gui" label="GUI 🖥️">
+    Start the UI via the command line:
+    ```bash
+    glasskube serve
+    ```
+    Install cert-manager via the Glasskube UI.
+  </TabItem>
+  <TabItem value="cli" label="CLI 🧑‍💻">
+    ```bash
+    glasskube install cert-manager
+    ```
+  </TabItem>
+</Tabs>
+
+
+## Configuring cert-manager
+
+Before cert-manager can issue certificates an `Issuer` or (`ClusterIssuer`) needs to be created so cert-manager knows which
+certificate authority (CA) should sign the public key of the certificate.
+
+**cluster-issuer.yaml**
+
+```yaml
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt
+  namespace: cert-manager
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: you@yourcorp.com # you will receive expiration warnings via this email
+    privateKeySecretRef:
+      name: letsencrypt
+    solvers:
+      - http01:
+          ingress:
+            class: nginx # requires ingress-nginx controller
+```
+
+The `ClusterIssuer` must be created as a Kubernetes custom resource. This can easily be achieved via `kubectl apply`:
+
+```shell
+kubectl apply -f cluster-issuer.yaml
+```
+
+Cert-manager creates an Ingress route to validate the ACME challenge, if no Ingress controller is already installed in
+the cluster the [ingress-nginx controller](./ingress-nginx) can easily be installed with Glasskube.
+
+Further links about cert-manager:
+
+ - Cert-manager docs: https://cert-manager.io/docs/
+ - Issuer configuration: https://cert-manager.io/docs/configuration/
+ - Issuer list: https://cert-manager.io/docs/configuration/issuers/

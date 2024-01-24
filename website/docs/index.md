@@ -87,7 +87,7 @@ Installs the given package in your cluster.
 ---
 title: glasskube install [package]
 ---
-flowchart TD
+flowchart BT
   UI([UI])-- via local server<br>http://localhost:8580 ---Client(Client)
   CLI([CLI])-- cobra cli ---Client
   Client-- 1. validate package -->Repo[(Public Glasskube<br>Package Repo)]
