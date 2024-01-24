@@ -19,13 +19,18 @@ package controller
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
+	"slices"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/yaml"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -93,7 +98,10 @@ func (r *PackageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			return requeue.Always(ctx, err)
 		}
 
-		if piManifest.Helm != nil {
+		if len(piManifest.Manifests) > 0 {
+			err := r.reconcilePlainManifests(ctx, &pkg, piManifest)
+			return requeue.Always(ctx, err)
+		} else if piManifest.Helm != nil {
 			if r.Helm != nil {
 				err := r.reconcileManifestWithAdapter(ctx, r.Helm, pkg, piManifest)
 				return requeue.Always(ctx, err)
@@ -137,6 +145,116 @@ func (r *PackageReconciler) reconcileManifestWithAdapter(ctx context.Context, ad
 	} else {
 		return conditions.SetUnknownAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.UnsupportedFormat, result.Message)
 	}
+}
+
+func (r *PackageReconciler) reconcilePlainManifests(ctx context.Context, pkg *packagesv1alpha1.Package, manifest *packagesv1alpha1.PackageManifest) error {
+	allOwned := make([]packagesv1alpha1.OwnedResourceRef, 0)
+	for _, m := range manifest.Manifests {
+		if owned, err := r.reconcilePlainManifest(ctx, *pkg, m); err != nil {
+			return conditions.SetFailedAndUpdate(ctx, r.Client, pkg, &pkg.Status.Conditions, condition.InstallationFailed, err.Error())
+		} else {
+			allOwned = append(allOwned, owned...)
+		}
+	}
+
+	if err := r.pruneOwnedResources(ctx, pkg, allOwned); err != nil {
+		return conditions.SetFailedAndUpdate(ctx, r.Client, pkg, &pkg.Status.Conditions, condition.InstallationFailed, err.Error())
+	}
+
+	ownedResourcesChanged := !slices.Equal(pkg.Status.OwnedResources, allOwned)
+	if ownedResourcesChanged {
+		pkg.Status.OwnedResources = allOwned[:]
+	}
+	conditionsChanged := conditions.SetReady(ctx, &pkg.Status.Conditions, condition.InstallationSucceeded, "")
+	if ownedResourcesChanged || conditionsChanged {
+		return r.Status().Update(ctx, pkg)
+	}
+
+	return nil
+}
+
+func (r *PackageReconciler) reconcilePlainManifest(ctx context.Context, pkg packagesv1alpha1.Package, manifest packagesv1alpha1.PlainManifest) ([]packagesv1alpha1.OwnedResourceRef, error) {
+	log := log.FromContext(ctx)
+	objectsToApply, err := fetchResources(manifest.Url)
+	if err != nil {
+		return nil, err
+	}
+	log.V(1).Info("fetched "+manifest.Url, "objectCount", len(*objectsToApply))
+
+	ownedResources := make([]packagesv1alpha1.OwnedResourceRef, 0, len(*objectsToApply))
+
+	for _, obj := range *objectsToApply {
+		if err := controllerutil.SetOwnerReference(&pkg, &obj, r.Scheme); err != nil {
+			return nil, fmt.Errorf("could set owner reference: %w", err)
+		}
+		if err := r.Patch(ctx, &obj, client.Apply, client.FieldOwner("packages.glasskube.dev/package-controller"), client.ForceOwnership); err != nil {
+			return nil, fmt.Errorf("could apply resource: %w", err)
+		}
+		log.V(1).Info("applied resource", "kind", obj.GroupVersionKind(), "namespace", obj.GetNamespace(), "name", obj.GetName())
+		ownedResources = append(ownedResources, unstructuredToOwnedResourceRef(obj))
+	}
+	return ownedResources, nil
+}
+
+func fetchResources(url string) (*[]unstructured.Unstructured, error) {
+	response, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("could not download manifest %v: %w", url, err)
+	}
+	defer response.Body.Close()
+	decoder := yaml.NewYAMLOrJSONDecoder(response.Body, 4096)
+	resources := make([]unstructured.Unstructured, 0)
+	for {
+		object := unstructured.Unstructured{}
+		if err := decoder.Decode(&object); err != nil {
+			if err == io.EOF {
+				break
+			}
+			return nil, fmt.Errorf("could not decode manifest %v: %w", url, err)
+		}
+		resources = append(resources, object)
+	}
+	return &resources, nil
+}
+
+func (r *PackageReconciler) pruneOwnedResources(ctx context.Context, pkg *packagesv1alpha1.Package, newOwnedResources []packagesv1alpha1.OwnedResourceRef) error {
+	log := log.FromContext(ctx)
+
+OuterLoop:
+	for _, ref := range pkg.Status.OwnedResources {
+		for _, newRef := range newOwnedResources {
+			if refersToSameResource(ref, newRef) {
+				continue OuterLoop
+			}
+		}
+		if err := r.Delete(ctx, ownedResourceRefToUnstructured(ref)); err != nil {
+			if !apierrors.IsNotFound(err) {
+				return fmt.Errorf("could not prune resource: %w", err)
+			}
+		}
+		log.V(1).Info("pruned resource", "reference", ref)
+	}
+	return nil
+}
+
+func unstructuredToOwnedResourceRef(obj unstructured.Unstructured) packagesv1alpha1.OwnedResourceRef {
+	return packagesv1alpha1.OwnedResourceRef{
+		GroupVersionKind: metav1.GroupVersionKind(obj.GroupVersionKind()),
+		Name:             obj.GetName(),
+		Namespace:        obj.GetNamespace(),
+	}
+}
+
+func ownedResourceRefToUnstructured(ref packagesv1alpha1.OwnedResourceRef) *unstructured.Unstructured {
+	obj := unstructured.Unstructured{}
+	obj.SetGroupVersionKind(schema.GroupVersionKind(ref.GroupVersionKind))
+	obj.SetName(ref.Name)
+	obj.SetNamespace(ref.Namespace)
+	return &obj
+}
+
+func refersToSameResource(a, b packagesv1alpha1.OwnedResourceRef) bool {
+	return a.Group == b.Group && a.Version == b.Version && a.Kind == b.Kind && a.Name == b.Name && a.Namespace == b.Namespace
 }
 
 func (r *PackageReconciler) desiredPackageInfo(pkg *packagesv1alpha1.Package) (*packagesv1alpha1.PackageInfo, error) {

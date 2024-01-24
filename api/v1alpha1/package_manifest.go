@@ -42,6 +42,10 @@ type PackageEntrypoint struct {
 	Port int32 `json:"port" jsonschema:"required"`
 }
 
+type PlainManifest struct {
+	Url string `json:"url" jsonschema:"required"`
+}
+
 type PackageManifest struct {
 	Name             string `json:"name" jsonschema:"required"`
 	ShortDescription string `json:"shortDescription,omitempty"`
@@ -50,6 +54,7 @@ type PackageManifest struct {
 	Helm *HelmManifest `json:"helm,omitempty"`
 	// Kustomize instructs the controller to apply a kustomization when installing this package [PLACEHOLDER].
 	Kustomize *KustomizeManifest `json:"kustomize,omitempty"`
+	Manifests []PlainManifest    `json:"manifests,omitempty"`
 	// DefaultNamespace to install the package. May be overridden.
 	DefaultNamespace string              `json:"defaultNamespace,omitempty" jsonschema:"required"`
 	Entrypoints      []PackageEntrypoint `json:"entrypoints,omitempty"`

@@ -71,6 +71,12 @@
         "kustomize": {
           "$ref": "#/$defs/KustomizeManifest"
         },
+        "manifests": {
+          "items": {
+            "$ref": "#/$defs/PlainManifest"
+          },
+          "type": "array"
+        },
         "defaultNamespace": {
           "type": "string"
         },
@@ -86,6 +92,18 @@
       "required": [
         "name",
         "defaultNamespace"
+      ]
+    },
+    "PlainManifest": {
+      "properties": {
+        "url": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "url"
       ]
     }
   }
