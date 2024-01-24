@@ -22,7 +22,7 @@ var installCmd = &cobra.Command{
 	ValidArgsFunction: completeAvailablePackageNames,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := client.FromContext(cmd.Context())
-		status, err := install.Install(client, cmd.Context(), args[0])
+		status, err := install.InstallBlocking(client, cmd.Context(), args[0])
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
 			os.Exit(1)
