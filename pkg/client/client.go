@@ -2,11 +2,12 @@ package client
 
 import (
 	"context"
+	"github.com/go-logr/logr"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 type (
@@ -19,15 +20,6 @@ const (
 
 var PackageGVR = v1alpha1.GroupVersion.WithResource("packages")
 
-func InitKubeConfig(kubeconfig string) (*rest.Config, error) {
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	if kubeconfig != "" {
-		loadingRules.ExplicitPath = kubeconfig
-	}
-	clientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{})
-	return clientConfig.ClientConfig()
-}
-
 func SetupContext(ctx context.Context, config *rest.Config) (context.Context, error) {
 	if err := v1alpha1.AddToScheme(scheme.Scheme); err != nil {
 		return nil, err
@@ -36,6 +28,7 @@ func SetupContext(ctx context.Context, config *rest.Config) (context.Context, er
 	if err != nil {
 		return nil, err
 	}
+	log.SetLogger(logr.New(log.NullLogSink{}))
 	return context.WithValue(ctx, clientContextKey, pkgClient), nil
 }
 

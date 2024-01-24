@@ -22,6 +22,7 @@ type PackageRepoIndex struct {
 type PackageTeaser struct {
 	Name             string `json:"name"`
 	ShortDescription string `json:"shortDescription,omitempty"`
+	IconUrl          string `json:"iconUrl,omitempty"`
 }
 
 func FetchPackageManifest(ctx context.Context, pi *packagesv1alpha1.PackageInfo) error {
