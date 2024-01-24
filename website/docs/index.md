@@ -87,7 +87,7 @@ An alternative kube config can be passed with the `--kubeconfig` flag.
 ---
 title: glasskube install [package]
 ---
-flowchart TD
+flowchart BT
   UI([UI])-- via local server<br>http://localhost:8580 ---Client(Client)
   CLI([CLI])-- cobra cli ---Client
   Client-- 1. validate package -->Repo[(Public Glasskube<br>Package Repo)]
