@@ -8,6 +8,7 @@ require (
 	github.com/fatih/color v1.16.0
 	github.com/fluxcd/helm-controller/api v0.37.2
 	github.com/fluxcd/source-controller/api v1.2.3
+	github.com/go-logr/logr v1.4.1
 	github.com/invopop/jsonschema v0.12.0
 	github.com/onsi/ginkgo/v2 v2.15.0
 	github.com/onsi/gomega v1.31.1
@@ -33,7 +34,6 @@ require (
 	github.com/fluxcd/pkg/apis/kustomize v1.2.0 // indirect
 	github.com/fluxcd/pkg/apis/meta v1.2.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
-	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
 	github.com/go-openapi/jsonpointer v0.20.2 // indirect
 	github.com/go-openapi/jsonreference v0.20.4 // indirect

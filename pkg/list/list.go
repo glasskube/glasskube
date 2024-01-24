@@ -13,6 +13,7 @@ type PackageTeaserWithStatus struct {
 	PackageName      string
 	ShortDescription string
 	Status           *client.PackageStatus
+	IconUrl          string
 }
 
 func GetInstalled(client *client.PackageV1Alpha1Client, ctx context.Context) (*v1alpha1.PackageList, error) {
@@ -39,6 +40,7 @@ func GetPackagesWithStatus(
 		pkgWithStatus := &PackageTeaserWithStatus{
 			PackageName:      description.Name,
 			ShortDescription: description.ShortDescription,
+			IconUrl:          description.IconUrl,
 			Status:           nil,
 		}
 		for _, inst := range installed.Items {
