@@ -39,7 +39,8 @@ type PackageSpec struct {
 
 // PackageStatus defines the observed state of Package
 type PackageStatus struct {
-	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
+	Conditions     []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
+	OwnedResources []OwnedResourceRef `json:"ownedResources,omitempty"`
 }
 
 //+kubebuilder:object:root=true
