@@ -33,6 +33,9 @@
 
 <hr>
 
+![Glasskube GUI Mockup](https://github.com/glasskube/operator/assets/3041752/71d0da0c-34ac-40b7-8740-bd2a81ca9f07)
+
+
 ## ⭐️ Why Glasskube?
 
 Using **traditional package managers** or applying manifests directly can be **super confusing** and doesn't scale.
