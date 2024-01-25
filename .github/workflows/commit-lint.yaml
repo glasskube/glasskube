@@ -15,7 +15,7 @@ jobs:
           node-version: '20.9'
       - name: Install commitlint
         run: |
-          npm install @commitlint/cli@17.7.1 @commitlint/config-conventional
+          npm install @commitlint/cli@18.6.0 @commitlint/config-conventional@18.6.0
           echo "module.exports = {
             extends: ['@commitlint/config-conventional'],
             rules: {
