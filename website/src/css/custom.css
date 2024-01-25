@@ -28,7 +28,6 @@
   --ifm-pre-background: rgba(255, 255, 255, 0.1);
   --ifm-menu-color-background-active: #ebf8fb;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
-
 }
 
 .footer--dark {
@@ -73,4 +72,17 @@ div[class^='announcementBar_'] {
 .typewriter-command {
   color: #63c5e3;
   font-weight: bold;
+}
+
+.screen-reader-only {
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: polygon(0 0, 0 0, 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px;
+  white-space: nowrap;
 }

@@ -11,7 +11,7 @@
     <img src="https://raw.githubusercontent.com/glasskube/.github/main/images/glasskube-logo.png" alt="Glasskube Logo" height="160">
   </a>
 
-<h3 align="center">Kubernetes Package Management the easy way </h3>
+<h3 align="center">🧊 The missing Package Manager for Kubernetes 📦</h3>
 
   <p align="center">
     <a href="https://glasskube.dev/docs/getting-started/install?utm_source=github"><strong>Getting started »</strong></a>

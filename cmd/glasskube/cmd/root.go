@@ -13,7 +13,7 @@ var (
 	RootCmd = cobra.Command{
 		Use:     "glasskube",
 		Version: "0.0.0",
-		Short:   "Kubernetes Package Management the easy way 🔥",
+		Short:   "🧊 The missing Package Manager for Kubernetes 📦",
 	}
 )
 

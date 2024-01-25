@@ -1,10 +1,11 @@
 import {themes as prismThemes} from 'prism-react-renderer';
 import type {Config} from '@docusaurus/types';
+import type {Options as IdealImageOptions} from '@docusaurus/plugin-ideal-image';
 import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
   title: 'Glasskube.dev',
-  tagline: '🧊 Kubernetes Package Management the easy way 🔥',
+  tagline: '🧊 The missing Package Manager for Kubernetes 📦',
   favicon: 'img/favicon.png',
 
   // Set the production url of your site here
@@ -30,7 +31,18 @@ const config: Config = {
   },
   plugins: [
     'docusaurus-plugin-matomo',
-    '@docusaurus/theme-mermaid'
+    '@docusaurus/theme-mermaid',
+    [
+      '@docusaurus/plugin-ideal-image',
+      /** @type {import("@docusaurus/plugin-ideal-image").PluginOptions} */
+      {
+        quality: 70,
+        max: 1030, // max resized image's size.
+        min: 640, // min resized image's size. if original is lower, use that size.
+        steps: 2, // the max number of images generated between min and max (inclusive)
+        disableInDev: false,
+      } satisfies IdealImageOptions,
+    ],
   ],
   presets: [
     [
@@ -49,7 +61,7 @@ const config: Config = {
           editUrl: 'https://github.com/glasskube/glasskube/tree/main/website/',
         },
         theme: {
-          customCss: [ './src/css/custom.css']
+          customCss: ['./src/css/custom.css']
         },
       } satisfies Preset.Options,
     ],
@@ -69,7 +81,7 @@ const config: Config = {
     mermaid: true,
   },
   themeConfig: {
-    colorMode : {
+    colorMode: {
       respectPrefersColorScheme: true,
     },
     docs: {
@@ -81,7 +93,7 @@ const config: Config = {
     announcementBar: {
       id: 'announcementBar-0', // Increment on change
       // content: '⭐️ If you like <code>glasskube</code>, give it a star on <a target="_blank" rel="noopener noreferrer" href="https://github.com/glasskube/glasskube">GitHub</a> and follow us on <a target="_blank" rel="noopener noreferrer" href="https://x.com/glasskube">X</a> ⭐️',
-      content: `🎉️ <a target="_blank" href="https://github.com/glasskube/glasskube"><code>glasskube/glasskube</code></a> is pre launching on GitHub 🥳️`,
+      content: `🎉️ <a target="_blank" href="https://github.com/glasskube/glasskube"><code>glasskube/glasskube</code></a> is launching its technical concept on GitHub 🥳️ <a target="_blank" rel="noopener noreferrer" href="https://github.com/glasskube/glasskube">Leave a star to support us</a> ⭐️`,
       isCloseable: false
     },
     image: 'img/glasskube-social-card.jpg',
@@ -100,6 +112,7 @@ const config: Config = {
         },
         {to: '/roadmap', label: 'Roadmap', position: 'left'},
         {to: '/blog', label: 'Blog', position: 'left'},
+        {to: '/packages', label: 'Packages', position: 'left'},
         {
           href: 'https://github.com/glasskube/glasskube',
           label: 'GitHub',
@@ -155,6 +168,10 @@ const config: Config = {
             {
               label: 'Blog',
               to: '/blog',
+            },
+            {
+              label: 'Contact / Book appoitment',
+              href: 'https://cal.glasskube.eu/team/founder/30min'
             },
             {
               label: 'Imprint',

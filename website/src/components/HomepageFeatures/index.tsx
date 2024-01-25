@@ -14,7 +14,7 @@ type FeatureItem = {
 
 const FeatureList: FeatureItem[] = [
   {
-    title: 'CLI and UI available',
+    title: 'CLI and GUI available',
     Icon: faDisplay,
     description: (
       <>
