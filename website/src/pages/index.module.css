@@ -4,22 +4,37 @@
  */
 
 .heroBanner {
-  padding: 1rem 2rem;
+  padding: var(--ifm-global-spacing);
   text-align: center;
   position: relative;
   overflow: hidden;
 }
 
-@media screen and (max-width: 996px) {
-  .heroBanner {
-    padding: 2rem;
+.heroCol {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+@media (max-width: 996px) {
+  .heroCol {
+    padding: 2rem 0;
   }
 }
 
 .buttons {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  gap: var(--ifm-global-spacing);
+
+}
+
+@media (min-width: 997px) {
+  .buttons {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+  }
 }
 
 .twitterButton,
@@ -30,10 +45,11 @@
 
 .socialButtons {
   text-align: end;
+  margin-bottom: var(--ifm-spacing-vertical);
 }
 
 .socialButtonsLink {
-  margin: 0 0.5rem;
+  margin: 0 0 0 0.5rem;
   padding: 0.2rem 0.5rem;
 }
 
@@ -41,9 +57,11 @@
   color: #63c5e3;
   font-weight: bold;
 }
+
 .backgroundSecondary {
   background-color: var(--ifm-color-primary-dark);
 }
+
 .colorWhite {
   color: #FFF;
 }
@@ -53,8 +71,33 @@
   height: 480px;
 }
 
+@media (max-width: 996px) {
+  .lottiePlayerWrapper {
+    display: none;
+  }
+}
+
 .emailInput {
   padding: 12px 20px;
-  margin: 8px 0;
   box-sizing: border-box;
+  border-radius: var(--ifm-button-border-radius);
+  border: 1px solid var(--glasskube-main-2);
+}
+
+.emailInput:focus {
+  border-color: var(--glasskube-main-3);
+}
+
+.newsletterForm {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--ifm-global-spacing);
+}
+
+@media (min-width: 997px) {
+  .newsletterForm {
+    flex-direction: row;
+    margin: 8px 0;
+  }
 }
