@@ -1,6 +1,6 @@
-import {themes as prismThemes} from 'prism-react-renderer';
-import type {Config} from '@docusaurus/types';
-import type {Options as IdealImageOptions} from '@docusaurus/plugin-ideal-image';
+import { themes as prismThemes } from 'prism-react-renderer';
+import type { Config } from '@docusaurus/types';
+import type { Options as IdealImageOptions } from '@docusaurus/plugin-ideal-image';
 import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
@@ -110,9 +110,9 @@ const config: Config = {
           position: 'left',
           label: 'Docs',
         },
-        {to: '/roadmap', label: 'Roadmap', position: 'left'},
-        {to: '/blog', label: 'Blog', position: 'left'},
-        {to: '/packages', label: 'Packages', position: 'left'},
+        { to: '/roadmap', label: 'Roadmap', position: 'left' },
+        { to: '/blog', label: 'Blog', position: 'left' },
+        { to: '/packages', label: 'Packages', position: 'left' },
         {
           href: 'https://github.com/glasskube/glasskube',
           label: 'GitHub',
@@ -184,7 +184,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `<img src="/img/glasskube-logo-white.png" width="25%" style="margin: 2rem"/><br>Copyright © ${new Date().getFullYear()} Glasskube<br>Built with Docusaurus.`,
+      copyright: `<img src="/img/glasskube-logo-white.png" class="footer-logo"/><br>Copyright © ${new Date().getFullYear()} Glasskube<br>Built with Docusaurus.`,
     },
     prism: {
       theme: prismThemes.github,
