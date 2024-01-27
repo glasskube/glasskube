@@ -30,8 +30,7 @@ type BootstrapClient struct {
 
 const INSTALLMESSAGE = `
 ## Installing GLASSKUBE ##
-🧊 The missing Package Manager for Kubernetes 📦
-`
+🧊 The missing Package Manager for Kubernetes 📦`
 
 func NewBootstrapClient(version string, kubeconfig string, url string) (*BootstrapClient, error) {
 	config, err := initKubeConfig(kubeconfig)
