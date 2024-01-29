@@ -40,9 +40,9 @@ dockers:
       - "ghcr.io/glasskube/package-operator:{{ .Tag }}"
 
 nfpms:
-  - file_name_template: '{{ .ProjectName }}_{{ .Tag }}_{{ .Arch }}'
+  - file_name_template: "{{ .ProjectName }}_{{ .Tag }}_{{ .Arch }}"
     homepage: https://glasskube.dev
-    maintainer: 'Philip Miglinci <pmig@glasskube.eu>'
+    maintainer: "Philip Miglinci <pmig@glasskube.eu>"
     description: >-
       Glasskube is a cloud native package manager for Kubernetes. It includes an UI and CLI, is dependency aware and GitOps ready.
     license: "Apache-2.0"
@@ -75,6 +75,10 @@ brews:
     install: |
       bin.install "glasskube"
 
+release:
+  mode: keep-existing
+  extra_files:
+    - glob: ./build/manifest.yaml
 
 archives:
   - format: tar.gz
