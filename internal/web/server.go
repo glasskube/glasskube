@@ -24,8 +24,15 @@ var Port = 8580
 //go:embed templates
 var embededFs embed.FS
 
-func Start(ctx context.Context) error {
-	tmpl, err := template.ParseFS(embededFs, "templates/packages.html")
+type ServerConfigSupport struct {
+	KubeconfigMissing         bool
+	KubeconfigDefaultLocation string
+	KubeconfigError           error
+}
+
+func Start(ctx context.Context, support *ServerConfigSupport) error {
+	pkgTemplate, err := template.ParseFS(embededFs, "templates/packages.html")
+	supportTemplate, err := template.ParseFS(embededFs, "templates/support.html")
 	if err != nil {
 		return err
 	}
@@ -38,7 +45,13 @@ func Start(ctx context.Context) error {
 	http.Handle("/static/", fileServer)
 	http.Handle("/favicon.ico", fileServer)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// TODO check whether to show kubeconfig helper page + reload button #31
+		if support != nil {
+			err := supportTemplate.Execute(w, support)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "An error occured rendering the response: \n%v\n", err)
+			}
+			return
+		}
 
 		pkgClient := client.FromContext(ctx)
 		if r.Method == "POST" {
@@ -65,7 +78,7 @@ func Start(ctx context.Context) error {
 		}
 
 		packages, _ := list.GetPackagesWithStatus(pkgClient, ctx, false)
-		err := tmpl.Execute(w, packages)
+		err := pkgTemplate.Execute(w, packages)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "An error occured rendering the response: \n%v\n", err)
 		}
