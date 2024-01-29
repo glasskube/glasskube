@@ -3,6 +3,7 @@ package flux
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	helmv1beta2 "github.com/fluxcd/helm-controller/api/v2beta2"
@@ -135,7 +136,11 @@ func extractResult(helmRelease *helmv1beta2.HelmRelease) *result.ReconcileResult
 		if readyCondition.Status == metav1.ConditionTrue {
 			return result.Ready("flux: " + readyCondition.Message)
 		} else if readyCondition.Status == metav1.ConditionFalse {
-			return result.Failed("flux: " + readyCondition.Message)
+			if strings.Contains(readyCondition.Message, "latest generation of object has not been reconciled") {
+				return result.Waiting("flux: " + readyCondition.Message)
+			} else {
+				return result.Failed("flux: " + readyCondition.Message)
+			}
 		}
 	}
 	if reconcilingCondition := meta.FindStatusCondition(helmRelease.Status.Conditions, "Reconciling"); reconcilingCondition != nil {
