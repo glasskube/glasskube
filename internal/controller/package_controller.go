@@ -19,8 +19,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	"io"
-	"net/http"
 	"slices"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -30,7 +28,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/yaml"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -38,6 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/controller/conditions"
 	"github.com/glasskube/glasskube/internal/controller/requeue"
 	"github.com/glasskube/glasskube/internal/manifest"
@@ -175,7 +173,7 @@ func (r *PackageReconciler) reconcilePlainManifests(ctx context.Context, pkg *pa
 
 func (r *PackageReconciler) reconcilePlainManifest(ctx context.Context, pkg packagesv1alpha1.Package, manifest packagesv1alpha1.PlainManifest) ([]packagesv1alpha1.OwnedResourceRef, error) {
 	log := log.FromContext(ctx)
-	objectsToApply, err := fetchResources(manifest.Url)
+	objectsToApply, err := clientutils.FetchResources(manifest.Url)
 	if err != nil {
 		return nil, err
 	}
@@ -194,27 +192,6 @@ func (r *PackageReconciler) reconcilePlainManifest(ctx context.Context, pkg pack
 		ownedResources = append(ownedResources, unstructuredToOwnedResourceRef(obj))
 	}
 	return ownedResources, nil
-}
-
-func fetchResources(url string) (*[]unstructured.Unstructured, error) {
-	response, err := http.Get(url)
-	if err != nil {
-		return nil, fmt.Errorf("could not download manifest %v: %w", url, err)
-	}
-	defer response.Body.Close()
-	decoder := yaml.NewYAMLOrJSONDecoder(response.Body, 4096)
-	resources := make([]unstructured.Unstructured, 0)
-	for {
-		object := unstructured.Unstructured{}
-		if err := decoder.Decode(&object); err != nil {
-			if err == io.EOF {
-				break
-			}
-			return nil, fmt.Errorf("could not decode manifest %v: %w", url, err)
-		}
-		resources = append(resources, object)
-	}
-	return &resources, nil
 }
 
 func (r *PackageReconciler) pruneOwnedResources(ctx context.Context, pkg *packagesv1alpha1.Package, newOwnedResources []packagesv1alpha1.OwnedResourceRef) error {
