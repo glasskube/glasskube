@@ -2,12 +2,13 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/glasskube/glasskube/cmd/glasskube/config"
+	"os"
+
 	"github.com/glasskube/glasskube/internal/cliutils"
+	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/list"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var listCmd = &cobra.Command{

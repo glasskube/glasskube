@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/glasskube/glasskube/cmd/glasskube/config"
 	"github.com/glasskube/glasskube/internal/cliutils"
+	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/pkg/bootstrap"
 	"github.com/spf13/cobra"
 )
