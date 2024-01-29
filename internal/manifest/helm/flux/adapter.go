@@ -30,16 +30,16 @@ func NewAdapter(scheme *runtime.Scheme) manifest.ManifestAdapter {
 	return &FluxHelmAdapter{scheme: scheme}
 }
 
-func (a FluxHelmAdapter) ControllerInit(builder *builder.Builder) error {
+func (a FluxHelmAdapter) ControllerInit(buildr *builder.Builder) error {
 	if err := sourcev1beta2.AddToScheme(a.scheme); err != nil {
 		return err
 	}
 	if err := helmv1beta2.AddToScheme(a.scheme); err != nil {
 		return err
 	}
-	builder.Owns(&sourcev1beta2.HelmRepository{})
-	builder.Owns(&helmv1beta2.HelmRelease{})
-	builder.Owns(&corev1.Namespace{})
+	buildr.Owns(&sourcev1beta2.HelmRepository{})
+	buildr.Owns(&helmv1beta2.HelmRelease{}, builder.MatchEveryOwner)
+	buildr.Owns(&corev1.Namespace{})
 	return nil
 }
 
