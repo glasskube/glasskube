@@ -64,7 +64,8 @@ Designed as a cloud native application, so you can follow your **GitOps approach
 
 - [Quick Start](https://github.com/glasskube/#-quick-start)
 - [Supported Tools](https://github.com/glasskube/glasskube#-supported-tools)
-- [Screencast](https://github.com/glasskube/glasskube#-screencast)
+- [How to install your first package](https://github.com/glasskube/glasskube#-how-to-install-you-first-package)
+- [Architecture Diagram](https://github.com/glasskube/glasskube#architecture-diagram)
 - [Need help?](https://github.com/glasskube/glasskube#-need-help)
 - [Related projects](https://github.com/glasskube/glasskube#-related-projects)
 - [How to Contribute](https://github.com/glasskube/glasskube#-how-to-contribute)
@@ -104,7 +105,32 @@ In the next versions you will be able to install more packages like the [Kube-Pr
 
 ## 🎬 How to install you first package
 
-> insert video
+[![asciicast](https://asciinema.org/a/k19wlsoX5Mr3raY6ro13imyNo.svg)](https://asciinema.org/a/k19wlsoX5Mr3raY6ro13imyNo)
+
+## Architecture Diagram
+```mermaid
+---
+title: glasskube install [package]
+---
+flowchart BT
+  UI([UI])-- via local server<br>http://localhost:8580 ---Client(Client)
+  CLI([CLI])-- cobra cli ---Client
+  Client-- 1. validate package -->Repo[(Public Glasskube<br>Package Repo)]
+  Client-- 2. create<br>`Package` CR -->Kubernetes(((Kubernetes API)))
+  subgraph Cluster
+    Kubernetes-- 3. reconcile<br>`Package` -->PackageController
+    PackageController-- 4. create `PackageInfo`<br>if not present-->Kubernetes
+    Kubernetes-- 5. reconcile<br>`PackageInfo`-->PackageInfoController
+    end
+  PackageInfoController<-- 6. update package manifest -->Repo
+  subgraph Cluster
+    PackageInfoController-- 7. update manifest<br>in `PackageInfo` -->Kubernetes
+    Kubernetes-- 8. reconcile<br>`PackageInfo` -->PackageController
+    PackageController-- 9. deploy package -->Kubernetes
+  end
+
+  Kubernetes-- 10. package status -->Client 
+```
 
 ## ☝️ Need Help?
 
