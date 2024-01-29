@@ -2,12 +2,13 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/glasskube/glasskube/cmd/glasskube/config"
+	"os"
+
 	"github.com/glasskube/glasskube/internal/cliutils"
+	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/uninstall"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var uninstallCmd = &cobra.Command{
@@ -18,7 +19,7 @@ var uninstallCmd = &cobra.Command{
 	PreRun: cliutils.SetupClientContext,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := client.FromContext(cmd.Context())
-		ok, err := uninstall.Uninstall(client, cmd.Context(), args[0])
+		ok, err := uninstall.Uninstall(client, cmd.Context(), args[0], config.ForceUninstall)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "An error occurred during uninstallation:\n\n%v\n", err)
 			os.Exit(1)

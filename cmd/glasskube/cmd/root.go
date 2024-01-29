@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/glasskube/glasskube/cmd/glasskube/config"
+	"github.com/glasskube/glasskube/internal/config"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/spf13/cobra"
@@ -12,7 +12,7 @@ import (
 var (
 	RootCmd = cobra.Command{
 		Use:     "glasskube",
-		Version: "0.0.0",
+		Version: config.Version,
 		Short:   "🧊 The missing Package Manager for Kubernetes 📦",
 	}
 )

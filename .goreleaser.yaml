@@ -23,6 +23,8 @@ builds:
       - windows
       - darwin
     main: ./cmd/glasskube
+    ldflags:
+      - "-s -w -X github.com/glasskube/glasskube/internal/config.Version={{.Version}} -X github.com/glasskube/glasskube/internal/config.Commit={{.ShortCommit}} -X github.com/glasskube/glasskube/internal/config.Date={{.Date}}"
   - id: package-operator
     env:
       - CGO_ENABLED=0
