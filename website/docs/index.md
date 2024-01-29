@@ -105,7 +105,6 @@ flowchart BT
   end
 
   Kubernetes-- 10. package status -->Client 
-  
 ```
 
 ### `glasskube uninstall <package>`
