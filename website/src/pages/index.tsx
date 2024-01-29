@@ -112,10 +112,9 @@ function HomepageVideo() {
           <div className="col col--6 col--offset-3 margin-vert--lg">
             <div>
               <Heading as={'h2'} className={styles.colorWhite}>
-                Check it out with our mock-up video.
+                Learn how to install cert-manager in less than 2 minutes using glasskube
               </Heading>
-              <video src="https://github.com/glasskube/operator/assets/3041752/24ed5f92-5a16-48c9-aafd-05559089a481"
-                autoPlay={false} controls={true} width={'100%'}></video>
+              <a href="https://asciinema.org/a/k19wlsoX5Mr3raY6ro13imyNo" target="_blank"><img src="https://asciinema.org/a/k19wlsoX5Mr3raY6ro13imyNo.svg" /></a>
             </div>
           </div>
         </div>
