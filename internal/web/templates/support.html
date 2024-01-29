@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Glasskube</title>
+  <link type="text/css" rel="stylesheet" href="static/css/custom.css"/>
+</head>
+<!-- TODO clean up custom styling -->
+<body style="background-color: rgb(237, 244, 245)">
+<nav class="navbar navbar-expand-lg navbar-dark bg-secondary">
+  <div class="container">
+    <a class="navbar-brand d-flex align-items-center" href="/">
+      <img src="static/assets/glasskube-logo.svg" alt="Logo" height="32" width="32">
+      <h1 class="navbar-brand mx-1 my-0">Glasskube</h1>
+    </a>
+
+    <ul class="navbar-nav">
+      <li class="nav-item mx-1">
+        <a class="nav-link active" href="/">
+          Packages
+        </a>
+      </li>
+      <li class="nav-item mx-1">
+        <a class="nav-link disabled">Apps</a>
+      </li>
+      <li class="nav-item mx-1">
+        <a class="nav-link disabled">Settings</a>
+      </li>
+    </ul>
+
+    <div class="navbar-collapse">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item">
+          <a class="cta cta-sm text-white" href="https://github.com/glasskube/glasskube" target="_blank">
+            <span class="bi bi-github"></span>
+            Star us
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="position-relative overflow-hidden p-3 p-md-5 m-md-3">
+  <div class="col-md-8 p-lg-8 mx-auto text-center">
+    <h1>You're almost there!</h1>
+  </div>
+  {{if .KubeconfigMissing}}
+  <div class="col-md-6 p-lg-4 mx-auto">
+    <p>
+      To use Glasskube, please download the kubeconfig file from your cloud provider and copy it to this location on your computer:
+    </p>
+    <p class="text-center lead mb-3 font-monospace">{{ .KubeconfigDefaultLocation }}</p>
+    <p>
+      Afterwards, stop the Glasskube Server in your terminal with CTRL+C, and then restart it with <code>glasskube serve</code>.
+    </p>
+    <hr>
+    <small>
+      If you want to test Glasskube locally, check out <a class="text-dark" href="https://minikube.sigs.k8s.io/" target="_blank">minikube</a>.<br>
+      If you have any questions or encounter bugs, don't hesitate to reach out via <a href="https://github.com/glasskube/glasskube" class="text-dark" target="_blank">Github</a>
+      or <a href="https://discord.gg/SxH6KUCGH7" class="text-dark" target="_blank">Discord</a>.
+    </small>
+  </div>
+  {{ else }}
+  <div class="col-md-6 p-lg-4 mx-auto">
+    <p class="text-center">
+      Unfortunately, there is an error with your kube config:
+    </p>
+    <p class="text-center lead mb-3 font-monospace">{{ .KubeconfigError }}</p>
+    <hr>
+    <small>
+      If you want to test Glasskube locally, check out <a class="text-dark" href="https://minikube.sigs.k8s.io/" target="_blank">minikube</a>.<br>
+      If you have any questions or encounter bugs, don't hesitate to reach out via <a href="https://github.com/glasskube/glasskube" class="text-dark" target="_blank">Github</a>
+      or <a href="https://discord.gg/SxH6KUCGH7" class="text-dark" target="_blank">Discord</a>.
+    </small>
+  </div>
+  {{ end }}
+</div>
+
+<script src="static/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
