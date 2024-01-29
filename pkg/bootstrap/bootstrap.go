@@ -3,23 +3,20 @@ package bootstrap
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/fatih/color"
+	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/schollz/progressbar/v3"
-	"io"
-	"k8s.io/apimachinery/pkg/api/errors"
+	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
-	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/retry"
-	"net/http"
-	"strings"
-	"time"
 )
 
 type BootstrapClient struct {
@@ -28,32 +25,27 @@ type BootstrapClient struct {
 	clientConfig *rest.Config
 }
 
-const INSTALLMESSAGE = `
+const installMessage = `
 ## Installing GLASSKUBE ##
 🧊 The missing Package Manager for Kubernetes 📦`
 
-func NewBootstrapClient(version string, kubeconfig string, url string) (*BootstrapClient, error) {
-	config, err := initKubeConfig(kubeconfig)
-	if err != nil {
-		return nil, err
-	}
-
+func NewBootstrapClient(config *rest.Config, version string, url string) *BootstrapClient {
 	if url == "" {
-		url = fmt.Sprintf("https://github.com/glasskube/glasskube/releases/download/v%s/manifest.yaml", version)
+		url = fmt.Sprintf("https://github.com/glasskube/glasskube/releases/download/v%v/manifest.yaml", version)
 	}
 
 	return &BootstrapClient{
 		url:          url,
 		version:      version,
 		clientConfig: config,
-	}, nil
+	}
 }
 
-func (c *BootstrapClient) Bootstrap() error {
-	fmt.Println(INSTALLMESSAGE)
+func (c *BootstrapClient) Bootstrap(ctx context.Context) error {
+	fmt.Println(installMessage)
 
 	statusMessage("Fetching Glasskube manifest from "+c.url, true)
-	manifests, err := readManifest(c.url)
+	manifests, err := clientutils.FetchResources(c.url)
 	if err != nil {
 		statusMessage("Couldn't fetch Glasskube manifests", false)
 		return err
@@ -61,15 +53,15 @@ func (c *BootstrapClient) Bootstrap() error {
 	statusMessage("Successfully fetched Glasskube manifests", true)
 
 	statusMessage("Applying Glasskube manifests", true)
-	err = c.applyManifests(manifests)
+	err = c.applyManifests(ctx, manifests)
 	if err != nil {
-		statusMessage("Couldn't apply manifests", false)
+		statusMessage(fmt.Sprintf("Couldn't apply manifests: %v", err), false)
 	}
 	statusMessage("Glasskube is successfully installed.", true)
 	return nil
 }
 
-func (c *BootstrapClient) applyManifests(objs []unstructured.Unstructured) error {
+func (c *BootstrapClient) applyManifests(ctx context.Context, objs *[]unstructured.Unstructured) error {
 	dynamicClient, err := dynamic.NewForConfig(c.clientConfig)
 	if err != nil {
 		return err
@@ -87,32 +79,27 @@ func (c *BootstrapClient) applyManifests(objs []unstructured.Unstructured) error
 
 	mapper := restmapper.NewDiscoveryRESTMapper(groupResources)
 
-	var bar *progressbar.ProgressBar
+	bar := progressbar.Default(int64(len(*objs)), "Applying manifests")
+	progressbar.OptionClearOnFinish()(bar)
+	progressbar.OptionOnCompletion(nil)(bar)
+	defer bar.Exit()
 
-	bar = progressbar.Default(int64(len(objs)))
-	bar.Describe("Applying manifests")
-
-	for _, obj := range objs {
+	for _, obj := range *objs {
 		gvk := obj.GroupVersionKind()
 		mapping, err := mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 		if err != nil {
 			return err
 		}
 
-		bar.Describe("Applying " + obj.GetName() + " (" + obj.GetKind() + ")")
+		bar.Describe(fmt.Sprintf("Applying %v (%v)", obj.GetName(), obj.GetKind()))
 		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			_, err = dynamicClient.Resource(mapping.Resource).Namespace(obj.GetNamespace()).Create(context.Background(), &obj, metav1.CreateOptions{})
-			if err != nil {
-				if errors.IsAlreadyExists(err) {
-					return nil
-				}
-				return err
-			}
-			return nil
+			_, err = dynamicClient.Resource(mapping.Resource).Namespace(obj.GetNamespace()).
+				Apply(ctx, obj.GetName(), &obj, metav1.ApplyOptions{Force: true, FieldManager: "glasskube"})
+			return err
 		})
 
 		if obj.GetKind() == "Deployment" {
-			bar.Describe("Checking Status of " + obj.GetName() + " (" + obj.GetKind() + ")")
+			bar.Describe(fmt.Sprintf("Checking Status of %v (%v)", obj.GetName(), obj.GetKind()))
 			err = c.checkWorkloadReady(obj.GetNamespace(), obj.GetName(), obj.GetKind(), 5*time.Minute)
 			if err != nil {
 				return err
@@ -123,7 +110,6 @@ func (c *BootstrapClient) applyManifests(objs []unstructured.Unstructured) error
 			return err
 		}
 	}
-	bar.Finish()
 
 	return nil
 }
@@ -138,13 +124,46 @@ func (c *BootstrapClient) checkWorkloadReady(namespace string, workloadName stri
 
 	switch workloadType {
 	case "Deployment":
-		workloadRes = schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}
+		workloadRes = appsv1.SchemeGroupVersion.WithResource("deployments")
 	case "DaemonSet":
-		workloadRes = schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "daemonsets"}
+		workloadRes = appsv1.SchemeGroupVersion.WithResource("daemonsets")
 	case "StatefulSet":
-		workloadRes = schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "statefulsets"}
+		workloadRes = appsv1.SchemeGroupVersion.WithResource("statefulsets")
 	default:
 		return fmt.Errorf("unsupported workload type: %s", workloadType)
+	}
+
+	checkReady := func() (bool, error) {
+		workload, err := dynamicClient.Resource(workloadRes).Namespace(namespace).Get(context.Background(), workloadName, metav1.GetOptions{})
+		if err != nil {
+			return false, err
+		}
+
+		status := workload.Object["status"].(map[string]interface{})
+		var ready bool
+
+		switch workloadType {
+		case "Deployment":
+			availableReplicas := status["availableReplicas"]
+			replicas := status["replicas"]
+			ready = availableReplicas == replicas
+		case "DaemonSet":
+			numberReady := status["numberReady"]
+			desiredNumberScheduled := status["desiredNumberScheduled"]
+			ready = numberReady == desiredNumberScheduled
+		case "StatefulSet":
+			readyReplicas := status["readyReplicas"]
+			replicas := status["replicas"]
+			ready = readyReplicas == replicas
+		}
+
+		return ready, nil
+	}
+
+	if ok, err := checkReady(); err != nil {
+		return err
+	} else if ok {
+		return nil
 	}
 
 	timeoutCh := time.After(timeout)
@@ -155,72 +174,13 @@ func (c *BootstrapClient) checkWorkloadReady(namespace string, workloadName stri
 		case <-timeoutCh:
 			return fmt.Errorf("%s is not ready within the specified timeout", workloadType)
 		case <-tick:
-			workload, err := dynamicClient.Resource(workloadRes).Namespace(namespace).Get(context.Background(), workloadName, metav1.GetOptions{})
-			if err != nil {
+			if ok, err := checkReady(); err != nil {
 				return err
-			}
-
-			status := workload.Object["status"].(map[string]interface{})
-			var ready bool
-
-			switch workloadType {
-			case "Deployment":
-				availableReplicas := status["availableReplicas"]
-				replicas := status["replicas"]
-				ready = availableReplicas == replicas
-			case "DaemonSet":
-				numberReady := status["numberReady"]
-				desiredNumberScheduled := status["desiredNumberScheduled"]
-				ready = numberReady == desiredNumberScheduled
-			case "StatefulSet":
-				readyReplicas := status["readyReplicas"]
-				replicas := status["replicas"]
-				ready = readyReplicas == replicas
-			}
-
-			if ready {
+			} else if ok {
 				return nil
 			}
 		}
 	}
-}
-
-func initKubeConfig(kubeconfig string) (*rest.Config, error) {
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	if kubeconfig != "" {
-		loadingRules.ExplicitPath = kubeconfig
-	}
-	clientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{})
-	return clientConfig.ClientConfig()
-}
-
-func readManifest(url string) ([]unstructured.Unstructured, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	fileContent, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	manifests := strings.Split(string(fileContent), "---")
-	var objs []unstructured.Unstructured
-
-	for _, manifest := range manifests {
-		var obj unstructured.Unstructured
-		manifestReader := strings.NewReader(manifest)
-		decoder := yaml.NewYAMLOrJSONDecoder(manifestReader, 4096)
-		err := decoder.Decode(&obj)
-		if err != nil {
-			return nil, err
-		}
-		objs = append(objs, obj)
-	}
-
-	return objs, nil
 }
 
 func statusMessage(input string, success bool) {

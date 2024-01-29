@@ -9,8 +9,12 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+type (
+	contextKey int
+)
+
 const (
-	clientContextKey = iota
+	clientContextKey contextKey = iota
 )
 
 var PackageGVR = v1alpha1.GroupVersion.WithResource("packages")
@@ -24,13 +28,8 @@ func InitKubeConfig(kubeconfig string) (*rest.Config, error) {
 	return clientConfig.ClientConfig()
 }
 
-func SetupContext(ctx context.Context, kubeconfig string) (context.Context, error) {
-	config, err := InitKubeConfig(kubeconfig)
-	if err != nil {
-		return nil, err
-	}
-	err = v1alpha1.AddToScheme(scheme.Scheme)
-	if err != nil {
+func SetupContext(ctx context.Context, config *rest.Config) (context.Context, error) {
+	if err := v1alpha1.AddToScheme(scheme.Scheme); err != nil {
 		return nil, err
 	}
 	pkgClient, err := NewPackageClient(config)
