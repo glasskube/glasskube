@@ -1,5 +1,6 @@
 namespace: flux-system
 resources:
+  - namespace.yaml
   - source-controller.yaml
   - helm-controller.yaml
   - policies.yaml
