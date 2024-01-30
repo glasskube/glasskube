@@ -1,2 +1,7 @@
 resources:
-- manager.yaml
+  - manager.yaml
+images:
+  - name: controller
+    newName: ghcr.io/glasskube/package-operator
+    # TODO: specify actual version
+    newTag: latest
