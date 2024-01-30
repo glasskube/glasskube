@@ -76,6 +76,7 @@ brews:
       bin.install "glasskube"
 
 release:
+  prerelease: auto
   mode: keep-existing
   extra_files:
     - glob: ./build/manifest.yaml
