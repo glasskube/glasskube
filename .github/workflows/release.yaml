@@ -31,8 +31,9 @@ jobs:
           version: "v1.29.1"
       - name: Generate manifest
         run: |
-          mkdir -p build
-          kubectl kustomize config/default > build/manifest.yaml
+          mkdir -p build/manifest
+          kubectl kustomize config/slim > build/manifest/manifest-slim.yaml
+          kubectl kustomize config/aio > build/manifest/manifest-aio.yaml
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@7ec5c2b0c6cdda6e8bbb49444bc797dd33d74dd8 # v5
         with:

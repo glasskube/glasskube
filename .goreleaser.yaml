@@ -91,7 +91,7 @@ release:
   prerelease: auto
   mode: keep-existing
   extra_files:
-    - glob: ./build/manifest.yaml
+    - glob: ./build/manifest/*
 
 archives:
   - format: tar.gz
