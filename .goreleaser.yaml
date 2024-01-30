@@ -37,7 +37,19 @@ dockers:
   - use: docker
     dockerfile: release.Dockerfile
     image_templates:
-      - "ghcr.io/glasskube/package-operator:{{ .Tag }}"
+      - "ghcr.io/glasskube/package-operator:{{.Tag}}"
+      - "ghcr.io/glasskube/package-operator:latest"
+    build_flag_templates:
+      - "--pull"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - '--label=org.opencontainers.image.title="Glasskube package-operator"'
+      - "--albel=org.opencontainers.image.vendor=Glasskube"
+      - "--albel=org.opencontainers.image.licenses=Apache-2.0"
+      - "--label=org.opencontainers.image.source=https://github.com/glasskube/glasskube/"
+      - "--label=org.opencontainers.image.url=https://glasskube.dev/"
+      - "--label=org.opencontainers.image.documentation=https://glasskube.dev/docs/"
 
 nfpms:
   - file_name_template: "{{ .ProjectName }}_{{ .Tag }}_{{ .Arch }}"
