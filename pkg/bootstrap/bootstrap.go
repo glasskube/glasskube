@@ -29,9 +29,9 @@ const installMessage = `
 ## Installing GLASSKUBE ##
 🧊 The missing Package Manager for Kubernetes 📦`
 
-func NewBootstrapClient(config *rest.Config, version string, url string) *BootstrapClient {
+func NewBootstrapClient(config *rest.Config, url string, version string, bootstrapType BootstrapType) *BootstrapClient {
 	if url == "" {
-		url = fmt.Sprintf("https://github.com/glasskube/glasskube/releases/download/v%v/manifest.yaml", version)
+		url = fmt.Sprintf("https://github.com/glasskube/glasskube/releases/download/v%v/manifest-%v.yaml", version, bootstrapType)
 	}
 
 	return &BootstrapClient{
