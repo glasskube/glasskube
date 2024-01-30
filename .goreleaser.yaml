@@ -78,7 +78,7 @@ brews:
     license: "Apache-2.0"
     repository:
       owner: glasskube
-      name: homebrew-glasskube
+      name: homebrew-tap
     url_template: "https://releases.dl.glasskube.dev/{{ .ArtifactName }}"
     commit_author:
       name: glasskube-bot
