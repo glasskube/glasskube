@@ -11,10 +11,13 @@ import (
 )
 
 type bootstrapOptions struct {
-	url string
+	url           string
+	bootstrapType bootstrap.BootstrapType
 }
 
-var bootstrapCmdOptions bootstrapOptions
+var bootstrapCmdOptions = bootstrapOptions{
+	bootstrapType: bootstrap.BootstrapTypeAio,
+}
 
 var bootstrapCmd = &cobra.Command{
 	Use:    "bootstrap",
@@ -23,7 +26,7 @@ var bootstrapCmd = &cobra.Command{
 	Args:   cobra.NoArgs,
 	PreRun: cliutils.SetupClientContext,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := bootstrap.NewBootstrapClient(cliutils.RequireConfig(config.Kubeconfig), cmd.Root().Version, bootstrapCmdOptions.url)
+		client := bootstrap.NewBootstrapClient(cliutils.RequireConfig(config.Kubeconfig), bootstrapCmdOptions.url, cmd.Root().Version, bootstrapCmdOptions.bootstrapType)
 		if err := client.Bootstrap(cmd.Context()); err != nil {
 			fmt.Fprintf(os.Stderr, "\nAn error occurred during bootstrap:\n%v\n", err)
 			os.Exit(1)
@@ -34,4 +37,6 @@ var bootstrapCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(bootstrapCmd)
 	bootstrapCmd.Flags().StringVarP(&bootstrapCmdOptions.url, "url", "u", "", "URL to fetch the Glasskube operator from")
+	bootstrapCmd.Flags().VarP(&bootstrapCmdOptions.bootstrapType, "type", "t", `Type of manifest to use for bootstrapping`)
+	bootstrapCmd.MarkFlagsMutuallyExclusive("url", "type")
 }
