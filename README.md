@@ -76,8 +76,7 @@ Designed as a cloud native application, so you can follow your **GitOps approach
 Install Glasskube via [Homebrew](https://brew.sh/):
 
 ```bash
-brew tap glasskube/glasskube
-brew install glasskube
+brew install glasskube/tap/glasskube
 ```
 
 Start the package manager:

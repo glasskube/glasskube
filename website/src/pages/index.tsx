@@ -45,10 +45,7 @@ function HomepageHeader() {
                     typewriter
                       .changeDeleteSpeed(25)
                       .changeDelay(75)
-                      .typeString('brew tap <span class="typewriter-command">glasskube/glasskube</span>')
-                      .pauseFor(1500)
-                      .deleteAll(25)
-                      .typeString('brew install <span class="typewriter-command">glasskube</span>')
+                      .typeString('brew install <span class="typewriter-command">glasskube/tap/glasskube</span>')
                       .pauseFor(1500)
                       .deleteAll(25)
                       .typeString('glasskube install ')
