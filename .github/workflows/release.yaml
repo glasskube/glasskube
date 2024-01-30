@@ -9,7 +9,6 @@ jobs:
   goreleaser:
     permissions:
       contents: write
-      packages: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -20,8 +19,8 @@ jobs:
         uses: docker/login-action@343f7c4344506bcbf9b4de18042ae17996df046d # v3
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: glasskube-bot
+          password: ${{ secrets.GLASSKUBE_BOT_SECRET }}
       - name: Set up Go
         uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5
         with:
