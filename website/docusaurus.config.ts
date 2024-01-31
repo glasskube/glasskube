@@ -114,6 +114,12 @@ const config: Config = {
         { to: '/blog', label: 'Blog', position: 'left' },
         { to: '/packages', label: 'Packages', position: 'left' },
         {
+          type: 'docSidebar',
+          sidebarId: 'guides',
+          position: 'left',
+          label: 'Guides',
+        },
+        {
           href: 'https://github.com/glasskube/glasskube',
           label: 'GitHub',
           position: 'right',
