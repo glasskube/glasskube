@@ -73,19 +73,27 @@ Designed as a cloud native application, so you can follow your **GitOps approach
 
 ## 🚀 Quick Start - Install your first package in less than 5 minutes.
 
-Install Glasskube via [Homebrew](https://brew.sh/):
+You can install Glasskube via [Homebrew](https://brew.sh/):
 
 ```bash
 brew install glasskube/tap/glasskube
 ```
 
-Start the package manager:
+For other installation options check out our [install guide](https://glasskube.dev/docs/getting-started/install).
+
+Once the CLI is installed, the first step is to install the necessary components in your cluster. To do that, run
+```sh
+glasskube bootstrap
+```
+
+After successfully bootstrapping your cluster, you are ready to start the package manager UI:
 
 ```bash
 glasskube serve
 ```
 
-Open [`http://localhost:8580`](http://localhost:8580) and explore available packages.
+This command will open [`http://localhost:8580`](http://localhost:8580) in your default browser. 
+Congratulations, you can now explore and install all our available packages! 🎉
 
 ## 📦 Supported Packages
 
