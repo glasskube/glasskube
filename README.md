@@ -111,7 +111,7 @@ In the next versions you will be able to install more packages like the [Kube-Pr
 
 ## 🎬 How to install you first package
 
-![634355](https://github.com/glasskube/glasskube/assets/16959694/967b9657-c416-4078-89ad-774aa0f01429)
+![cast](https://github.com/glasskube/glasskube/assets/16959694/f8b936ca-7b58-4e2b-8845-17da089f2384)
 
 ## Architecture Diagram
 ```mermaid
