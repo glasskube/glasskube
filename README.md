@@ -100,6 +100,7 @@ Congratulations, you can now explore and install all our available packages! ðŸŽ
 - Cert Manager [`cert-manager/cert-manager`](https://github.com/cert-manager/cert-manager)
 - Ingress-NGINX Controller [`kubernetes/ingress-nginx`](https://github.com/kubernetes/ingress-nginx)
 - Kubernetes Dashboard [`kubernetes/dashboard`](https://github.com/kubernetes/dashboard)
+- Cyclops[`cyclops-ui/cyclops`](https://github.com/cyclops-ui/cyclops)
 
 ### Coming Soon
 
