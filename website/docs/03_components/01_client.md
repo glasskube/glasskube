@@ -10,7 +10,7 @@ For example, when installing a package, the client creates a `Package` custom re
 
 The CLI commands make use of the [Cobra Library](https://github.com/spf13/cobra), which helps in crafting easy to use command line applications.
 
-## UI
+## GUI
 
-The UI itself is contained in the `glasskube serve` command, which spins up a local webserver.
+The GUI itself is contained in the `glasskube serve` command, which spins up a local webserver.
 For the technical preview we decided to render the pages server side with Go templates. The web technology stack might change in future versions.
