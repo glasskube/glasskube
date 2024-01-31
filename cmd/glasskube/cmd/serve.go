@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/glasskube/glasskube/internal/bootstrap"
 	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/web"
 	"github.com/glasskube/glasskube/pkg/client"
@@ -30,6 +31,16 @@ var serveCmd = &cobra.Command{
 				support.KubeconfigMissing = true
 			}
 		}
+		if support == nil {
+			isBootstrapped, err := bootstrap.IsBootstrapped(cmd.Context(), cfg)
+			if !isBootstrapped || err != nil {
+				support = &web.ServerConfigSupport{
+					BootstrapMissing:    !isBootstrapped,
+					BootstrapCheckError: err,
+				}
+			}
+		}
+
 		var ctx context.Context
 		if cfg != nil {
 			ctx, err = client.SetupContext(cmd.Context(), cfg)
