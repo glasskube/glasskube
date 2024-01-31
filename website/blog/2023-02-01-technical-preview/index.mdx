@@ -1,36 +1,38 @@
 ---
 slug: technical-preview
-title: v0.0.1 - Technical Preview
+title: Glasskube v0.0.1 — Technical Preview
 authors: [ pmig, lw ]
-published: false
-tags: [ glasskube, release ]
+tags: [ glasskube, release, kubernetes ]
 ---
 
 import Install from '../../src/partials/_install.mdx';
 
-Glasskube is open-source on GitHub - Support us by leaving a star: [⭐ `glasskube/glasskube` ⭐](https://github.com/glasskube/glasskube/)
-
-
 *The aim of this post is to share our technical preview of how a cloud native package manager could work and what challenges need to be solved.*
 
 
-## The missing package manager for Kubernetes - Introducing Glasskube
+Glasskube is fully open-source. Support us by leaving a star: [⭐ `glasskube/glasskube` ⭐](https://github.com/glasskube/glasskube/)
+
+## Introducing Glasskube — The Missing Package Manager For Kubernetes
+
+![Glasskube GUI Mockup](https://github.com/glasskube/operator/assets/3041752/71d0da0c-34ac-40b7-8740-bd2a81ca9f07)
 
 Package Management on Kubernetes is one of the most pressing issues in the Cloud Native community.
 A concept which is widely known from other ecosystems like desktop and mobile computing has yet not been realized for cloud computing.
-On Android and iOS for example millions of developers publish their packages via the Play store or App Store to its users.
+For example on Android and iOS, millions of developers publish their packages in the Play Store or App Store to reach their users.
 The package manager also makes sure all users receive the latest version published by the developer and the developer receives
 crash reports and user feedback as a return to improve their applications,
-but as a cloud native developer there is no package manager you can rely on - yet.
+but as a cloud native developer there is no package manager you can rely on — yet.
 
 Our first release (v0.0.1) already features a working prototype that can install basic packages, but a lot of challenges still need to be solved.
 
 ### A cloud native architecture
 
-Glasskube is designed as a cloud native application itself.
+Glasskube itself is designed as a cloud native application.
 Featuring an easy to install client that comes with a graphical user interface and autocompletion for your favorite shell.
 
-At the heart of the Glasskube package ecosystems lies our central package registry which holds the package manifests.
+At the heart of the Glasskube package ecosystem lies our central package registry which holds the package manifests.
+In a future version we also plan to support 3rd party registries and the possibility to use multiple registries in a cluster.
+
 The Glasskube package operator syncs the latest manifest into the cluster and makes sure it will be updated as soon as a new manifest is available.
 
 ```mermaid
@@ -59,45 +61,45 @@ flowchart BT
 
 ### Challenges that need to be solved
 
-We already covered some our next features in our [public roadmap](https://glasskube.dev/roadmap), but I also like to shortly speak about broader challenges.
+We already covered some our upcoming features in our [public roadmap](https://glasskube.dev/roadmap), but I would also like to take this opportunity to shortly speak about broader challenges.
 
 #### Kubernetes version compatibility
 
-Kubernetes releases minor versions every 4 months which often comes with new api versions. So package authors need to adapt their packages to the new api versions.
-Kubernetes is designed in a way that often multiple api versions are implemented in specific release of Kubernetes, so packages often work with a broader range
-of Kubernetes versions.
+Kubernetes releases minor versions every 4 months, which often come with new API versions. Package authors need to adapt their packages to these changes.
+In Kubernetes, a particular release might include more than one API version of a resource, so that packages can be compatible with a broader range of Kubernetes versions.
 These compatible versions are often only documented in the package distributors' changelog.
 Glasskube aims to incorporate this kind of metadata in combination with automatic checks from tools like [kube-no-trouble](https://github.com/doitintl/kube-no-trouble)
 or [Pluto](https://github.com/FairwindsOps/pluto).
 
-The user should not need to manually check all packages for compatability as well as package developers should get feedback if they are not compatible with the latest api versions.
+The user should not be required to drudgingly check all packages for compatibility and package developers should get feedback if their package is not compatible with the latest API versions.
 
 #### Package dependencies
 
-Cloud native applications often work together as there are already quite a few packages that are present in most clusters anyway - like cert-manager, Ingress controller or
+Cloud native applications often interoperate and there are some packages that can be found in almost every Kubernetes cluster. For example: cert-manager, Ingress controllers or
 database operators. Due to the lack of a package manager and ecosystem these dependencies are still often only documented in the Getting started section of an application.
 
-In an ideal world a developer can just refer to a dependency as a dependency and the package manager makes sure that all these prerequisites are fulfilled.
+In an ideal world a package author could simply specify a dependency of their package and the package manager ensures that all these prerequisites are fulfilled.
 
 #### Testing
 
-In order to support multiple kubernetes versions, dependencies and packages Glasskube need to build massive automated testing infrastructure for all packages in its central package repository.
-
+In order to support multiple Kubernetes versions, dependencies and packages Glasskube needs to build massive automated testing infrastructure for all packages in its central package registry.
 
 #### Feedback and package quality
 
-Similar to other package managers user feedback is highly important to share problems and work together on solutions.
+As seen in other package managers like the [arch user repository](https://aur.archlinux.org/) or the Play Store and App Store
+users' feedback and reviews help other users to decide between different packages.
+Also, application developer will incorporate users' feedback to gain popularity and better ratings in the package manager.
 
 ## Glasskube and Helm
 
 Glasskube is no replacement for Helm. Helm has its strengths in configuring releases through templating and having the ability to perform upgrades and rollbacks.
 
-Glasskube focuses more on the administrator that needs to only install and kustomize (pun intended ;-) ) a single application, but needs to make sure multiple
-package stay up-to-date and secure through multiple Kubernetes releases and breaking changes.
+Glasskube is laser focused on the administrator who needs to only install and kustomize (pun intended 😉) a single application, but who also needs to make sure multiple
+packages are kept up-to-date and secure throughout multiple Kubernetes version upgrades and adapting to inevitable breaking changes.
 
 ## Getting started
 
-Follow our [Getting Started guide](https://glasskube.dev/docs/getting-started/install) to install glasskube and install your first package.
+Follow our [Getting Started guide](https://glasskube.dev/docs/getting-started/install) if you want to try Glasskube for yourself and install your first package.
 
 <Install/>
 
@@ -107,7 +109,10 @@ All release notes can be found on GitHub: https://github.com/glasskube/glasskube
 
 ## Get involved
 
-The simplest way to get involved is to tackle on of our [open Issues](https://github.com/glasskube/glasskube/issues)
-or join our [Discord](https://discord.gg/SxH6KUCGH7).
+The easiest way to get involved is to tackle one of our [open issues](https://github.com/glasskube/glasskube/issues).
+You are also welcome to join our [Discord](https://discord.gg/SxH6KUCGH7).
 
-**If you are a cloud native developer, please [submit your package](https://github.com/glasskube/glasskube/discussions/90)**
+**If you are a cloud native developer, please [submit your package](https://github.com/glasskube/glasskube/discussions/90)**.
+
+As Glasskube is still in its very early days, your feedback is highly appreciated.
+Let us know what you think, we would love to hear from your.
