@@ -96,7 +96,7 @@ const config: Config = {
       content: `🎉️ <a target="_blank" href="https://github.com/glasskube/glasskube"><code>glasskube/glasskube</code></a> is launching its technical concept on GitHub 🥳️ <a target="_blank" rel="noopener noreferrer" href="https://github.com/glasskube/glasskube">Leave a star to support us</a> ⭐️`,
       isCloseable: false
     },
-    image: 'img/glasskube-social-card.jpg',
+    image: 'https://opengraph.githubassets.com/3fbd03d4d860275ee154ca566f24ecce9243e229fe367523fbcab52e8b43db3f/glasskube/glasskube',
     navbar: {
       title: 'Glasskube',
       logo: {
