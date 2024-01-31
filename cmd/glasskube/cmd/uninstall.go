@@ -17,7 +17,7 @@ var uninstallCmd = &cobra.Command{
 	Short:  "Uninstall a package",
 	Long:   `Uninstall a package.`,
 	Args:   cobra.ExactArgs(1),
-	PreRun: cliutils.SetupClientContext,
+	PreRun: cliutils.SetupClientContext(true),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := client.FromContext(cmd.Context())
 		pkgName := args[0]
