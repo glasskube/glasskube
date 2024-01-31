@@ -32,6 +32,12 @@ Install Glasskube via [Homebrew](https://brew.sh/):
 brew install glasskube/tap/glasskube
 ```
 
+Bootstrap Glasskube in your cluster:
+
+```
+glasskube bootstrap
+```
+
 Start the package manager:
 
 ```bash
@@ -46,41 +52,6 @@ For more installation options see the [Getting started](getting-started/install)
 ## Architecture 📏 {#architecture}
 
 Glasskube uses multiple components, most notably a client and a package operator.
-
-## Components
-
-### Client
-
-The client is an executable written in Go. It accepts user inputs via a UI and CLI.
-
-They client creates packages in the form of Kubernetes Resources via the Kubernetes API.
-
-### Package Operator
-
-The package operator has two controllers:
-
-1. The Package Controller (managing packages)
-2. The PackageInfo Controller (syncing package infos from a repository)
-
-### Packages Repository
-
-A place where `PackageManifest`s are stored, searched and maintained.
-Currently only the glasskube packages repository is supported: [`glasskube/packages`](https://github.com/glasskube/packages)
-
-## Commands
-
-For any command by default, the cluster given in `~/.kube/config` (`current-context`) will be used.
-An alternative kube config can be passed with the `--kubeconfig` flag.
-
-### `glasskube serve`
-
-Will start the UI server and opens a local browser on [http://localhost:8580](http://localhost:8580).
-
-### `glasskube bootstrap`
-
-### `glasskube install <package>`
-
-Installs the given package in your cluster.
 
 ```mermaid
 ---
@@ -106,15 +77,50 @@ flowchart BT
   Kubernetes-- 10. package status -->Client 
 ```
 
+### Components
+
+#### Client
+
+The client is an executable written in Go. It accepts user inputs via a UI and CLI.
+
+The client manages packages in the form of Kubernetes Resources via the Kubernetes API.
+
+#### Package Operator
+
+The package operator has two controllers:
+
+1. The Package Controller (managing packages)
+2. The PackageInfo Controller (syncing package infos from a repository)
+
+#### Package Repository
+
+A place where `PackageManifest`s are stored, searched and maintained.
+Currently only the glasskube packages repository is supported: [`glasskube/packages`](https://github.com/glasskube/packages)
+
+## Commands
+
+For any command, by default the cluster given in `~/.kube/config` (`current-context`) will be used.
+An alternative kube config can be passed with the `--kubeconfig` flag.
+
+### `glasskube bootstrap`
+
+Bootstraps Glasskube in the given cluster. For more information, check out our [bootstrap guide](./getting-started/bootstrap).
+
+### `glasskube serve`
+
+Starts the UI server and opens a browser on [http://localhost:8580](http://localhost:8580).
+
+### `glasskube install <package>`
+
+Installs the given package in your cluster and waits until the installation is either finished successfully or failed.
+
 ### `glasskube uninstall <package>`
 
 Removes the given package from your cluster.
 
-### `glasskube search <name>`
-
 ### `glasskube ls`
 
-Lists packages. Aliases are `glasskube l` and `glasskube list`. By default, all packages available in the configured repository are shown, including their installation status in the given cluster.
+Lists packages. By default, all packages available in the configured repository are shown, including their installation status in the given cluster.
 
 With the `--installed` flag you can restrict the list of packages to the once installed in your cluster.
 
@@ -122,6 +128,6 @@ With the `--installed` flag you can restrict the list of packages to the once in
 
 Prints the client version.
 
-### `glasskube version`
+### `glasskube help`
 
-Prints the version of all components.
+Prints helpful information about `glasskube` and its commands. 
