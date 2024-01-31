@@ -18,7 +18,7 @@ var installCmd = &cobra.Command{
 	Short:             "Install a package",
 	Long:              `Install a package.`,
 	Args:              cobra.ExactArgs(1),
-	PreRun:            cliutils.SetupClientContext,
+	PreRun:            cliutils.SetupClientContext(true),
 	ValidArgsFunction: completeAvailablePackageNames,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := client.FromContext(cmd.Context())
