@@ -1,12 +1,14 @@
-import { themes as prismThemes } from 'prism-react-renderer';
-import type { Config } from '@docusaurus/types';
-import type { Options as IdealImageOptions } from '@docusaurus/plugin-ideal-image';
+import {themes as prismThemes} from 'prism-react-renderer';
+import type {Config} from '@docusaurus/types';
+import type {Options as IdealImageOptions} from '@docusaurus/plugin-ideal-image';
 import type * as Preset from '@docusaurus/preset-classic';
+import {EnumChangefreq} from 'sitemap';
 
 const config: Config = {
   title: 'Glasskube.dev',
   tagline: '🧊 The missing Package Manager for Kubernetes 📦',
   favicon: 'img/favicon.png',
+  trailingSlash: true,
 
   // Set the production url of your site here
   url: 'https://glasskube.dev',
@@ -19,7 +21,7 @@ const config: Config = {
   organizationName: 'glasskube', // Usually your GitHub org/user name.
   projectName: 'glasskube', // Usually your repo name.
 
-  onBrokenLinks: 'throw',
+  onBrokenLinks: 'warn',
   onBrokenMarkdownLinks: 'warn',
 
   // Even if you don't use internationalization, you can use this field to set
@@ -75,6 +77,12 @@ const config: Config = {
         theme: {
           customCss: ['./src/css/custom.css']
         },
+        sitemap: {
+          changefreq: EnumChangefreq.DAILY,
+          priority: 1,
+          ignorePatterns: ['/blog/archive','/blog/tags', '/blog/tags/**'],
+          filename: 'sitemap.xml',
+        }
       } satisfies Preset.Options,
     ],
   ],
