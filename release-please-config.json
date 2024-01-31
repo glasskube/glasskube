@@ -13,7 +13,8 @@
         "deploy/manifest.yaml",
         "chart/Chart.yaml",
         "chart/values.yaml",
-        "container/manifests/deployment.yaml"
+        "container/manifests/deployment.yaml",
+        "website/src/partials/_install.mdx"
       ],
       "changelog-sections": [
         {
