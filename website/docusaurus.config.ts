@@ -43,6 +43,18 @@ const config: Config = {
         disableInDev: false,
       } satisfies IdealImageOptions,
     ],
+    [
+      'content-docs',
+      {
+        id: 'guides',
+        path: 'guides',
+        routeBasePath: 'guides',
+        editCurrentVersion: true,
+        sidebarPath: './sidebar-guides.ts',
+        showLastUpdateAuthor: true,
+        showLastUpdateTime: true,
+      } satisfies DocsOptions,
+    ],
   ],
   presets: [
     [
@@ -110,15 +122,16 @@ const config: Config = {
           position: 'left',
           label: 'Docs',
         },
-        { to: '/roadmap', label: 'Roadmap', position: 'left' },
-        { to: '/blog', label: 'Blog', position: 'left' },
-        { to: '/packages', label: 'Packages', position: 'left' },
         {
-          type: 'docSidebar',
-          sidebarId: 'guides',
+          to: '/guides/cert-manager',
           position: 'left',
           label: 'Guides',
+          activeBaseRegex: `/guides/`,
         },
+        { to: '/blog', label: 'Blog', position: 'left' },
+        { to: '/roadmap', label: 'Roadmap', position: 'left' },
+        { to: '/packages', label: 'Packages', position: 'left' },
+
         {
           href: 'https://github.com/glasskube/glasskube',
           label: 'GitHub',
