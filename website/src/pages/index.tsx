@@ -12,6 +12,7 @@ import { faStar } from '@fortawesome/free-regular-svg-icons';
 import { faXTwitter } from '@fortawesome/free-brands-svg-icons';
 import Typewriter from 'typewriter-effect';
 import BrowserOnly from '@docusaurus/BrowserOnly';
+import AsciinemaPlayer from '../components/asciinema-player';
 
 
 function HomepageHeader() {
@@ -106,13 +107,16 @@ function HomepageVideo() {
     <div className={clsx('container-fluid', 'text--center', styles.backgroundSecondary)}>
       <div className="container text--center">
         <div className="row">
-          <div className="col col--6 col--offset-3 margin-vert--lg">
-            <div>
-              <Heading as={'h2'} className={styles.colorWhite}>
-                Learn how to install cert-manager in less than 2 minutes using glasskube
-              </Heading>
-              <a href="https://asciinema.org/a/k19wlsoX5Mr3raY6ro13imyNo" target="_blank"><img src="https://asciinema.org/a/k19wlsoX5Mr3raY6ro13imyNo.svg" /></a>
-            </div>
+          <div className="col col--8 col--offset-2 margin-vert--lg">
+            <Heading as={'h2'} className={styles.colorWhite}>
+              Learn how to install cert-manager in less than 2 minutes using Glasskube
+            </Heading>
+            <AsciinemaPlayer
+              src='/cast/634355.cast'
+              rows='22'
+              idleTimeLimit={7}
+              poster='npt:0:19'
+              controls={false} />
           </div>
         </div>
       </div>
