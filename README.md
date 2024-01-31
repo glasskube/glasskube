@@ -104,7 +104,7 @@ In the next versions you will be able to install more packages like the [Kube-Pr
 
 ## 🎬 How to install you first package
 
-[![asciicast](https://asciinema.org/a/k19wlsoX5Mr3raY6ro13imyNo.svg)](https://asciinema.org/a/k19wlsoX5Mr3raY6ro13imyNo)
+![634355](https://github.com/glasskube/glasskube/assets/16959694/967b9657-c416-4078-89ad-774aa0f01429)
 
 ## Architecture Diagram
 ```mermaid
