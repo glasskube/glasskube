@@ -1,0 +1,15 @@
+# Bootstrap
+
+In order to install packages in a Kubernetes cluster using Glasskube, it is necessary to install the required server components.
+Conveniently, for most users this can be achieved by running `glasskube bootstrap` in a terminal.
+
+The bootstrap command installs the Package Operator and it's associated Custom Resource Definitions (CRDs).
+By default, the Package Operator is installed in an *All-In-One* (AIO) configuration.
+This configuration comes bundled with a subset of Flux.
+Glasskube is still compatible with any other GitOps solution, but Flux is a necessary requirement of the Package Operator.
+
+If you already use Flux in your cluster or want to manage it yourself, first [install Flux](https://fluxcd.io/flux/installation/bootstrap/),
+and then Glasskube using a *slim* configuration by running `glasskube bootstrap --type=slim`.
+
+For more information and command-line options check out `glasskube help bootstrap`.
+
