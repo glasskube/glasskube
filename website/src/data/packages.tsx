@@ -51,7 +51,7 @@ const Users: Package[] = [
     iconUrl: 'https://avatars.githubusercontent.com/u/13629408?s=150',
     websiteUrl: 'https://github.com/kubernetes/dashboard',
     sourceUrl: 'https://github.com/kubernetes/dashboard',
-    tags: ['planned', 'visualization', 'configuration'],
+    tags: ['visualization', 'configuration'],
   },
   {
     name: "keptn",
@@ -67,7 +67,7 @@ const Users: Package[] = [
     iconUrl: 'https://cyclops-ui.com/img/logo.png',
     websiteUrl: 'https://cyclops-ui.com/',
     sourceUrl: 'https://github.com/cyclops-ui/cyclops',
-    tags: ['planned', 'visualization', 'configuration'],
+    tags: ['visualization', 'configuration'],
   },
   {
     name: "K8sGPT",
