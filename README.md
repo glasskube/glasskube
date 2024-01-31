@@ -1,9 +1,9 @@
-[![GitHub Repo stars](https://img.shields.io/github/stars/glasskube/glasskube)](https://github.com/glasskube/glasskube)
+[![GitHub Repo stars](https://img.shields.io/github/stars/glasskube/glasskube?style=flat)](https://github.com/glasskube/glasskube)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Docs](https://img.shields.io/badge/docs-glasskube.dev%2Fdocs-blue)](https://glasskube.dev/docs/?utm_source=github)
 [![](https://dcbadge.vercel.app/api/server/SxH6KUCGH7?style=flat)](https://discord.gg/SxH6KUCGH7)
-![scarf](https://img.shields.io/static/v1?label=Scarf:%20Downloads&message=8/month&style=flat&color=0572F1&labelColor=374151)
-[![twitter](https://img.shields.io/twitter/follow/glasskube?style=social)](https://x.com/intent/follow?screen_name=glasskube)
+![scarf](https://api.scarf.sh/v2/packages/glasskube/98007d72-6335-4355-8979-7f268209f389/downloads-badge)
+[![twitter](https://img.shields.io/twitter/follow/glasskube?style=flat)](https://x.com/intent/follow?screen_name=glasskube)
 
 <br>
 <div align="center">
