@@ -2286,7 +2286,7 @@ spec:
     spec:
       containers:
       - args:
-        - --events-addr=http://notification-controller.flux-system.svc.cluster.local./
+        - --events-addr=http://notification-controller/
         - --watch-all-namespaces
         - --log-level=info
         - --log-encoding=json
