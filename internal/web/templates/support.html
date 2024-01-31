@@ -45,6 +45,7 @@
   <div class="col-md-8 p-lg-8 mx-auto text-center">
     <h1>You're almost there!</h1>
   </div>
+
   {{if .KubeconfigMissing}}
   <div class="col-md-6 p-lg-4 mx-auto">
     <p>
@@ -61,7 +62,8 @@
       or <a href="https://discord.gg/SxH6KUCGH7" class="text-dark" target="_blank">Discord</a>.
     </small>
   </div>
-  {{ else }}
+
+  {{ else if not .BootstrapMissing }}
   <div class="col-md-6 p-lg-4 mx-auto">
     <p class="text-center">
       Unfortunately, there is an error with your kube config:
@@ -74,7 +76,34 @@
       or <a href="https://discord.gg/SxH6KUCGH7" class="text-dark" target="_blank">Discord</a>.
     </small>
   </div>
+
+  {{ else }}
+  <div class="col-md-6 p-lg-4 mx-auto">
+    <p class="text-center">
+      As Glasskube is still in a technical preview phase, please execute the bootstrap command by yourself:
+    </p>
+    <p class="text-center lead mb-3 font-monospace"><code>glasskube bootstrap</code></p>
+    <p>
+      Afterwards, stop the Glasskube Server in your terminal with CTRL+C, and then restart it with
+    </p>
+    <p class="text-center"><code>glasskube serve</code></p>
+    {{ if ne .BootstrapCheckError nil }}
+    <div>
+      If you have already successfully run the bootstrap command previously in this cluster, please check whether you have access to this cluster right now, e.g. with kubectl.
+      Here's further error information on why Glasskube could not validate that it is bootstrapped:
+      <p class="text-center my-3 font-monospace">{{ .BootstrapCheckError }}</p>
+    </div>
+    {{ end }}
+    <hr>
+    <small>
+      For further information on bootstrapping, please consult the docs: <a href="https://glasskube.dev/docs/getting-started/bootstrap" class="text-dark" target="_blank">Bootstrap</a>.<br>
+      If you want to test Glasskube locally, check out <a class="text-dark" href="https://minikube.sigs.k8s.io/" target="_blank">minikube</a>.<br>
+      If you have any questions or encounter bugs, don't hesitate to reach out via <a href="https://github.com/glasskube/glasskube" class="text-dark" target="_blank">Github</a>
+      or <a href="https://discord.gg/SxH6KUCGH7" class="text-dark" target="_blank">Discord</a>.
+    </small>
+  </div>
   {{ end }}
+
 </div>
 
 <script src="static/js/bootstrap.bundle.min.js"></script>

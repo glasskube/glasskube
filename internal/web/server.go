@@ -28,6 +28,8 @@ type ServerConfigSupport struct {
 	KubeconfigMissing         bool
 	KubeconfigDefaultLocation string
 	KubeconfigError           error
+	BootstrapMissing          bool
+	BootstrapCheckError       error
 }
 
 func Start(ctx context.Context, support *ServerConfigSupport) error {
