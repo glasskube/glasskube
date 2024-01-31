@@ -204,8 +204,8 @@ export default function Home(): JSX.Element {
   const { siteConfig } = useDocusaurusContext();
   return (
     <Layout
-      title='Home'
-      description={siteConfig.tagline}>
+      title={siteConfig.tagline}
+      description='Featuring a GUI and a CLI. Glasskube packages are dependency aware, GitOps ready and get automatic updates via a central public package repository.'>
       <HomepageHeader />
       <main>
         <HomepageFeatures />
