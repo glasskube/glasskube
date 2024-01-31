@@ -27,6 +27,7 @@
     "@fortawesome/react-fontawesome": "^0.2.0",
     "@lottiefiles/react-lottie-player": "^3.5.3",
     "@mdx-js/react": "^3.0.0",
+    "asciinema-player": "3.6.3",
     "clsx": "^2.0.0",
     "docusaurus-plugin-matomo": "0.0.8",
     "prism-react-renderer": "^2.3.0",
