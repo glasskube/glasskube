@@ -10,6 +10,7 @@ import (
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/condition"
 	"github.com/glasskube/glasskube/pkg/install"
+	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/spf13/cobra"
 )
 
@@ -22,7 +23,10 @@ var installCmd = &cobra.Command{
 	ValidArgsFunction: completeAvailablePackageNames,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := client.FromContext(cmd.Context())
-		status, err := install.InstallBlocking(client, cmd.Context(), args[0])
+		packageName := args[0]
+		status, err := install.NewInstaller(client).
+			WithStatusWriter(statuswriter.Spinner()).
+			InstallBlocking(cmd.Context(), packageName)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
 			os.Exit(1)
@@ -30,10 +34,10 @@ var installCmd = &cobra.Command{
 		if status != nil {
 			switch (*status).Status {
 			case string(condition.Ready):
-				fmt.Println("Installed successfully.")
+				fmt.Printf("✅ %v installed successfully.\n", packageName)
 			default:
-				fmt.Printf("Installation has status %v, reason: %v\nMessage: %v\n",
-					(*status).Status, (*status).Reason, (*status).Message)
+				fmt.Printf("❌ %v installation has status %v, reason: %v\nMessage: %v\n",
+					packageName, (*status).Status, (*status).Reason, (*status).Message)
 			}
 		} else {
 			fmt.Fprintln(os.Stderr, "Installation status unknown - no error and no status have been observed (this is a bug).")
