@@ -26,8 +26,12 @@ github.com/fluxcd/pkg/apis/kustomize v1.2.0 h1:vkVs+OumxaWso0jNCqdgFFfMHdh+qtZhy
 github.com/fluxcd/pkg/apis/kustomize v1.2.0/go.mod h1:VF7tR/WuVFeum+HaMTHwp+eCtsHiiQlY6ihgqtAnW/M=
 github.com/fluxcd/pkg/apis/meta v1.2.0 h1:O766PzGAdMdQKybSflGL8oV0+GgCNIkdsxfalRyzeO8=
 github.com/fluxcd/pkg/apis/meta v1.2.0/go.mod h1:fU/Az9AoVyIxC0oI4ihG0NVMNnvrcCzdEym3wxjIQsc=
+github.com/fluxcd/pkg/apis/meta v1.3.0 h1:KxeEc6olmSZvQ5pBONPE4IKxyoWQbqTJF1X6K5nIXpU=
+github.com/fluxcd/pkg/apis/meta v1.3.0/go.mod h1:3Ui8xFkoU4sYehqmscjpq7NjqH2YN1A2iX2okbO3/yA=
 github.com/fluxcd/source-controller/api v1.2.3 h1:71mXv3Qg9HEhcpqOq1ObmoE+P/HuZNaAvxfI7dqZMo8=
 github.com/fluxcd/source-controller/api v1.2.3/go.mod h1:5gaIVVH7hgb8p3HKFp8P6hGmZEC8fKSt4EcrG3g5vZI=
+github.com/fluxcd/source-controller/api v1.2.4 h1:XjKTWhSSeLGsogWnTcLl5sUnyMlC5TKDbbBgP9SyJ5c=
+github.com/fluxcd/source-controller/api v1.2.4/go.mod h1:j3QSHpIPBP5sjaGIkVtsgWCx8JcOmcsutRmdJmRMOZg=
 github.com/fsnotify/fsnotify v1.7.0 h1:8JEhPFa5W2WU7YfeZzPNqzMP6Lwt7L2715Ggo0nosvA=
 github.com/fsnotify/fsnotify v1.7.0/go.mod h1:40Bi/Hjc2AVfZrqy+aj+yEI+/bRxZnMJyTJwOpGvigM=
 github.com/go-logr/logr v1.4.1 h1:pKouT5E8xu9zeFC39JXRDukb6JFQPXM5p5I91188VAQ=
