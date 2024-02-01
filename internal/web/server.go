@@ -4,17 +4,19 @@ import (
 	"context"
 	"embed"
 	"fmt"
-	"github.com/glasskube/glasskube/pkg/client"
-	"github.com/glasskube/glasskube/pkg/install"
-	"github.com/glasskube/glasskube/pkg/list"
-	"github.com/glasskube/glasskube/pkg/uninstall"
 	"html/template"
 	"io/fs"
-	"k8s.io/apimachinery/pkg/api/errors"
 	"net/http"
 	"os"
 	"os/exec"
 	"runtime"
+
+	"github.com/glasskube/glasskube/pkg/client"
+	"github.com/glasskube/glasskube/pkg/install"
+	"github.com/glasskube/glasskube/pkg/list"
+	"github.com/glasskube/glasskube/pkg/statuswriter"
+	"github.com/glasskube/glasskube/pkg/uninstall"
+	"k8s.io/apimachinery/pkg/api/errors"
 )
 
 var Host = "localhost"
@@ -70,7 +72,9 @@ func Start(ctx context.Context, support *ServerConfigSupport) error {
 				}
 				http.Redirect(w, r, "/", http.StatusFound)
 			} else {
-				_, err := install.Install(pkgClient, ctx, pkgName)
+				err := install.NewInstaller(pkgClient).
+					WithStatusWriter(statuswriter.Stderr()).
+					Install(ctx, pkgName)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "An error occured installing %v: \n%v\n", pkgName, err)
 				}
