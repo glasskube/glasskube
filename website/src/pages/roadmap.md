@@ -12,11 +12,10 @@ Our pre releases are technical proof of concepts that aim to inspire technical f
 
 | 	        |                                           Features                                                                                 	                                           |     Timeline        	     |   Status     	   |
 |----------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:-------------------------:|:----------------:|
-| v0.0.0-alpha.1 | - initial project setup<br/>- first version of website<br/>- first working PackageOperator<br/>- first working client (UI & CLI)<br/>- install first packages (cert-manager) 	 | started on january 11th 	 | in development 	 |
-| v0.0.1 	 |                  - `glasskube bootstrap` command<br/>- handle package dependencies<br/>- increase supported trivial packages                                	                  |             	             |   planned    	   |
-| v0.0.2 	 |                             - package configuration<br/>- support packages with dependencies                                                     	                             |             	             |   planned    	   |
-| v0.0.3 	 |                                   - support backups<br/>- handle secrets                                                                  	                                    |             	             |   planned    	   |
-| v0.0.4 	 |                              - support version pinning<br/>- support glasskube suspension                                                       	                              |             	             |   planned    	   |
+| v0.0.1 | - first working PackageOperator<br/>- first working client (UI & CLI)<br/>- install first packages (cert-manager, …) <br/>- `bootstrap` command 	 | Released on Jan 31 	 | Released 	 |
+| v0.0.2 	 |                             - package configuration<br/>- support packages with dependencies <br/>- add more supported packages                                                     	                             |             	      Started on Feb 01       |   In development    	   |
+| v0.0.3 	 |                                   - support backups<br/>- handle secrets                                                                  	                                    |             	             |   Planned    	   |
+| v0.0.4 	 |                              - support version pinning<br/>- support package suspension                                                       	                              |             	             |   Planned    	   |
 
 ## First Releases from v0.1.0 {#first-release}
 
@@ -25,7 +24,7 @@ It will include all features we think are necessary for `glasskube` to become th
 
 | 	        |                   Features                                    	                   | Timeline 	 |   Status 	   |
 |----------|:---------------------------------------------------------------------------------:|:----------:|:------------:|
-| v0.1.0 	 | - supporting `App`s via the Glasskube Apps Operator<br/>- Your feature requests 	 |     	      | planned    	 |
+| v0.1.0 	 | - supporting `App`s via the Glasskube Apps Operator<br/>- Your feature requests 	 |     	      | Planned    	 |
 
 ## Stable Releases {#stable}
 
