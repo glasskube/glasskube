@@ -1,6 +1,7 @@
 ---
 slug: helm
-title: With Helm
+title: Glasskube vs Helm Comparison
+sidebar_label: With Helm
 ---
 
 # Glasskube vs Helm Comparison
