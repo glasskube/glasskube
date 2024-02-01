@@ -5,10 +5,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/glasskube/glasskube/api/v1alpha1"
-	"github.com/glasskube/glasskube/pkg/client"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
+
+	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/pkg/client"
 )
 
 // InstallBlocking creates a new v1alpha1.Package custom resource in the cluster and waits until
@@ -23,6 +24,27 @@ func InstallBlocking(pkgClient *client.PackageV1Alpha1Client, ctx context.Contex
 	if err != nil {
 		return nil, err
 	}
+	return status, nil
+}
+
+// InstallPackage creates a new v1alpha1.Package custom resource in the cluster.
+// If installBackground is true, this function waits until the package has either
+// status Ready or Failed. Otherwise, a nil *client.PackageStatus is returned,
+// and the installation will run on the cluster in the background.
+func InstallPackage(pkgClient *client.PackageV1Alpha1Client, ctx context.Context, packageName string, installBackground bool) (*client.PackageStatus, error) {
+	pkg, err := Install(pkgClient, ctx, packageName)
+	if err != nil {
+		return nil, err
+	}
+
+	var status *client.PackageStatus
+	if !installBackground {
+		status, err = awaitInstall(pkgClient, ctx, pkg.GetUID())
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return status, nil
 }
 

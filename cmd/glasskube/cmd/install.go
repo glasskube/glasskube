@@ -5,13 +5,22 @@ import (
 	"os"
 	"strings"
 
+	"github.com/spf13/cobra"
+
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/repo"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/condition"
 	"github.com/glasskube/glasskube/pkg/install"
-	"github.com/spf13/cobra"
 )
+
+type installOptions struct {
+	background bool
+}
+
+var installCmdOptions = installOptions{
+	background: false,
+}
 
 var installCmd = &cobra.Command{
 	Use:               "install [package-name]",
@@ -22,22 +31,29 @@ var installCmd = &cobra.Command{
 	ValidArgsFunction: completeAvailablePackageNames,
 	Run: func(cmd *cobra.Command, args []string) {
 		client := client.FromContext(cmd.Context())
-		status, err := install.InstallBlocking(client, cmd.Context(), args[0])
+		status, err := install.InstallPackage(client, cmd.Context(), args[0], installCmdOptions.background)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
 			os.Exit(1)
 		}
-		if status != nil {
-			switch (*status).Status {
-			case string(condition.Ready):
-				fmt.Println("Installed successfully.")
-			default:
-				fmt.Printf("Installation has status %v, reason: %v\nMessage: %v\n",
-					(*status).Status, (*status).Reason, (*status).Message)
-			}
+
+		// TODO: not sure if I should put a return or os.Exit(0) here instead of this
+		// heavily nested if/else - jalavosus
+		if installCmdOptions.background {
+			fmt.Println("Installation running in background, check back for status in a bit.")
 		} else {
-			fmt.Fprintln(os.Stderr, "Installation status unknown - no error and no status have been observed (this is a bug).")
-			os.Exit(1)
+			if status != nil {
+				switch (*status).Status {
+				case string(condition.Ready):
+					fmt.Println("Installed successfully.")
+				default:
+					fmt.Printf("Installation has status %v, reason: %v\nMessage: %v\n",
+						(*status).Status, (*status).Reason, (*status).Message)
+				}
+			} else {
+				fmt.Fprintln(os.Stderr, "Installation status unknown - no error and no status have been observed (this is a bug).")
+				os.Exit(1)
+			}
 		}
 	},
 }
@@ -61,4 +77,5 @@ func completeAvailablePackageNames(cmd *cobra.Command, args []string, toComplete
 
 func init() {
 	RootCmd.AddCommand(installCmd)
+	installCmd.Flags().BoolVarP(&installCmdOptions.background, "background", "b", false, "Run command in background instead of synchronously")
 }
