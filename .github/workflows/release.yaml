@@ -1,15 +1,41 @@
-name: Release
+name: Update Changelog & Release
 
 on:
   push:
+    branches:
+      - main
+      - "[0-9]+.[0-9]+.x"
     tags:
-      - "v?[0-9]+.[0-9]+.[0-9]+*"
+      - "v?[0-9]+.[0-9]+.[0-9]+-alpha.[0-9]+"
+      - "v?[0-9]+.[0-9]+.[0-9]+-beta.[0-9]+"
+      - "v?[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+"
+  workflow_dispatch:
 
 jobs:
+  release-please:
+    permissions:
+      contents: write # for google-github-actions/release-please-action to create release commit
+      pull-requests: write # for google-github-actions/release-please-action to create release PR
+    runs-on: ubuntu-latest
+    outputs:
+      releases_created: ${{ steps.release-please.outputs.releases_created }}
+      tag_name: ${{ steps.release-please.outputs.tag_name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - name: Release Please
+        id: release-please
+        uses: google-github-actions/release-please-action@cc61a07e2da466bebbc19b3a7dd01d6aecb20d1e # v4.0.2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
   goreleaser:
     permissions:
       contents: write
     runs-on: ubuntu-latest
+    needs:
+      - release-please
+    if: ${{ needs.release-please.outputs.releases_created == 'true' || startsWith(github.ref, 'refs/tags/') }}
     steps:
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
