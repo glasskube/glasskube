@@ -3,10 +3,11 @@ package list
 import (
 	"context"
 	"fmt"
+	"sync"
+
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/repo"
 	"github.com/glasskube/glasskube/pkg/client"
-	"sync"
 )
 
 type PackageTeaserWithStatus struct {

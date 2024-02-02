@@ -19,5 +19,6 @@ var (
 
 func init() {
 	RootCmd.PersistentFlags().StringVar(&config.Kubeconfig, "kubeconfig", "",
-		fmt.Sprintf("path to the kubeconfig file, whose current-context will be used (defaults to %v)", clientcmd.RecommendedHomeFile))
+		fmt.Sprintf("path to the kubeconfig file, whose current-context will be used (defaults to %v)",
+			clientcmd.RecommendedHomeFile))
 }

@@ -89,11 +89,11 @@ lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes
 ##@ Build
 
 .PHONY: build
-build: manifests generate schema-gen fmt vet ## Build manager binary.
+build: manifests generate schema-gen fmt vet lint test ## Build manager binary.
 	go build -o $(OUT_DIR)/package-operator ./cmd/package-operator/main.go
 
 .PHONY: build-cli
-build-cli: fmt vet ## Build cli binary.
+build-cli: fmt vet lint test ## Build cli binary.
 	go build -o $(OUT_DIR)/glasskube ./cmd/glasskube/main.go
 
 .PHONY: run

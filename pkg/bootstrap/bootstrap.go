@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/glasskube/glasskube/internal/constants"
+
 	"github.com/fatih/color"
 	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/schollz/progressbar/v3"
@@ -31,7 +33,8 @@ const installMessage = `
 
 func NewBootstrapClient(config *rest.Config, url string, version string, bootstrapType BootstrapType) *BootstrapClient {
 	if url == "" {
-		url = fmt.Sprintf("https://github.com/glasskube/glasskube/releases/download/v%v/manifest-%v.yaml", version, bootstrapType)
+		url = fmt.Sprintf("https://github.com/glasskube/glasskube/releases/download/v%v/manifest-%v.yaml",
+			version, bootstrapType)
 	}
 
 	return &BootstrapClient{
@@ -82,7 +85,9 @@ func (c *BootstrapClient) applyManifests(ctx context.Context, objs *[]unstructur
 	bar := progressbar.Default(int64(len(*objs)), "Applying manifests")
 	progressbar.OptionClearOnFinish()(bar)
 	progressbar.OptionOnCompletion(nil)(bar)
-	defer bar.Exit()
+	defer func(bar *progressbar.ProgressBar) {
+		_ = bar.Exit()
+	}(bar)
 
 	for _, obj := range *objs {
 		gvk := obj.GroupVersionKind()
@@ -98,7 +103,7 @@ func (c *BootstrapClient) applyManifests(ctx context.Context, objs *[]unstructur
 			return err
 		})
 
-		if obj.GetKind() == "Deployment" {
+		if obj.GetKind() == constants.Deployment {
 			bar.Describe(fmt.Sprintf("Checking Status of %v (%v)", obj.GetName(), obj.GetKind()))
 			err = c.checkWorkloadReady(obj.GetNamespace(), obj.GetName(), obj.GetKind(), 5*time.Minute)
 			if err != nil {
@@ -114,7 +119,12 @@ func (c *BootstrapClient) applyManifests(ctx context.Context, objs *[]unstructur
 	return nil
 }
 
-func (c *BootstrapClient) checkWorkloadReady(namespace string, workloadName string, workloadType string, timeout time.Duration) error {
+func (c *BootstrapClient) checkWorkloadReady(
+	namespace string,
+	workloadName string,
+	workloadType string,
+	timeout time.Duration,
+) error {
 	dynamicClient, err := dynamic.NewForConfig(c.clientConfig)
 	if err != nil {
 		return err
@@ -123,18 +133,21 @@ func (c *BootstrapClient) checkWorkloadReady(namespace string, workloadName stri
 	var workloadRes schema.GroupVersionResource
 
 	switch workloadType {
-	case "Deployment":
+	case constants.Deployment:
 		workloadRes = appsv1.SchemeGroupVersion.WithResource("deployments")
-	case "DaemonSet":
+	case constants.DaemonSet:
 		workloadRes = appsv1.SchemeGroupVersion.WithResource("daemonsets")
-	case "StatefulSet":
+	case constants.StatefulSet:
 		workloadRes = appsv1.SchemeGroupVersion.WithResource("statefulsets")
 	default:
 		return fmt.Errorf("unsupported workload type: %s", workloadType)
 	}
 
 	checkReady := func() (bool, error) {
-		workload, err := dynamicClient.Resource(workloadRes).Namespace(namespace).Get(context.Background(), workloadName, metav1.GetOptions{})
+		workload, err := dynamicClient.
+			Resource(workloadRes).
+			Namespace(namespace).
+			Get(context.Background(), workloadName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -143,15 +156,15 @@ func (c *BootstrapClient) checkWorkloadReady(namespace string, workloadName stri
 		var ready bool
 
 		switch workloadType {
-		case "Deployment":
+		case constants.Deployment:
 			availableReplicas := status["availableReplicas"]
 			replicas := status["replicas"]
 			ready = availableReplicas == replicas
-		case "DaemonSet":
+		case constants.DaemonSet:
 			numberReady := status["numberReady"]
 			desiredNumberScheduled := status["desiredNumberScheduled"]
 			ready = numberReady == desiredNumberScheduled
-		case "StatefulSet":
+		case constants.StatefulSet:
 			readyReplicas := status["readyReplicas"]
 			replicas := status["replicas"]
 			ready = readyReplicas == replicas
@@ -167,13 +180,15 @@ func (c *BootstrapClient) checkWorkloadReady(namespace string, workloadName stri
 	}
 
 	timeoutCh := time.After(timeout)
-	tick := time.Tick(5 * time.Second)
+	tick := time.NewTimer(5 * time.Second)
+	tickC := tick.C
+	defer tick.Stop()
 
 	for {
 		select {
 		case <-timeoutCh:
 			return fmt.Errorf("%s is not ready within the specified timeout", workloadType)
-		case <-tick:
+		case <-tickC:
 			if ok, err := checkReady(); err != nil {
 				return err
 			} else if ok {

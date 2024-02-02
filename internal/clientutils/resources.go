@@ -14,7 +14,9 @@ func FetchResources(url string) (*[]unstructured.Unstructured, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not download manifest %v: %w", url, err)
 	}
-	defer response.Body.Close()
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(response.Body)
 	decoder := yaml.NewYAMLOrJSONDecoder(response.Body, 4096)
 	resources := make([]unstructured.Unstructured, 0)
 	for {

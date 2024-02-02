@@ -6,6 +6,8 @@ import (
 	"os"
 	"path"
 
+	"go.uber.org/multierr"
+
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/invopop/jsonschema"
 	"github.com/spf13/cobra"
@@ -18,7 +20,7 @@ var (
 
 	cmd = &cobra.Command{
 		Use: "schema-gen",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) (retErr error) {
 			for k, v := range types {
 				schema := jsonschema.Reflect(v)
 				outPath := path.Join(output, k)
@@ -29,7 +31,12 @@ var (
 				if err != nil {
 					return err
 				}
-				defer file.Close()
+				defer func(file *os.File) {
+					closeErr := file.Close()
+					if closeErr != nil {
+						retErr = multierr.Append(err, closeErr)
+					}
+				}(file)
 				encoder := json.NewEncoder(file)
 				encoder.SetIndent("", indent)
 				if err = encoder.Encode(schema); err != nil {
@@ -49,7 +56,7 @@ func init() {
 	cmd.Flags().StringVarP(&output, "output", "o", "", "root directory for output files")
 	cmd.Flags().StringVar(&indent, "indent", "  ", "indent string")
 	cmd.Flags().StringVar(&fileName, "file-name", "schema.json", "name of schema files")
-	cmd.MarkFlagRequired("output")
+	_ = cmd.MarkFlagRequired("output")
 }
 
 func main() {

@@ -23,7 +23,7 @@ func (*writerStatusWriter) Start() {}
 func (obj *writerStatusWriter) Stop() {
 	if obj.autoclose {
 		if closer, ok := obj.writer.(io.Closer); ok {
-			closer.Close()
+			_ = closer.Close()
 		}
 	}
 }

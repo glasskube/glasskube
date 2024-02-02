@@ -2,10 +2,11 @@ package cliutils
 
 import (
 	"fmt"
-	"github.com/glasskube/glasskube/pkg/list"
 	"io"
 	"strings"
 	"text/tabwriter"
+
+	"github.com/glasskube/glasskube/pkg/list"
 )
 
 func PrintPackageTable(

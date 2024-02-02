@@ -3,10 +3,11 @@ package repo
 import (
 	"context"
 	"errors"
-	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
 	"io"
 	"net/http"
 	"net/url"
+
+	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/yaml"
 )
@@ -70,7 +71,9 @@ func doFetch(ctx context.Context, url string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.New("failed to fetch " + url + " : " + resp.Status)
 	}

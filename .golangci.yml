@@ -17,7 +17,6 @@ issues:
         - dupl
         - lll
 linters:
-  disable-all: true
   enable:
     - dupl
     - errcheck

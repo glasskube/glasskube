@@ -121,3 +121,9 @@ Before making a PR, we recommend contributors to run a lint check on their code 
 ```
 make lint
 ```
+
+Some linting errors can be automatically fixed by running:
+
+```
+make lint-fix
+```
