@@ -3,5 +3,4 @@ resources:
 images:
   - name: controller
     newName: ghcr.io/glasskube/package-operator
-    # TODO: specify actual version
-    newTag: latest
+    newTag: v0.0.1 # x-release-please-version
