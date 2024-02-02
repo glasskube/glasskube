@@ -20,13 +20,19 @@ var bootstrapCmdOptions = bootstrapOptions{
 }
 
 var bootstrapCmd = &cobra.Command{
-	Use:    "bootstrap",
-	Short:  "Bootstrap Glasskube in a Kubernetes cluster",
-	Long:   `Bootstraps Glasskube in a Kubernetes cluster, thereby installing the Glasskube operator and checking if the installation was successful.`,
+	Use:   "bootstrap",
+	Short: "Bootstrap Glasskube in a Kubernetes cluster",
+	Long: "Bootstraps Glasskube in a Kubernetes cluster, " +
+		"thereby installing the Glasskube operator and checking if the installation was successful.",
 	Args:   cobra.NoArgs,
 	PreRun: cliutils.SetupClientContext(false),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := bootstrap.NewBootstrapClient(cliutils.RequireConfig(config.Kubeconfig), bootstrapCmdOptions.url, cmd.Root().Version, bootstrapCmdOptions.bootstrapType)
+		client := bootstrap.NewBootstrapClient(
+			cliutils.RequireConfig(config.Kubeconfig),
+			bootstrapCmdOptions.url,
+			cmd.Root().Version,
+			bootstrapCmdOptions.bootstrapType,
+		)
 		if err := client.Bootstrap(cmd.Context()); err != nil {
 			fmt.Fprintf(os.Stderr, "\nAn error occurred during bootstrap:\n%v\n", err)
 			os.Exit(1)

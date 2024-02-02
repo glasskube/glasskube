@@ -3,6 +3,8 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/glasskube/glasskube/internal/bootstrap"
 	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/web"
@@ -10,7 +12,6 @@ import (
 	"github.com/glasskube/glasskube/pkg/kubeconfig"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/tools/clientcmd"
-	"os"
 )
 
 var serveCmd = &cobra.Command{

@@ -3,12 +3,13 @@ package bootstrap
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	apiextension "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
-	"os"
 )
 
 var bootstrapMessage = `
@@ -32,7 +33,7 @@ func RequireBootstrapped(ctx context.Context, cfg *rest.Config) {
 		os.Exit(1)
 	}
 	if !ok {
-		fmt.Fprintf(os.Stderr, bootstrapMessage)
+		fmt.Fprint(os.Stderr, bootstrapMessage)
 		os.Exit(1)
 	}
 }

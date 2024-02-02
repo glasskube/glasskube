@@ -15,8 +15,8 @@ var listCmd = &cobra.Command{
 	Use:     "list",
 	Aliases: []string{"ls", "l"},
 	Short:   "List packages",
-	Long: `List packages. By default, all available packages of the given repository are shown, as well as their installation status in your cluster.
-You can choose to only show installed packages.`,
+	Long: "List packages. By default, all available packages of the given repository are shown, " +
+		"as well as their installation status in your cluster.\nYou can choose to only show installed packages.",
 	PreRun: cliutils.SetupClientContext(true),
 	Run: func(cmd *cobra.Command, args []string) {
 		pkgClient := client.FromContext(cmd.Context())

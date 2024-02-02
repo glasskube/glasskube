@@ -4,7 +4,6 @@ import (
 	"context"
 	"embed"
 	"fmt"
-	"github.com/glasskube/glasskube/internal/cliutils"
 	"html/template"
 	"io/fs"
 	"net"
@@ -13,6 +12,8 @@ import (
 	"os/exec"
 	"runtime"
 	"syscall"
+
+	"github.com/glasskube/glasskube/internal/cliutils"
 
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/install"
@@ -39,6 +40,9 @@ type ServerConfigSupport struct {
 
 func Start(ctx context.Context, support *ServerConfigSupport) error {
 	pkgTemplate, err := template.ParseFS(embededFs, "templates/packages.html")
+	if err != nil {
+		return err
+	}
 	supportTemplate, err := template.ParseFS(embededFs, "templates/support.html")
 	if err != nil {
 		return err
@@ -79,7 +83,7 @@ func Start(ctx context.Context, support *ServerConfigSupport) error {
 					WithStatusWriter(statuswriter.Stderr()).
 					Install(ctx, pkgName)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "An error occured installing %v: \n%v\n", pkgName, err)
+					fmt.Fprintf(os.Stderr, "An error occurred installing %v: \n%v\n", pkgName, err)
 				}
 				http.Redirect(w, r, "/", http.StatusFound)
 			}
@@ -89,7 +93,7 @@ func Start(ctx context.Context, support *ServerConfigSupport) error {
 		packages, _ := list.GetPackagesWithStatus(pkgClient, ctx, false)
 		err := pkgTemplate.Execute(w, packages)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "An error occured rendering the response: \n%v\n", err)
+			fmt.Fprintf(os.Stderr, "An error occurred rendering the response: \n%v\n", err)
 		}
 	})
 
@@ -101,7 +105,7 @@ func Start(ctx context.Context, support *ServerConfigSupport) error {
 		// Checks if Port Conflict Error exists
 		if isPortConflictError(err) {
 			userInput := cliutils.YesNoPrompt(
-				fmt.Sprintf("Port is already in use.\nShould glasskube use a different port? (Y/n): "), true)
+				"Port is already in use.\nShould glasskube use a different port? (Y/n): ", true)
 			if userInput {
 				listener, err = net.Listen("tcp", ":0")
 				if err != nil {

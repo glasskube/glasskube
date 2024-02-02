@@ -39,12 +39,12 @@ func (obj *spinnerStatusWriter) Start() {
 	obj.onStop.Add(
 		func() {
 			ticker.Stop()
-			obj.bar.Finish()
-			obj.bar.Exit()
+			_ = obj.bar.Finish()
+			_ = obj.bar.Exit()
 		})
 	go func() {
 		for range ticker.C {
-			obj.bar.Add(1)
+			_ = obj.bar.Add(1)
 		}
 	}()
 }
