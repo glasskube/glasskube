@@ -52,7 +52,7 @@ func Start(ctx context.Context, support *ServerConfigSupport) error {
 		if support != nil {
 			err := supportTemplate.Execute(w, support)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "An error occured rendering the response: \n%v\n", err)
+				fmt.Fprintf(os.Stderr, "An error occurred rendering the response: \n%v\n", err)
 			}
 			return
 		}
@@ -68,7 +68,7 @@ func Start(ctx context.Context, support *ServerConfigSupport) error {
 			if pkg != nil {
 				err := uninstall.Uninstall(pkgClient, ctx, pkg)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "An error occured uninstalling %v: \n%v\n", pkgName, err)
+					fmt.Fprintf(os.Stderr, "An error occurred uninstalling %v: \n%v\n", pkgName, err)
 				}
 				http.Redirect(w, r, "/", http.StatusFound)
 			} else {

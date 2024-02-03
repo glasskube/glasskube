@@ -69,3 +69,55 @@ The following `<type>`s are available:
 
 This format is based on [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 Please refer to the Conventional Commits specification for more details.
+
+## Development Guide
+
+Glasskube is developed using the [Go](https://golang.org/) programming language. The current version of Go being used is [v1.21](https://go.dev/doc/go1.21). It uses go modules for dependency management.
+
+### Building
+
+Once you've made your changes, you might want to build a binary of the glasskube CLI containing your changes to test them out. This can be done by running the following command at the root of the project:
+
+```
+make
+```
+
+This will create the `glasskube` and `package-operator` binary in the `dist` folder. You can execute the binary by running the following:
+
+```
+dist/glasskube
+```
+
+After you make more changes, simply run `make` again to recompile your changes.
+
+### Executing
+
+In order to execute the `glasskube` binary locally, you can do this manually by creating a copy of it to your project directory.
+
+However, there's an easy and preferred way for doing this by creating an `alias` using the following command:
+
+```
+alias <alias-name> = /path/to/glasskube/binary
+```
+
+This will make sure the `alias-name` is in sync with your glasskube binary. However, this is a temporary alias. If you'd like to create a permanent alias, you can read more about it [here](https://www.freecodecamp.org/news/how-to-create-your-own-command-in-linux/).
+
+**Note:** Don't use `alias-name` as _glasskube_ since the actual glasskube CLI tool installed locally will get in conflict with executable `glasskube` binary.
+
+### Testing
+
+Unit tests for the project can be executed by running:
+
+```
+make test
+```
+
+This command will run all the unit tests, will try to detect race conditions, and will generate a test coverage report.
+
+### Linting
+
+Before making a PR, we recommend contributors to run a lint check on their code by running:
+
+```
+make lint
+```
