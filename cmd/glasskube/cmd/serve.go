@@ -53,6 +53,13 @@ var serveCmd = &cobra.Command{
 			}
 		}
 
+		port, err := cmd.Flags().GetInt("port")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error fetching the port number")
+			os.Exit(1)
+		}
+		web.Port = port
+
 		err = web.Start(ctx, support)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "An error occurred starting the webserver:\n\n%v\n", err)
@@ -62,5 +69,6 @@ var serveCmd = &cobra.Command{
 }
 
 func init() {
+	serveCmd.Flags().IntP("port", "p", 8580, "Port for the webserver")
 	RootCmd.AddCommand(serveCmd)
 }
