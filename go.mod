@@ -9,6 +9,7 @@ require (
 	github.com/fluxcd/helm-controller/api v0.37.4
 	github.com/fluxcd/source-controller/api v1.2.4
 	github.com/go-logr/logr v1.4.1
+	github.com/gorilla/websocket v1.5.0
 	github.com/invopop/jsonschema v0.12.0
 	github.com/onsi/ginkgo/v2 v2.15.0
 	github.com/onsi/gomega v1.31.1

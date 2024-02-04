@@ -1,46 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Glasskube</title>
-  <link type="text/css" rel="stylesheet" href="static/css/custom.css"/>
-</head>
-<!-- TODO clean up custom styling -->
-<body style="background-color: rgb(237, 244, 245)">
-<nav class="navbar navbar-expand-lg navbar-dark bg-secondary">
-  <div class="container">
-    <a class="navbar-brand d-flex align-items-center" href="/">
-      <img src="static/assets/glasskube-logo.svg" alt="Logo" height="32" width="32">
-      <h1 class="navbar-brand mx-1 my-0">Glasskube</h1>
-    </a>
-
-    <ul class="navbar-nav">
-      <li class="nav-item mx-1">
-        <a class="nav-link active" href="/">
-          Packages
-        </a>
-      </li>
-      <li class="nav-item mx-1">
-        <a class="nav-link disabled">Apps</a>
-      </li>
-      <li class="nav-item mx-1">
-        <a class="nav-link disabled">Settings</a>
-      </li>
-    </ul>
-
-    <div class="navbar-collapse">
-      <ul class="navbar-nav ms-auto">
-        <li class="nav-item">
-          <a class="cta cta-sm text-white" href="https://github.com/glasskube/glasskube" target="_blank">
-            <span class="bi bi-github"></span>
-            Star us
-          </a>
-        </li>
-      </ul>
-    </div>
-  </div>
-</nav>
-
+{{define "body"}}
 <div class="position-relative overflow-hidden p-3 p-md-5 m-md-3">
   <div class="col-md-8 p-lg-8 mx-auto text-center">
     <h1>You're almost there!</h1>
@@ -103,9 +61,5 @@
     </small>
   </div>
   {{ end }}
-
 </div>
-
-<script src="static/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+{{end}}
