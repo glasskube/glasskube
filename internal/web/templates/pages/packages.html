@@ -1,0 +1,37 @@
+{{define "body"}}
+<div class="container-lg mt-4">
+  <div class="row row-cols-3 row-cols-xl-4 g-2">
+    {{range .}}
+      <div class="col">
+        <div class="card h-100 border-primary border-1">
+          <div class="card-body p-0 d-flex flex-column">
+            <div class="d-flex align-items-center">
+              <div class="flex-shrink-0 px-1 py-1 align-self-center">
+                {{if eq .IconUrl ""}}
+                <!-- TODO the glasskube logo as fallback is probably not the best idea? -->
+                <img src="static/assets/glasskube-logo.svg" alt="{{ .PackageName}}"  style="max-width:52px; max-height: 52px; height:auto">
+                {{else}}
+                <img src="{{ .IconUrl}}" alt="{{ .PackageName}}" style="max-width:52px; max-height: 52px; height:auto">
+                {{end}}
+              </div>
+              <div class="flex-grow-1 card-body ps-0 pe-1 py-1">
+                <h6 class="text-dark m-0">{{ .PackageName }}</h6>
+                <span class="lh-sm overflow-hidden" style="
+                      font-size: small;
+                      display: -webkit-box;
+                      -webkit-box-orient: vertical;
+                      -webkit-line-clamp: 2">
+                      {{ .ShortDescription }}
+                    </span>
+              </div>
+            </div>
+
+            {{template "installbutton" . | ToInstallButtonInput }}
+
+          </div>
+        </div>
+      </div>
+    {{end}}
+  </div>
+</div>
+{{end}}

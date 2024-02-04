@@ -1,0 +1,44 @@
+{{define "installbutton"}}
+
+{{if eq .Status nil}}
+<button hx-post="install"
+        hx-swap-oob="{{ .Swap }}"
+        name="packageName"
+        value="{{ .PackageName }}"
+        id="{{ .ButtonId }}"
+        class="btn btn-primary btn-sm fw-medium m-1 mt-auto">Install</button>
+{{else if eq .Status.Status "Pending"}}
+<button id="{{ .ButtonId }}"
+        hx-swap-oob="{{ .Swap }}"
+        type="button" class="btn btn-primary btn-sm fw-medium m-1 mt-auto" disabled>Pending</button>
+{{else if eq .Status.Status "Failed"}}
+<div class="btn-group fw-medium m-1 mt-auto"
+     id="{{ .ButtonId }}"
+     hx-swap-oob="{{ .Swap }}">
+  <button type="button" class="btn btn-danger btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+    <span>Installation Failed</span>
+  </button>
+  <ul class="dropdown-menu">
+    <li><button class="dropdown-item btn btn-sm"
+                hx-post="uninstall"
+                hx-confirm="Do you really want to uninstall {{ .PackageName }}?"
+                name="packageName" value="{{ .PackageName }}">Uninstall {{ .PackageName }}</button></li>
+  </ul>
+</div>
+{{else}}
+<div class="btn-group fw-medium m-1 mt-auto" id="{{ .ButtonId }}"
+     hx-swap-oob="{{ .Swap }}">
+  <button type="button" class="btn btn-success btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+    <i class="bi bi-check-lg"></i>
+    <span>Installed</span>
+  </button>
+  <ul class="dropdown-menu">
+    <li><button class="dropdown-item btn btn-sm"
+                hx-post="uninstall"
+                hx-confirm="Do you really want to uninstall {{ .PackageName }}?"
+                name="packageName" value="{{ .PackageName }}">Uninstall {{ .PackageName }}</button></li>
+  </ul>
+</div>
+{{end}}
+
+{{end}}

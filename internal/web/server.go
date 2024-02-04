@@ -1,6 +1,7 @@
 package web
 
 import (
+	"bytes"
 	"context"
 	"embed"
 	"fmt"
@@ -13,6 +14,8 @@ import (
 	"runtime"
 	"syscall"
 
+	"github.com/glasskube/glasskube/internal/web/components"
+
 	"github.com/glasskube/glasskube/internal/cliutils"
 
 	"github.com/glasskube/glasskube/pkg/client"
@@ -20,15 +23,21 @@ import (
 	"github.com/glasskube/glasskube/pkg/list"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/glasskube/glasskube/pkg/uninstall"
-	"k8s.io/apimachinery/pkg/api/errors"
 )
 
-var Host = "localhost"
-var Port = 8580
+var (
+	baseTemplate    *template.Template
+	pkgsPageTmpl    *template.Template
+	supportPageTmpl *template.Template
+	installBtnTmpl  *template.Template
 
-//go:embed root
-//go:embed templates
-var embededFs embed.FS
+	//go:embed root
+	//go:embed templates
+	embededFs embed.FS
+
+	Host = "localhost"
+	Port = 8580
+)
 
 type ServerConfigSupport struct {
 	KubeconfigMissing         bool
@@ -38,26 +47,82 @@ type ServerConfigSupport struct {
 	BootstrapCheckError       error
 }
 
-func Start(ctx context.Context, support *ServerConfigSupport) error {
-	pkgTemplate, err := template.ParseFS(embededFs, "templates/packages.html")
-	if err != nil {
-		return err
-	}
-	supportTemplate, err := template.ParseFS(embededFs, "templates/support.html")
-	if err != nil {
-		return err
-	}
+func init() {
+	loadTemplates()
+}
 
+func loadTemplates() {
+	templateFuncs := template.FuncMap{
+		"ToInstallButtonInput": components.ToInstallButtonInput,
+	}
+	baseTemplate = template.Must(
+		template.New("base.html").Funcs(templateFuncs).ParseFS(embededFs, "templates/layout/base.html"))
+	pkgsPageTmpl = template.Must(template.Must(baseTemplate.Clone()).
+		ParseFS(embededFs, "templates/pages/packages.html", "templates/components/*.html"))
+	supportPageTmpl = template.Must(template.Must(baseTemplate.Clone()).
+		ParseFS(embededFs, "templates/pages/support.html", "templates/components/*.html"))
+	installBtnTmpl = template.Must(template.New("installbutton").
+		ParseFS(embededFs, "templates/components/installbutton.html"))
+}
+
+func Start(ctx context.Context, support *ServerConfigSupport) error {
 	root, err := fs.Sub(embededFs, "root")
 	if err != nil {
 		return err
 	}
+
+	wsHub := NewHub()
+
 	fileServer := http.FileServer(http.FS(root))
 	http.Handle("/static/", fileServer)
 	http.Handle("/favicon.ico", fileServer)
+	http.HandleFunc("/ws", wsHub.handler)
+	http.HandleFunc("/install", func(w http.ResponseWriter, r *http.Request) {
+		pkgClient := client.FromContext(ctx)
+		pkgName := r.FormValue("packageName")
+		go func() {
+			status, err := install.NewInstaller(pkgClient).
+				WithStatusWriter(statuswriter.Stderr()).
+				InstallBlocking(ctx, pkgName)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "An error occurred installing %v: \n%v\n", pkgName, err)
+			}
+
+			// broadcast the status update to all clients
+			var bf bytes.Buffer
+			components.RenderInstallButton(&bf, installBtnTmpl, pkgName, status)
+			wsHub.Broadcast <- bf.Bytes()
+		}()
+
+		// broadcast the pending button to all clients (note that we do not return any html from the install endpoint)
+		var bf bytes.Buffer
+		components.RenderInstallButton(&bf, installBtnTmpl, pkgName, &client.PackageStatus{
+			Status: "Pending",
+		})
+		wsHub.Broadcast <- bf.Bytes()
+	})
+	http.HandleFunc("/uninstall", func(w http.ResponseWriter, r *http.Request) {
+		pkgClient := client.FromContext(ctx)
+		pkgName := r.FormValue("packageName")
+		pkg, err := list.Get(pkgClient, ctx, pkgName)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "An error occurred uninstalling %v: \n%v\n", pkgName, err)
+			return
+		}
+
+		err = uninstall.Uninstall(pkgClient, ctx, pkg)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "An error occurred uninstalling %v: \n%v\n", pkgName, err)
+		}
+
+		// broadcast the button depending on status to all clients
+		var bf bytes.Buffer
+		components.RenderInstallButton(&bf, installBtnTmpl, pkgName, nil)
+		wsHub.Broadcast <- bf.Bytes()
+	})
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if support != nil {
-			err := supportTemplate.Execute(w, support)
+			err := supportPageTmpl.Execute(w, support)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "An error occurred rendering the response: \n%v\n", err)
 			}
@@ -65,33 +130,8 @@ func Start(ctx context.Context, support *ServerConfigSupport) error {
 		}
 
 		pkgClient := client.FromContext(ctx)
-		if r.Method == "POST" {
-			pkgName := r.FormValue("packageName")
-			pkg, err := list.Get(pkgClient, ctx, pkgName)
-			if err != nil && !errors.IsNotFound(err) {
-				fmt.Fprintf(os.Stderr, "%v\n", err)
-				return
-			}
-			if pkg != nil {
-				err := uninstall.Uninstall(pkgClient, ctx, pkg)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "An error occurred uninstalling %v: \n%v\n", pkgName, err)
-				}
-				http.Redirect(w, r, "/", http.StatusFound)
-			} else {
-				err := install.NewInstaller(pkgClient).
-					WithStatusWriter(statuswriter.Stderr()).
-					Install(ctx, pkgName)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "An error occurred installing %v: \n%v\n", pkgName, err)
-				}
-				http.Redirect(w, r, "/", http.StatusFound)
-			}
-			return
-		}
-
 		packages, _ := list.GetPackagesWithStatus(pkgClient, ctx, false)
-		err := pkgTemplate.Execute(w, packages)
+		err := pkgsPageTmpl.Execute(w, packages)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "An error occurred rendering the response: \n%v\n", err)
 		}
@@ -132,6 +172,7 @@ func Start(ctx context.Context, support *ServerConfigSupport) error {
 	fmt.Printf("glasskube UI is available at http://%v\n", bindAddr)
 	_ = openInBrowser("http://" + bindAddr)
 
+	go wsHub.Run()
 	srv := &http.Server{}
 	err = srv.Serve(listener)
 	if err != nil && err != http.ErrServerClosed {
