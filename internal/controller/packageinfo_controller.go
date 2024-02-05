@@ -25,9 +25,11 @@ import (
 	"github.com/glasskube/glasskube/internal/controller/requeue"
 	"github.com/glasskube/glasskube/internal/repo"
 	"github.com/glasskube/glasskube/pkg/condition"
+	"go.uber.org/multierr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -36,6 +38,7 @@ import (
 // PackageInfoReconciler reconciles a PackageInfo object
 type PackageInfoReconciler struct {
 	client.Client
+	record.EventRecorder
 	Scheme *runtime.Scheme
 }
 
@@ -48,6 +51,7 @@ var (
 //+kubebuilder:rbac:groups=packages.glasskube.dev,resources=packageinfos,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=packages.glasskube.dev,resources=packageinfos/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=packages.glasskube.dev,resources=packageinfos/finalizers,verbs=update
+//+kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -65,7 +69,7 @@ func (r *PackageInfoReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	if err := r.Get(ctx, req.NamespacedName, &packageInfo); err != nil {
 		if apierrors.IsNotFound(err) {
 			log.V(1).Info("Failed to fetch PackageInfo: " + err.Error())
-			return requeue.Never(ctx, nil)
+			return ctrl.Result{}, nil
 		} else {
 			return requeue.Always(ctx, err)
 		}
@@ -77,15 +81,14 @@ func (r *PackageInfoReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	if shouldSyncFromRepo(packageInfo) {
 		if err := repo.FetchPackageManifest(ctx, &packageInfo); err != nil {
-			log.Error(err, "could not fetch package manifest")
-			if err := conditions.SetFailedAndUpdate(ctx, r.Client, &packageInfo, &packageInfo.Status.Conditions, condition.SyncFailed, err.Error()); err != nil {
-				return requeue.Always(ctx, err)
-			}
+			err1 := conditions.SetFailedAndUpdate(ctx, r.Client, r.EventRecorder, &packageInfo, &packageInfo.Status.Conditions, condition.SyncFailed, err.Error())
+			return requeue.Always(ctx, multierr.Append(err, err1))
 		} else {
 			now := metav1.Now()
 			packageInfo.Status.LastUpdateTimestamp = &now
-			conditions.SetReady(ctx, &packageInfo.Status.Conditions, condition.SyncCompleted, "")
+			conditions.SetReady(ctx, r.EventRecorder, &packageInfo, &packageInfo.Status.Conditions, condition.SyncCompleted, "PackageInfo is up-to-date")
 			if err := r.Status().Update(ctx, &packageInfo); err != nil {
+				r.Event(&packageInfo, "Warning", string(condition.SyncFailed), err.Error())
 				return requeue.Always(ctx, err)
 			}
 		}

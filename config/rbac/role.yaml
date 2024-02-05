@@ -15,6 +15,13 @@ rules:
   - update
   - watch
 - apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
   - helm.toolkit.fluxcd.io
   resources:
   - helmreleases
