@@ -33,6 +33,7 @@ func FetchPackageManifest(ctx context.Context, pi *packagesv1alpha1.PackageInfo)
 		log.Error(err, "can not get manifest url")
 		return err
 	}
+	log.Info("starting to fetch " + url)
 	body, err := doFetch(ctx, url)
 	if err != nil {
 		return err
@@ -64,9 +65,7 @@ func FetchPackageRepoIndex(ctx context.Context, repoUrl string) (*PackageRepoInd
 	return &index, nil
 }
 
-func doFetch(ctx context.Context, url string) ([]byte, error) {
-	log := log.FromContext(ctx)
-	log.Info("starting to fetch " + url)
+func doFetch(ctx context.Context, url string) ([]byte, error) {	
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
