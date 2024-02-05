@@ -91,16 +91,18 @@ func main() {
 	}
 
 	if err = (&controller.PackageReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-		Helm:   flux.NewAdapter(mgr.GetScheme()),
+		Client:        mgr.GetClient(),
+		EventRecorder: mgr.GetEventRecorderFor("package-controller"),
+		Scheme:        mgr.GetScheme(),
+		Helm:          flux.NewAdapter(mgr.GetScheme()),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Package")
 		os.Exit(1)
 	}
 	if err = (&controller.PackageInfoReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:        mgr.GetClient(),
+		EventRecorder: mgr.GetEventRecorderFor("packageinfo-controller"),
+		Scheme:        mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "PackageInfo")
 		os.Exit(1)

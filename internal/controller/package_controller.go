@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -45,6 +46,7 @@ import (
 // PackageReconciler reconciles a Package object
 type PackageReconciler struct {
 	client.Client
+	record.EventRecorder
 	Scheme    *runtime.Scheme
 	Helm      manifest.ManifestAdapter
 	Kustomize manifest.ManifestAdapter
@@ -56,6 +58,7 @@ type PackageReconciler struct {
 //+kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update
 //+kubebuilder:rbac:groups=helm.toolkit.fluxcd.io,resources=helmreleases,verbs=get;list;watch;create;update
 //+kubebuilder:rbac:groups=source.toolkit.fluxcd.io,resources=helmrepositories,verbs=get;list;watch;create;update
+//+kubebuilder:rbac:groups=core,resources=events,verbs=create;patch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -73,7 +76,7 @@ func (r *PackageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if err := r.Get(ctx, req.NamespacedName, &pkg); err != nil {
 		if apierrors.IsNotFound(err) {
 			log.V(1).Info("Failed to fetch Package: " + err.Error())
-			return requeue.Never(ctx, nil)
+			return ctrl.Result{}, nil
 		} else {
 			return requeue.Always(ctx, fmt.Errorf("failed to fetch package: %w", err))
 		}
@@ -92,7 +95,7 @@ func (r *PackageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		log.V(1).Info("PackageInfo is ready", "packageinfo", actualPackageInfo.Name)
 		piManifest := actualPackageInfo.Status.Manifest
 		if piManifest == nil {
-			err := conditions.SetFailedAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.UnsupportedFormat, "manifest must not be nil")
+			err := conditions.SetFailedAndUpdate(ctx, r.Client, r.EventRecorder, &pkg, &pkg.Status.Conditions, condition.UnsupportedFormat, "manifest must not be nil")
 			return requeue.Always(ctx, err)
 		}
 
@@ -104,7 +107,7 @@ func (r *PackageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 				err := r.reconcileManifestWithAdapter(ctx, r.Helm, pkg, piManifest)
 				return requeue.Always(ctx, err)
 			} else {
-				err := conditions.SetFailedAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.UnsupportedFormat, "helm manifest not supported")
+				err := conditions.SetFailedAndUpdate(ctx, r.Client, r.EventRecorder, &pkg, &pkg.Status.Conditions, condition.UnsupportedFormat, "helm manifest not supported")
 				return requeue.Always(ctx, err)
 			}
 		} else if piManifest.Kustomize != nil {
@@ -112,16 +115,16 @@ func (r *PackageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 				err := r.reconcileManifestWithAdapter(ctx, r.Kustomize, pkg, piManifest)
 				return requeue.Always(ctx, err)
 			} else {
-				err := conditions.SetFailedAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.UnsupportedFormat, "kustomize manifest not supported")
+				err := conditions.SetFailedAndUpdate(ctx, r.Client, r.EventRecorder, &pkg, &pkg.Status.Conditions, condition.UnsupportedFormat, "kustomize manifest not supported")
 				return requeue.Always(ctx, err)
 			}
 		} else {
-			err := conditions.SetReadyAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.UpToDate, "PackageInfo has nothing to apply (no helm or kustomize manifest present)")
+			err := conditions.SetReadyAndUpdate(ctx, r.Client, r.EventRecorder, &pkg, &pkg.Status.Conditions, condition.UpToDate, "PackageInfo has nothing to apply (no helm or kustomize manifest present)")
 			return requeue.Always(ctx, err)
 		}
 	} else if meta.IsStatusConditionFalse(actualPackageInfo.Status.Conditions, string(condition.Ready)) {
 		packageInfoCondition := meta.FindStatusCondition(actualPackageInfo.Status.Conditions, string(condition.Ready))
-		err := conditions.SetFailedAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.Reason(packageInfoCondition.Reason), packageInfoCondition.Message)
+		err := conditions.SetFailedAndUpdate(ctx, r.Client, r.EventRecorder, &pkg, &pkg.Status.Conditions, condition.Reason(packageInfoCondition.Reason), packageInfoCondition.Message)
 		return requeue.Always(ctx, err)
 	} else {
 		err := conditions.SetUnknownAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.Pending, "PackageInfo status is unknown")
@@ -133,13 +136,13 @@ func (r *PackageReconciler) reconcileManifestWithAdapter(ctx context.Context, ad
 	if result, err := adapter.Reconcile(ctx, r.Client, &pkg, piManifest); err != nil {
 		log := log.FromContext(ctx)
 		log.Error(err, "could reconcile manifest")
-		return conditions.SetFailedAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.UnsupportedFormat, "error during manifest reconciliation: "+err.Error())
+		return conditions.SetFailedAndUpdate(ctx, r.Client, r.EventRecorder, &pkg, &pkg.Status.Conditions, condition.UnsupportedFormat, "error during manifest reconciliation: "+err.Error())
 	} else if result.IsReady() {
-		return conditions.SetReadyAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.InstallationSucceeded, result.Message)
+		return conditions.SetReadyAndUpdate(ctx, r.Client, r.EventRecorder, &pkg, &pkg.Status.Conditions, condition.InstallationSucceeded, result.Message)
 	} else if result.IsWaiting() {
 		return conditions.SetUnknownAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.Pending, result.Message)
 	} else if result.IsFailed() {
-		return conditions.SetFailedAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.InstallationFailed, result.Message)
+		return conditions.SetFailedAndUpdate(ctx, r.Client, r.EventRecorder, &pkg, &pkg.Status.Conditions, condition.InstallationFailed, result.Message)
 	} else {
 		return conditions.SetUnknownAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.UnsupportedFormat, result.Message)
 	}
@@ -149,21 +152,21 @@ func (r *PackageReconciler) reconcilePlainManifests(ctx context.Context, pkg *pa
 	allOwned := make([]packagesv1alpha1.OwnedResourceRef, 0)
 	for _, m := range manifest.Manifests {
 		if owned, err := r.reconcilePlainManifest(ctx, *pkg, m); err != nil {
-			return conditions.SetFailedAndUpdate(ctx, r.Client, pkg, &pkg.Status.Conditions, condition.InstallationFailed, err.Error())
+			return conditions.SetFailedAndUpdate(ctx, r.Client, r.EventRecorder, pkg, &pkg.Status.Conditions, condition.InstallationFailed, err.Error())
 		} else {
 			allOwned = append(allOwned, owned...)
 		}
 	}
 
 	if err := r.pruneOwnedResources(ctx, pkg, allOwned); err != nil {
-		return conditions.SetFailedAndUpdate(ctx, r.Client, pkg, &pkg.Status.Conditions, condition.InstallationFailed, err.Error())
+		return conditions.SetFailedAndUpdate(ctx, r.Client, r.EventRecorder, pkg, &pkg.Status.Conditions, condition.InstallationFailed, err.Error())
 	}
 
 	ownedResourcesChanged := !slices.Equal(pkg.Status.OwnedResources, allOwned)
 	if ownedResourcesChanged {
 		pkg.Status.OwnedResources = allOwned[:]
 	}
-	conditionsChanged := conditions.SetReady(ctx, &pkg.Status.Conditions, condition.InstallationSucceeded, "")
+	conditionsChanged := conditions.SetReady(ctx, r.EventRecorder, pkg, &pkg.Status.Conditions, condition.InstallationSucceeded, "all manifests reconciled")
 	if ownedResourcesChanged || conditionsChanged {
 		return r.Status().Update(ctx, pkg)
 	}
