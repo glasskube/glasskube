@@ -20,7 +20,8 @@ jobs:
             extends: ['@commitlint/config-conventional'],
             rules: {
               'body-max-line-length': [2, 'always', 1000]
-            }
+            },
+            defaultIgnores: false
           }" > commitlint.config.js
       - name: Validate PR commits with commitlint
         run: |
