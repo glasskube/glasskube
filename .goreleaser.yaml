@@ -85,6 +85,7 @@ brews:
     commit_msg_template: "chore: brew formula update for {{ .ProjectName }} version {{ .Tag }}"
     install: |
       bin.install "glasskube"
+    skip_upload: "auto"
 
 release:
   prerelease: auto
