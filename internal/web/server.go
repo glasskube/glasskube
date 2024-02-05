@@ -4,12 +4,15 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"github.com/glasskube/glasskube/internal/cliutils"
 	"html/template"
 	"io/fs"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
 	"runtime"
+	"syscall"
 
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/install"
@@ -91,12 +94,43 @@ func Start(ctx context.Context, support *ServerConfigSupport) error {
 	})
 
 	bindAddr := fmt.Sprintf("%v:%d", Host, Port)
-	url := fmt.Sprintf("http://%v", bindAddr)
-	fmt.Printf("glasskube UI is available at %v\n", url)
-	_ = openInBrowser(url)
+	var listener net.Listener
 
-	err = http.ListenAndServe(bindAddr, nil)
+	listener, err = net.Listen("tcp", bindAddr)
 	if err != nil {
+		// Checks if Port Conflict Error exists
+		if isPortConflictError(err) {
+			userInput := cliutils.YesNoPrompt(
+				fmt.Sprintf("Port is already in use.\nShould glasskube use a different port? (Y/n): "), true)
+			if userInput {
+				listener, err = net.Listen("tcp", ":0")
+				if err != nil {
+					panic(err)
+				}
+				bindAddr = fmt.Sprintf("%v:%d", Host, listener.Addr().(*net.TCPAddr).Port)
+			} else {
+				fmt.Println("Exiting. User chose not to use a different port.")
+				os.Exit(1)
+			}
+		} else {
+			// If no Port Conflict error is found, return other errors
+			return err
+		}
+	}
+
+	defer func() {
+		err := listener.Close()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error closing listener: %v\n", err)
+		}
+	}()
+
+	fmt.Printf("glasskube UI is available at http://%v\n", bindAddr)
+	_ = openInBrowser("http://" + bindAddr)
+
+	srv := &http.Server{}
+	err = srv.Serve(listener)
+	if err != nil && err != http.ErrServerClosed {
 		return err
 	}
 	return nil
@@ -115,4 +149,13 @@ func openInBrowser(url string) error {
 		err = fmt.Errorf("unsupported platform")
 	}
 	return err
+}
+
+func isPortConflictError(err error) bool {
+	if opErr, ok := err.(*net.OpError); ok {
+		if osErr, ok := opErr.Err.(*os.SyscallError); ok {
+			return osErr.Err == syscall.EADDRINUSE
+		}
+	}
+	return false
 }
