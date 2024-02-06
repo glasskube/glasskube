@@ -10,12 +10,13 @@ Our next [milestones](https://github.com/glasskube/glasskube/milestones) and pre
 
 Our pre releases are technical proof of concepts that aim to inspire technical folks and will give you a way to try our latest development snapshot where we ship features fast.
 
-| 	        |                                           Features                                                                                 	                                           |     Timeline        	     |   Status     	   |
-|----------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:-------------------------:|:----------------:|
-| v0.0.1 | - first working PackageOperator<br/>- first working client (UI & CLI)<br/>- install first packages (cert-manager, …) <br/>- `bootstrap` command 	 | Released on Jan 31 	 | Released 	 |
-| v0.0.2 	 |                             - package configuration<br/>- support packages with dependencies <br/>- add more supported packages                                                     	                             |             	      Started on Feb 01       |   In development    	   |
-| v0.0.3 	 |                                   - support backups<br/>- handle secrets                                                                  	                                    |             	             |   Planned    	   |
-| v0.0.4 	 |                              - support version pinning<br/>- support package suspension                                                       	                              |             	             |   Planned    	   |
+| 	        |                                             Features                                                                                 	                                             |     Timeline        	     |   Status     	   |
+|----------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:-------------------------:|:----------------:|
+| v0.0.1   |                 - first working PackageOperator<br/>- first working client (UI & CLI)<br/>- install first packages (cert-manager, …) <br/>- `bootstrap` command 	                  | Released on Jan 31 	 | Released 	 |
+| v0.0.2 	 |            - add package updates and outdated information<br/>- `open` command<br/>- add more supported packages                                                     	             |             	      Started on Feb 01       |   In development    	   |
+| v0.0.3 	 |                      - package configuration<br/>- support packages with dependencies <br/>                                                                 	                      |             	             |   Planned    	   |
+| v0.0.4 	 |                                     - support backups<br/>- handle secrets                                                                  	                                      |             	             |   Planned    	   |
+| v0.0.5 	 |                                 - support version pinning<br/>- support package suspension                                                       	                                 |             	             |   Planned    	   |
 
 ## First Releases from v0.1.0 {#first-release}
 
