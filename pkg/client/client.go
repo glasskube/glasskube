@@ -1,40 +1,33 @@
 package client
 
 import (
-	"context"
-
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 )
 
-type (
-	contextKey int
-)
+type PackageV1Alpha1Client struct {
+	restClient rest.Interface
+}
 
-const (
-	clientContextKey contextKey = iota
-)
-
-var PackageGVR = v1alpha1.GroupVersion.WithResource("packages")
-
-func SetupContext(ctx context.Context, config *rest.Config) (context.Context, error) {
-	if err := v1alpha1.AddToScheme(scheme.Scheme); err != nil {
-		return nil, err
+func (c *PackageV1Alpha1Client) Packages() PackageInterface {
+	return &packageClient{
+		restClient: c.restClient,
 	}
-	pkgClient, err := NewPackageClient(config)
+}
+
+func (c *PackageV1Alpha1Client) PackageInfos() PackageInfoInterface {
+	return &packageInfoClient{restClient: c.restClient}
+}
+
+func New(cfg *rest.Config) (*PackageV1Alpha1Client, error) {
+	pkgRestConfig := *cfg
+	pkgRestConfig.ContentConfig.GroupVersion = &v1alpha1.GroupVersion
+	pkgRestConfig.APIPath = "/apis"
+	pkgRestConfig.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
+	restClient, err := rest.RESTClientFor(&pkgRestConfig)
 	if err != nil {
 		return nil, err
 	}
-	return context.WithValue(ctx, clientContextKey, pkgClient), nil
-}
-
-func FromContext(ctx context.Context) *PackageV1Alpha1Client {
-	value := ctx.Value(clientContextKey)
-	if value != nil {
-		if client, ok := value.(*PackageV1Alpha1Client); ok {
-			return client
-		}
-	}
-	return nil
+	return &PackageV1Alpha1Client{restClient: restClient}, err
 }
