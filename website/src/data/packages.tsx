@@ -59,7 +59,7 @@ const Users: Package[] = [
     iconUrl: 'https://avatars.githubusercontent.com/u/46796476?s=150',
     websiteUrl: 'https://keptn.sh/',
     sourceUrl: 'https://github.com/keptn/lifecycle-toolkit',
-    tags: ['planned', 'delivery', 'logging'],
+    tags: ['delivery', 'logging'],
   },
   {
     name: "Cyclops",
