@@ -86,7 +86,7 @@ func fetchRepoAndInstalled(
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
 	go func() {
-		index, errRepo = repo.FetchPackageRepoIndex(ctx, "")
+		index, errRepo = repo.FetchPackageRepoIndex("")
 		wg.Done()
 	}()
 	wg.Add(1)

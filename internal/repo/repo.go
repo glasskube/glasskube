@@ -34,7 +34,7 @@ func FetchPackageManifest(ctx context.Context, pi *packagesv1alpha1.PackageInfo)
 		return err
 	}
 	log.Info("starting to fetch " + url)
-	body, err := doFetch(ctx, url)
+	body, err := doFetch(url)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func FetchPackageManifest(ctx context.Context, pi *packagesv1alpha1.PackageInfo)
 	return nil
 }
 
-func FetchPackageRepoIndex(ctx context.Context, repoUrl string) (*PackageRepoIndex, error) {
+func FetchPackageRepoIndex(repoUrl string) (*PackageRepoIndex, error) {
 	if len(repoUrl) == 0 {
 		repoUrl = defaultRepositoryUrl
 	}
@@ -54,7 +54,7 @@ func FetchPackageRepoIndex(ctx context.Context, repoUrl string) (*PackageRepoInd
 	if err != nil {
 		return nil, err
 	}
-	body, err := doFetch(ctx, url)
+	body, err := doFetch(url)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func FetchPackageRepoIndex(ctx context.Context, repoUrl string) (*PackageRepoInd
 	return &index, nil
 }
 
-func doFetch(ctx context.Context, url string) ([]byte, error) {	
+func doFetch(url string) ([]byte, error) {
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
