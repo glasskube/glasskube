@@ -11,7 +11,12 @@
       "extra-files": [
         "README.md",
         "config/manager/kustomization.yaml",
-        "website/src/partials/_install.mdx"
+        "website/src/partials/_install.mdx",
+        {
+          "type": "json",
+          "path": "website/src/static/release.json",
+          "jsonpath": "$.version"
+        }
       ],
       "changelog-sections": [
         {
