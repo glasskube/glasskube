@@ -54,7 +54,7 @@ func completeAvailablePackageNames(
 	if len(args) > 0 {
 		return []string{}, cobra.ShellCompDirectiveNoFileComp
 	}
-	index, err := repo.FetchPackageRepoIndex(cmd.Context(), "")
+	index, err := repo.FetchPackageRepoIndex("")
 	if err != nil {
 		return []string{}, cobra.ShellCompDirectiveError
 	}
