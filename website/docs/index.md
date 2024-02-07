@@ -118,11 +118,16 @@ Installs the given package in your cluster and waits until the installation is e
 
 Removes the given package from your cluster.
 
-### `glasskube ls`
+### `glasskube list`
 
 Lists packages. By default, all packages available in the configured repository are shown, including their installation status in the given cluster.
 
 With the `--installed` flag you can restrict the list of packages to the once installed in your cluster.
+
+### `glasskube open <package>`
+
+Opens the default entrypoint of the given package. 
+Use `glasskube open <package> <entrypoint>` to open a specific entrypoint.
 
 ### `glasskube --version`
 
