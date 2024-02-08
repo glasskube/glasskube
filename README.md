@@ -2,14 +2,16 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Docs](https://img.shields.io/badge/docs-glasskube.dev%2Fdocs-blue)](https://glasskube.dev/docs/?utm_source=github)
 [![](https://dcbadge.vercel.app/api/server/SxH6KUCGH7?style=flat)](https://discord.gg/SxH6KUCGH7)
-![scarf](https://api.scarf.sh/v2/packages/glasskube/98007d72-6335-4355-8979-7f268209f389/downloads-badge)
+[![Downloads](https://img.shields.io/github/downloads/glasskube/glasskube/total)](https://github.com/glasskube/glasskube/releases)
 [![twitter](https://img.shields.io/twitter/follow/glasskube?style=flat)](https://x.com/intent/follow?screen_name=glasskube)
+[![CNCF Landscape](https://img.shields.io/badge/CNCF%20Landscape-5699C6)](https://landscape.cncf.io/?item=app-definition-and-development--application-definition-image-build--glasskube)
 
 <br>
 <div align="center">
   <a href="https://glasskube.dev?utm_source=github">
     <img src="https://raw.githubusercontent.com/glasskube/.github/main/images/glasskube-logo.png" alt="Glasskube Logo" height="160">
   </a>
+  <img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=899d5aee-625c-4345-bad0-713d29caf929" />
 
 <h3 align="center">🧊 The missing Package Manager for Kubernetes 📦</h3>
 
@@ -158,7 +160,6 @@ Thanks to everyone, that is supporting this project. We are thankful, for evey c
 
 <a href="https://github.com/glasskube/glasskube/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=glasskube/glasskube" />
-  <img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=899d5aee-625c-4345-bad0-713d29caf929" />
 </a>
 
 ## 📘 License
