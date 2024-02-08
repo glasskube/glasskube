@@ -26,7 +26,26 @@ type PackageTeaser struct {
 	IconUrl          string `json:"iconUrl,omitempty"`
 }
 
-func FetchPackageManifest(ctx context.Context, pi *packagesv1alpha1.PackageInfo) error {
+func GetPackageManifest(repoUrl string, pkgName string) (*packagesv1alpha1.PackageManifest, error) {
+	if len(repoUrl) == 0 {
+		repoUrl = defaultRepositoryUrl
+	}
+	url, err := url.JoinPath(repoUrl, pkgName, "package.yaml")
+	if err != nil {
+		return nil, err
+	}
+	body, err := doFetch(url)
+	if err != nil {
+		return nil, err
+	}
+	var manifest packagesv1alpha1.PackageManifest
+	if err = yaml.Unmarshal(body, &manifest); err != nil {
+		return nil, err
+	}
+	return &manifest, nil
+}
+
+func LoadPackageManifest(ctx context.Context, pi *packagesv1alpha1.PackageInfo) error {
 	log := log.FromContext(ctx)
 	url, err := getPackageManifestUrl(*pi)
 	if err != nil {

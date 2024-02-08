@@ -6,17 +6,21 @@ import (
 	"embed"
 	"errors"
 	"fmt"
-	"html/template"
 	"io/fs"
 	"net"
 	"net/http"
 	"os"
 	"syscall"
 
-	"github.com/glasskube/glasskube/api/v1alpha1"
-	"github.com/glasskube/glasskube/internal/web/components"
+	"github.com/glasskube/glasskube/pkg/manifest"
 
+	"github.com/glasskube/glasskube/pkg/describe"
+
+	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
+	"github.com/glasskube/glasskube/internal/web/components/pkg_detail_btns"
+	"github.com/glasskube/glasskube/internal/web/components/pkg_overview_btn"
+	"github.com/gorilla/mux"
 
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/install"
@@ -26,16 +30,9 @@ import (
 	"github.com/glasskube/glasskube/pkg/uninstall"
 )
 
-var (
-	baseTemplate    *template.Template
-	pkgsPageTmpl    *template.Template
-	supportPageTmpl *template.Template
-	installBtnTmpl  *template.Template
-
-	//go:embed root
-	//go:embed templates
-	embededFs embed.FS
-)
+//go:embed root
+//go:embed templates
+var embededFs embed.FS
 
 type ServerConfigSupport struct {
 	KubeconfigMissing         bool
@@ -49,24 +46,12 @@ func init() {
 	loadTemplates()
 }
 
-func loadTemplates() {
-	templateFuncs := template.FuncMap{
-		"ToInstallButtonInput": components.ToInstallButtonInput,
-	}
-	baseTemplate = template.Must(
-		template.New("base.html").Funcs(templateFuncs).ParseFS(embededFs, "templates/layout/base.html"))
-	pkgsPageTmpl = template.Must(template.Must(baseTemplate.Clone()).
-		ParseFS(embededFs, "templates/pages/packages.html", "templates/components/*.html"))
-	supportPageTmpl = template.Must(template.Must(baseTemplate.Clone()).
-		ParseFS(embededFs, "templates/pages/support.html", "templates/components/*.html"))
-	installBtnTmpl = template.Must(template.New("installbutton").
-		ParseFS(embededFs, "templates/components/installbutton.html"))
-}
-
 type server struct {
 	host       string
 	port       int32
 	listener   net.Listener
+	ctx        context.Context
+	support    *ServerConfigSupport
 	pkgClient  *client.PackageV1Alpha1Client
 	wsHub      *WsHub
 	forwarders map[string]*open.OpenResult
@@ -80,11 +65,30 @@ func NewServer(host string, port int32) *server {
 	}
 }
 
+func (s *server) broadcastPkgStatusUpdate(
+	pkgName string,
+	status *client.PackageStatus,
+	manifest *v1alpha1.PackageManifest,
+) {
+	go func() {
+		var bf bytes.Buffer
+		pkg_overview_btn.Render(&bf, pkgOverviewBtnTmpl, pkgName, status, manifest)
+		s.wsHub.Broadcast <- bf.Bytes()
+	}()
+	go func() {
+		var bf bytes.Buffer
+		pkg_detail_btns.Render(&bf, pkgDetailBtnsTmpl, pkgName, status, manifest)
+		s.wsHub.Broadcast <- bf.Bytes()
+	}()
+}
+
 func (s *server) Start(ctx context.Context, support *ServerConfigSupport) error {
 	if s.listener != nil {
 		return errors.New("server is already listening")
 	}
 
+	s.support = support
+	s.ctx = ctx
 	s.pkgClient = client.FromContext(ctx)
 
 	root, err := fs.Sub(embededFs, "root")
@@ -93,92 +97,22 @@ func (s *server) Start(ctx context.Context, support *ServerConfigSupport) error 
 	}
 
 	s.wsHub = NewHub()
-
 	fileServer := http.FileServer(http.FS(root))
-	http.Handle("/static/", fileServer)
-	http.Handle("/favicon.ico", fileServer)
-	http.HandleFunc("/ws", s.wsHub.handler)
-	http.HandleFunc("/install", func(w http.ResponseWriter, r *http.Request) {
-		pkgName := r.FormValue("packageName")
-		go func() {
-			status, err := install.NewInstaller(s.pkgClient).
-				WithStatusWriter(statuswriter.Stderr()).
-				InstallBlocking(ctx, pkgName)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "An error occurred installing %v: \n%v\n", pkgName, err)
-			}
 
-			var packageInfo v1alpha1.PackageInfo
-			var manifest *v1alpha1.PackageManifest
-			// TODO: Change this to use the actual package info name instead of the package name
-			if err := s.pkgClient.PackageInfos().Get(ctx, pkgName, &packageInfo); err != nil {
-				fmt.Printf("could not fetch PackageInfo %v: %v\n", pkgName, err)
-			} else {
-				manifest = packageInfo.Status.Manifest
-			}
-
-			// broadcast the status update to all clients
-			var bf bytes.Buffer
-			components.RenderInstallButton(&bf, installBtnTmpl, pkgName, status, manifest)
-			s.wsHub.Broadcast <- bf.Bytes()
-		}()
-
-		// broadcast the pending button to all clients (note that we do not return any html from the install endpoint)
-		var bf bytes.Buffer
-		components.RenderInstallButton(&bf, installBtnTmpl, pkgName, &client.PackageStatus{Status: "Pending"}, nil)
-		s.wsHub.Broadcast <- bf.Bytes()
+	router := mux.NewRouter()
+	router.PathPrefix("/static/").Handler(fileServer)
+	router.Handle("/favicon.ico", fileServer)
+	router.HandleFunc("/ws", s.wsHub.handler)
+	router.HandleFunc("/support", s.supportPage)
+	router.HandleFunc("/packages", s.packages)
+	router.HandleFunc("/packages/install", s.install)
+	router.HandleFunc("/packages/uninstall", s.uninstall)
+	router.HandleFunc("/packages/open", s.open)
+	router.HandleFunc("/packages/{pkgName}", s.packageDetail)
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/packages", http.StatusFound)
 	})
-	http.HandleFunc("/uninstall", func(w http.ResponseWriter, r *http.Request) {
-		pkgName := r.FormValue("packageName")
-		pkg, err := list.Get(s.pkgClient, ctx, pkgName)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "An error occurred uninstalling %v: \n%v\n", pkgName, err)
-			return
-		}
-
-		err = uninstall.Uninstall(s.pkgClient, ctx, pkg)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "An error occurred uninstalling %v: \n%v\n", pkgName, err)
-		}
-
-		// broadcast the button depending on status to all clients
-		var bf bytes.Buffer
-		components.RenderInstallButton(&bf, installBtnTmpl, pkgName, nil, nil)
-		s.wsHub.Broadcast <- bf.Bytes()
-	})
-	http.HandleFunc("/open", func(w http.ResponseWriter, r *http.Request) {
-		pkgName := r.FormValue("packageName")
-		if result, ok := s.forwarders[pkgName]; ok {
-			result.WaitReady()
-			_ = cliutils.OpenInBrowser(result.Url)
-			return
-		}
-
-		result, err := open.NewOpener().Open(ctx, pkgName, "")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "could not open %v: %v\n", pkgName, err)
-		} else {
-			s.forwarders[pkgName] = result
-			result.WaitReady()
-			_ = cliutils.OpenInBrowser(result.Url)
-			w.WriteHeader(http.StatusAccepted)
-		}
-	})
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if support != nil {
-			err := supportPageTmpl.Execute(w, support)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "An error occurred rendering the response: \n%v\n", err)
-			}
-			return
-		}
-
-		packages, _ := list.GetPackagesWithStatus(s.pkgClient, ctx, list.IncludePackageInfos)
-		err := pkgsPageTmpl.Execute(w, packages)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "An error occurred rendering the response: \n%v\n", err)
-		}
-	})
+	http.Handle("/", router)
 
 	bindAddr := fmt.Sprintf("%v:%d", s.host, s.port)
 
@@ -214,6 +148,109 @@ func (s *server) Start(ctx context.Context, support *ServerConfigSupport) error 
 		return err
 	}
 	return nil
+}
+
+func (s *server) install(w http.ResponseWriter, r *http.Request) {
+	pkgName := r.FormValue("packageName")
+	go func() {
+		status, err := install.NewInstaller(s.pkgClient).
+			WithStatusWriter(statuswriter.Stderr()).
+			InstallBlocking(s.ctx, pkgName)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "An error occurred installing %v: \n%v\n", pkgName, err)
+			return
+		}
+		manifest, err := manifest.GetInstalledManifest(s.ctx, pkgName)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "could not fetch manifest of %v: %v\n", pkgName, err)
+			return
+		}
+		s.broadcastPkgStatusUpdate(pkgName, status, manifest)
+	}()
+	s.broadcastPkgStatusUpdate(pkgName, client.NewPendingStatus(), nil)
+}
+
+func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
+	pkgName := r.FormValue("packageName")
+	pkg, err := list.Get(s.pkgClient, s.ctx, pkgName)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "An error occurred uninstalling %v: \n%v\n", pkgName, err)
+		return
+	}
+	// once we have blocking uninstall available, this should be changed to also broadcast the pending update first
+	err = uninstall.Uninstall(s.pkgClient, s.ctx, pkg)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "An error occurred uninstalling %v: \n%v\n", pkgName, err)
+	}
+	s.broadcastPkgStatusUpdate(pkgName, nil, nil)
+}
+
+func (s *server) open(w http.ResponseWriter, r *http.Request) {
+	pkgName := r.FormValue("packageName")
+	if result, ok := s.forwarders[pkgName]; ok {
+		result.WaitReady()
+		_ = cliutils.OpenInBrowser(result.Url)
+		return
+	}
+
+	result, err := open.NewOpener().Open(s.ctx, pkgName, "")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "could not open %v: %v\n", pkgName, err)
+	} else {
+		s.forwarders[pkgName] = result
+		result.WaitReady()
+		_ = cliutils.OpenInBrowser(result.Url)
+		w.WriteHeader(http.StatusAccepted)
+	}
+}
+
+func (s *server) packages(w http.ResponseWriter, r *http.Request) {
+	if s.support != nil {
+		http.Redirect(w, r, "/support", http.StatusFound)
+		return
+	}
+
+	packages, err := list.GetPackagesWithStatus(s.pkgClient, s.ctx, list.IncludePackageInfos)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "could not load packages: %v\n", err)
+		return
+	}
+	err = pkgsPageTmpl.Execute(w, packages)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "An error occurred rendering the response: \n%v\n", err)
+	}
+}
+
+func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
+	if s.support != nil {
+		http.Redirect(w, r, "/support", http.StatusFound)
+		return
+	}
+	pkgName := mux.Vars(r)["pkgName"]
+	pkg, status, manifest, err := describe.DescribePackage(s.ctx, pkgName)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "An error occurred fetching package details of %v: \n%v\n", pkgName, err)
+		return
+	}
+	err = pkgPageTmpl.Execute(w, &map[string]any{
+		"Package":  pkg,
+		"Status":   status,
+		"Manifest": manifest,
+	})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "An error occurred rendering the package detail page of %v: \n%v\n", pkgName, err)
+	}
+}
+
+func (s *server) supportPage(w http.ResponseWriter, r *http.Request) {
+	if s.support != nil {
+		err := supportPageTmpl.Execute(w, s.support)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "An error occurred rendering the support page: \n%v\n", err)
+		}
+	} else {
+		http.Redirect(w, r, "/", http.StatusFound)
+	}
 }
 
 func isPortConflictError(err error) bool {

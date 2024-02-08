@@ -1,0 +1,29 @@
+{{define "pkg-overview-btn"}}
+
+<span class="m-1 mt-auto" id="{{ .ButtonId }}" hx-swap-oob="{{ .Swap }}">
+  {{if eq .Status nil}}
+  <button hx-post="/packages/install" name="packageName" value="{{ .PackageName }}" class="btn btn-primary btn-sm w-100">
+    Install
+  </button>
+  {{else if eq .Status.Status "Pending"}}
+  <button type="button" class="btn btn-primary btn-sm fw-medium w-100" disabled>
+    Pending
+  </button>
+  {{else if eq .Status.Status "Failed"}}
+  <a href="/packages/{{.PackageName}}" hx-boost="true" class="btn btn-danger btn-sm w-100">
+    <span>Installation Failed</span>
+  </a>
+  {{else if and .Manifest .Manifest.Entrypoints }}
+  <button class="btn btn-success btn-sm w-100" hx-post="/packages/open" hx-swap="none" name="packageName"
+          value="{{ .PackageName }}">
+    <i class="bi bi-box-arrow-up-right"></i>
+    <span>Open</span>
+  </button>
+  {{else}}
+  <a href="/packages/{{.PackageName}}" hx-boost="true" class="btn btn-success btn-sm w-100">
+    <i class="bi bi-check-lg"></i>
+    <span>Installed</span>
+  </a>
+  {{end}}
+</span>
+{{end}}
