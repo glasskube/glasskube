@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"os"
 
@@ -46,9 +45,9 @@ var serveCmd = &cobra.Command{
 			}
 		}
 
-		var ctx context.Context
+		var ctx = cmd.Context()
 		if cfg != nil {
-			ctx, err = client.SetupContext(cmd.Context(), cfg)
+			ctx, err = client.SetupContext(ctx, cfg)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "An error occurred starting the webserver:\n\n%v\n", err)
 				os.Exit(1)

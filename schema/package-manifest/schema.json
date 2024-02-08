@@ -68,6 +68,15 @@
         "shortDescription": {
           "type": "string"
         },
+        "longDescription": {
+          "type": "string"
+        },
+        "references": {
+          "items": {
+            "$ref": "#/$defs/PackageReference"
+          },
+          "type": "array"
+        },
         "iconUrl": {
           "type": "string",
           "format": "uri"
@@ -99,6 +108,22 @@
       "required": [
         "name",
         "defaultNamespace"
+      ]
+    },
+    "PackageReference": {
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "label",
+        "url"
       ]
     },
     "PlainManifest": {

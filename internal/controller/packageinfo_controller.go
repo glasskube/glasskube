@@ -80,7 +80,7 @@ func (r *PackageInfoReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	if shouldSyncFromRepo(packageInfo) {
-		if err := repo.FetchPackageManifest(ctx, &packageInfo); err != nil {
+		if err := repo.LoadPackageManifest(ctx, &packageInfo); err != nil {
 			err1 := conditions.SetFailedAndUpdate(ctx, r.Client, r.EventRecorder, &packageInfo, &packageInfo.Status.Conditions, condition.SyncFailed, err.Error())
 			return requeue.Always(ctx, multierr.Append(err, err1))
 		} else {

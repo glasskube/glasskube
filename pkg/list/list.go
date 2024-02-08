@@ -59,11 +59,7 @@ func GetPackagesWithStatus(
 			IconUrl:          item.Teaser.IconUrl,
 		}
 		if item.Package != nil {
-			if status := client.GetStatus(&item.Package.Status); status != nil {
-				pkgWithStatus.Status = status
-			} else {
-				pkgWithStatus.Status = &client.PackageStatus{Status: "Pending"}
-			}
+			pkgWithStatus.Status = client.GetStatusOrPending(&item.Package.Status)
 		}
 		if item.PackageInfo != nil {
 			pkgWithStatus.InstalledManifest = item.PackageInfo.Status.Manifest

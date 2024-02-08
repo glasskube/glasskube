@@ -3,21 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <title>Glasskube</title>
-  <link type="text/css" rel="stylesheet" href="static/css/custom.css"/>
+  <link type="text/css" rel="stylesheet" href="/static/css/custom.css"/>
+
+  <script src="/static/js/bootstrap.bundle.min.js"></script> <!-- TODO version -->
+  <script src="/static/js/htmx-1.9.10.min.js"></script>
+  <script src="/static/js/ws-ext-1.9.10.js"></script>
+
+  <script type="text/javascript">
+    // htmx.logAll();
+  </script>
 </head>
 <!-- TODO clean up custom styling -->
 <body style="background-color: rgb(237, 244, 245)" hx-ext="ws" ws-connect="/ws">
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-secondary">
+<nav hx-boost="true" class="navbar navbar-expand-lg navbar-dark bg-secondary">
   <div class="container">
     <a class="navbar-brand d-flex align-items-center" href="/">
-      <img src="static/assets/glasskube-logo.svg" alt="Logo" height="32" width="32">
+      <img src="/static/assets/glasskube-logo.svg" alt="Logo" height="32" width="32">
       <h1 class="navbar-brand mx-1 my-0">Glasskube</h1>
     </a>
 
     <ul class="navbar-nav">
       <li class="nav-item mx-1">
-        <a class="nav-link active" href="/">
+        <a class="nav-link active" href="/packages">
           Packages
         </a>
       </li>
@@ -44,8 +52,5 @@
 
 {{template "body" .}}
 
-<script src="static/js/bootstrap.bundle.min.js"></script> <!-- TODO version -->
-<script src="static/js/htmx-1.9.10.min.js"></script>
-<script src="static/js/ws-ext-1.9.10.js"></script>
 </body>
 </html>

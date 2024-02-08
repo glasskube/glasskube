@@ -49,10 +49,17 @@ type PlainManifest struct {
 	Url string `json:"url" jsonschema:"required"`
 }
 
+type PackageReference struct {
+	Label string `json:"label" jsonschema:"required"`
+	Url   string `json:"url" jsonschema:"required"`
+}
+
 type PackageManifest struct {
-	Name             string `json:"name" jsonschema:"required"`
-	ShortDescription string `json:"shortDescription,omitempty"`
-	IconUrl          string `json:"iconUrl,omitempty" jsonschema:"format=uri"`
+	Name             string             `json:"name" jsonschema:"required"`
+	ShortDescription string             `json:"shortDescription,omitempty"`
+	LongDescription  string             `json:"longDescription,omitempty"`
+	References       []PackageReference `json:"references,omitempty"`
+	IconUrl          string             `json:"iconUrl,omitempty" jsonschema:"format=uri"`
 	// Helm instructs the controller to create a helm release when installing this package.
 	Helm *HelmManifest `json:"helm,omitempty"`
 	// Kustomize instructs the controller to apply a kustomization when installing this package [PLACEHOLDER].

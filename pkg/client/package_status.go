@@ -25,10 +25,22 @@ func GetStatus(status *v1alpha1.PackageStatus) *PackageStatus {
 	return nil
 }
 
+func GetStatusOrPending(status *v1alpha1.PackageStatus) *PackageStatus {
+	if status := GetStatus(status); status != nil {
+		return status
+	} else {
+		return NewPendingStatus()
+	}
+}
+
 func newPackageStatus(cnd *metav1.Condition) *PackageStatus {
 	return &PackageStatus{
 		Status:  cnd.Type,
 		Reason:  cnd.Reason,
 		Message: cnd.Message,
 	}
+}
+
+func NewPendingStatus() *PackageStatus {
+	return &PackageStatus{Status: "Pending"}
 }

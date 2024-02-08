@@ -180,6 +180,8 @@ spec:
                     description: Kustomize instructs the controller to apply a kustomization
                       when installing this package [PLACEHOLDER].
                     type: object
+                  longDescription:
+                    type: string
                   manifests:
                     items:
                       properties:
@@ -191,6 +193,18 @@ spec:
                     type: array
                   name:
                     type: string
+                  references:
+                    items:
+                      properties:
+                        label:
+                          type: string
+                        url:
+                          type: string
+                      required:
+                      - label
+                      - url
+                      type: object
+                    type: array
                   shortDescription:
                     type: string
                 required:
