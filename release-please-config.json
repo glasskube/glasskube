@@ -14,7 +14,7 @@
         "website/src/partials/_install.mdx",
         {
           "type": "json",
-          "path": "website/src/static/release.json",
+          "path": "website/static/release.json",
           "jsonpath": "$.version"
         }
       ],
