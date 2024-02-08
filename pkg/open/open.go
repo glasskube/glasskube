@@ -3,6 +3,7 @@ package open
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 
@@ -50,7 +51,7 @@ func (o *opener) Open(ctx context.Context, packageName string, entrypointName st
 
 	entrypoints := packageInfo.Status.Manifest.Entrypoints
 	if len(entrypoints) < 1 {
-		return nil, fmt.Errorf("package %v has no entrypoint", packageName)
+		return nil, fmt.Errorf("package has no entrypoint")
 	}
 
 	if entrypointName != "" {
@@ -62,7 +63,7 @@ func (o *opener) Open(ctx context.Context, packageName string, entrypointName st
 			}
 		}
 		if !exists {
-			return nil, fmt.Errorf("package %v has no entrypoint %v", packageName, entrypointName)
+			return nil, fmt.Errorf("package has no entrypoint %v", entrypointName)
 		}
 	}
 
@@ -78,7 +79,11 @@ func (o *opener) Open(ctx context.Context, packageName string, entrypointName st
 			entrypointFuture, err := o.open(ctx, packageInfo.Status.Manifest, e, readyCh, stopCh)
 			if err != nil {
 				o.stop()
-				return nil, fmt.Errorf("could not open entrypoint %v for package %v: %w", e.Name, packageName, err)
+				epName := e.Name
+				if epName == "" {
+					epName = "[anonymous]"
+				}
+				return nil, fmt.Errorf("could not open entrypoint %v: %w", epName, err)
 			}
 			futures = append(futures, entrypointFuture)
 			// attach the first url to the result
@@ -135,6 +140,10 @@ func (o *opener) open(
 	readyChannel chan struct{},
 	stopChannel chan struct{},
 ) (future.Future, error) {
+	if err := checkLocalPort(entrypoint.Port); err != nil {
+		return nil, err
+	}
+
 	svc, err := o.service(ctx, manifest, entrypoint)
 	if err != nil {
 		return nil, err
@@ -165,7 +174,7 @@ func (o *opener) open(
 
 	return future.Run(func() error {
 		if err = forwarder.ForwardPorts(); err != nil {
-			return fmt.Errorf("could not forward port %v for %v for package %v: %w", port, entrypoint.Name, manifest.Name, err)
+			return fmt.Errorf("could not forward port %v: %w", port, err)
 		} else {
 			return nil
 		}
@@ -234,5 +243,15 @@ func containerPort(pod *corev1.Pod, servicePort corev1.ServicePort) (int32, erro
 			}
 		}
 		return 0, fmt.Errorf("chould not find container port for pod %v", pod.Name)
+	}
+}
+
+func checkLocalPort(port int32) error {
+	if l, err := net.Listen("tcp", fmt.Sprintf(":%v", port)); err != nil {
+		return fmt.Errorf("tcp port %v is not free", port)
+	} else if err = l.Close(); err != nil {
+		return fmt.Errorf("could not close listener during check: %w", err)
+	} else {
+		return nil
 	}
 }
