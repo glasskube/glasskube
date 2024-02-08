@@ -1,0 +1,200 @@
+---
+slug: kubernetes-frontends
+title: The Inner Workings of Kubernetes Management Frontends — A Software Engineer’s Perspective
+description: "Analyzing Code and Architecture of Kubernetes Management Frontends — How to build and deploy tools like ArgoCD and glasskube."
+authors: [ christophenne ]
+tags: [ glasskube, kubernetes, frontends ]
+---
+
+*In this blogpost we are reviewing Kubernetes Management Frontends and discuss how these tools are being built.*
+
+# The Inner Workings of Kubernetes Management Frontends — A Software Engineer’s Perspective
+
+The rise of Kubernetes in recent years has led to an astonishing number of open-source Kubernetes management tools seemingly appearing out of nowhere.
+The goal of the research leading to this article was to merely understand the architecture of some of these tools and to subsequently provide a brief overview
+and options for developers trying to get started with their own Kubernetes frontend.
+We will not dive deep into the actual tools and what problems they are trying to solve, but instead focus on the software engineering aspect.
+We are also exclusively exploring open-source and self-hosted tools and leaving the PaaS/IaaS platforms of cloud providers aside — that would be a whole different article.
+
+Setting up and interacting with your first cluster can be overwhelming. Just like me, you might have come across the infamous [`kubernetes/dashboard`](https://github.com/kubernetes/dashboard),
+followed the installation instructions, and asked yourself: "What did I just do and why exactly does this work the way it works?"
+And after some tinkering with your cluster, you might have installed even more external tools that help you with some specific aspects of cluster management,
+providing you with either a CLI or a Web UI.
+
+As a software engineer mostly engaged in web development in recent years, I was curious about how these kinds of tools are built and deployed.
+
+Let's first clarify some of the basics needed for the following exploration of different Kubernetes UIs. After that, we will see what they have in common and what makes this kind of software special, to finally form a recommendation of how one could build a Kubernetes Web UI themselves.
+
+## Kubernetes Basics
+
+The [official documentation](https://kubernetes.io/docs/concepts/overview/components/) is more than helpful anyway; there is just one important thing to remember:
+Whenever and wherever you interact with your cluster, you do it via the Kubernetes API — this holds true at least for the scope of this article,
+though there might be other use cases.
+
+As a consumer of this API, one needs to know where it is hosted and how to authenticate against it.
+The Kubernetes API can be accessed both from inside a cluster (i.e., from an application running on a pod) and outside a cluster (e.g., from your command line). In some cases however, the API is only available from within a VPN. 
+
+Since we are looking at tools with a web UI, this UI and its backend need to be exposed such that a user can access it. The options are:
+
+- using `kubectl proxy` to open a proxy from the local machine to the cluster (see [Accessing Clusters](https://kubernetes.io/docs/tasks/access-application-cluster/access-cluster/)),
+- using `kubectl port-forward` to forward a local port to a specific pod of the cluster (see [Use Port Forwarding to Access Applications in a Cluster](https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster/)),
+- using a Kubernetes service of the type `LoadBalancer` to access an application of the cluster (see [Use a Service to Access an Application in a Cluster](https://kubernetes.io/docs/tasks/access-application-cluster/service-access-application-cluster/)).
+
+Alternatively, the web server could be running on the local machine of a user as well, in which case one doesn't need to worry about these options.
+However, a user needs to have a valid kube config on their machine for any of these approaches to work.
+
+## Management Frontends
+
+Now, let's take a look at some commonly used frontends and how they are built.
+
+### [kubernetes-dashboard](https://github.com/kubernetes/dashboard)
+
+The Kubernetes Dashboard is a popular Web UI used to view and manage all kinds of Kubernetes resources within a cluster.
+In the latest stable version 2.7, both the backend and frontend are part of the same container. The Go backend serves both the API and the Angular UI assets.
+This deployment strategy requires users to use `kubectl proxy` to access the web application.
+
+In the newer 3.0 version, which is still in alpha, the deployment strategy has changed: both the backend and frontend are each running in a dedicated container.
+Therefore, accessing it via `kubectl proxy` no longer works because the UI needs to access the backend, which is running on a different pod and port.
+The port-forwarding approach described [here](https://github.com/kubernetes/dashboard/blob/master/docs/user/accessing-dashboard/README.md) should be used instead.
+
+### [ArgoCD](https://github.com/argoproj/argo-cd)
+
+ArgoCD is a GitOps continuous delivery tool for Kubernetes. It comes with several components, including its own API server and a web UI.
+All the backend components are written in Go, and the UI is a React application.
+
+As with the Kubernetes Dashboard, the server (including the UI assets) is deployed inside the cluster, making it necessary for the user to perform port-forwarding or use a LoadBalancer.
+This is described in their [documentation](https://argo-cd.readthedocs.io/en/stable/getting_started/#3-access-the-argo-cd-api-server).
+
+### [Lens](https://github.com/lensapp/lens)
+
+Lens is a Desktop UI, but still interesting for our exploration. It is being developed with Electron, React, and Typescript.
+The Lens App uses the Typescript Kubernetes client to connect to a cluster, and since the Desktop app is clearly running outside a cluster,
+it uses a locally provided kubeconfig to connect to it.
+
+### [glasskube](https://github.com/glasskube/glasskube)
+
+Yes, a pretty shameless plug (I work there), but it's also an interesting alternative to consider. For the UI of the Glasskube package manager, we spin up the web server
+locally via a CLI command and serve the UI assets from there. We decided to go this route because it simply makes more sense in our use case.
+Whenever the user needs the Glasskube UI, they host it themselves for as long or as short as they want — there is no need to have it running 24/7 inside the cluster.
+
+## Findings
+
+Many open-source Kubernetes management UIs are coded in a similar way — with a Go backend utilizing the powerful Kubernetes-go client, and a Single Page Application in JavaScript as the frontend.
+In most cases, the web assets (e.g., JS files) are served together with the backend, meaning one container serves both the backend and frontend.
+It was actually difficult to find something that is not built like that.
+
+### Inside cluster vs. Out of cluster
+
+When it comes to deploying such a web tool, there are only two options:
+
+- The webserver is deployed on a pod inside the cluster and is accessible either via proxy, port-forwarding, or ingress.
+- The webserver is deployed outside the cluster, directly (locally) on the users' machine.
+
+The Kubernetes clients (e.g., [Go client](https://github.com/kubernetes/client-go)) support developers with both methods to connect to a cluster, as we can see in the following examples.
+
+**The piece of code it all comes down to:**
+
+These simplified examples are heavily based on the official examples seen [here](https://github.com/kubernetes/client-go/blob/v0.29.0/examples/in-cluster-client-configuration/README.md) and [here](https://github.com/kubernetes/client-go/blob/v0.29.0/examples/out-of-cluster-client-configuration/README.md).
+
+Let's have a look at how to connect to the Kubernetes API when running the application inside the cluster:
+
+```Go
+import (
+	"context"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+)
+
+func main() {
+	// retreive the config for the cluster we are currently in:
+	config, err := rest.InClusterConfig()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// create the clientset for this config:
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// do something with the clientset, e.g. getting all pods in the cluster:
+	// pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
+}
+```
+
+The Go client implementation uses the [pod's service account](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/) and the environment variables `KUBERNETES_SERVICE_HOST` and `KUBERNETES_SERVICE_PORT` to
+identify which cluster it is placed in. Subsequently, it creates the REST config object, with which the clientset can be obtained.
+
+Similarly, when running outside the cluster, one needs to create the config object, but this config is read from the local kube config:
+
+```Go
+import (
+	"context"
+	"flag"
+	"path/filepath"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/homedir"
+)
+
+func main() {
+	// get the passed (or default) kube config file path
+	var kubeconfig *string
+	if home := homedir.HomeDir(); home != "" {
+		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+	} else {
+		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+	}
+	flag.Parse()
+
+	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// do something with the clientset, e.g. getting all pods in the cluster:
+	// pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
+}
+```
+
+Again, the Kubernetes Go client has us covered with a simple function to parse a kubeconfig file to get a config, which can then be used to create a clientset.
+
+When trying to run these simple examples, you will also come across one difference between these two approaches:
+Running the local tool is easier because you don't need to build an image, push it to a registry, and then pull it into the cluster.
+
+**Which one to choose?**
+
+Say you were to build your own Kubernetes UI in a similar fashion. When it comes to the decision of where the webserver of your tool should run, there are several things to consider:
+
+- **Distribution**: Running your tool inside the cluster means you have to build and distribute a docker image. On the contrary, you will have to distribute a native binary if you want users to install it on their machines. For both cases, there are lots of tools and resources online.
+- **Availability**: When your cluster is down for whatever reason, users might not be able to reach the tool hosted inside the cluster. This leads us to the next point:
+- **Onboarding User Experience**: This might be an edge case, but a locally hosted web tool is available before all of its components are installed in the cluster. This means you could implement some sort of UI onboarding flow for new users, making the tool easier to install and set up.
+- **Compatibility**: Multiple users of the same cluster could have different versions of your (locally hosted) tool installed. This can not happen if there is just one webserver running inside the cluster.
+- **Persistence**: When needing to store tool-specific data (i.e., non-Kubernetes resources), you could store it inside the cluster (e.g., in a `ConfigMap`). For the locally deployed variant, you could additionally store user-specific data like settings on the users' machine. This decision is highly use case dependent.
+- **Developer Experience**: There seems to be no significant difference, but it is worth noting that when developing an in-cluster webserver, during development this server still needs to support the out-of-cluster config approach somehow. Otherwise, one would have to build and deploy an image into the cluster after every change.
+
+Eventually, whether the tool is deployed inside or outside of the cluster is completely up to you, but it's always important to consider the use cases and be aware of the context in which it is used. You can also opt for providing both options to your users.
+
+For us at Glasskube, it was clear that we want to provide an easy-to-use interface for new users (especially those new to the Kubernetes world), who might not have yet set up all the Glasskube cluster components. These users can be supported by having a CLI command hosting the local webserver with a supportive Web UI.
+
+## Conclusion
+
+In this article, we have explored a few Kubernetes tools offering a web UI and analyzed the web aspect of those tools from a software engineer's point of view.
+There is clearly no ultimate one-size-fits-all solution for how to design and develop such tools, but the list above hopefully gives some hints in the right direction.
+As always in software engineering: It depends.
+
+One more plug: I work at Glasskube, where we are building the missing Kubernetes package manager.
+If you are interested in our work, make sure to star us: [`glasskube/glasskube`](https://github.com/glasskube/glasskube).
+We are also working on an article shedding some light on different CLI frameworks, if you are more of a command line person. And if that's not enough, we might write about using htmx soon because it's trending, and we need your attention.
+I can already see the headline: "How we reduce our codebase by 95% by using seemingly old-school technology" — I think this has not been done before ;)
+
