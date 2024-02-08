@@ -27,7 +27,7 @@ If the package manifest has more than one entrypoint, specify the name of the en
 
 		result, err := open.NewOpener().Open(cmd.Context(), pkgName, entrypointName)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "❌ Could not open package: %v\n", err)
+			fmt.Fprintf(os.Stderr, "❌ Could not open package %v: %v\n", pkgName, err)
 			os.Exit(1)
 		}
 
