@@ -54,7 +54,9 @@
                   <!-- TODO the glasskube logo as fallback is probably not the best idea? -->
                   <img src="static/assets/glasskube-logo.svg" alt="{{ .PackageName}}"  style="max-width:52px; max-height: 52px; height:auto">
                   {{else}}
-                  <img src="{{ .IconUrl}}" alt="{{ .PackageName}}" style="max-width:52px; max-height: 52px; height:auto">
+                  <svg width="52" height="52" style="max-width: 52px; max-height: 52px; height: auto;">
+                    <image xlink:href="{{ .IconUrl }}" width="52" height="52" alt="{{ .PackageName}}" />
+                  </svg>
                   {{end}}
                 </div>
                 <div class="flex-grow-1 card-body ps-0 pe-1 py-1">
