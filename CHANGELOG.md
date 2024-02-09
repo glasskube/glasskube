@@ -1,5 +1,78 @@
 # Changelog
 
+## [0.0.2](https://github.com/glasskube/glasskube/compare/v0.0.1...v0.0.2) (2024-02-09)
+
+
+### Features
+
+* add 'port' flag to 'glasskube serve' ([2ac1485](https://github.com/glasskube/glasskube/commit/2ac14851f2451e2d7e43614b8543d72b77481435))
+* add event recording ([#139](https://github.com/glasskube/glasskube/issues/139)) ([3ccc35c](https://github.com/glasskube/glasskube/commit/3ccc35cedcd9712b02118c949c26d9253e5a10e3))
+* **cli, ui:** glasskube open ([8af0072](https://github.com/glasskube/glasskube/commit/8af00727e59cf8458fbbb1df62f392cd8a5602de))
+* **cli:** add open for packages ([d991c5e](https://github.com/glasskube/glasskube/commit/d991c5ebb0bd9e21acb5403787fb88319beeedf0))
+* **cli:** add progress spinner for install cmd ([6a99408](https://github.com/glasskube/glasskube/commit/6a994087d673fc935278b0f0ea9c395a76261c42))
+* **ui:** add open button on list page ([3e62c4b](https://github.com/glasskube/glasskube/commit/3e62c4bbb3ba9ded46d2c22b79c1ae95abf1f7d1))
+* **ui:** add real-time updates [#164](https://github.com/glasskube/glasskube/issues/164) and refactor [#126](https://github.com/glasskube/glasskube/issues/126) ([11d13d2](https://github.com/glasskube/glasskube/commit/11d13d274b134c566c17ced926c146e95db72717))
+* **website:** add a latest release version json file for outdated dedection ([d9b4c8a](https://github.com/glasskube/glasskube/commit/d9b4c8a5273fb63221e14ed89fa5a65e6c25a14e))
+* **website:** allow search engies to index glasskube.dev ([04f6dc2](https://github.com/glasskube/glasskube/commit/04f6dc2fa0ef9671db8855e65404569b210dcfb0))
+* **website:** improve glasskube vs helm meta title ([7a79ba1](https://github.com/glasskube/glasskube/commit/7a79ba16f27506f68f69dfc8ed9d4e933eb044a0))
+* **website:** mark keptn as a supported package ([#137](https://github.com/glasskube/glasskube/issues/137)) ([57137b4](https://github.com/glasskube/glasskube/commit/57137b43bd33972532cca75de4ce09d92d4f76bf))
+
+
+### Bug Fixes
+
+* **cli:** add port check before forwarding ([68b273d](https://github.com/glasskube/glasskube/commit/68b273d82ae95cd17ad57ecbbf8be87ac6533073))
+* **deps:** update module github.com/fluxcd/helm-controller/api to v0.37.3 ([97950df](https://github.com/glasskube/glasskube/commit/97950df2d0f455342ca7d564f51f526c48bb9be0))
+* **deps:** update module github.com/fluxcd/helm-controller/api to v0.37.4 ([f734c3c](https://github.com/glasskube/glasskube/commit/f734c3c0b0139f768ba583fb5551a84e1703258e))
+* **deps:** update module github.com/fluxcd/source-controller/api to v1.2.4 ([bc81723](https://github.com/glasskube/glasskube/commit/bc8172342239b9a2d71a895a7cd4f659e98f2579))
+* **deps:** update module github.com/gorilla/websocket to v1.5.1 ([2ab5393](https://github.com/glasskube/glasskube/commit/2ab539323bea9fef3b269b93ba90075a9fee1a4f))
+* **deps:** update module sigs.k8s.io/controller-runtime to v0.17.1 ([6120f45](https://github.com/glasskube/glasskube/commit/6120f45d71b89b8058b60ff251475eed891d88f4))
+* fix broken links ([#103](https://github.com/glasskube/glasskube/issues/103)) ([3dd8ac6](https://github.com/glasskube/glasskube/commit/3dd8ac6fd7032007d6bd634d31fffd6d60574778))
+* fixed typo in mariadb-operator reference ([ffc8edb](https://github.com/glasskube/glasskube/commit/ffc8edb3bd04ad01fa5614476c1d701da8a794e9))
+* folder name of technical preview  blogpost ([04ec42b](https://github.com/glasskube/glasskube/commit/04ec42bd76ab7cec322bcfd90ec651e032af2788))
+* **package-operator:** add version in manifest ([ed4a657](https://github.com/glasskube/glasskube/commit/ed4a657770b3a6196401e62d25095d7ad5b2510d))
+* port conflict ([0f7fbcf](https://github.com/glasskube/glasskube/commit/0f7fbcf3f5cb7a2c6686a3835ee68cb7789c1f31))
+* removed logger dependency issue from the repo client ([8fd9bff](https://github.com/glasskube/glasskube/commit/8fd9bff13759136e1a94dd7fb4fd2734ea8487cb))
+* removed unused ctx and removed null logger ([233ab22](https://github.com/glasskube/glasskube/commit/233ab221b9ba090a44ff19f24b4289551a502700))
+* **website:** add trailing slash, don't index tag pages on google ([76db2d1](https://github.com/glasskube/glasskube/commit/76db2d1f545918a1705db698ea48e308ff7d4b44))
+
+
+### Other
+
+* add codeowners ([16e2b84](https://github.com/glasskube/glasskube/commit/16e2b8451d0acd1547360cba086a062feb8476bf))
+* add issue templates ([fe52235](https://github.com/glasskube/glasskube/commit/fe5223577f0517d430ce3ceb60312c4bbcbde491))
+* **deps:** update actions/setup-node action to v4.0.2 ([8f47904](https://github.com/glasskube/glasskube/commit/8f479044b80c532c59f8219ec66e1e8c3d1f2b40))
+* **deps:** update actions/setup-node digest to 60edb5d ([31f3abd](https://github.com/glasskube/glasskube/commit/31f3abdafe48feab75fe8d4970f049b9b8258520))
+* **deps:** update aws-actions/configure-aws-credentials digest to e3dd6a4 ([56b8a84](https://github.com/glasskube/glasskube/commit/56b8a8471e15dcb1ce0c2cc41be6a953a1c29596))
+* fix wrong path in release please config ([e59e4b0](https://github.com/glasskube/glasskube/commit/e59e4b004fbc5a28a48db3de008ac516246a49fa))
+
+
+### Docs
+
+* add CNCF landscape badge ([f3f46be](https://github.com/glasskube/glasskube/commit/f3f46beda7a8f81d35cd0b2b699ef3106fd5414c))
+* add shell completion to install guide ([ef3bf90](https://github.com/glasskube/glasskube/commit/ef3bf909f4407ca141c5171b2747758a7a7b4f2b))
+* add technical preview blogpost ([2af5351](https://github.com/glasskube/glasskube/commit/2af5351c266ff30b88e6a45cc1b0f4a3dd3e159a))
+* change release-please annotations to mdx comments ([aed9f08](https://github.com/glasskube/glasskube/commit/aed9f084e2e420f418f930d56247d5136df69796))
+* fix sidebar ([a223e89](https://github.com/glasskube/glasskube/commit/a223e8904d7dbf0255c9e8ae93e91e2c4daff1c2))
+* fix some typos ([#178](https://github.com/glasskube/glasskube/issues/178)) ([f9ee2e2](https://github.com/glasskube/glasskube/commit/f9ee2e2af21a1c2af10946e0c893ac3bcfb02b4e))
+* fix typo ([ea6bed8](https://github.com/glasskube/glasskube/commit/ea6bed838f8fb207325a3a2f83b546920c42b9f5))
+* fix typo in Readme ([8bd8aa7](https://github.com/glasskube/glasskube/commit/8bd8aa7d6999ba0477d5de76fc8d6ba3b0a6f028))
+* fix wrong package version ([bdf8074](https://github.com/glasskube/glasskube/commit/bdf807404d49ef9a86e70353baa4d305158b45ed))
+* improve technical preview blog post ([7c409da](https://github.com/glasskube/glasskube/commit/7c409da9a2779f637f799434593d6eb45647ca9d))
+* replace gif in readme with svg ([b197138](https://github.com/glasskube/glasskube/commit/b197138af062aee566382dfa67e80e6a13666510))
+* update client commands ([e5b4df1](https://github.com/glasskube/glasskube/commit/e5b4df12dbff1c6a8a6442deafa489ca3b3f3218))
+* update helm comparison ([150d319](https://github.com/glasskube/glasskube/commit/150d3194f1d9469cb5fa1bf3277fdd28730a8e6e))
+* update roadmap ([730cb73](https://github.com/glasskube/glasskube/commit/730cb73495ed8ebcce9d2f6a32d1209f63d62ed0))
+* use a custom domain for binary downloads ([cbfc1ef](https://github.com/glasskube/glasskube/commit/cbfc1efbbd6f9bee0421edf5844401021fef4120))
+* **website:** add [@kubesimplify](https://github.com/kubesimplify) video to release blog post ([18a9fa4](https://github.com/glasskube/glasskube/commit/18a9fa4365af43456cd7361f0a0c1f30ba250397))
+* **website:** add CTA at the bottom ([dc90ece](https://github.com/glasskube/glasskube/commit/dc90ece6c177be4322522383141cf9298afe9ada))
+* **website:** add glasskube is part of the cncf landscape blog post ([607c158](https://github.com/glasskube/glasskube/commit/607c1589faa6a148480c36791abc404673d4ab7f))
+* **website:** update roadmap ([297a172](https://github.com/glasskube/glasskube/commit/297a17266ed74c68d1a236829f6575aaed44f958))
+
+
+### Refactoring
+
+* **website:** move guides to own folder for a clean url ([b909508](https://github.com/glasskube/glasskube/commit/b90950823dc4d30d20c5c0502cb61aff3fc7dae7))
+
 ## 0.0.1 (2024-01-31)
 
 
