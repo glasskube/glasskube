@@ -63,7 +63,8 @@
           "type": "string"
         },
         "iconUrl": {
-          "type": "string"
+          "type": "string",
+          "format": "uri"
         },
         "helm": {
           "$ref": "#/$defs/HelmManifest"
