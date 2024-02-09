@@ -8,14 +8,27 @@ import (
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/repo"
 	"github.com/glasskube/glasskube/pkg/client"
+	"go.uber.org/multierr"
 )
 
 type PackageTeaserWithStatus struct {
-	PackageName      string
-	ShortDescription string
-	Status           *client.PackageStatus
-	IconUrl          string
+	PackageName       string
+	ShortDescription  string
+	IconUrl           string
+	Status            *client.PackageStatus
+	InstalledManifest *v1alpha1.PackageManifest
 }
+
+type listOptions int64
+
+const (
+	IncludePackageInfos listOptions = 1 << iota
+	OnlyInstalled
+)
+
+const (
+	DefaultListOptions listOptions = 0
+)
 
 func Get(client *client.PackageV1Alpha1Client, ctx context.Context, name string) (*v1alpha1.Package, error) {
 	var pkg v1alpha1.Package
@@ -26,80 +39,105 @@ func Get(client *client.PackageV1Alpha1Client, ctx context.Context, name string)
 	return &pkg, nil
 }
 
-func GetInstalled(client *client.PackageV1Alpha1Client, ctx context.Context) (*v1alpha1.PackageList, error) {
-	ls := &v1alpha1.PackageList{}
-	err := client.Packages().GetAll(ctx, ls)
-	if err != nil {
-		return nil, err
-	}
-	return ls, nil
-}
-
 func GetPackagesWithStatus(
 	pkgClient *client.PackageV1Alpha1Client,
 	ctx context.Context,
-	onlyInstalled bool,
+	options listOptions,
 ) ([]*PackageTeaserWithStatus, error) {
-	index, installed, err := fetchRepoAndInstalled(pkgClient, ctx)
+	onlyInstalled := options&OnlyInstalled != 0
+
+	index, err := fetchRepoAndInstalled(pkgClient, ctx, options)
 	if err != nil {
 		return nil, err
 	}
 
-	res := make([]*PackageTeaserWithStatus, 0, len(index.Packages))
-	for _, description := range index.Packages {
-		pkgWithStatus := &PackageTeaserWithStatus{
-			PackageName:      description.Name,
-			ShortDescription: description.ShortDescription,
-			IconUrl:          description.IconUrl,
-			Status:           nil,
+	result := make([]*PackageTeaserWithStatus, 0, len(index))
+	for _, item := range index {
+		pkgWithStatus := PackageTeaserWithStatus{
+			PackageName:      item.Teaser.Name,
+			ShortDescription: item.Teaser.ShortDescription,
+			IconUrl:          item.Teaser.IconUrl,
 		}
-		for _, inst := range installed.Items {
-			if description.Name == inst.Name {
-				if stat := client.GetStatus(&inst.Status); stat != nil {
-					pkgWithStatus.Status = stat
-				} else {
-					pkgWithStatus.Status = &client.PackageStatus{
-						Status: "Pending",
+		if item.Package != nil {
+			if status := client.GetStatus(&item.Package.Status); status != nil {
+				pkgWithStatus.Status = status
+			} else {
+				pkgWithStatus.Status = &client.PackageStatus{Status: "Pending"}
+			}
+		}
+		if item.PackageInfo != nil {
+			pkgWithStatus.InstalledManifest = item.PackageInfo.Status.Manifest
+		}
+		if !onlyInstalled || pkgWithStatus.Status != nil {
+			result = append(result, &pkgWithStatus)
+		}
+	}
+	return result, nil
+}
+
+type listResultTuple struct {
+	Teaser      *repo.PackageTeaser
+	Package     *v1alpha1.Package
+	PackageInfo *v1alpha1.PackageInfo
+}
+
+func fetchRepoAndInstalled(pkgClient *client.PackageV1Alpha1Client, ctx context.Context, options listOptions) (
+	[]listResultTuple,
+	error,
+) {
+	var index repo.PackageRepoIndex
+	var packages v1alpha1.PackageList
+	var packageInfos v1alpha1.PackageInfoList
+	var compositeErr error
+	wg := new(sync.WaitGroup)
+	wg.Add(2)
+
+	go func() {
+
+		if err := repo.FetchPackageRepoIndex("", &index); err != nil {
+			compositeErr = multierr.Append(compositeErr, fmt.Errorf("could not fetch package repository index: %w", err))
+		}
+		wg.Done()
+	}()
+
+	go func() {
+
+		if err := pkgClient.Packages().GetAll(ctx, &packages); err != nil {
+			compositeErr = multierr.Append(compositeErr, fmt.Errorf("could not fetch installed packages: %w", err))
+		}
+		wg.Done()
+	}()
+
+	if options&IncludePackageInfos != 0 {
+		wg.Add(1)
+		go func() {
+			if err := pkgClient.PackageInfos().GetAll(ctx, &packageInfos); err != nil {
+				compositeErr = multierr.Append(compositeErr, fmt.Errorf("could not fetch package infos: %w", err))
+			}
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+	if compositeErr != nil {
+		return nil, compositeErr
+	}
+
+	result := make([]listResultTuple, len(index.Packages))
+	for i, indexPackage := range index.Packages {
+		result[i].Teaser = &index.Packages[i]
+		for j, clusterPackage := range packages.Items {
+			if indexPackage.Name == clusterPackage.Name {
+				result[i].Package = &packages.Items[j]
+				for k, packageInfo := range packageInfos.Items {
+					if packageInfo.Name == clusterPackage.Spec.PackageInfo.Name {
+						result[i].PackageInfo = &packageInfos.Items[k]
+						break
 					}
 				}
 				break
 			}
 		}
-		if !onlyInstalled || pkgWithStatus.Status != nil {
-			res = append(res, pkgWithStatus)
-		}
 	}
-	return res, nil
-}
-
-func fetchRepoAndInstalled(
-	pkgClient *client.PackageV1Alpha1Client,
-	ctx context.Context,
-) (*repo.PackageRepoIndex,
-	*v1alpha1.PackageList,
-	error,
-) {
-	var index *repo.PackageRepoIndex
-	var errRepo error
-	var installed *v1alpha1.PackageList
-	var errInst error
-	wg := new(sync.WaitGroup)
-	wg.Add(1)
-	go func() {
-		index, errRepo = repo.FetchPackageRepoIndex("")
-		wg.Done()
-	}()
-	wg.Add(1)
-	go func() {
-		installed, errInst = GetInstalled(pkgClient, ctx)
-		wg.Done()
-	}()
-	wg.Wait()
-	if errRepo != nil {
-		return nil, nil, fmt.Errorf("could not fetch package repository index: %w\n", errRepo)
-	}
-	if errInst != nil {
-		return nil, nil, fmt.Errorf("could not fetch installed packages: %w\n", errInst)
-	}
-	return index, installed, nil
+	return result, nil
 }
