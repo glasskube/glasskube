@@ -111,4 +111,4 @@ archives:
     allow_different_binary_count: true
 
 changelog:
-  skip: true
+  disable: true
