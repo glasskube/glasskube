@@ -34,7 +34,7 @@ func NewOpener() *opener {
 	return &opener{}
 }
 
-func (o *opener) Open(ctx context.Context, packageName string, entrypointName string) (*openResult, error) {
+func (o *opener) Open(ctx context.Context, packageName string, entrypointName string) (*OpenResult, error) {
 	if err := o.initFromContext(ctx); err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func (o *opener) Open(ctx context.Context, packageName string, entrypointName st
 		}
 	}
 
-	result := openResult{opener: o}
+	result := OpenResult{opener: o}
 	var futures []future.Future
 	for _, entrypoint := range entrypoints {
 		if entrypointName == "" || entrypoint.Name == entrypointName {

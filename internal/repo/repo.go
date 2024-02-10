@@ -46,23 +46,22 @@ func FetchPackageManifest(ctx context.Context, pi *packagesv1alpha1.PackageInfo)
 	return nil
 }
 
-func FetchPackageRepoIndex(repoUrl string) (*PackageRepoIndex, error) {
+func FetchPackageRepoIndex(repoUrl string, target *PackageRepoIndex) error {
 	if len(repoUrl) == 0 {
 		repoUrl = defaultRepositoryUrl
 	}
 	url, err := url.JoinPath(repoUrl, "index.yaml")
 	if err != nil {
-		return nil, err
+		return err
 	}
 	body, err := doFetch(url)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	var index PackageRepoIndex
-	if err = yaml.Unmarshal(body, &index); err != nil {
-		return nil, err
+	if err = yaml.Unmarshal(body, target); err != nil {
+		return err
 	}
-	return &index, nil
+	return nil
 }
 
 func doFetch(url string) ([]byte, error) {

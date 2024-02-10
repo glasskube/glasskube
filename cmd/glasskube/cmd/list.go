@@ -20,7 +20,11 @@ var listCmd = &cobra.Command{
 	PreRun: cliutils.SetupClientContext(true),
 	Run: func(cmd *cobra.Command, args []string) {
 		pkgClient := client.FromContext(cmd.Context())
-		pkgs, err := list.GetPackagesWithStatus(pkgClient, cmd.Context(), config.ListInstalledOnly)
+		listOptions := list.DefaultListOptions
+		if config.ListInstalledOnly {
+			listOptions |= list.OnlyInstalled
+		}
+		pkgs, err := list.GetPackagesWithStatus(pkgClient, cmd.Context(), listOptions)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "An error occurred:\n\n%v\n", err)
 			os.Exit(1)
