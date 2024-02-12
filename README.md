@@ -100,9 +100,10 @@ Congratulations, you can now explore and install all our available packages! ðŸŽ
 ## ðŸ“¦ Supported Packages
 
 - Cert Manager [`cert-manager/cert-manager`](https://github.com/cert-manager/cert-manager)
+- Cyclops [`cyclops-ui/cyclops`](https://github.com/cyclops-ui/cyclops)
 - Ingress-NGINX Controller [`kubernetes/ingress-nginx`](https://github.com/kubernetes/ingress-nginx)
+- Keptn [`keptn/lifecycle-toolkit`](https://github.com/keptn/lifecycle-toolkit)
 - Kubernetes Dashboard [`kubernetes/dashboard`](https://github.com/kubernetes/dashboard)
-- Cyclops[`cyclops-ui/cyclops`](https://github.com/cyclops-ui/cyclops)
 
 ### Coming Soon
 
