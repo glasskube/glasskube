@@ -45,6 +45,12 @@
         },
         "port": {
           "type": "integer"
+        },
+        "localPort": {
+          "type": "integer"
+        },
+        "scheme": {
+          "type": "string"
         }
       },
       "additionalProperties": false,

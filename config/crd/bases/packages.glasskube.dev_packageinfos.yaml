@@ -125,6 +125,10 @@ spec:
                       description: PackageEntrypoint defines a service port a user
                         may use to access the package
                       properties:
+                        localPort:
+                          description: LocalPort to use for port mapping
+                          format: int32
+                          type: integer
                         name:
                           description: Name of this entrypoint. Used for "glasskube
                             open [package-name] [entrypoint-name]" if more than one
@@ -135,6 +139,8 @@ spec:
                           description: Port of the service to bind to
                           format: int32
                           type: integer
+                        scheme:
+                          type: string
                         serviceName:
                           description: ServiceName is the name of a service that is
                             part of
