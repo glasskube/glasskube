@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 
@@ -33,48 +34,36 @@ func versionIsGreater(version1, version2 string) bool {
 	return len(v1) < len(v2)
 }
 
-func checkForUpdate() (bool, string, error) {
+func checkForUpdate() (bool, string) {
 	url := "https://glasskube.dev/release.json"
 
-	resp, err := http.Get(url)
-	if err != nil {
-		return false, "", fmt.Errorf("failed to fetch release information: %v", err)
-	}
+	resp, _ := http.Get(url)
 
 	defer func() {
-		if closeErr := resp.Body.Close(); closeErr != nil {
-			err = fmt.Errorf("failed to close response body: %v", closeErr)
-		}
-	}()
+		_ = resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return false, "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
+	}()
 
 	var releaseInfo ReleaseInfo
 	if err := json.NewDecoder(resp.Body).Decode(&releaseInfo); err != nil {
-		return false, "", fmt.Errorf("failed to decode release information: %v", err)
+		return false, ""
 	}
 
 	if versionIsGreater(config.Version, releaseInfo.Version) {
-		return true, releaseInfo.Version, nil
+		return true, releaseInfo.Version
 	}
 
-	return false, "", nil
+	return false, ""
 }
 
 func UpdateFetch() {
-	updateAvailable, latestVersion, err := checkForUpdate()
-	if err != nil {
-		fmt.Println("Error:", err)
-		return
-	}
+	updateAvailable, latestVersion := checkForUpdate()
 
 	printUpdateMessage := func() {
-		fmt.Printf("\n   --------------------------------------------------------------------------------------------------------------- \n\n")
-		fmt.Printf("                                           Update available %s → %s\n", config.Version, latestVersion)
-		fmt.Printf("                              Please update glasskube to the latest version\n\n")
-		fmt.Printf("   --------------------------------------------------------------------------------------------------------------- \n\n")
+		fmt.Fprintf(os.Stderr, "\n   --------------------------------------------------------------------------------------------------------------- \n\n")
+		fmt.Fprintf(os.Stderr, "                                           Update available %s → %s\n", config.Version, latestVersion)
+		fmt.Fprintf(os.Stderr, "                              Please update glasskube to the latest version\n\n")
+		fmt.Fprintf(os.Stderr, "   --------------------------------------------------------------------------------------------------------------- \n\n")
 	}
 
 	if updateAvailable {
