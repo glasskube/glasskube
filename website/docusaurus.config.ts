@@ -197,7 +197,7 @@ const config: Config = {
               to: '/blog',
             },
             {
-              label: 'Contact / Book appoitment',
+              label: 'Contact / Book appointment',
               href: 'https://cal.glasskube.eu/team/founder/30min'
             },
             {
