@@ -45,6 +45,12 @@
         },
         "port": {
           "type": "integer"
+        },
+        "localPort": {
+          "type": "integer"
+        },
+        "scheme": {
+          "type": "string"
         }
       },
       "additionalProperties": false,
@@ -63,7 +69,8 @@
           "type": "string"
         },
         "iconUrl": {
-          "type": "string"
+          "type": "string",
+          "format": "uri"
         },
         "helm": {
           "$ref": "#/$defs/HelmManifest"

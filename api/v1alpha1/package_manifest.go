@@ -40,6 +40,9 @@ type PackageEntrypoint struct {
 	ServiceName string `json:"serviceName" jsonschema:"required"`
 	// Port of the service to bind to
 	Port int32 `json:"port" jsonschema:"required"`
+	// LocalPort to use for port mapping
+	LocalPort int32  `json:"localPort,omitempty"`
+	Scheme    string `json:"scheme,omitempty"`
 }
 
 type PlainManifest struct {
@@ -49,7 +52,7 @@ type PlainManifest struct {
 type PackageManifest struct {
 	Name             string `json:"name" jsonschema:"required"`
 	ShortDescription string `json:"shortDescription,omitempty"`
-	IconUrl          string `json:"iconUrl,omitempty"`
+	IconUrl          string `json:"iconUrl,omitempty" jsonschema:"format=uri"`
 	// Helm instructs the controller to create a helm release when installing this package.
 	Helm *HelmManifest `json:"helm,omitempty"`
 	// Kustomize instructs the controller to apply a kustomization when installing this package [PLACEHOLDER].

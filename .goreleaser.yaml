@@ -33,13 +33,14 @@ builds:
     binary: package-operator
 
 dockers:
-  - use: docker
+  - image_templates:
+      - "ghcr.io/glasskube/package-operator:{{.Tag}}-amd64"
+      - "ghcr.io/glasskube/package-operator:latest-amd64"
+    use: buildx
     dockerfile: release.Dockerfile
-    image_templates:
-      - "ghcr.io/glasskube/package-operator:{{.Tag}}"
-      - "ghcr.io/glasskube/package-operator:latest"
     build_flag_templates:
       - "--pull"
+      - "--platform=linux/amd64"
       - "--label=org.opencontainers.image.created={{.Date}}"
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
       - "--label=org.opencontainers.image.version={{.Version}}"
@@ -49,6 +50,34 @@ dockers:
       - "--label=org.opencontainers.image.source=https://github.com/glasskube/glasskube/"
       - "--label=org.opencontainers.image.url=https://glasskube.dev/"
       - "--label=org.opencontainers.image.documentation=https://glasskube.dev/docs/"
+  - image_templates:
+      - "ghcr.io/glasskube/package-operator:{{.Tag}}-arm64"
+      - "ghcr.io/glasskube/package-operator:latest-arm64"
+    use: buildx
+    dockerfile: release.Dockerfile
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/arm64"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - '--label=org.opencontainers.image.title="Glasskube package-operator"'
+      - "--label=org.opencontainers.image.vendor=Glasskube"
+      - "--label=org.opencontainers.image.licenses=Apache-2.0"
+      - "--label=org.opencontainers.image.source=https://github.com/glasskube/glasskube/"
+      - "--label=org.opencontainers.image.url=https://glasskube.dev/"
+      - "--label=org.opencontainers.image.documentation=https://glasskube.dev/docs/"
+    goarch: arm64
+
+docker_manifests:
+  - name_template: "ghcr.io/glasskube/package-operator:{{.Tag}}"
+    image_templates:
+      - "ghcr.io/glasskube/package-operator:{{.Tag}}-amd64"
+      - "ghcr.io/glasskube/package-operator:{{.Tag}}-arm64"
+  - name_template: "ghcr.io/glasskube/package-operator:latest"
+    image_templates:
+      - "ghcr.io/glasskube/package-operator:latest-amd64"
+      - "ghcr.io/glasskube/package-operator:latest-arm64"
 
 nfpms:
   - file_name_template: "{{ .ProjectName }}_{{ .Tag }}_{{ .Arch }}"
@@ -111,4 +140,4 @@ archives:
     allow_different_binary_count: true
 
 changelog:
-  skip: true
+  disable: true

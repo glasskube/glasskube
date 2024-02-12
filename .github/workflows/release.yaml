@@ -47,6 +47,10 @@ jobs:
           registry: ghcr.io
           username: glasskube-bot
           password: ${{ secrets.GLASSKUBE_BOT_SECRET }}
+      - name: Setup qemu
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: amd64,arm64
       - name: Set up Go
         uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5
         with:

@@ -186,7 +186,7 @@ class NewsletterForm extends React.Component<any, { value: string }> {
   render() {
     return (
       <form onSubmit={this.handleSubmit} className={styles.newsletterForm}>
-        <input type="email" id="email" name="email"
+        <input type="email" id="email" name="email" required
           placeholder="your-email@corp.com"
           value={this.state.value} onChange={this.handleChange}
           className={styles.emailInput} />
