@@ -55,7 +55,7 @@ const config: Config = {
         sidebarPath: './sidebar-guides.ts',
         showLastUpdateAuthor: true,
         showLastUpdateTime: true,
-      } satisfies DocsOptions,
+      },
     ],
   ],
   presets: [
@@ -165,6 +165,23 @@ const config: Config = {
             {
               label: 'Getting started',
               to: '/docs/getting-started/install',
+            },
+          ],
+        },
+        {
+          title: 'Comparisons',
+          items: [
+            {
+              label: 'Glasskube vs Helm',
+              to: '/docs/comparisons/helm',
+            },
+            {
+              label: 'Glasskube vs Timoni',
+              to: '/docs/comparisons/timoni',
+            },
+            {
+              label: 'Glasskube vs OLM',
+              to: '/docs/comparisons/olm',
             },
           ],
         },
