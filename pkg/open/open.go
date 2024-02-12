@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
@@ -89,7 +90,7 @@ func (o *opener) Open(ctx context.Context, packageName string, entrypointName st
 			// attach the first url to the result
 			// TODO: Maybe there is a more elegant way to do this.
 			if result.Url == "" {
-				result.Url = fmt.Sprintf("http://localhost:%v", entrypoint.Port)
+				result.Url = getBrowserUrl(e)
 			}
 		}
 	}
@@ -140,7 +141,7 @@ func (o *opener) open(
 	readyChannel chan struct{},
 	stopChannel chan struct{},
 ) (future.Future, error) {
-	if err := checkLocalPort(entrypoint.Port); err != nil {
+	if err := checkLocalPort(entrypoint); err != nil {
 		return nil, err
 	}
 
@@ -216,7 +217,7 @@ func portMapping(service *corev1.Service, pod *corev1.Pod, entrypoint v1alpha1.P
 	} else if cp, err := containerPort(pod, *sp); err != nil {
 		return "", err
 	} else {
-		return fmt.Sprintf("%v:%v", entrypoint.Port, cp), nil
+		return fmt.Sprintf("%v:%v", getLocalPort(entrypoint), cp), nil
 	}
 }
 
@@ -246,7 +247,8 @@ func containerPort(pod *corev1.Pod, servicePort corev1.ServicePort) (int32, erro
 	}
 }
 
-func checkLocalPort(port int32) error {
+func checkLocalPort(entrypoint v1alpha1.PackageEntrypoint) error {
+	port := getLocalPort(entrypoint)
 	if l, err := net.Listen("tcp", fmt.Sprintf(":%v", port)); err != nil {
 		return fmt.Errorf("tcp port %v is not free", port)
 	} else if err = l.Close(); err != nil {
@@ -254,4 +256,23 @@ func checkLocalPort(port int32) error {
 	} else {
 		return nil
 	}
+}
+
+func getLocalPort(entrypoint v1alpha1.PackageEntrypoint) int32 {
+	if entrypoint.LocalPort != 0 {
+		return entrypoint.LocalPort
+	} else {
+		return entrypoint.Port
+	}
+}
+
+func getBrowserUrl(entrypoint v1alpha1.PackageEntrypoint) string {
+	url := url.URL{
+		Scheme: "http",
+		Host:   fmt.Sprintf("localhost:%v", getLocalPort(entrypoint)),
+	}
+	if entrypoint.Scheme != "" {
+		url.Scheme = entrypoint.Scheme
+	}
+	return url.String()
 }
