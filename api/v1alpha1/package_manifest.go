@@ -40,6 +40,9 @@ type PackageEntrypoint struct {
 	ServiceName string `json:"serviceName" jsonschema:"required"`
 	// Port of the service to bind to
 	Port int32 `json:"port" jsonschema:"required"`
+	// LocalPort to use for port mapping
+	LocalPort int32  `json:"localPort,omitempty"`
+	Scheme    string `json:"scheme,omitempty"`
 }
 
 type PlainManifest struct {
