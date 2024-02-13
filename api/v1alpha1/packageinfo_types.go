@@ -27,6 +27,7 @@ import (
 type PackageInfoSpec struct {
 	// +kubebuilder:validation:Required
 	Name          string `json:"name"`
+	Version       string `json:"version,omitempty"`
 	RepositoryUrl string `json:"repositoryUrl,omitempty"`
 }
 
@@ -35,6 +36,7 @@ type PackageInfoStatus struct {
 	Manifest            *PackageManifest   `json:"manifest,omitempty"`
 	Conditions          []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 	LastUpdateTimestamp *metav1.Time       `json:"lastUpdateTimestamp,omitempty"`
+	Version             string             `json:"version,omitempty"`
 }
 
 //+kubebuilder:object:root=true
