@@ -11,12 +11,15 @@ import (
 	"go.uber.org/multierr"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/repo"
 	"github.com/invopop/jsonschema"
 )
 
 var (
 	types = map[string]interface{}{
 		"package-manifest": &v1alpha1.PackageManifest{},
+		"index":            &repo.PackageRepoIndex{},
+		"versions":         &repo.PackageIndex{},
 	}
 
 	outBase    = "website/static"
@@ -57,7 +60,7 @@ func run() (retErr error) {
 
 		encoder := json.NewEncoder(file)
 		encoder.SetIndent("", "  ")
-		fmt.Fprintf(os.Stderr, "Writing to %v", file.Name())
+		fmt.Fprintf(os.Stderr, "Writing to %v\n", file.Name())
 		if err = encoder.Encode(schema); err != nil {
 			return err
 		}
