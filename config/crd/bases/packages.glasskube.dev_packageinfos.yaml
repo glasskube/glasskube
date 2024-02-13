@@ -38,6 +38,8 @@ spec:
                 type: string
               repositoryUrl:
                 type: string
+              version:
+                type: string
             required:
             - name
             type: object
@@ -210,6 +212,8 @@ spec:
                 required:
                 - name
                 type: object
+              version:
+                type: string
             type: object
         type: object
     served: true

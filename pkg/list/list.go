@@ -72,7 +72,7 @@ func GetPackagesWithStatus(
 }
 
 type listResultTuple struct {
-	Teaser      *repo.PackageTeaser
+	Teaser      *repo.PackageRepoIndexItem
 	Package     *v1alpha1.Package
 	PackageInfo *v1alpha1.PackageInfo
 }

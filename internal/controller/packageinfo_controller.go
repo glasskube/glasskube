@@ -80,7 +80,7 @@ func (r *PackageInfoReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	if shouldSyncFromRepo(packageInfo) {
-		if err := repo.LoadPackageManifest(ctx, &packageInfo); err != nil {
+		if err := repo.UpdatePackageManifest(&packageInfo); err != nil {
 			err1 := conditions.SetFailedAndUpdate(ctx, r.Client, r.EventRecorder, &packageInfo, &packageInfo.Status.Conditions, condition.SyncFailed, err.Error())
 			return requeue.Always(ctx, multierr.Append(err, err1))
 		} else {
@@ -98,7 +98,9 @@ func (r *PackageInfoReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 }
 
 func shouldSyncFromRepo(pi packagesv1alpha1.PackageInfo) bool {
-	return pi.Status.LastUpdateTimestamp == nil || time.Since(pi.Status.LastUpdateTimestamp.Time) > repositorySyncInterval
+	return pi.Status.LastUpdateTimestamp == nil ||
+		(pi.Spec.Version != "" && pi.Spec.Version != pi.Status.Version) ||
+		time.Since(pi.Status.LastUpdateTimestamp.Time) > repositorySyncInterval
 }
 
 // SetupWithManager sets up the controller with the Manager.
