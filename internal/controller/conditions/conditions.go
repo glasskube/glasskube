@@ -79,9 +79,6 @@ func updateAfterConditionsChanged(ctx context.Context, cl client.Client, obj cli
 	if err := cl.Status().Update(ctx, obj); err != nil {
 		return fmt.Errorf("could not set conditions: failed to update object status: %w", err)
 	}
-	if err := cl.Get(ctx, client.ObjectKeyFromObject(obj), obj); err != nil {
-		return fmt.Errorf("could not set conditions: failed to re-fetch object: %w", err)
-	}
 	return nil
 }
 

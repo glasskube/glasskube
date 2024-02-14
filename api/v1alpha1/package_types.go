@@ -27,6 +27,8 @@ type PackageInfoTemplate struct {
 	// Name of the package to install
 	// +kubebuilder:validation:Required
 	Name string `json:"name"`
+	// Version of the package to install (optional)
+	Version string `json:"version,omitempty"`
 	// Optional URL of the repository to pull the package from
 	RepositoryUrl string `json:"repositoryUrl,omitempty"`
 }
@@ -39,8 +41,10 @@ type PackageSpec struct {
 
 // PackageStatus defines the observed state of Package
 type PackageStatus struct {
-	Conditions     []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
-	OwnedResources []OwnedResourceRef `json:"ownedResources,omitempty"`
+	Version           string             `json:"version,omitempty"`
+	Conditions        []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
+	OwnedResources    []OwnedResourceRef `json:"ownedResources,omitempty"`
+	OwnedPackageInfos []OwnedResourceRef `json:"ownedPackageInfos,omitempty"`
 }
 
 //+kubebuilder:object:root=true
