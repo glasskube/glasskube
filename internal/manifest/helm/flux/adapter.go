@@ -16,10 +16,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 type FluxHelmAdapter struct {
@@ -60,12 +60,12 @@ func (a FluxHelmAdapter) Reconcile(ctx context.Context, client client.Client, pk
 }
 
 func ensureNamespace(ctx context.Context, client client.Client, pkg *packagesv1alpha1.Package, manifest *packagesv1alpha1.PackageManifest) (*corev1.Namespace, error) {
-	log := log.FromContext(ctx)
 	namespace := corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: manifest.DefaultNamespace,
 		},
 	}
+	log := ctrl.LoggerFrom(ctx).WithValues("Namespace", namespace.Name)
 	result, err := controllerutil.CreateOrUpdate(ctx, client, &namespace, func() error {
 		if namespace.Status.Phase == corev1.NamespaceTerminating {
 			return nil
@@ -76,19 +76,19 @@ func ensureNamespace(ctx context.Context, client client.Client, pkg *packagesv1a
 	if err != nil {
 		return nil, fmt.Errorf("could not ensure namespace: %w", err)
 	} else {
-		log.V(1).Info("CreateUrUpdate result: "+string(result), "Namespace", namespace.Name)
+		log.V(1).Info("ensured Namespace", "result", result)
 		return &namespace, nil
 	}
 }
 
 func ensureHelmRepository(ctx context.Context, client client.Client, pkg *packagesv1alpha1.Package, manifest *packagesv1alpha1.PackageManifest) error {
-	log := log.FromContext(ctx)
 	helmRepository := sourcev1beta2.HelmRepository{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      manifest.Name,
 			Namespace: manifest.DefaultNamespace,
 		},
 	}
+	log := ctrl.LoggerFrom(ctx).WithValues("HelmRepository", helmRepository.Name)
 	result, err := controllerutil.CreateOrUpdate(ctx, client, &helmRepository, func() error {
 		helmRepository.Spec.URL = manifest.Helm.RepositoryUrl
 		helmRepository.Spec.Interval = metav1.Duration{Duration: 1 * time.Hour}
@@ -97,19 +97,19 @@ func ensureHelmRepository(ctx context.Context, client client.Client, pkg *packag
 	if err != nil {
 		return fmt.Errorf("could not ensure helm repository: %w", err)
 	} else {
-		log.V(1).Info("CreateUrUpdate result: "+string(result), "HelmRepository", helmRepository.Name)
+		log.V(1).Info("ensured HelmRepository", "result", result)
 		return err
 	}
 }
 
 func ensureHelmRelease(ctx context.Context, client client.Client, pkg *packagesv1alpha1.Package, manifest *packagesv1alpha1.PackageManifest) (*helmv1beta2.HelmRelease, error) {
-	log := log.FromContext(ctx)
 	helmRelease := helmv1beta2.HelmRelease{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      manifest.Name,
 			Namespace: manifest.DefaultNamespace,
 		},
 	}
+	log := ctrl.LoggerFrom(ctx).WithValues("HelmRelease", helmRelease.Name)
 	result, err := controllerutil.CreateOrUpdate(ctx, client, &helmRelease, func() error {
 		helmRelease.Spec.Chart.Spec.Chart = manifest.Helm.ChartName
 		helmRelease.Spec.Chart.Spec.Version = manifest.Helm.ChartVersion
@@ -126,7 +126,7 @@ func ensureHelmRelease(ctx context.Context, client client.Client, pkg *packagesv
 	if err != nil {
 		return nil, fmt.Errorf("could not ensure helm release: %w", err)
 	} else {
-		log.V(1).Info("CreateUrUpdate result: "+string(result), "HelmRelease", helmRelease.Name)
+		log.V(1).Info("ensured HelmRelease", "result", result)
 		return &helmRelease, nil
 	}
 }

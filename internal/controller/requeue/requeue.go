@@ -16,7 +16,7 @@ var (
 func Always(ctx context.Context, err error) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 	if err != nil {
-		log.Info("error during reconciliation: " + err.Error())
+		log.Error(err, "error during reconciliation")
 		return requeueAfter(ErrorRequeueDuration), nil
 	}
 	log.V(1).Info("reconciliation finished")

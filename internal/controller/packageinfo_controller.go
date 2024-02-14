@@ -26,13 +26,11 @@ import (
 	"github.com/glasskube/glasskube/internal/repo"
 	"github.com/glasskube/glasskube/pkg/condition"
 	"go.uber.org/multierr"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 // PackageInfoReconciler reconciles a PackageInfo object
@@ -63,30 +61,37 @@ var (
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.3/pkg/reconcile
 func (r *PackageInfoReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := log.FromContext(ctx)
+	log := ctrl.LoggerFrom(ctx)
 	var packageInfo packagesv1alpha1.PackageInfo
 
 	if err := r.Get(ctx, req.NamespacedName, &packageInfo); err != nil {
-		if apierrors.IsNotFound(err) {
-			log.V(1).Info("Failed to fetch PackageInfo: " + err.Error())
-			return ctrl.Result{}, nil
-		} else {
-			return requeue.Always(ctx, err)
-		}
-	}
-
-	if err := conditions.SetInitialAndUpdate(ctx, r.Client, &packageInfo, &packageInfo.Status.Conditions); err != nil {
-		return requeue.Always(ctx, err)
+		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	if shouldSyncFromRepo(packageInfo) {
+		if err := conditions.SetUnknownAndUpdate(ctx, r.Client, &packageInfo, &packageInfo.Status.Conditions,
+			condition.Pending, "Updating manifest"); err != nil {
+			return requeue.Always(ctx, err)
+		}
+
+		log.Info("updating manifest")
 		if err := repo.UpdatePackageManifest(&packageInfo); err != nil {
-			err1 := conditions.SetFailedAndUpdate(ctx, r.Client, r.EventRecorder, &packageInfo, &packageInfo.Status.Conditions, condition.SyncFailed, err.Error())
+			err1 := conditions.SetFailedAndUpdate(ctx, r.Client, r.EventRecorder, &packageInfo, &packageInfo.Status.Conditions,
+				condition.SyncFailed, err.Error())
 			return requeue.Always(ctx, multierr.Append(err, err1))
 		} else {
+			// The update might fail, because a Reconciliation sometimes works with an outdated version of the PackageInfo.
+			// Here we try to mitigate this by checking the resource version before updating
+			if latest, err := r.isLatestResourceVersion(ctx, &packageInfo); err != nil {
+				return requeue.Always(ctx, err)
+			} else if !latest {
+				log.Info("cancel reconciliation due to newer version")
+				return ctrl.Result{Requeue: true}, nil
+			}
 			now := metav1.Now()
 			packageInfo.Status.LastUpdateTimestamp = &now
-			conditions.SetReady(ctx, r.EventRecorder, &packageInfo, &packageInfo.Status.Conditions, condition.SyncCompleted, "PackageInfo is up-to-date")
+			conditions.SetReady(ctx, r.EventRecorder, &packageInfo, &packageInfo.Status.Conditions,
+				condition.SyncCompleted, "PackageInfo is up-to-date")
 			if err := r.Status().Update(ctx, &packageInfo); err != nil {
 				r.Event(&packageInfo, "Warning", string(condition.SyncFailed), err.Error())
 				return requeue.Always(ctx, err)
@@ -95,6 +100,16 @@ func (r *PackageInfoReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	return requeue.Always(ctx, nil)
+}
+
+func (r *PackageInfoReconciler) isLatestResourceVersion(ctx context.Context, packageInfo *packagesv1alpha1.PackageInfo) (bool, error) {
+	var other packagesv1alpha1.PackageInfo
+	err := r.Get(ctx, client.ObjectKeyFromObject(packageInfo), &other)
+	if err != nil {
+		return false, err
+	} else {
+		return packageInfo.ResourceVersion == other.ResourceVersion, nil
+	}
 }
 
 func shouldSyncFromRepo(pi packagesv1alpha1.PackageInfo) bool {

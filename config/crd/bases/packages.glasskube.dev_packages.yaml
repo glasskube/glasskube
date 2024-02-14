@@ -43,6 +43,9 @@ spec:
                     description: Optional URL of the repository to pull the package
                       from
                     type: string
+                  version:
+                    description: Version of the package to install (optional)
+                    type: string
                 required:
                 - name
                 type: object
@@ -120,6 +123,26 @@ spec:
                   - type
                   type: object
                 type: array
+              ownedPackageInfos:
+                items:
+                  properties:
+                    group:
+                      type: string
+                    kind:
+                      type: string
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    version:
+                      type: string
+                  required:
+                  - group
+                  - kind
+                  - name
+                  - version
+                  type: object
+                type: array
               ownedResources:
                 items:
                   properties:
@@ -140,6 +163,8 @@ spec:
                   - version
                   type: object
                 type: array
+              version:
+                type: string
             type: object
         type: object
     served: true
