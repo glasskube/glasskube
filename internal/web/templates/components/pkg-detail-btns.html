@@ -7,7 +7,7 @@
 
 {{define "pkg-detail-btns"}}
 
-<span id="{{ .ContainerId }}" hx-swap-oob="{{ .Swap }}">
+<span id="{{ .ContainerId }}" hx-swap-oob="{{ .Swap }}" hx-swap="none">
   {{if eq .Status nil}}
   <button hx-post="/packages/install" name="packageName" value="{{ .PackageName }}" class="btn btn-primary btn-sm">Install</button>
   {{else if eq .Status.Status "Pending"}}
