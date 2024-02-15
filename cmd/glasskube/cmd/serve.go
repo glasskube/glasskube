@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/glasskube/glasskube/internal/bootstrap"
 	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/web"
 	"github.com/glasskube/glasskube/pkg/client"
@@ -25,7 +24,7 @@ var serveCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 		var support *web.ServerConfigSupport
-		cfg, err := kubeconfig.New(config.Kubeconfig)
+		cfg, rawCfg, err := kubeconfig.New(config.Kubeconfig)
 		if err != nil {
 			support = &web.ServerConfigSupport{
 				KubeconfigError:           err,
@@ -35,19 +34,10 @@ var serveCmd = &cobra.Command{
 				support.KubeconfigMissing = true
 			}
 		}
-		if support == nil {
-			isBootstrapped, err := bootstrap.IsBootstrapped(cmd.Context(), cfg)
-			if !isBootstrapped || err != nil {
-				support = &web.ServerConfigSupport{
-					BootstrapMissing:    !isBootstrapped,
-					BootstrapCheckError: err,
-				}
-			}
-		}
 
 		var ctx = cmd.Context()
 		if cfg != nil {
-			ctx, err = client.SetupContext(ctx, cfg)
+			ctx, err = client.SetupContext(ctx, cfg, rawCfg)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "An error occurred starting the webserver:\n\n%v\n", err)
 				os.Exit(1)

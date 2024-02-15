@@ -27,8 +27,9 @@ var bootstrapCmd = &cobra.Command{
 	Args:   cobra.NoArgs,
 	PreRun: cliutils.SetupClientContext(false),
 	Run: func(cmd *cobra.Command, args []string) {
+		cfg, _ := cliutils.RequireConfig(config.Kubeconfig)
 		client := bootstrap.NewBootstrapClient(
-			cliutils.RequireConfig(config.Kubeconfig),
+			cfg,
 			bootstrapCmdOptions.url,
 			cmd.Root().Version,
 			bootstrapCmdOptions.bootstrapType,

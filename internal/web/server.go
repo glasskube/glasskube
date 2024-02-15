@@ -12,6 +12,12 @@ import (
 	"os"
 	"syscall"
 
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd/api"
+
+	"github.com/glasskube/glasskube/internal/config"
+	"github.com/glasskube/glasskube/pkg/bootstrap"
+
 	"github.com/glasskube/glasskube/pkg/manifest"
 
 	"github.com/glasskube/glasskube/pkg/describe"
@@ -51,6 +57,8 @@ type server struct {
 	port       int32
 	listener   net.Listener
 	ctx        context.Context
+	cfg        *rest.Config
+	rawCfg     *api.Config
 	support    *ServerConfigSupport
 	pkgClient  *client.PackageV1Alpha1Client
 	wsHub      *WsHub
@@ -72,19 +80,41 @@ func (s *server) broadcastPkgStatusUpdate(
 ) {
 	go func() {
 		var bf bytes.Buffer
-		pkg_overview_btn.Render(&bf, pkgOverviewBtnTmpl, pkgName, status, manifest)
-		s.wsHub.Broadcast <- bf.Bytes()
+		err := pkg_overview_btn.Render(&bf, pkgOverviewBtnTmpl, pkgName, status, manifest)
+		checkTmplError(err, fmt.Sprintf("%s (%s)", pkg_overview_btn.TemplateId, pkgName))
+		if err == nil {
+			s.wsHub.Broadcast <- bf.Bytes()
+		}
 	}()
 	go func() {
 		var bf bytes.Buffer
-		pkg_detail_btns.Render(&bf, pkgDetailBtnsTmpl, pkgName, status, manifest)
-		s.wsHub.Broadcast <- bf.Bytes()
+		err := pkg_detail_btns.Render(&bf, pkgDetailBtnsTmpl, pkgName, status, manifest)
+		checkTmplError(err, fmt.Sprintf("%s (%s)", pkg_overview_btn.TemplateId, pkgName))
+		if err == nil {
+			s.wsHub.Broadcast <- bf.Bytes()
+		}
 	}()
 }
 
 func (s *server) Start(ctx context.Context, support *ServerConfigSupport) error {
 	if s.listener != nil {
 		return errors.New("server is already listening")
+	}
+
+	s.cfg = client.ConfigFromContext(ctx)
+	s.rawCfg = client.RawConfigFromContext(ctx)
+
+	if support == nil {
+		isBootstrapped, err := bootstrap.IsBootstrapped(ctx, s.cfg)
+		if !isBootstrapped || err != nil {
+			support = &ServerConfigSupport{
+				BootstrapMissing:    !isBootstrapped,
+				BootstrapCheckError: err,
+			}
+		}
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "\nFailed to check whether Glasskube is bootstrapped: %v\n\n", err)
+		}
 	}
 
 	s.support = support
@@ -104,6 +134,7 @@ func (s *server) Start(ctx context.Context, support *ServerConfigSupport) error 
 	router.Handle("/favicon.ico", fileServer)
 	router.HandleFunc("/ws", s.wsHub.handler)
 	router.HandleFunc("/support", s.supportPage)
+	router.HandleFunc("/bootstrap", s.bootstrapPage)
 	router.HandleFunc("/packages", s.packages)
 	router.HandleFunc("/packages/install", s.install)
 	router.HandleFunc("/packages/uninstall", s.uninstall)
@@ -216,9 +247,7 @@ func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	err = pkgsPageTmpl.Execute(w, packages)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "An error occurred rendering the response: \n%v\n", err)
-	}
+	checkTmplError(err, "packages")
 }
 
 func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
@@ -237,19 +266,60 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 		"Status":   status,
 		"Manifest": manifest,
 	})
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "An error occurred rendering the package detail page of %v: \n%v\n", pkgName, err)
-	}
+	checkTmplError(err, fmt.Sprintf("package-detail (%s)", pkgName))
 }
 
 func (s *server) supportPage(w http.ResponseWriter, r *http.Request) {
 	if s.support != nil {
-		err := supportPageTmpl.Execute(w, s.support)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "An error occurred rendering the support page: \n%v\n", err)
+		if s.support.BootstrapMissing {
+			http.Redirect(w, r, "/bootstrap", http.StatusFound)
+			return
 		}
+		err := supportPageTmpl.Execute(w, s.support)
+		checkTmplError(err, "support")
 	} else {
 		http.Redirect(w, r, "/", http.StatusFound)
+	}
+}
+
+func (s *server) bootstrapPage(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "POST" {
+		client := bootstrap.NewBootstrapClient(
+			s.cfg,
+			"",
+			config.Version,
+			bootstrap.BootstrapTypeAio,
+		)
+		if err := client.Bootstrap(s.ctx); err != nil {
+			fmt.Fprintf(os.Stderr, "\nAn error occurred during bootstrap:\n%v\n", err)
+			err := bootstrapPageTmpl.ExecuteTemplate(w, "bootstrap-failure", nil)
+			checkTmplError(err, "bootstrap-failure")
+		} else {
+			s.support = nil
+			err := bootstrapPageTmpl.ExecuteTemplate(w, "bootstrap-success", nil)
+			checkTmplError(err, "bootstrap-success")
+		}
+	} else {
+		if s.support != nil && s.support.BootstrapMissing {
+			// try to validate bootstrap again, if it failed last time:
+			if s.support.BootstrapCheckError != nil {
+				isBootstrapped, err := bootstrap.IsBootstrapped(s.ctx, s.cfg)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "\nFailed to check whether Glasskube is bootstrapped: %v\n\n", err)
+				} else if isBootstrapped {
+					s.support = nil
+					http.Redirect(w, r, "/", http.StatusFound)
+					return
+				}
+			}
+			err := bootstrapPageTmpl.Execute(w, &map[string]any{
+				"Support":        s.support,
+				"CurrentContext": s.rawCfg.CurrentContext,
+			})
+			checkTmplError(err, "bootstrap")
+		} else {
+			http.Redirect(w, r, "/", http.StatusFound)
+		}
 	}
 }
 
