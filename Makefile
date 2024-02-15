@@ -25,7 +25,7 @@ SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
 
 .PHONY: all
-all: build build-cli
+all: tidy fmt vet lint schema-gen build build-cli test
 
 ##@ General
 
@@ -58,6 +58,10 @@ manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and Cust
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
+.PHONY: tidy
+tidy: ## Run go mod tidy
+	go mod tidy
+
 .PHONY: fmt
 fmt: ## Run go fmt against code.
 	go fmt ./...
@@ -89,16 +93,16 @@ lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes
 ##@ Build
 
 .PHONY: build
-build: manifests generate schema-gen fmt vet lint test ## Build manager binary.
-	go build -o $(OUT_DIR)/package-operator ./cmd/package-operator/main.go
+build: manifests generate fmt vet lint ## Build manager binary.
+	go build -o $(OUT_DIR)/package-operator ./cmd/package-operator/
 
 .PHONY: build-cli
-build-cli: fmt vet lint test ## Build cli binary.
-	go build -o $(OUT_DIR)/glasskube ./cmd/glasskube/main.go
+build-cli: fmt vet lint ## Build cli binary.
+	go build -o $(OUT_DIR)/glasskube ./cmd/glasskube/
 
 .PHONY: run
-run: manifests generate schema-gen fmt vet ## Run a controller from your host.
-	go run ./cmd/package-operator/main.go
+run: manifests generate fmt vet ## Run a controller from your host.
+	go run ./cmd/package-operator/
 
 # If you wish to build the manager image targeting other platforms you can use the --platform flag.
 # (i.e. docker build --platform linux/arm64). However, you must enable docker buildKit for it.
