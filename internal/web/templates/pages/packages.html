@@ -1,5 +1,5 @@
 {{define "body"}}
-<div class="container-lg mt-4">
+<div class="container-lg mt-4" hx-trigger="htmx:historyRestore from:body" hx-get="/packages" hx-select="main" hx-target="main">
   <div class="row row-cols-3 row-cols-xl-4 g-2">
     {{range .}}
       <div class="col">

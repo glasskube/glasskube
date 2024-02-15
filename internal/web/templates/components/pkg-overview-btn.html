@@ -1,6 +1,6 @@
 {{define "pkg-overview-btn"}}
 
-<span class="m-1 mt-auto" id="{{ .ButtonId }}" hx-swap-oob="{{ .Swap }}">
+<span class="m-1 mt-auto" id="{{ .ButtonId }}" hx-swap-oob="{{ .Swap }}" hx-swap="none">
   {{if eq .Status nil}}
   <button hx-post="/packages/install" name="packageName" value="{{ .PackageName }}" class="btn btn-primary btn-sm w-100">
     Install

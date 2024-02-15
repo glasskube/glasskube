@@ -1,5 +1,5 @@
 {{define "body"}}
-<div class="container-lg mt-2">
+<div class="container-lg mt-2" hx-trigger="htmx:historyRestore from:body" hx-get="/packages/{{ .Manifest.Name }}" hx-select="main" hx-target="main">
   <div class="row p-3 col-lg-10 offset-lg-1">
     <div class="d-flex flex-column">
       <div class="d-flex align-items-center">
