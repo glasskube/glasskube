@@ -1,0 +1,16 @@
+.progress-container {
+  height: 4px;
+}
+
+.progress-bar {
+  animation: progressAnimation 0.8s linear infinite;
+}
+
+@keyframes progressAnimation {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}

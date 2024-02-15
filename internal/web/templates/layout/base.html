@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <title>Glasskube</title>
   <link type="text/css" rel="stylesheet" href="/static/css/custom.css"/>
+  <link type="text/css" rel="stylesheet" href="/static/css/base.css"/>
 
   <script src="/static/js/bootstrap.bundle.min.js"></script> <!-- TODO version -->
   <script src="/static/js/htmx-1.9.10.min.js"></script>
@@ -14,9 +15,14 @@
   </script>
 </head>
 <!-- TODO clean up custom styling -->
-<body style="background-color: rgb(237, 244, 245)" hx-ext="ws" ws-connect="/ws">
+<body style="background-color: rgb(237, 244, 245)" hx-ext="ws" ws-connect="/ws" hx-indicator="#indicator">
 
 <nav hx-boost="true" class="navbar navbar-expand-lg navbar-dark bg-secondary">
+
+  <div id="indicator" class="progress-container bg-transparent w-100 position-fixed top-0 start-0">
+    <div class="htmx-indicator progress-bar bg-primary h-100 w-100"></div>
+  </div>
+
   <div class="container">
     <a class="navbar-brand d-flex align-items-center" href="/">
       <img src="/static/assets/glasskube-logo.svg" alt="Logo" height="32" width="32">
