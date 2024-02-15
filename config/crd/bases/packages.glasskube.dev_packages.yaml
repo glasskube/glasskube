@@ -11,10 +11,19 @@ spec:
     kind: Package
     listKind: PackageList
     plural: packages
+    shortNames:
+    - pkg
     singular: package
   scope: Cluster
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.packageInfo.version
+      name: Desired version
+      type: string
+    - jsonPath: .status.version
+      name: Installed version
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: Package is the Schema for the packages API

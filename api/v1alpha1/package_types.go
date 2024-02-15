@@ -49,7 +49,9 @@ type PackageStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
-//+kubebuilder:resource:scope=Cluster
+//+kubebuilder:resource:scope=Cluster,shortName=pkg
+//+kubebuilder:printcolumn:name=Desired version,type=string,JSONPath=".spec.packageInfo.version"
+//+kubebuilder:printcolumn:name=Installed version,type=string,JSONPath=".status.version"
 
 // Package is the Schema for the packages API
 type Package struct {

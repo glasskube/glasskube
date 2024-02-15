@@ -41,7 +41,10 @@ type PackageInfoStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
-//+kubebuilder:resource:path=packageinfos,scope=Cluster
+//+kubebuilder:resource:path=packageinfos,scope=Cluster,shortName=pkgi
+//+kubebuilder:printcolumn:name=Desired version,type=string,JSONPath=".spec.version"
+//+kubebuilder:printcolumn:name=Current version,type=string,JSONPath=".status.version"
+//+kubebuilder:printcolumn:name="Last Updated",type=date,JSONPath=".status.lastUpdateTimestamp"
 
 // PackageInfo is the Schema for the packageinfos API
 type PackageInfo struct {
