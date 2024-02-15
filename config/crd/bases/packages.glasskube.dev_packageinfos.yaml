@@ -11,10 +11,22 @@ spec:
     kind: PackageInfo
     listKind: PackageInfoList
     plural: packageinfos
+    shortNames:
+    - pkgi
     singular: packageinfo
   scope: Cluster
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.version
+      name: Desired version
+      type: string
+    - jsonPath: .status.version
+      name: Current version
+      type: string
+    - jsonPath: .status.lastUpdateTimestamp
+      name: Last Updated
+      type: date
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: PackageInfo is the Schema for the packageinfos API
