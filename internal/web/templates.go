@@ -3,6 +3,7 @@ package web
 import (
 	"fmt"
 	"html/template"
+	"os"
 	"path"
 
 	"github.com/glasskube/glasskube/internal/web/components/pkg_detail_btns"
@@ -14,6 +15,7 @@ var (
 	pkgsPageTmpl       *template.Template
 	pkgPageTmpl        *template.Template
 	supportPageTmpl    *template.Template
+	bootstrapPageTmpl  *template.Template
 	pkgOverviewBtnTmpl *template.Template
 	pkgDetailBtnsTmpl  *template.Template
 	templatesDir       = "templates"
@@ -40,8 +42,17 @@ func loadTemplates() {
 		ParseFS(embededFs, path.Join(pagesDir, "package.html"), path.Join(componentsDir, "*.html")))
 	supportPageTmpl = template.Must(template.Must(baseTemplate.Clone()).
 		ParseFS(embededFs, path.Join(pagesDir, "support.html"), path.Join(componentsDir, "*.html")))
+	bootstrapPageTmpl = template.Must(template.Must(baseTemplate.Clone()).
+		ParseFS(embededFs, path.Join(pagesDir, "bootstrap.html"), path.Join(componentsDir, "*.html")))
 	pkgOverviewBtnTmpl = template.Must(template.New(pkg_overview_btn.TemplateId).
 		ParseFS(embededFs, path.Join(componentsDir, "pkg-overview-btn.html")))
 	pkgDetailBtnsTmpl = template.Must(template.New(pkg_detail_btns.TemplateId).
 		ParseFS(embededFs, path.Join(componentsDir, "pkg-detail-btns.html")))
+}
+
+func checkTmplError(e error, tmplName string) {
+	if e != nil {
+		fmt.Fprintf(os.Stderr, "\nUnexpected error rendering %v: %v\n – This is most likely a BUG – "+
+			"Please report it here: https://github.com/glasskube/glasskube\n\n", tmplName, e)
+	}
 }

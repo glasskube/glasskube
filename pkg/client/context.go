@@ -3,6 +3,8 @@ package client
 import (
 	"context"
 
+	"k8s.io/client-go/tools/clientcmd/api"
+
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -15,9 +17,10 @@ type (
 const (
 	clientContextKey contextKey = iota
 	configContextKey
+	rawConfigContextKey
 )
 
-func SetupContext(ctx context.Context, config *rest.Config) (context.Context, error) {
+func SetupContext(ctx context.Context, config *rest.Config, rawConfig *api.Config) (context.Context, error) {
 	if err := v1alpha1.AddToScheme(scheme.Scheme); err != nil {
 		return nil, err
 	}
@@ -27,6 +30,7 @@ func SetupContext(ctx context.Context, config *rest.Config) (context.Context, er
 	}
 	ctx = context.WithValue(ctx, clientContextKey, pkgClient)
 	ctx = context.WithValue(ctx, configContextKey, config)
+	ctx = context.WithValue(ctx, rawConfigContextKey, rawConfig)
 	return ctx, nil
 }
 
@@ -44,6 +48,16 @@ func ConfigFromContext(ctx context.Context) *rest.Config {
 	value := ctx.Value(configContextKey)
 	if value != nil {
 		if config, ok := value.(*rest.Config); ok {
+			return config
+		}
+	}
+	return nil
+}
+
+func RawConfigFromContext(ctx context.Context) *api.Config {
+	value := ctx.Value(rawConfigContextKey)
+	if value != nil {
+		if config, ok := value.(*api.Config); ok {
 			return config
 		}
 	}

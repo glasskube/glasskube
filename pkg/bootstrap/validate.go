@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
-	apiextension "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
@@ -39,7 +39,7 @@ func RequireBootstrapped(ctx context.Context, cfg *rest.Config) {
 }
 
 func IsBootstrapped(ctx context.Context, cfg *rest.Config) (bool, error) {
-	cs, err := apiextension.NewForConfig(cfg)
+	cs, err := clientset.NewForConfig(cfg)
 	if err != nil {
 		return false, err
 	}
@@ -54,7 +54,7 @@ func IsBootstrapped(ctx context.Context, cfg *rest.Config) (bool, error) {
 	return pkgsExist && pisExist, nil
 }
 
-func crdExists(ctx context.Context, clientset *apiextension.Clientset, crdName string) (bool, error) {
+func crdExists(ctx context.Context, clientset *clientset.Clientset, crdName string) (bool, error) {
 	_, err := clientset.ApiextensionsV1().
 		CustomResourceDefinitions().
 		Get(ctx, fmt.Sprintf("%s.%s", crdName, v1alpha1.GroupVersion.Group), v1.GetOptions{})

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"html/template"
 	"io"
-	"os"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/pkg/client"
@@ -28,19 +27,15 @@ func getSwap(id string) string {
 	return fmt.Sprintf("outerHTML:#%s", id)
 }
 
-func Render(w io.Writer, tmpl *template.Template, pkgName string, status *client.PackageStatus, manifest *v1alpha1.PackageManifest) {
+func Render(w io.Writer, tmpl *template.Template, pkgName string, status *client.PackageStatus, manifest *v1alpha1.PackageManifest) error {
 	id := getId(pkgName)
-	err := tmpl.ExecuteTemplate(w, TemplateId, &pkgDetailBtnsInput{
+	return tmpl.ExecuteTemplate(w, TemplateId, &pkgDetailBtnsInput{
 		ContainerId: id,
 		Swap:        getSwap(id),
 		PackageName: pkgName,
 		Status:      status,
 		Manifest:    manifest,
 	})
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "An error occurred rendering %v for %v: \n%v\n"+
-			"This is most likely a BUG!", TemplateId, pkgName, err)
-	}
 }
 
 func ForPkgDetailBtns(pkgName string, status *client.PackageStatus, manifest *v1alpha1.PackageManifest) *pkgDetailBtnsInput {

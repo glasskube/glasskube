@@ -1,0 +1,91 @@
+{{define "bootstrap-success"}}
+<div class="col-md-8 p-lg-6 mx-auto text-center">
+  <h1>It's done!</h1>
+</div>
+<div class="col-md-6 p-lg-2 mx-auto">
+  <div class="alert alert-success text-center" role="alert">
+    Congrats, Glasskube is all set up! Have fun managing packages. &#128522;&#128522;
+  </div>
+  <div class="my-4 d-flex justify-content-center">
+    <a class="btn btn-success btn-lg py-2" href="/">
+      Explore Packages
+    </a>
+  </div>
+
+  {{template "bootstrap-footer" .}}
+</div>
+{{end}}
+
+{{define "bootstrap-failure"}}
+<div class="col-md-8 p-lg-6 mx-auto text-center">
+  <h1>You're almost there!</h1>
+</div>
+<div class="col-md-6 p-lg-2 mx-auto">
+  <div class="alert alert-danger text-center" role="alert">
+    Some unexpected error happened when bootstrapping. Please check the logs in the terminal!
+  </div>
+
+  {{ template "bootstrap-button" "Try Bootstrapping Again" }}
+
+  {{template "bootstrap-footer" .}}
+</div>
+{{end}}
+
+{{define "bootstrap-footer"}}
+<hr>
+<small>
+  For further information on bootstrapping, please consult the docs: <a href="https://glasskube.dev/docs/getting-started/bootstrap" class="text-dark" target="_blank">Bootstrap</a>.<br>
+  If you want to test Glasskube locally, check out <a class="text-dark" href="https://minikube.sigs.k8s.io/" target="_blank">minikube</a>.<br>
+  If you have any questions or encounter bugs, don't hesitate to reach out via <a href="https://github.com/glasskube/glasskube" class="text-dark" target="_blank">Github</a>
+  or <a href="https://discord.gg/SxH6KUCGH7" class="text-dark" target="_blank">Discord</a>.
+</small>
+{{end}}
+
+{{define "bootstrap-button"}}
+<div class="my-4 d-flex justify-content-center">
+  <button class="btn btn-primary btn-lg py-2" hx-post="/bootstrap" hx-target="#bootstrap-content" hx-disabled-elt="this">
+    {{ . }}
+  </button>
+</div>
+
+<small>
+  This will bootstrap Glasskube in your cluster using an <i>all-in-one</i> configuration.
+  If your use-case requires a slim configuration or custom manifest, please use the CLI command.
+</small>
+{{end}}
+
+{{define "body"}}
+<div class="position-relative overflow-hidden p-3 p-md-5 m-md-3" id="bootstrap-content">
+  <div class="col-md-8 p-lg-6 mx-auto text-center">
+    <h1>You're almost there!</h1>
+  </div>
+
+  <div class="col-md-6 p-lg-2 mx-auto">
+    {{ if eq .Support.BootstrapCheckError nil }}
+    <p class="text-center pt-2">
+      Glasskube is not yet installed in your current context <b>{{ .CurrentContext }}</b>. You can do so now by clicking the Bootstrap button:
+    </p>
+
+    {{ template "bootstrap-button" "Bootstrap Glasskube" }}
+
+    {{ else }}
+    <div class="alert alert-danger text-center" role="alert">
+      Failed to check whether Glasskube is bootstrapped in your cluster.
+    </div>
+    <div>
+      If you have already successfully bootstrapped Glasskube previously, please check whether you have access to this cluster right now, e.g. with <code>kubectl</code>.
+      For additional error information, please check the logs in the terminal!
+    </div>
+
+    <div class="my-4 d-flex justify-content-center">
+      <a class="btn btn-primary py-2" href="/" hx-boost="true">
+        Try again
+      </a>
+    </div>
+    {{ end }}
+
+    {{ template "bootstrap-footer" . }}
+  </div>
+
+</div>
+{{end}}
