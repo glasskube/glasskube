@@ -9,36 +9,27 @@ on:
       - website/**
 
 jobs:
-  cli:
+  build:
     runs-on: ubuntu-latest
-    name: Build Glasskube CLI
+    name: make all
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+      - name: Setup Go
+        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5
         with:
           go-version: 1.21.x
           cache-dependency-path: |
             **/go.sum
             **/go.mod
-      - run: make build-cli
-      # - uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4
-      #  with:
-      #    name: glasskube
-      #    path: dist/*
-
-  operator:
-    runs-on: ubuntu-latest
-    name: Build package-operator
-    steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5
-        with:
-          go-version: 1.21.x
-          cache-dependency-path: |
-            **/go.sum
-            **/go.mod
-      - run: make build
-      # - uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4
-      #  with:
-      #    name: package-operator
-      #    path: dist/*
+      - run: make all
+      - name: Check if repository is clean
+        run: |
+          STATUS="$(git status --porcelain)"
+          if [ -z "$STATUS" ]; then
+            echo Repository is clean.
+          else
+            echo "Repository is not clean:
+          $STATUS"
+            exit 1
+          fi
