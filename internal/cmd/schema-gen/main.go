@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"path"
 
@@ -10,7 +12,6 @@ import (
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/invopop/jsonschema"
-	"github.com/spf13/cobra"
 )
 
 var (
@@ -18,49 +19,54 @@ var (
 		"package-manifest": &v1alpha1.PackageManifest{},
 	}
 
-	cmd = &cobra.Command{
-		Use: "schema-gen",
-		RunE: func(cmd *cobra.Command, args []string) (retErr error) {
-			for k, v := range types {
-				schema := jsonschema.Reflect(v)
-				outPath := path.Join(output, k)
-				if err := os.MkdirAll(outPath, 0755); err != nil {
-					return err
-				}
-				file, err := os.Create(path.Join(outPath, fileName))
-				if err != nil {
-					return err
-				}
-				defer func(file *os.File) {
-					closeErr := file.Close()
-					if closeErr != nil {
-						retErr = multierr.Append(err, closeErr)
-					}
-				}(file)
-				encoder := json.NewEncoder(file)
-				encoder.SetIndent("", indent)
-				if err = encoder.Encode(schema); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
-	}
+	outBase    = "website/static"
+	idBase     = "https://glasskube.dev/"
+	schemaPath = "schemas/v1"
+	outDir     = path.Join(outBase, schemaPath)
 
-	output   string
-	indent   string
-	fileName string
+	reflector = jsonschema.Reflector{
+		ExpandedStruct: true,
+	}
 )
 
-func init() {
-	cmd.Flags().StringVarP(&output, "output", "o", "", "root directory for output files")
-	cmd.Flags().StringVar(&indent, "indent", "  ", "indent string")
-	cmd.Flags().StringVar(&fileName, "file-name", "schema.json", "name of schema files")
-	_ = cmd.MarkFlagRequired("output")
+func run() (retErr error) {
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		return err
+	}
+
+	for k, v := range types {
+		fileName := fmt.Sprintf("%v.json", k)
+		schema := reflector.Reflect(v)
+
+		if id, err := url.JoinPath(idBase, schemaPath, fileName); err != nil {
+			return err
+		} else {
+			schema.ID = jsonschema.ID(id)
+		}
+
+		file, err := os.Create(path.Join(outDir, fileName))
+		if err != nil {
+			return err
+		}
+		defer func(file *os.File) {
+			closeErr := file.Close()
+			if closeErr != nil {
+				retErr = multierr.Append(err, closeErr)
+			}
+		}(file)
+
+		encoder := json.NewEncoder(file)
+		encoder.SetIndent("", "  ")
+		fmt.Fprintf(os.Stderr, "Writing to %v", file.Name())
+		if err = encoder.Encode(schema); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func main() {
-	if err := cmd.Execute(); err != nil {
+	if err := run(); err != nil {
 		log.Fatal(err)
 	}
 }

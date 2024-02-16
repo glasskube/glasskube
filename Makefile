@@ -48,7 +48,7 @@ help: ## Display this help.
 
 .PHONY: schema-gen
 schema-gen: # Generate a schema.json file for the package manifest type.
-	go run ./internal/cmd/schema-gen -o schema
+	go run ./internal/cmd/schema-gen
 
 .PHONY: manifests
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
