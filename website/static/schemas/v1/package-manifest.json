@@ -1,7 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/glasskube/glasskube/api/v1alpha1/package-manifest",
-  "$ref": "#/$defs/PackageManifest",
+  "$id": "https://glasskube.dev/schemas/v1/package-manifest.json",
   "$defs": {
     "HelmManifest": {
       "properties": {
@@ -60,56 +59,6 @@
         "port"
       ]
     },
-    "PackageManifest": {
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "shortDescription": {
-          "type": "string"
-        },
-        "longDescription": {
-          "type": "string"
-        },
-        "references": {
-          "items": {
-            "$ref": "#/$defs/PackageReference"
-          },
-          "type": "array"
-        },
-        "iconUrl": {
-          "type": "string",
-          "format": "uri"
-        },
-        "helm": {
-          "$ref": "#/$defs/HelmManifest"
-        },
-        "kustomize": {
-          "$ref": "#/$defs/KustomizeManifest"
-        },
-        "manifests": {
-          "items": {
-            "$ref": "#/$defs/PlainManifest"
-          },
-          "type": "array"
-        },
-        "defaultNamespace": {
-          "type": "string"
-        },
-        "entrypoints": {
-          "items": {
-            "$ref": "#/$defs/PackageEntrypoint"
-          },
-          "type": "array"
-        }
-      },
-      "additionalProperties": false,
-      "type": "object",
-      "required": [
-        "name",
-        "defaultNamespace"
-      ]
-    },
     "PackageReference": {
       "properties": {
         "label": {
@@ -138,5 +87,53 @@
         "url"
       ]
     }
-  }
+  },
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "shortDescription": {
+      "type": "string"
+    },
+    "longDescription": {
+      "type": "string"
+    },
+    "references": {
+      "items": {
+        "$ref": "#/$defs/PackageReference"
+      },
+      "type": "array"
+    },
+    "iconUrl": {
+      "type": "string",
+      "format": "uri"
+    },
+    "helm": {
+      "$ref": "#/$defs/HelmManifest"
+    },
+    "kustomize": {
+      "$ref": "#/$defs/KustomizeManifest"
+    },
+    "manifests": {
+      "items": {
+        "$ref": "#/$defs/PlainManifest"
+      },
+      "type": "array"
+    },
+    "defaultNamespace": {
+      "type": "string"
+    },
+    "entrypoints": {
+      "items": {
+        "$ref": "#/$defs/PackageEntrypoint"
+      },
+      "type": "array"
+    }
+  },
+  "additionalProperties": false,
+  "type": "object",
+  "required": [
+    "name",
+    "defaultNamespace"
+  ]
 }

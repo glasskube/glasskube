@@ -5,12 +5,12 @@ on:
     branches:
       - main
     paths:
-      - schema/**
+      - website/static/schemas/**
   pull_request:
     branches:
       - main
     paths:
-      - schema/**
+      - website/static/schemas/**
 
 jobs:
   validate:
@@ -21,4 +21,4 @@ jobs:
         uses: cardinalby/schema-validator-action@v3
         with:
           file: "test/package-manifest/example.yaml"
-          schema: "./schema/package-manifest/schema.json"
+          schema: "./website/static/schemas/v1/package-manifest.json"
