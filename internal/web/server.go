@@ -233,7 +233,9 @@ func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// once we have blocking uninstall available, this should be changed to also broadcast the pending update first
-	if err := uninstall.Uninstall(s.pkgClient, ctx, &pkg); err != nil {
+	if err := uninstall.NewUninstaller(s.pkgClient, &pkg).
+		WithStatusWriter(statuswriter.Stderr()).
+		Uninstall(ctx, pkgName); err != nil {
 		fmt.Fprintf(os.Stderr, "An error occurred uninstalling %v: \n%v\n", pkgName, err)
 	}
 	s.broadcastPkgStatusUpdate(pkgName, nil, nil)

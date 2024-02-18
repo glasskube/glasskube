@@ -7,6 +7,7 @@ import (
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	pkgClient "github.com/glasskube/glasskube/pkg/client"
+	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/glasskube/glasskube/pkg/uninstall"
 	"github.com/spf13/cobra"
 )
@@ -39,15 +40,17 @@ var uninstallCmd = &cobra.Command{
 			false,
 		)
 		if proceed {
-			fmt.Printf("Uninstalling %v.\n", pkgName)
-			if err := uninstall.Uninstall(client, cmd.Context(), &pkg); err != nil {
+			fmt.Printf("Uninstalling %v...\n", pkgName)
+			if err := uninstall.NewUninstaller(client, &pkg).
+				WithStatusWriter(statuswriter.Spinner()).
+				UninstallBlocking(cmd.Context(), pkgName); err != nil {
 				fmt.Fprintf(os.Stderr, "An error occurred during uninstallation:\n\n%v\n", err)
 				os.Exit(1)
 				return
 			}
-			fmt.Println("Uninstalled successfully.")
+			fmt.Println("🗑️ Uninstalled successfully.")
 		} else {
-			fmt.Println("Uninstallation cancelled.")
+			fmt.Println("❌ Uninstallation cancelled.")
 		}
 	},
 }
