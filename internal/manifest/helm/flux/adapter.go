@@ -9,6 +9,7 @@ import (
 	helmv1beta2 "github.com/fluxcd/helm-controller/api/v2beta2"
 	sourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/controller/owners"
 	"github.com/glasskube/glasskube/internal/manifest"
 	"github.com/glasskube/glasskube/internal/manifest/result"
 	corev1 "k8s.io/api/core/v1"
@@ -23,54 +24,59 @@ import (
 )
 
 type FluxHelmAdapter struct {
-	scheme *runtime.Scheme
+	client.Client
+	*owners.OwnerManager
 }
 
-func NewAdapter(scheme *runtime.Scheme) manifest.ManifestAdapter {
-	return &FluxHelmAdapter{scheme: scheme}
+func NewAdapter() manifest.ManifestAdapter {
+	return &FluxHelmAdapter{}
 }
 
-func (a FluxHelmAdapter) ControllerInit(buildr *builder.Builder) error {
-	if err := sourcev1beta2.AddToScheme(a.scheme); err != nil {
+func (a *FluxHelmAdapter) ControllerInit(buildr *builder.Builder, client client.Client, scheme *runtime.Scheme) error {
+	if err := sourcev1beta2.AddToScheme(scheme); err != nil {
 		return err
 	}
-	if err := helmv1beta2.AddToScheme(a.scheme); err != nil {
+	if err := helmv1beta2.AddToScheme(scheme); err != nil {
 		return err
 	}
+	if a.OwnerManager == nil {
+		a.OwnerManager = owners.NewOwnerManager(scheme)
+	}
+	a.Client = client
 	buildr.Owns(&sourcev1beta2.HelmRepository{})
 	buildr.Owns(&helmv1beta2.HelmRelease{}, builder.MatchEveryOwner)
 	buildr.Owns(&corev1.Namespace{})
 	return nil
 }
 
-func (a FluxHelmAdapter) Reconcile(ctx context.Context, client client.Client, pkg *packagesv1alpha1.Package, manifest *packagesv1alpha1.PackageManifest) (*result.ReconcileResult, error) {
-	if namespace, err := ensureNamespace(ctx, client, pkg, manifest); err != nil {
+func (a *FluxHelmAdapter) Reconcile(ctx context.Context, pkg *packagesv1alpha1.Package, manifest *packagesv1alpha1.PackageManifest) (*result.ReconcileResult, error) {
+	if namespace, err := a.ensureNamespace(ctx, pkg, manifest); err != nil {
 		return nil, err
 	} else if namespace.Status.Phase == corev1.NamespaceTerminating {
 		return result.Waiting("Namespace is still terminating"), nil
 	}
-	if err := ensureHelmRepository(ctx, client, pkg, manifest); err != nil {
+	if err := a.ensureHelmRepository(ctx, pkg, manifest); err != nil {
 		return nil, err
 	}
-	if helmRelease, err := ensureHelmRelease(ctx, client, pkg, manifest); err != nil {
+	if helmRelease, err := a.ensureHelmRelease(ctx, pkg, manifest); err != nil {
 		return nil, err
 	} else {
 		return extractResult(helmRelease), nil
 	}
 }
 
-func ensureNamespace(ctx context.Context, client client.Client, pkg *packagesv1alpha1.Package, manifest *packagesv1alpha1.PackageManifest) (*corev1.Namespace, error) {
+func (a *FluxHelmAdapter) ensureNamespace(ctx context.Context, pkg *packagesv1alpha1.Package, manifest *packagesv1alpha1.PackageManifest) (*corev1.Namespace, error) {
 	namespace := corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: manifest.DefaultNamespace,
 		},
 	}
 	log := ctrl.LoggerFrom(ctx).WithValues("Namespace", namespace.Name)
-	result, err := controllerutil.CreateOrUpdate(ctx, client, &namespace, func() error {
+	result, err := controllerutil.CreateOrUpdate(ctx, a.Client, &namespace, func() error {
 		if namespace.Status.Phase == corev1.NamespaceTerminating {
 			return nil
 		} else {
-			return controllerutil.SetOwnerReference(pkg, &namespace, client.Scheme())
+			return a.SetOwner(pkg, &namespace, owners.BlockOwnerDeletion)
 		}
 	})
 	if err != nil {
@@ -81,7 +87,7 @@ func ensureNamespace(ctx context.Context, client client.Client, pkg *packagesv1a
 	}
 }
 
-func ensureHelmRepository(ctx context.Context, client client.Client, pkg *packagesv1alpha1.Package, manifest *packagesv1alpha1.PackageManifest) error {
+func (a *FluxHelmAdapter) ensureHelmRepository(ctx context.Context, pkg *packagesv1alpha1.Package, manifest *packagesv1alpha1.PackageManifest) error {
 	helmRepository := sourcev1beta2.HelmRepository{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      manifest.Name,
@@ -89,10 +95,10 @@ func ensureHelmRepository(ctx context.Context, client client.Client, pkg *packag
 		},
 	}
 	log := ctrl.LoggerFrom(ctx).WithValues("HelmRepository", helmRepository.Name)
-	result, err := controllerutil.CreateOrUpdate(ctx, client, &helmRepository, func() error {
+	result, err := controllerutil.CreateOrUpdate(ctx, a.Client, &helmRepository, func() error {
 		helmRepository.Spec.URL = manifest.Helm.RepositoryUrl
 		helmRepository.Spec.Interval = metav1.Duration{Duration: 1 * time.Hour}
-		return controllerutil.SetOwnerReference(pkg, &helmRepository, client.Scheme())
+		return a.SetOwner(pkg, &helmRepository, owners.BlockOwnerDeletion)
 	})
 	if err != nil {
 		return fmt.Errorf("could not ensure helm repository: %w", err)
@@ -102,7 +108,7 @@ func ensureHelmRepository(ctx context.Context, client client.Client, pkg *packag
 	}
 }
 
-func ensureHelmRelease(ctx context.Context, client client.Client, pkg *packagesv1alpha1.Package, manifest *packagesv1alpha1.PackageManifest) (*helmv1beta2.HelmRelease, error) {
+func (a *FluxHelmAdapter) ensureHelmRelease(ctx context.Context, pkg *packagesv1alpha1.Package, manifest *packagesv1alpha1.PackageManifest) (*helmv1beta2.HelmRelease, error) {
 	helmRelease := helmv1beta2.HelmRelease{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      manifest.Name,
@@ -110,7 +116,7 @@ func ensureHelmRelease(ctx context.Context, client client.Client, pkg *packagesv
 		},
 	}
 	log := ctrl.LoggerFrom(ctx).WithValues("HelmRelease", helmRelease.Name)
-	result, err := controllerutil.CreateOrUpdate(ctx, client, &helmRelease, func() error {
+	result, err := controllerutil.CreateOrUpdate(ctx, a.Client, &helmRelease, func() error {
 		helmRelease.Spec.Chart.Spec.Chart = manifest.Helm.ChartName
 		helmRelease.Spec.Chart.Spec.Version = manifest.Helm.ChartVersion
 		helmRelease.Spec.Chart.Spec.SourceRef.Kind = "HelmRepository"
@@ -121,7 +127,7 @@ func ensureHelmRelease(ctx context.Context, client client.Client, pkg *packagesv
 			helmRelease.Spec.Values = nil
 		}
 		helmRelease.Spec.Interval = metav1.Duration{Duration: 5 * time.Minute}
-		return controllerutil.SetOwnerReference(pkg, &helmRelease, client.Scheme())
+		return a.SetOwner(pkg, &helmRelease, owners.BlockOwnerDeletion)
 	})
 	if err != nil {
 		return nil, fmt.Errorf("could not ensure helm release: %w", err)

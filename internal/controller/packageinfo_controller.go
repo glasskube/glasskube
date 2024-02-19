@@ -22,6 +22,7 @@ import (
 
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/controller/conditions"
+	"github.com/glasskube/glasskube/internal/controller/owners"
 	"github.com/glasskube/glasskube/internal/controller/requeue"
 	"github.com/glasskube/glasskube/internal/repo"
 	"github.com/glasskube/glasskube/pkg/condition"
@@ -37,6 +38,7 @@ import (
 type PackageInfoReconciler struct {
 	client.Client
 	record.EventRecorder
+	*owners.OwnerManager
 	Scheme *runtime.Scheme
 }
 
@@ -120,6 +122,9 @@ func shouldSyncFromRepo(pi packagesv1alpha1.PackageInfo) bool {
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *PackageInfoReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	if r.OwnerManager == nil {
+		r.OwnerManager = owners.NewOwnerManager(r.Scheme)
+	}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&packagesv1alpha1.PackageInfo{}).
 		Complete(r)
