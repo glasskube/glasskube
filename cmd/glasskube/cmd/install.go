@@ -59,7 +59,7 @@ var installCmd = &cobra.Command{
 		if status != nil {
 			switch (*status).Status {
 			case string(condition.Ready):
-				fmt.Printf("✅ %v installed successfully.\n", packageName)
+				fmt.Printf("✅ %v installed successfully into your cluster (%v).\n", packageName, client.RawConfigFromContext(cmd.Context()).CurrentContext)
 			default:
 				fmt.Printf("❌ %v installation has status %v, reason: %v\nMessage: %v\n",
 					packageName, (*status).Status, (*status).Reason, (*status).Message)
