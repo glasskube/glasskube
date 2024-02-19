@@ -7,6 +7,7 @@ import (
 
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/config"
+	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,7 +18,7 @@ var versioncmd = &cobra.Command{
 	Use:    "version",
 	Short:  "Print the version of glasskube and package-operator",
 	Long:   `Print the version of glasskube and package-operator`,
-	PreRun: cliutils.SetupClientContext(true),
+	PreRun: cliutils.SetupClientContext(false),
 	Run: func(cmd *cobra.Command, args []string) {
 		glasskubeVersion := config.Version
 		fmt.Fprintf(os.Stderr, "glasskube: v%s\n", glasskubeVersion)
@@ -35,7 +36,7 @@ func init() {
 }
 
 func getPackageOperatorVersion(ctx context.Context) (string, error) {
-	config, _ := cliutils.RequireConfig("")
+	config := client.ConfigFromContext(ctx)
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return "", err
