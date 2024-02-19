@@ -30,6 +30,12 @@ var installCmd = &cobra.Command{
 		ctx := cmd.Context()
 		client := client.FromContext(ctx)
 		packageName := args[0]
+		var index repo.PackageRepoIndex
+		err := repo.FetchPackageRepoIndex("", &index)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error fetching package repository index: %v\n", err)
+			os.Exit(1)
+		}
 
 		if installCmdOptions.Version == "" && !installCmdOptions.EnableAutoUpdates {
 			fmt.Fprintf(os.Stderr, "Version not specified. The latest version of %v will be installed.\n", packageName)
@@ -57,12 +63,12 @@ var installCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		if status != nil {
-			switch (*status).Status {
+			switch status.Status {
 			case string(condition.Ready):
-				fmt.Printf("✅ %v installed successfully into your cluster (%v).\n", packageName, client.RawConfigFromContext(cmd.Context()).CurrentContext)
+				fmt.Printf("✅ %v installed successfully.\n", packageName)
 			default:
 				fmt.Printf("❌ %v installation has status %v, reason: %v\nMessage: %v\n",
-					packageName, (*status).Status, (*status).Reason, (*status).Message)
+					packageName, status.Status, status.Reason, status.Message)
 			}
 		} else {
 			fmt.Fprintln(os.Stderr, "Installation status unknown - no error and no status have been observed (this is a bug).")
@@ -77,12 +83,13 @@ func completeAvailablePackageNames(
 	toComplete string,
 ) ([]string, cobra.ShellCompDirective) {
 	if len(args) > 0 {
-		return []string{}, cobra.ShellCompDirectiveNoFileComp
+		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
 	var index repo.PackageRepoIndex
 	err := repo.FetchPackageRepoIndex("", &index)
 	if err != nil {
-		return []string{}, cobra.ShellCompDirectiveError
+		fmt.Fprintf(os.Stderr, "Error fetching package repository index: %v\n", err)
+		return nil, cobra.ShellCompDirectiveError
 	}
 	names := make([]string, 0, len(index.Packages))
 	for _, pkg := range index.Packages {
@@ -90,7 +97,7 @@ func completeAvailablePackageNames(
 			names = append(names, pkg.Name)
 		}
 	}
-	return names, 0
+	return names, cobra.ShellCompDirectiveNoFileComp
 }
 
 func completeAvailablePackageVersions(
