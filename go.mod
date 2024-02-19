@@ -8,6 +8,7 @@ require (
 	github.com/fatih/color v1.16.0
 	github.com/fluxcd/helm-controller/api v0.37.4
 	github.com/fluxcd/source-controller/api v1.2.4
+	github.com/google/go-containerregistry v0.19.0
 	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/websocket v1.5.1
 	github.com/invopop/jsonschema v0.12.0
@@ -64,6 +65,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
+	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.18.0 // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
