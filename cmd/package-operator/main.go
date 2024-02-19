@@ -94,7 +94,7 @@ func main() {
 		Client:        mgr.GetClient(),
 		EventRecorder: mgr.GetEventRecorderFor("package-controller"),
 		Scheme:        mgr.GetScheme(),
-		Helm:          flux.NewAdapter(mgr.GetScheme()),
+		Helm:          flux.NewAdapter(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Package")
 		os.Exit(1)

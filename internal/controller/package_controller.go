@@ -36,6 +36,7 @@ import (
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/controller/conditions"
+	"github.com/glasskube/glasskube/internal/controller/owners"
 	"github.com/glasskube/glasskube/internal/controller/requeue"
 	"github.com/glasskube/glasskube/internal/manifest"
 	"github.com/glasskube/glasskube/pkg/condition"
@@ -45,6 +46,7 @@ import (
 type PackageReconciler struct {
 	client.Client
 	record.EventRecorder
+	*owners.OwnerManager
 	Scheme    *runtime.Scheme
 	Helm      manifest.ManifestAdapter
 	Kustomize manifest.ManifestAdapter
@@ -134,7 +136,7 @@ func (r *PackageReconciler) ensurePackageInfo(ctx context.Context, pkg *packages
 
 	log.V(1).Info("ensuring PackageInfo")
 	result, err := controllerutil.CreateOrUpdate(ctx, r.Client, &packageInfo, func() error {
-		if err := controllerutil.SetOwnerReference(pkg, &packageInfo, r.Scheme); err != nil {
+		if err := r.SetOwner(pkg, &packageInfo, owners.BlockOwnerDeletion); err != nil {
 			return fmt.Errorf("unable to set ownerReference on PackageInfo: %w", err)
 		}
 		packageInfo.Spec = packagesv1alpha1.PackageInfoSpec{
@@ -175,7 +177,7 @@ func generatePackageInfoName(pkg packagesv1alpha1.Package) string {
 }
 
 func (r *PackageReconciler) reconcileManifestWithAdapter(ctx context.Context, adapter manifest.ManifestAdapter, pkg packagesv1alpha1.Package, packageInfo packagesv1alpha1.PackageInfo, piManifest *packagesv1alpha1.PackageManifest) error {
-	if result, err := adapter.Reconcile(ctx, r.Client, &pkg, piManifest); err != nil {
+	if result, err := adapter.Reconcile(ctx, &pkg, piManifest); err != nil {
 		log := ctrl.LoggerFrom(ctx)
 		log.Error(err, "could reconcile manifest")
 		return conditions.SetFailedAndUpdate(ctx, r.Client, r.EventRecorder, &pkg, &pkg.Status.Conditions, condition.UnsupportedFormat, "error during manifest reconciliation: "+err.Error())
@@ -216,7 +218,7 @@ func (r *PackageReconciler) reconcilePlainManifest(ctx context.Context, pkg pack
 	// TODO: check if namespace is terminating before applying
 
 	for _, obj := range *objectsToApply {
-		if err := controllerutil.SetOwnerReference(&pkg, &obj, r.Scheme); err != nil {
+		if err := r.SetOwner(&pkg, &obj, owners.BlockOwnerDeletion); err != nil {
 			return nil, fmt.Errorf("could set owner reference: %w", err)
 		}
 		if err := r.Patch(ctx, &obj, client.Apply, client.FieldOwner("packages.glasskube.dev/package-controller"), client.ForceOwnership); err != nil {
@@ -324,14 +326,17 @@ func (r *PackageReconciler) pruneOwnedPackageInfos(ctx context.Context, pkg *pac
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *PackageReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	if r.OwnerManager == nil {
+		r.OwnerManager = owners.NewOwnerManager(r.Scheme)
+	}
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&packagesv1alpha1.Package{})
 	if r.Helm != nil {
-		if err := r.Helm.ControllerInit(controllerBuilder); err != nil {
+		if err := r.Helm.ControllerInit(controllerBuilder, r.Client, r.Scheme); err != nil {
 			return err
 		}
 	}
 	if r.Kustomize != nil {
-		if err := r.Kustomize.ControllerInit(controllerBuilder); err != nil {
+		if err := r.Kustomize.ControllerInit(controllerBuilder, r.Client, r.Scheme); err != nil {
 			return err
 		}
 	}
