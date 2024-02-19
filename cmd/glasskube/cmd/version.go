@@ -35,7 +35,7 @@ func init() {
 }
 
 func getPackageOperatorVersion(ctx context.Context) (string, error) {
-	config := cliutils.RequireConfig("")
+	config, _ := cliutils.RequireConfig("")
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return "", err
