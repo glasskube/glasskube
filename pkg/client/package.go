@@ -17,7 +17,7 @@ type PackageInterface interface {
 	Get(ctx context.Context, pkgName string, p *v1alpha1.Package) error
 	GetAll(ctx context.Context, result *v1alpha1.PackageList) error
 	Watch(ctx context.Context) (watch.Interface, error)
-	Delete(ctx context.Context, pkg *v1alpha1.Package) error
+	Delete(ctx context.Context, pkg *v1alpha1.Package, options metav1.DeleteOptions) error
 }
 
 type packageClient struct {
@@ -51,10 +51,11 @@ func (c *packageClient) GetAll(ctx context.Context, result *v1alpha1.PackageList
 		Do(ctx).Into(result)
 }
 
-func (c *packageClient) Delete(ctx context.Context, pkg *v1alpha1.Package) error {
+func (c *packageClient) Delete(ctx context.Context, pkg *v1alpha1.Package, options metav1.DeleteOptions) error {
 	return c.restClient.Delete().
 		Resource(packageGVR.Resource).
 		Name(pkg.Name).
+		Body(&options).
 		Do(ctx).Into(nil)
 }
 
