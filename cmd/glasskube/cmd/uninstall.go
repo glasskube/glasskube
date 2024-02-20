@@ -6,7 +6,7 @@ import (
 
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/config"
-	"github.com/glasskube/glasskube/pkg/client"
+	pkgClient "github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/list"
 	"github.com/glasskube/glasskube/pkg/uninstall"
 	"github.com/spf13/cobra"
@@ -19,7 +19,7 @@ var uninstallCmd = &cobra.Command{
 	Args:   cobra.ExactArgs(1),
 	PreRun: cliutils.SetupClientContext(true),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := client.FromContext(cmd.Context())
+		client := pkgClient.FromContext(cmd.Context())
 		pkgName := args[0]
 		pkg, err := list.Get(client, cmd.Context(), pkgName)
 		if err != nil {
@@ -28,7 +28,13 @@ var uninstallCmd = &cobra.Command{
 			return
 		}
 		proceed := config.ForceUninstall || cliutils.YesNoPrompt(
-			fmt.Sprintf("%v will be removed from your cluster. Are you sure?", pkgName), false)
+			fmt.Sprintf(
+				"%v will be removed from your cluster (%v). Are you sure?",
+				pkgName,
+				pkgClient.RawConfigFromContext(cmd.Context()).CurrentContext,
+			),
+			false,
+		)
 		if proceed {
 			fmt.Printf("Uninstalling %v.\n", pkgName)
 			err = uninstall.Uninstall(client, cmd.Context(), pkg)
