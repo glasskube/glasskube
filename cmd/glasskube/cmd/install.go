@@ -14,6 +14,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var installCmdOptions = struct {
+	Version           string
+	EnableAutoUpdates bool
+}{}
+
 var installCmd = &cobra.Command{
 	Use:               "install [package-name]",
 	Short:             "Install a package",
@@ -22,11 +27,31 @@ var installCmd = &cobra.Command{
 	PreRun:            cliutils.SetupClientContext(true),
 	ValidArgsFunction: completeAvailablePackageNames,
 	Run: func(cmd *cobra.Command, args []string) {
-		client := client.FromContext(cmd.Context())
+		ctx := cmd.Context()
+		client := client.FromContext(ctx)
 		packageName := args[0]
+
+		if installCmdOptions.Version == "" && !installCmdOptions.EnableAutoUpdates {
+			fmt.Fprintf(os.Stderr, "Version not specified. The latest version of %v will be installed.\n", packageName)
+
+			if !cliutils.YesNoPrompt("Would you like to enable automatic updates?", false) {
+				var packageIndex repo.PackageIndex
+				if err := repo.FetchPackageIndex("", packageName, &packageIndex); err != nil {
+					fmt.Fprintf(os.Stderr, "❗ Error: Could not fetch package metadata: %v\n", err)
+					if !cliutils.YesNoPrompt("Continue anyways? (Automatic updates will be enabled)", false) {
+						fmt.Fprintln(os.Stderr, "❌ Installation cancelled.")
+						os.Exit(1)
+					}
+				} else {
+					installCmdOptions.Version = packageIndex.LatestVersion
+				}
+			}
+		}
+
 		status, err := install.NewInstaller(client).
 			WithStatusWriter(statuswriter.Spinner()).
-			InstallBlocking(cmd.Context(), packageName)
+			InstallBlocking(ctx, packageName, installCmdOptions.Version)
+
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
 			os.Exit(1)
@@ -68,6 +93,34 @@ func completeAvailablePackageNames(
 	return names, 0
 }
 
+func completeAvailablePackageVersions(
+	cmd *cobra.Command,
+	args []string,
+	toComplete string,
+) ([]string, cobra.ShellCompDirective) {
+	if len(args) == 0 {
+		return []string{}, cobra.ShellCompDirectiveNoFileComp
+	}
+	packageName := args[0]
+	var packageIndex repo.PackageIndex
+	if err := repo.FetchPackageIndex("", packageName, &packageIndex); err != nil {
+		return []string{}, cobra.ShellCompDirectiveError
+	}
+	versions := make([]string, 0, len(packageIndex.Versions))
+	for _, version := range packageIndex.Versions {
+		if toComplete == "" || strings.HasPrefix(version.Version, toComplete) {
+			versions = append(versions, version.Version)
+		}
+	}
+	return versions, 0
+}
+
 func init() {
+	installCmd.PersistentFlags().StringVarP(&installCmdOptions.Version, "version", "v", "",
+		"install a specific version")
+	_ = installCmd.RegisterFlagCompletionFunc("version", completeAvailablePackageVersions)
+	installCmd.PersistentFlags().BoolVar(&installCmdOptions.EnableAutoUpdates, "enable-auto-updates", false,
+		"enable automatic updates for this package")
+	installCmd.MarkFlagsMutuallyExclusive("version", "enable-auto-updates")
 	RootCmd.AddCommand(installCmd)
 }

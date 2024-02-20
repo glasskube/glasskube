@@ -184,9 +184,10 @@ func (s *server) Start(ctx context.Context, support *ServerConfigSupport) error 
 func (s *server) install(w http.ResponseWriter, r *http.Request) {
 	pkgName := r.FormValue("packageName")
 	go func() {
+		// TODO: Add version
 		status, err := install.NewInstaller(s.pkgClient).
 			WithStatusWriter(statuswriter.Stderr()).
-			InstallBlocking(s.ctx, pkgName)
+			InstallBlocking(s.ctx, pkgName, "")
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "An error occurred installing %v: \n%v\n", pkgName, err)
 			return
