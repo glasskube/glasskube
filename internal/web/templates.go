@@ -21,6 +21,7 @@ var (
 	pkgDetailBtnsTmpl           *template.Template
 	pkgInstallModalTmpl         *template.Template
 	pkgInstallModalVersionsTmpl *template.Template
+	pkgUpdateModalTmpl          *template.Template
 	templatesDir                = "templates"
 	componentsDir               = path.Join(templatesDir, "components")
 	pagesDir                    = path.Join(templatesDir, "pages")
@@ -47,6 +48,7 @@ func init() {
 	pkgDetailBtnsTmpl = componentTmpl(pkg_detail_btns.TemplateId, "pkg-detail-btns.html")
 	pkgInstallModalTmpl = componentTmpl("pkg-install-modal", "pkg-install-modal.html")
 	pkgInstallModalVersionsTmpl = componentTmpl("pkg-install-modal-versions", "pkg-install-modal-versions.html")
+	pkgUpdateModalTmpl = componentTmpl("pkg-update-modal", "pkg-update-modal.html")
 }
 
 func pageTmpl(fileName string) *template.Template {

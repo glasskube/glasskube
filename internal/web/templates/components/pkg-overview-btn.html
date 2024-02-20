@@ -16,6 +16,13 @@
   <a href="/packages/{{.PackageName}}" hx-boost="true" class="btn btn-danger btn-sm w-100">
     <span>Installation Failed</span>
   </a>
+  {{else if .UpdateAvailable}}
+  <button hx-get="/packages/update/modal" hx-target="#modal-container" hx-swap="innerHTML" hx-select="#pkg-update-modal"
+          name="packageName" value="{{ .PackageName }}"
+          class="btn btn-warning btn-sm w-100"
+          data-bs-toggle="modal" data-bs-target="#modal-container">
+    Update
+  </button>
   {{else if and .Manifest .Manifest.Entrypoints }}
   <button class="btn btn-success btn-sm w-100" hx-post="/packages/open" hx-swap="none" name="packageName"
           value="{{ .PackageName }}">

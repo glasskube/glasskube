@@ -26,7 +26,7 @@ var serveCmd = &cobra.Command{
 			Kubeconfig: config.Kubeconfig,
 		}
 		server := web.NewServer(options)
-		if err := server.Start(); err != nil {
+		if err := server.Start(cmd.Context()); err != nil {
 			fmt.Fprintf(os.Stderr, "An error occurred starting the webserver:\n\n%v\n", err)
 			os.Exit(1)
 		}

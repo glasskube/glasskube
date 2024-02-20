@@ -18,7 +18,7 @@
             <span class="d-flex ">
               <h1 class="d-inline-flex flex-grow-1 text-dark m-0">{{ .Manifest.Name }}</h1>
               <span class="align-self-center mx-auto">
-                {{template "pkg-detail-btns" ForPkgDetailBtns .Manifest.Name .Status .Manifest }}
+                {{template "pkg-detail-btns" ForPkgDetailBtns .Manifest.Name .Status .Manifest .Package .LatestVersion }}
               </span>
             </span>
           </div>
