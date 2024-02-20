@@ -11,11 +11,10 @@ import (
 	"go.uber.org/multierr"
 )
 
-type PackageTeaserWithStatus struct {
-	PackageName       string
-	ShortDescription  string
-	IconUrl           string
+type PackageWithStatus struct {
+	repo.PackageRepoIndexItem
 	Status            *client.PackageStatus
+	Package           *v1alpha1.Package
 	InstalledManifest *v1alpha1.PackageManifest
 }
 
@@ -43,7 +42,7 @@ func GetPackagesWithStatus(
 	pkgClient *client.PackageV1Alpha1Client,
 	ctx context.Context,
 	options listOptions,
-) ([]*PackageTeaserWithStatus, error) {
+) ([]*PackageWithStatus, error) {
 	onlyInstalled := options&OnlyInstalled != 0
 
 	index, err := fetchRepoAndInstalled(pkgClient, ctx, options)
@@ -51,20 +50,22 @@ func GetPackagesWithStatus(
 		return nil, err
 	}
 
-	result := make([]*PackageTeaserWithStatus, 0, len(index))
+	result := make([]*PackageWithStatus, 0, len(index))
 	for _, item := range index {
-		pkgWithStatus := PackageTeaserWithStatus{
-			PackageName:      item.Teaser.Name,
-			ShortDescription: item.Teaser.ShortDescription,
-			IconUrl:          item.Teaser.IconUrl,
+		pkgWithStatus := PackageWithStatus{
+			PackageRepoIndexItem: *item.IndexItem,
 		}
-		if item.Package != nil {
-			pkgWithStatus.Status = client.GetStatusOrPending(&item.Package.Status)
-		}
-		if item.PackageInfo != nil {
-			pkgWithStatus.InstalledManifest = item.PackageInfo.Status.Manifest
-		}
-		if !onlyInstalled || pkgWithStatus.Status != nil {
+
+		if !onlyInstalled || item.Package != nil {
+			if item.Package != nil {
+				pkgWithStatus.Package = item.Package
+				pkgWithStatus.Status = client.GetStatusOrPending(&item.Package.Status)
+			}
+
+			if item.PackageInfo != nil {
+				pkgWithStatus.InstalledManifest = item.PackageInfo.Status.Manifest
+			}
+
 			result = append(result, &pkgWithStatus)
 		}
 	}
@@ -72,7 +73,7 @@ func GetPackagesWithStatus(
 }
 
 type listResultTuple struct {
-	Teaser      *repo.PackageRepoIndexItem
+	IndexItem   *repo.PackageRepoIndexItem
 	Package     *v1alpha1.Package
 	PackageInfo *v1alpha1.PackageInfo
 }
@@ -121,7 +122,7 @@ func fetchRepoAndInstalled(pkgClient *client.PackageV1Alpha1Client, ctx context.
 
 	result := make([]listResultTuple, len(index.Packages))
 	for i, indexPackage := range index.Packages {
-		result[i].Teaser = &index.Packages[i]
+		result[i].IndexItem = &index.Packages[i]
 		for j, clusterPackage := range packages.Items {
 			if indexPackage.Name == clusterPackage.Name {
 				result[i].Package = &packages.Items[j]

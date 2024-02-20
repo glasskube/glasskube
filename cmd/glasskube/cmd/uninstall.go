@@ -5,12 +5,15 @@ import (
 	"os"
 
 	"github.com/glasskube/glasskube/internal/cliutils"
-	"github.com/glasskube/glasskube/internal/config"
 	pkgClient "github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/list"
 	"github.com/glasskube/glasskube/pkg/uninstall"
 	"github.com/spf13/cobra"
 )
+
+var uninstallCmdOptions = struct {
+	ForceUninstall bool
+}{}
 
 var uninstallCmd = &cobra.Command{
 	Use:    "uninstall [package-name]",
@@ -27,7 +30,7 @@ var uninstallCmd = &cobra.Command{
 			os.Exit(1)
 			return
 		}
-		proceed := config.ForceUninstall || cliutils.YesNoPrompt(
+		proceed := uninstallCmdOptions.ForceUninstall || cliutils.YesNoPrompt(
 			fmt.Sprintf(
 				"%v will be removed from your cluster (%v). Are you sure?",
 				pkgName,
@@ -51,7 +54,7 @@ var uninstallCmd = &cobra.Command{
 }
 
 func init() {
-	uninstallCmd.PersistentFlags().BoolVar(&config.ForceUninstall, "force", false,
+	uninstallCmd.PersistentFlags().BoolVar(&uninstallCmdOptions.ForceUninstall, "force", false,
 		"skip the confirmation question and uninstall right away")
 	RootCmd.AddCommand(uninstallCmd)
 }

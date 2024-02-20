@@ -17,4 +17,5 @@ type PackageRepoIndexItem struct {
 	Name             string `json:"name"`
 	ShortDescription string `json:"shortDescription,omitempty"`
 	IconUrl          string `json:"iconUrl,omitempty"`
+	LatestVersion    string `json:"latestVersion,omitempty"`
 }

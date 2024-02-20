@@ -12,6 +12,9 @@
         },
         "iconUrl": {
           "type": "string"
+        },
+        "latestVersion": {
+          "type": "string"
         }
       },
       "additionalProperties": false,
