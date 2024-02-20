@@ -28,10 +28,11 @@ func (obj *installer) WithStatusWriter(sw statuswriter.StatusWriter) *installer 
 
 // InstallBlocking creates a new v1alpha1.Package custom resource in the cluster and waits until
 // the package has either status Ready or Failed.
-func (obj *installer) InstallBlocking(ctx context.Context, packageName string) (*client.PackageStatus, error) {
+// An empty version is allowed and is interpreted as "auto-updates enabled".
+func (obj *installer) InstallBlocking(ctx context.Context, packageName, version string) (*client.PackageStatus, error) {
 	obj.status.Start()
 	defer obj.status.Stop()
-	pkg, err := obj.install(ctx, packageName)
+	pkg, err := obj.install(ctx, packageName, version)
 	if err != nil {
 		return nil, err
 	}
@@ -39,16 +40,17 @@ func (obj *installer) InstallBlocking(ctx context.Context, packageName string) (
 }
 
 // Install creates a new v1alpha1.Package custom resource in the cluster.
-func (obj *installer) Install(ctx context.Context, packageName string) error {
+// An empty version is allowed and is interpreted as "auto-updates enabled".
+func (obj *installer) Install(ctx context.Context, packageName, version string) error {
 	obj.status.Start()
 	defer obj.status.Stop()
-	_, err := obj.install(ctx, packageName)
+	_, err := obj.install(ctx, packageName, version)
 	return err
 }
 
-func (obj *installer) install(ctx context.Context, packageName string) (*v1alpha1.Package, error) {
+func (obj *installer) install(ctx context.Context, packageName, version string) (*v1alpha1.Package, error) {
 	obj.status.SetStatus(fmt.Sprintf("Installing %v...", packageName))
-	pkg := client.NewPackage(packageName)
+	pkg := client.NewPackage(packageName, version)
 	err := obj.client.Packages().Create(ctx, pkg)
 	if err != nil {
 		return nil, err

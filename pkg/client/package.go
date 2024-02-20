@@ -60,14 +60,15 @@ func (c *packageClient) Delete(ctx context.Context, pkg *v1alpha1.Package, optio
 }
 
 // NewPackage instantiates a new v1alpha1.Package struct with the given package name
-func NewPackage(packageName string) *v1alpha1.Package {
+func NewPackage(packageName, version string) *v1alpha1.Package {
 	return &v1alpha1.Package{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: packageName,
 		},
 		Spec: v1alpha1.PackageSpec{
 			PackageInfo: v1alpha1.PackageInfoTemplate{
-				Name: packageName,
+				Name:    packageName,
+				Version: version,
 			},
 		},
 	}
