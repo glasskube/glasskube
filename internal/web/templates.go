@@ -11,16 +11,18 @@ import (
 )
 
 var (
-	baseTemplate       *template.Template
-	pkgsPageTmpl       *template.Template
-	pkgPageTmpl        *template.Template
-	supportPageTmpl    *template.Template
-	bootstrapPageTmpl  *template.Template
-	pkgOverviewBtnTmpl *template.Template
-	pkgDetailBtnsTmpl  *template.Template
-	templatesDir       = "templates"
-	componentsDir      = path.Join(templatesDir, "components")
-	pagesDir           = path.Join(templatesDir, "pages")
+	baseTemplate                *template.Template
+	pkgsPageTmpl                *template.Template
+	pkgPageTmpl                 *template.Template
+	supportPageTmpl             *template.Template
+	bootstrapPageTmpl           *template.Template
+	pkgOverviewBtnTmpl          *template.Template
+	pkgDetailBtnsTmpl           *template.Template
+	pkgInstallModalTmpl         *template.Template
+	pkgInstallModalVersionsTmpl *template.Template
+	templatesDir                = "templates"
+	componentsDir               = path.Join(templatesDir, "components")
+	pagesDir                    = path.Join(templatesDir, "pages")
 )
 
 func loadTemplates() {
@@ -48,6 +50,10 @@ func loadTemplates() {
 		ParseFS(embededFs, path.Join(componentsDir, "pkg-overview-btn.html")))
 	pkgDetailBtnsTmpl = template.Must(template.New(pkg_detail_btns.TemplateId).
 		ParseFS(embededFs, path.Join(componentsDir, "pkg-detail-btns.html")))
+	pkgInstallModalTmpl = template.Must(template.New("pkg-install-modal").
+		ParseFS(embededFs, path.Join(componentsDir, "pkg-install-modal.html")))
+	pkgInstallModalVersionsTmpl = template.Must(template.New("pkg-install-modal-versions").
+		ParseFS(embededFs, path.Join(componentsDir, "pkg-install-modal-versions.html")))
 }
 
 func checkTmplError(e error, tmplName string) {

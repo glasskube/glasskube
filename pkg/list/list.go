@@ -127,7 +127,8 @@ func fetchRepoAndInstalled(pkgClient *client.PackageV1Alpha1Client, ctx context.
 			if indexPackage.Name == clusterPackage.Name {
 				result[i].Package = &packages.Items[j]
 				for k, packageInfo := range packageInfos.Items {
-					if packageInfo.Name == clusterPackage.Spec.PackageInfo.Name {
+					packageInfoName := clusterPackage.Status.OwnedPackageInfos[len(clusterPackage.Status.OwnedPackageInfos)-1].Name
+					if packageInfo.Name == packageInfoName {
 						result[i].PackageInfo = &packageInfos.Items[k]
 						break
 					}

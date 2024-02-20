@@ -12,6 +12,8 @@ import (
 	"os"
 	"syscall"
 
+	"github.com/glasskube/glasskube/internal/repo"
+
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd/api"
 
@@ -137,6 +139,8 @@ func (s *server) Start(ctx context.Context, support *ServerConfigSupport) error 
 	router.HandleFunc("/bootstrap", s.bootstrapPage)
 	router.HandleFunc("/packages", s.packages)
 	router.HandleFunc("/packages/install", s.install)
+	router.HandleFunc("/packages/install/modal", s.installModal)
+	router.HandleFunc("/packages/install/modal/versions", s.installModalVersions)
 	router.HandleFunc("/packages/uninstall", s.uninstall)
 	router.HandleFunc("/packages/open", s.open)
 	router.HandleFunc("/packages/{pkgName}", s.packageDetail)
@@ -183,11 +187,11 @@ func (s *server) Start(ctx context.Context, support *ServerConfigSupport) error 
 
 func (s *server) install(w http.ResponseWriter, r *http.Request) {
 	pkgName := r.FormValue("packageName")
+	selectedVersion := r.FormValue("selectedVersion")
 	go func() {
-		// TODO: Add version
 		status, err := install.NewInstaller(s.pkgClient).
 			WithStatusWriter(statuswriter.Stderr()).
-			InstallBlocking(s.ctx, pkgName, "")
+			InstallBlocking(s.ctx, pkgName, selectedVersion)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "An error occurred installing %v: \n%v\n", pkgName, err)
 			return
@@ -200,6 +204,39 @@ func (s *server) install(w http.ResponseWriter, r *http.Request) {
 		s.broadcastPkgStatusUpdate(pkgName, status, manifest)
 	}()
 	s.broadcastPkgStatusUpdate(pkgName, client.NewPendingStatus(), nil)
+}
+
+func (s *server) installModal(w http.ResponseWriter, r *http.Request) {
+	pkgName := r.FormValue("packageName")
+
+	_, _, manifest, err := describe.DescribePackage(s.ctx, pkgName)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "An error occurred fetching package details of %v: \n%v\n", pkgName, err)
+		return
+	}
+
+	err = pkgInstallModalTmpl.Execute(w, &map[string]any{
+		"Manifest": manifest,
+	})
+	checkTmplError(err, "pkgInstallModalTmpl")
+}
+
+func (s *server) installModalVersions(w http.ResponseWriter, r *http.Request) {
+	enableAutoUpdateVal := r.FormValue("enableAutoUpdate")
+	showVersions := enableAutoUpdateVal == ""
+	var idx repo.PackageIndex
+	if showVersions {
+		pkgName := r.FormValue("packageName")
+		if err := repo.FetchPackageIndex("", pkgName, &idx); err != nil {
+			fmt.Fprintf(os.Stderr, "An error occurred fetching versions of %v: %v\n", pkgName, err)
+		}
+	}
+
+	err := pkgInstallModalVersionsTmpl.Execute(w, &map[string]any{
+		"ShowVersions": showVersions,
+		"PackageIndex": &idx,
+	})
+	checkTmplError(err, "pkgInstallModalVersionsTmpl")
 }
 
 func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {

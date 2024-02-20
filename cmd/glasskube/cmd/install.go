@@ -34,7 +34,7 @@ var installCmd = &cobra.Command{
 		if installCmdOptions.Version == "" && !installCmdOptions.EnableAutoUpdates {
 			fmt.Fprintf(os.Stderr, "Version not specified. The latest version of %v will be installed.\n", packageName)
 
-			if !cliutils.YesNoPrompt("Would you like to enable automatic updates?", false) {
+			if !cliutils.YesNoPrompt("Would you like to enable automatic updates?", true) {
 				var packageIndex repo.PackageIndex
 				if err := repo.FetchPackageIndex("", packageName, &packageIndex); err != nil {
 					fmt.Fprintf(os.Stderr, "❗ Error: Could not fetch package metadata: %v\n", err)
