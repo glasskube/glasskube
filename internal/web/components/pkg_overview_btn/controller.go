@@ -35,12 +35,12 @@ func Render(w io.Writer, tmpl *template.Template, pkgName string, status *client
 	})
 }
 
-func ForPkgOverviewBtn(pkgTeaser *list.PackageTeaserWithStatus) *pkgOverviewBtnInput {
-	buttonId := getButtonId(pkgTeaser.PackageName)
+func ForPkgOverviewBtn(pkgTeaser *list.PackageWithStatus) *pkgOverviewBtnInput {
+	buttonId := getButtonId(pkgTeaser.Name)
 	return &pkgOverviewBtnInput{
 		ButtonId:    buttonId,
 		Swap:        "",
-		PackageName: pkgTeaser.PackageName,
+		PackageName: pkgTeaser.Name,
 		Status:      pkgTeaser.Status,
 		Manifest:    pkgTeaser.InstalledManifest,
 	}

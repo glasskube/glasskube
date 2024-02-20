@@ -3,13 +3,20 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/glasskube/glasskube/internal/cliutils"
-	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/list"
 	"github.com/spf13/cobra"
 )
+
+var listCmdOptions = struct {
+	ListInstalledOnly bool
+	ShowDescription   bool
+	ShowLatestVersion bool
+	More              bool
+}{}
 
 var listCmd = &cobra.Command{
 	Use:     "list",
@@ -19,9 +26,14 @@ var listCmd = &cobra.Command{
 		"as well as their installation status in your cluster.\nYou can choose to only show installed packages.",
 	PreRun: cliutils.SetupClientContext(true),
 	Run: func(cmd *cobra.Command, args []string) {
+		if listCmdOptions.More {
+			listCmdOptions.ShowLatestVersion = true
+			listCmdOptions.ShowDescription = true
+		}
+
 		pkgClient := client.FromContext(cmd.Context())
 		listOptions := list.DefaultListOptions
-		if config.ListInstalledOnly {
+		if listCmdOptions.ListInstalledOnly {
 			listOptions |= list.OnlyInstalled
 		}
 		pkgs, err := list.GetPackagesWithStatus(pkgClient, cmd.Context(), listOptions)
@@ -30,46 +42,95 @@ var listCmd = &cobra.Command{
 			os.Exit(1)
 			return
 		}
-		if config.ListInstalledOnly && len(pkgs) == 0 {
+		if listCmdOptions.ListInstalledOnly && len(pkgs) == 0 {
 			fmt.Println("There are currently no packages installed in your cluster.\n" +
 				"Run \"glasskube help install\" to get started.")
 		} else {
-			printPackageTable(pkgs, config.Verbose)
+			printPackageTable(pkgs)
 		}
 	},
 }
 
 func init() {
-	listCmd.PersistentFlags().BoolVarP(&config.ListInstalledOnly, "installed", "i", false,
+	listCmd.PersistentFlags().BoolVarP(&listCmdOptions.ListInstalledOnly, "installed", "i", false,
 		"list only installed packages")
-	listCmd.PersistentFlags().BoolVar(&config.Verbose, "show-description", false,
-		"show additional information to the packages")
+	listCmd.PersistentFlags().BoolVar(&listCmdOptions.ShowDescription, "show-description", false,
+		"show the package description")
+	listCmd.PersistentFlags().BoolVar(&listCmdOptions.ShowLatestVersion, "show-latest", false,
+		"show the latest version of packages if available")
+	listCmd.PersistentFlags().BoolVarP(&listCmdOptions.More, "more", "m", false,
+		"show additional information about packages (like --show-description --show-latest)")
+
+	listCmd.MarkFlagsMutuallyExclusive("show-description", "more")
+	listCmd.MarkFlagsMutuallyExclusive("show-latest", "more")
+
 	RootCmd.AddCommand(listCmd)
 }
 
-func printPackageTable(packages []*list.PackageTeaserWithStatus, verbose bool) {
-	header := make([]string, 3)
-	header[0] = "NAME"
-	header[1] = "STATUS"
-	if verbose {
-		header[2] = "DESCRIPTION"
+func printPackageTable(packages []*list.PackageWithStatus) {
+	header := []string{"NAME", "STATUS", "VERSION"}
+	if listCmdOptions.ShowLatestVersion {
+		header = append(header, "LATEST VERSION")
 	}
-	cliutils.PrintPackageTable(os.Stdout,
+	if listCmdOptions.ShowDescription {
+		header = append(header, "DESCRIPTION")
+	}
+	err := cliutils.PrintPackageTable(os.Stdout,
 		packages,
 		header,
-		func(pkg *list.PackageTeaserWithStatus) []string {
-			row := make([]string, 3)
-			row[0] = pkg.PackageName
-			var statusStr string
-			if pkg.Status == nil {
-				statusStr = "Not installed"
-			} else {
-				statusStr = pkg.Status.Status
+		func(pkg *list.PackageWithStatus) []string {
+			row := []string{pkg.Name, statusString(*pkg), versionString(*pkg)}
+			if listCmdOptions.ShowLatestVersion {
+				row = append(row, pkg.LatestVersion)
 			}
-			row[1] = statusStr
-			if verbose {
-				row[2] = pkg.ShortDescription
+			if listCmdOptions.ShowDescription {
+				row = append(row, pkg.ShortDescription)
 			}
 			return row
 		})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "There was an error displaying the package table:\n%v\n(This is a bug)\n", err)
+		os.Exit(1)
+	}
+}
+
+func statusString(pkg list.PackageWithStatus) string {
+	if pkg.Status != nil {
+		return pkg.Status.Status
+	} else {
+		return "Not installed"
+	}
+}
+
+func versionString(pkg list.PackageWithStatus) string {
+	if pkg.Package != nil {
+		specVersion := pkg.Package.Spec.PackageInfo.Version
+		statusVersion := pkg.Package.Status.Version
+		repoVersion := pkg.LatestVersion
+
+		if statusVersion != "" {
+			versionAddons := []string{}
+			if specVersion != "" && statusVersion != specVersion {
+				versionAddons = append(versionAddons, fmt.Sprintf("%v desired", specVersion))
+			}
+			if repoVersion != "" && statusVersion != repoVersion {
+				versionAddons = append(versionAddons, fmt.Sprintf("%v available", repoVersion))
+			}
+			if len(versionAddons) > 0 {
+				return fmt.Sprintf("%v (%v)", statusVersion, strings.Join(versionAddons, ", "))
+			} else {
+				return statusVersion
+			}
+		} else if specVersion != "" {
+			if specVersion != repoVersion {
+				return fmt.Sprintf("%v (%v available)", specVersion, repoVersion)
+			} else {
+				return specVersion
+			}
+		} else {
+			return "n/a"
+		}
+	} else {
+		return ""
+	}
 }

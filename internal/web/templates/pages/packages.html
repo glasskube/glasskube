@@ -7,18 +7,18 @@
           <div class="card-body p-0 d-flex flex-column">
             <div hx-boost="true" class="d-flex align-items-center">
               <div class="flex-shrink-0 px-1 py-1 align-self-center">
-                <a class="text-decoration-none" href="/packages/{{ .PackageName }}">
+                <a class="text-decoration-none" href="/packages/{{ .Name }}">
                   {{if eq .IconUrl ""}}
                   <!-- TODO the glasskube logo as fallback is probably not the best idea? -->
-                  <img src="/static/assets/glasskube-logo.svg" alt="{{ .PackageName}}"  style="width: 3.25rem; height:auto">
+                  <img src="/static/assets/glasskube-logo.svg" alt="{{ .Name}}"  style="width: 3.25rem; height:auto">
                   {{else}}
-                  <img src="{{ .IconUrl }}" alt="{{ .PackageName}}"  style="width: 3.25rem; height:auto">
+                  <img src="{{ .IconUrl }}" alt="{{ .Name }}"  style="width: 3.25rem; height:auto">
                   {{end}}
                 </a>
               </div>
               <div class="flex-grow-1 card-body ps-0 pe-1 py-1 align-self-start">
-                <a class="text-decoration-none" href="/packages/{{ .PackageName }}">
-                  <h6 class="text-dark m-0">{{ .PackageName }}</h6>
+                <a class="text-decoration-none" href="/packages/{{ .Name }}">
+                  <h6 class="text-dark m-0">{{ .Name }}</h6>
                   <span class="lh-sm text-dark overflow-hidden" style="
                         font-size: small;
                         display: -webkit-box;
