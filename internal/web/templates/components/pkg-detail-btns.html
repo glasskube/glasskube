@@ -5,6 +5,17 @@
 </button>
 {{end}}
 
+{{define "pkg-detail-update"}}
+  {{if .UpdateAvailable}}
+  <button hx-get="/packages/update/modal" hx-target="#modal-container" hx-swap="innerHTML" hx-select="#pkg-update-modal"
+          name="packageName" value="{{ .PackageName }}"
+          class="btn btn-warning btn-sm"
+          data-bs-toggle="modal" data-bs-target="#modal-container">
+    Update
+  </button>
+  {{end}}
+{{end}}
+
 {{define "pkg-detail-btns"}}
 
 <span id="{{ .ContainerId }}" hx-swap-oob="{{ .Swap }}" hx-swap="none">
@@ -28,12 +39,14 @@
     <i class="bi bi-box-arrow-up-right"></i>
     <span>Open</span>
   </button>
+  {{template "pkg-detail-update" .}}
   {{template "pkg-detail-uninstall" .}}
   {{else}}
   <a class="btn btn-success btn-sm pe-none">
     <i class="bi bi-check-lg"></i>
     <span>Installed</span>
   </a>
+  {{template "pkg-detail-update" .}}
   {{template "pkg-detail-uninstall" .}}
   {{end}}
 </span>

@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
+	"time"
 
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/httperror"
@@ -12,6 +14,10 @@ import (
 )
 
 var defaultRepositoryURL = "https://packages.dl.glasskube.dev/packages/"
+
+var idxMutex sync.Mutex
+var idxUpdate time.Time
+var packageRepoIndex PackageRepoIndex
 
 func UpdatePackageManifest(pi *packagesv1alpha1.PackageInfo) (err error) {
 	var manifest packagesv1alpha1.PackageManifest
@@ -71,6 +77,23 @@ func FetchPackageRepoIndex(repoURL string, target *PackageRepoIndex) error {
 	} else {
 		return fetchYAMLOrJSON(url, target)
 	}
+}
+
+func GetLatestVersion(repoURL string, pkgName string) (string, error) {
+	idxMutex.Lock()
+	defer idxMutex.Unlock()
+	if len(packageRepoIndex.Packages) == 0 || idxUpdate.Add(5*time.Minute).Before(time.Now()) {
+		if err := FetchPackageRepoIndex(repoURL, &packageRepoIndex); err != nil {
+			return "", err
+		}
+		idxUpdate = time.Now()
+	}
+	for _, pkg := range packageRepoIndex.Packages {
+		if pkg.Name == pkgName {
+			return pkg.LatestVersion, nil
+		}
+	}
+	return "", nil
 }
 
 func fetchYAMLOrJSON(url string, target any) error {

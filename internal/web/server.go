@@ -13,6 +13,12 @@ import (
 	"os"
 	"syscall"
 
+	"github.com/glasskube/glasskube/pkg/update"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/tools/cache"
+
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/config"
@@ -57,12 +63,14 @@ func NewServer(options ServerOptions) *server {
 type server struct {
 	ServerOptions
 	configLoader
-	listener   net.Listener
-	restConfig *rest.Config
-	rawConfig  *api.Config
-	pkgClient  *client.PackageV1Alpha1Client
-	wsHub      *WsHub
-	forwarders map[string]*open.OpenResult
+	listener      net.Listener
+	restConfig    *rest.Config
+	rawConfig     *api.Config
+	pkgClient     *client.PackageV1Alpha1Client
+	wsHub         *WsHub
+	informerStore cache.Store
+	informerCtrl  cache.Controller
+	forwarders    map[string]*open.OpenResult
 }
 
 func (s *server) RestConfig() *rest.Config {
@@ -77,35 +85,34 @@ func (s *server) Client() *client.PackageV1Alpha1Client {
 	return s.pkgClient
 }
 
-func (s *server) broadcastPkgStatusUpdate(
-	pkgName string,
-	status *client.PackageStatus,
-	manifest *v1alpha1.PackageManifest,
-) {
+func (s *server) broadcastPkg(pkg *v1alpha1.Package, status *client.PackageStatus, installedManifest *v1alpha1.PackageManifest, latestVersion string) {
 	go func() {
 		var bf bytes.Buffer
-		err := pkg_overview_btn.Render(&bf, pkgOverviewBtnTmpl, pkgName, status, manifest)
-		checkTmplError(err, fmt.Sprintf("%s (%s)", pkg_overview_btn.TemplateId, pkgName))
+		err := pkg_overview_btn.Render(&bf, pkgOverviewBtnTmpl, pkg, status, installedManifest, latestVersion)
+		checkTmplError(err, fmt.Sprintf("%s (%s)", pkg_overview_btn.TemplateId, pkg.Name))
 		if err == nil {
 			s.wsHub.Broadcast <- bf.Bytes()
 		}
 	}()
 	go func() {
 		var bf bytes.Buffer
-		err := pkg_detail_btns.Render(&bf, pkgDetailBtnsTmpl, pkgName, status, manifest)
-		checkTmplError(err, fmt.Sprintf("%s (%s)", pkg_overview_btn.TemplateId, pkgName))
+		err := pkg_detail_btns.Render(&bf, pkgDetailBtnsTmpl, pkg, status, installedManifest, latestVersion)
+		checkTmplError(err, fmt.Sprintf("%s (%s)", pkg_detail_btns.TemplateId, pkg.Name))
 		if err == nil {
 			s.wsHub.Broadcast <- bf.Bytes()
 		}
 	}()
 }
 
-func (s *server) Start() error {
+func (s *server) Start(ctx context.Context) error {
 	if s.listener != nil {
 		return errors.New("server is already listening")
 	}
 
 	_ = s.initKubeConfig()
+	if err := s.checkBootstrapped(ctx); err == nil {
+		s.startInformer(ctx)
+	}
 
 	root, err := fs.Sub(embededFs, "root")
 	if err != nil {
@@ -123,13 +130,15 @@ func (s *server) Start() error {
 	router.HandleFunc("/kubeconfig", s.kubeconfigPage)
 	router.Handle("/bootstrap", s.requireKubeconfig(s.bootstrapPage))
 	router.Handle("/kubeconfig/persist", s.requireKubeconfig(s.persistKubeconfig))
-	router.Handle("/packages", s.requireBootstrapped(s.packages))
-	router.Handle("/packages/install", s.requireBootstrapped(s.install))
-	router.Handle("/packages/install/modal", s.requireBootstrapped(s.installModal))
-	router.Handle("/packages/install/modal/versions", s.requireBootstrapped(s.installModalVersions))
-	router.Handle("/packages/uninstall", s.requireBootstrapped(s.uninstall))
-	router.Handle("/packages/open", s.requireBootstrapped(s.open))
-	router.Handle("/packages/{pkgName}", s.requireBootstrapped(s.packageDetail))
+	router.Handle("/packages", s.requireReady(s.packages))
+	router.Handle("/packages/install", s.requireReady(s.install))
+	router.Handle("/packages/install/modal", s.requireReady(s.installModal))
+	router.Handle("/packages/install/modal/versions", s.requireReady(s.installModalVersions))
+	router.Handle("/packages/update", s.requireReady(s.update))
+	router.Handle("/packages/update/modal", s.requireReady(s.updateModal))
+	router.Handle("/packages/uninstall", s.requireReady(s.uninstall))
+	router.Handle("/packages/open", s.requireReady(s.open))
+	router.Handle("/packages/{pkgName}", s.requireReady(s.packageDetail))
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/packages", http.StatusFound) })
 	http.Handle("/", s.enrichContext(router))
 
@@ -172,36 +181,18 @@ func (s *server) Start() error {
 func (s *server) install(w http.ResponseWriter, r *http.Request) {
 	pkgName := r.FormValue("packageName")
 	selectedVersion := r.FormValue("selectedVersion")
-	ctxAsync := context.WithoutCancel(r.Context())
-	go func() {
-		status, err := install.NewInstaller(s.pkgClient).
-			WithStatusWriter(statuswriter.Stderr()).
-			InstallBlocking(ctxAsync, pkgName, selectedVersion)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "An error occurred installing %v: \n%v\n", pkgName, err)
-			return
-		}
-		manifest, err := manifest.GetInstalledManifest(ctxAsync, pkgName)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "could not fetch manifest of %v: %v\n", pkgName, err)
-			return
-		}
-		s.broadcastPkgStatusUpdate(pkgName, status, manifest)
-	}()
-	s.broadcastPkgStatusUpdate(pkgName, client.NewPendingStatus(), nil)
+	err := install.NewInstaller(s.pkgClient).
+		WithStatusWriter(statuswriter.Stderr()).
+		Install(r.Context(), pkgName, selectedVersion)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "An error occurred installing %v: \n%v\n", pkgName, err)
+	}
 }
 
 func (s *server) installModal(w http.ResponseWriter, r *http.Request) {
 	pkgName := r.FormValue("packageName")
-
-	_, _, manifest, err := describe.DescribePackage(r.Context(), pkgName)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "An error occurred fetching package details of %v: \n%v\n", pkgName, err)
-		return
-	}
-
-	err = pkgInstallModalTmpl.Execute(w, &map[string]any{
-		"Manifest": manifest,
+	err := pkgInstallModalTmpl.Execute(w, &map[string]any{
+		"PackageName": pkgName,
 	})
 	checkTmplError(err, "pkgInstallModalTmpl")
 }
@@ -216,7 +207,6 @@ func (s *server) installModalVersions(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(os.Stderr, "An error occurred fetching versions of %v: %v\n", pkgName, err)
 		}
 	}
-
 	err := pkgInstallModalVersionsTmpl.Execute(w, &map[string]any{
 		"ShowVersions": showVersions,
 		"PackageIndex": &idx,
@@ -224,21 +214,57 @@ func (s *server) installModalVersions(w http.ResponseWriter, r *http.Request) {
 	checkTmplError(err, "pkgInstallModalVersionsTmpl")
 }
 
+func (s *server) updateModal(w http.ResponseWriter, r *http.Request) {
+	pkgName := r.FormValue("packageName")
+	var pkg v1alpha1.Package
+	if err := s.pkgClient.Packages().Get(r.Context(), pkgName, &pkg); err != nil {
+		fmt.Fprintf(os.Stderr, "An error occurred fetching package %v: \n%v\n", pkgName, err)
+		return
+	}
+
+	if latestVersion, err := repo.GetLatestVersion("", pkgName); err != nil {
+		fmt.Fprintf(os.Stderr, "An error occurred fetching latest version of %v: \n%v\n", pkgName, err)
+	} else {
+		err := pkgUpdateModalTmpl.Execute(w, &map[string]any{
+			"Package":       pkg,
+			"LatestVersion": latestVersion,
+		})
+		checkTmplError(err, "pkgUpdateModalTmpl")
+	}
+}
+
+func (s *server) update(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	pkgName := r.FormValue("packageName")
+
+	updater := update.NewUpdater(s.pkgClient).WithStatusWriter(statuswriter.Stderr())
+	ut, err := updater.Prepare(ctx, []string{pkgName})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "An error occurred preparing update of %v: \n%v\n", pkgName, err)
+		return
+	}
+	// in the future we might want to check here whether the prepared new version is the same as the "toVersion"
+	// which the user agreed to update to in the dialog
+	err = updater.Apply(ctx, ut)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "An error occurred updating %v: \n%v\n", pkgName, err)
+		return
+	}
+}
+
 func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	pkgName := r.FormValue("packageName")
 	var pkg v1alpha1.Package
 	if err := s.pkgClient.Packages().Get(ctx, pkgName, &pkg); err != nil {
-		fmt.Fprintf(os.Stderr, "An error occurred uninstalling %v: \n%v\n", pkgName, err)
+		fmt.Fprintf(os.Stderr, "An error occurred fetching %v during uninstall: \n%v\n", pkgName, err)
 		return
 	}
-	// TODO: this should be changed to also broadcast the pending update first
 	if err := uninstall.NewUninstaller(s.pkgClient).
 		WithStatusWriter(statuswriter.Stderr()).
 		Uninstall(ctx, &pkg); err != nil {
 		fmt.Fprintf(os.Stderr, "An error occurred uninstalling %v: \n%v\n", pkgName, err)
 	}
-	s.broadcastPkgStatusUpdate(pkgName, nil, nil)
 }
 
 func (s *server) open(w http.ResponseWriter, r *http.Request) {
@@ -277,10 +303,15 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(os.Stderr, "An error occurred fetching package details of %v: \n%v\n", pkgName, err)
 		return
 	}
+	latestVersion, err := repo.GetLatestVersion("", pkgName)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "An error occurred fetching latest version of %v: \n%v\n", pkgName, err)
+	}
 	err = pkgPageTmpl.Execute(w, &map[string]any{
-		"Package":  pkg,
-		"Status":   status,
-		"Manifest": manifest,
+		"Package":       pkg,
+		"Status":        status,
+		"Manifest":      manifest,
+		"LatestVersion": latestVersion,
 	})
 	checkTmplError(err, fmt.Sprintf("package-detail (%s)", pkgName))
 }
@@ -425,13 +456,27 @@ func (server *server) initKubeConfig() ServerConfigError {
 	return nil
 }
 
+func (server *server) startInformer(ctx context.Context) {
+	if server.informerStore == nil && server.informerCtrl == nil {
+		server.informerStore, server.informerCtrl = server.initInformer(ctx)
+		go server.informerCtrl.Run(make(<-chan struct{}))
+	}
+}
+
 func (s *server) enrichContext(h http.Handler) http.Handler {
 	return &handler.ContextEnrichingHandler{Source: s, Handler: h}
 }
 
-func (s *server) requireBootstrapped(h http.HandlerFunc) http.Handler {
+func (s *server) requireReady(h http.HandlerFunc) http.Handler {
 	return &handler.PreconditionHandler{
-		Precondition:  func(r *http.Request) error { return s.checkBootstrapped(r.Context()) },
+		Precondition: func(r *http.Request) error {
+			err := s.checkBootstrapped(r.Context())
+			if err != nil {
+				return err
+			}
+			s.startInformer(context.WithoutCancel(r.Context()))
+			return nil
+		},
 		Handler:       h,
 		FailedHandler: handleConfigError,
 	}
@@ -466,6 +511,49 @@ func defaultKubeconfigExists() bool {
 		}
 		return false
 	}
+}
+
+func (s *server) initInformer(ctx context.Context) (cache.Store, cache.Controller) {
+	return cache.NewInformer(
+		&cache.ListWatch{
+			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+				var pkgList v1alpha1.PackageList
+				err := s.pkgClient.Packages().GetAll(ctx, &pkgList)
+				return &pkgList, err
+			},
+			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+				return s.pkgClient.Packages().Watch(ctx)
+			},
+		},
+		&v1alpha1.Package{},
+		0,
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj any) {
+				if pkg, ok := obj.(*v1alpha1.Package); ok {
+					s.broadcastPkg(pkg, client.GetStatusOrPending(&pkg.Status), nil, "")
+				}
+			},
+			UpdateFunc: func(oldObj, newObj any) {
+				if pkg, ok := newObj.(*v1alpha1.Package); ok {
+					ctx := client.SetupContextWithClient(ctx, s.restConfig, s.rawConfig, s.pkgClient)
+					if mf, err := manifest.GetInstalledManifestForPackage(ctx, *pkg); err != nil && !errors.Is(err, manifest.ErrPackageNoManifest) {
+						fmt.Fprintf(os.Stderr, "Error fetching manifest for package %v: %v\n", pkg.Name, err)
+					} else {
+						if latestVersion, err := repo.GetLatestVersion("", pkg.Name); err != nil {
+							fmt.Fprintf(os.Stderr, "An error occurred fetching latest version of %v: \n%v\n", pkg.Name, err)
+						} else {
+							s.broadcastPkg(pkg, client.GetStatusOrPending(&pkg.Status), mf, latestVersion)
+						}
+					}
+				}
+			},
+			DeleteFunc: func(obj any) {
+				if pkg, ok := obj.(*v1alpha1.Package); ok {
+					s.broadcastPkg(pkg, client.GetStatus(&pkg.Status), nil, "")
+				}
+			},
+		},
+	)
 }
 
 func isPortConflictError(err error) bool {
