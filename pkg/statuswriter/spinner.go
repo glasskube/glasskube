@@ -21,8 +21,9 @@ func (cb *callback) Invoke() {
 }
 
 type spinnerStatusWriter struct {
-	bar    *progressbar.ProgressBar
-	onStop callback
+	barSupplier func() *progressbar.ProgressBar
+	bar         *progressbar.ProgressBar
+	onStop      callback
 }
 
 // SetStatus implements StatusWriter.
@@ -32,9 +33,7 @@ func (obj *spinnerStatusWriter) SetStatus(desc string) {
 
 // Start implements StatusWriter.
 func (obj *spinnerStatusWriter) Start() {
-	if obj.bar == nil {
-		obj.createDefaultProgressbar()
-	}
+	obj.bar = obj.barSupplier()
 	ticker := time.NewTicker(100 * time.Millisecond)
 	obj.onStop.Add(
 		func() {
@@ -52,15 +51,16 @@ func (obj *spinnerStatusWriter) Start() {
 // Stop implements StatusWriter.
 func (obj *spinnerStatusWriter) Stop() {
 	obj.onStop.Invoke()
+	obj.bar = nil
 }
 
-func (obj *spinnerStatusWriter) WithStatusbar(bar *progressbar.ProgressBar) *spinnerStatusWriter {
-	obj.bar = bar
+func (obj *spinnerStatusWriter) WithStatusbar(supplier func() *progressbar.ProgressBar) *spinnerStatusWriter {
+	obj.barSupplier = supplier
 	return obj
 }
 
-func (obj *spinnerStatusWriter) createDefaultProgressbar() {
-	obj.bar = progressbar.NewOptions64(
+func createDefaultProgressbar() *progressbar.ProgressBar {
+	return progressbar.NewOptions64(
 		-1,
 		progressbar.OptionSetWriter(os.Stderr),
 		progressbar.OptionSetWidth(10),
@@ -72,5 +72,5 @@ func (obj *spinnerStatusWriter) createDefaultProgressbar() {
 }
 
 func Spinner() *spinnerStatusWriter {
-	return &spinnerStatusWriter{}
+	return &spinnerStatusWriter{barSupplier: createDefaultProgressbar}
 }
