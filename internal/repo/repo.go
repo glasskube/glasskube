@@ -1,17 +1,17 @@
 package repo
 
 import (
-	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
 
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/httperror"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
 var defaultRepositoryURL = "https://packages.dl.glasskube.dev/packages/"
-var ErrNotFound = errors.New("not found")
 
 func UpdatePackageManifest(pi *packagesv1alpha1.PackageInfo) (err error) {
 	var manifest packagesv1alpha1.PackageManifest
@@ -37,7 +37,7 @@ func UpdatePackageManifest(pi *packagesv1alpha1.PackageInfo) (err error) {
 func FetchLatestPackageManifest(repoURL, name string, target *packagesv1alpha1.PackageManifest) (version string, err error) {
 	var versions PackageIndex
 	if err = FetchPackageIndex(repoURL, name, &versions); err != nil {
-		if err != ErrNotFound {
+		if !httperror.IsNotFound(err) {
 			return
 		}
 		// no versions.yaml file for package in repo. Try versionless manifest
@@ -79,10 +79,8 @@ func fetchYAMLOrJSON(url string, target any) error {
 		return err
 	}
 	defer func() { _ = resp.Body.Close() }()
-	if resp.StatusCode == http.StatusNotFound {
-		return ErrNotFound
-	} else if resp.StatusCode != http.StatusOK {
-		return errors.New("failed to fetch " + url + ": " + resp.Status)
+	if err = httperror.CheckResponse(resp); err != nil {
+		return fmt.Errorf("failed to fetch %v: %w", url, err)
 	}
 	return yaml.NewYAMLOrJSONDecoder(resp.Body, 4096).Decode(target)
 }

@@ -14,6 +14,7 @@ var packageGVR = v1alpha1.GroupVersion.WithResource("packages")
 
 type PackageInterface interface {
 	Create(ctx context.Context, p *v1alpha1.Package) error
+	Update(ctx context.Context, p *v1alpha1.Package) error
 	Get(ctx context.Context, pkgName string, p *v1alpha1.Package) error
 	GetAll(ctx context.Context, result *v1alpha1.PackageList) error
 	Watch(ctx context.Context) (watch.Interface, error)
@@ -28,6 +29,16 @@ func (c *packageClient) Create(ctx context.Context, pkg *v1alpha1.Package) error
 	return c.restClient.Post().
 		Resource(packageGVR.Resource).
 		Body(pkg).Do(ctx).Into(pkg)
+}
+
+// Update implements PackageInterface.
+func (c *packageClient) Update(ctx context.Context, p *v1alpha1.Package) error {
+	return c.restClient.Put().
+		Resource(packageGVR.Resource).
+		Name(p.GetName()).
+		Body(p).
+		Do(ctx).
+		Into(p)
 }
 
 func (c *packageClient) Watch(ctx context.Context) (watch.Interface, error) {
