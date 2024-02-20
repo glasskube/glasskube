@@ -1,0 +1,31 @@
+{{define "pkg-install-modal"}}
+
+<div class="modal-dialog modal-dialog-centered" id="pkg-install-modal">
+  <div class="modal-content">
+    <form hx-post="/packages/install">
+      <div class="modal-header">
+        <h1 class="modal-title fs-5" id="exampleModalLabel">Install {{.Manifest.Name}}</h1>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="pkg-install-modal-body">
+        <div class="form-switch">
+          <input class="form-check-input" role="switch" type="checkbox" name="enableAutoUpdate" id="enable-auto-update" checked
+                 hx-get="/packages/install/modal/versions?packageName={{ .Manifest.Name }}" hx-target="#pkg-install-modal-versions" hx-swap="innerHTML">
+          <label class="form-check-label ms-1" for="enable-auto-update">
+            Install Latest Version and Update Automatically
+          </label>
+        </div>
+        <div id="pkg-install-modal-versions">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-primary btn-sm" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" data-bs-dismiss="modal" name="packageName" value="{{ .Manifest.Name }}" class="btn btn-primary btn-sm">
+          Install
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{{end}}

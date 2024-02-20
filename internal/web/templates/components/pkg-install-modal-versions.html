@@ -1,0 +1,18 @@
+{{define "pkg-install-modal-versions"}}
+
+{{ if .ShowVersions }}
+{{ with $idx := .PackageIndex }}
+<div class="input-group mt-2 mb-1">
+  <label class="input-group-text" for="pkg-install-modal-version">Version</label>
+  <select class="form-select" id="pkg-install-modal-version" name="selectedVersion" required>
+    {{ range $idx.Versions }}
+    <option value="{{ .Version }}" {{ if eq .Version $idx.LatestVersion }} selected {{ end }}>
+      {{ .Version }} {{ if eq .Version $idx.LatestVersion }} (latest) {{ end }}
+    </option>
+    {{ end }}
+  </select>
+</div>
+{{ end }}
+{{ end }}
+
+{{end}}
