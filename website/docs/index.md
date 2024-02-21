@@ -116,6 +116,11 @@ Installs the latest version of a package in your cluster and waits until the ins
 
 Use `--version=...` if you want to install a specific version of a package, or `--enable-auto-updates` if you want a package to always be updated to the latest version automatically.
 
+### `glasskube update <packages...>`
+
+Updates the given packages in your cluster to their respecive latest version. 
+If no packages are specified, all outdated packages will be updated.
+
 ### `glasskube uninstall <package>`
 
 Removes the given package from your cluster.
