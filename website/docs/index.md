@@ -112,7 +112,9 @@ Starts the UI server and opens a browser on [http://localhost:8580](http://local
 
 ### `glasskube install <package>`
 
-Installs the given package in your cluster and waits until the installation is either finished successfully or failed.
+Installs the latest version of a package in your cluster and waits until the installation is either finished successfully or failed.
+
+Use `--version=...` if you want to install a specific version of a package, or `--enable-auto-updates` if you want a package to always be updated to the latest version automatically.
 
 ### `glasskube uninstall <package>`
 
