@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	pkgClient "github.com/glasskube/glasskube/pkg/client"
-	"github.com/glasskube/glasskube/pkg/list"
 	"github.com/glasskube/glasskube/pkg/uninstall"
 	"github.com/spf13/cobra"
 )
@@ -24,8 +24,8 @@ var uninstallCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := pkgClient.FromContext(cmd.Context())
 		pkgName := args[0]
-		pkg, err := list.Get(client, cmd.Context(), pkgName)
-		if err != nil {
+		var pkg v1alpha1.Package
+		if err := client.Packages().Get(cmd.Context(), pkgName, &pkg); err != nil {
 			fmt.Fprintf(os.Stderr, "Could not get installed package %v:\n%v\n", pkgName, err)
 			os.Exit(1)
 			return
@@ -40,8 +40,7 @@ var uninstallCmd = &cobra.Command{
 		)
 		if proceed {
 			fmt.Printf("Uninstalling %v.\n", pkgName)
-			err = uninstall.Uninstall(client, cmd.Context(), pkg)
-			if err != nil {
+			if err := uninstall.Uninstall(client, cmd.Context(), &pkg); err != nil {
 				fmt.Fprintf(os.Stderr, "An error occurred during uninstallation:\n\n%v\n", err)
 				os.Exit(1)
 				return

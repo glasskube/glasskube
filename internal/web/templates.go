@@ -25,7 +25,7 @@ var (
 	pagesDir                    = path.Join(templatesDir, "pages")
 )
 
-func loadTemplates() {
+func init() {
 	templateFuncs := template.FuncMap{
 		"ForPkgOverviewBtn": pkg_overview_btn.ForPkgOverviewBtn,
 		"ForPkgDetailBtns":  pkg_detail_btns.ForPkgDetailBtns,

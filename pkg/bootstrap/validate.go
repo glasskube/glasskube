@@ -27,7 +27,7 @@ func IsBootstrapped(ctx context.Context, cfg *rest.Config) (bool, error) {
 	return pkgsExist && pisExist, nil
 }
 
-func crdExists(ctx context.Context, clientset *clientset.Clientset, crdName string) (bool, error) {
+func crdExists(ctx context.Context, clientset clientset.Interface, crdName string) (bool, error) {
 	_, err := clientset.ApiextensionsV1().
 		CustomResourceDefinitions().
 		Get(ctx, fmt.Sprintf("%s.%s", crdName, v1alpha1.GroupVersion.Group), v1.GetOptions{})

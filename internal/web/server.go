@@ -19,6 +19,7 @@ import (
 
 	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/pkg/bootstrap"
+	"github.com/glasskube/glasskube/pkg/kubeconfig"
 
 	"github.com/glasskube/glasskube/pkg/manifest"
 
@@ -42,37 +43,30 @@ import (
 //go:embed templates
 var embededFs embed.FS
 
-type ServerConfigSupport struct {
-	KubeconfigMissing         bool
-	KubeconfigDefaultLocation string
-	KubeconfigError           error
-	BootstrapMissing          bool
-	BootstrapCheckError       error
-}
-
-func init() {
-	loadTemplates()
+type ServerOptions struct {
+	Host       string
+	Port       int32
+	Kubeconfig string
 }
 
 type server struct {
-	host       string
-	port       int32
+	ServerOptions
 	listener   net.Listener
-	ctx        context.Context
-	cfg        *rest.Config
-	rawCfg     *api.Config
-	support    *ServerConfigSupport
+	restConfig *rest.Config
+	rawConfig  *api.Config
 	pkgClient  *client.PackageV1Alpha1Client
 	wsHub      *WsHub
 	forwarders map[string]*open.OpenResult
+	loadConfig func() (*rest.Config, *api.Config, error)
 }
 
-func NewServer(host string, port int32) *server {
-	return &server{
-		forwarders: make(map[string]*open.OpenResult),
-		host:       host,
-		port:       port,
+func NewServer(options ServerOptions) *server {
+	server := server{
+		ServerOptions: options,
+		forwarders:    make(map[string]*open.OpenResult),
 	}
+	server.loadFileConfig()
+	return &server
 }
 
 func (s *server) broadcastPkgStatusUpdate(
@@ -98,30 +92,10 @@ func (s *server) broadcastPkgStatusUpdate(
 	}()
 }
 
-func (s *server) Start(ctx context.Context, support *ServerConfigSupport) error {
+func (s *server) Start(ctx context.Context) error {
 	if s.listener != nil {
 		return errors.New("server is already listening")
 	}
-
-	s.cfg = client.ConfigFromContext(ctx)
-	s.rawCfg = client.RawConfigFromContext(ctx)
-
-	if support == nil {
-		isBootstrapped, err := bootstrap.IsBootstrapped(ctx, s.cfg)
-		if !isBootstrapped || err != nil {
-			support = &ServerConfigSupport{
-				BootstrapMissing:    !isBootstrapped,
-				BootstrapCheckError: err,
-			}
-		}
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "\nFailed to check whether Glasskube is bootstrapped: %v\n\n", err)
-		}
-	}
-
-	s.support = support
-	s.ctx = ctx
-	s.pkgClient = client.FromContext(ctx)
 
 	root, err := fs.Sub(embededFs, "root")
 	if err != nil {
@@ -149,7 +123,7 @@ func (s *server) Start(ctx context.Context, support *ServerConfigSupport) error 
 	})
 	http.Handle("/", router)
 
-	bindAddr := fmt.Sprintf("%v:%d", s.host, s.port)
+	bindAddr := fmt.Sprintf("%v:%d", s.Host, s.Port)
 
 	s.listener, err = net.Listen("tcp", bindAddr)
 	if err != nil {
@@ -162,7 +136,7 @@ func (s *server) Start(ctx context.Context, support *ServerConfigSupport) error 
 				if err != nil {
 					panic(err)
 				}
-				bindAddr = fmt.Sprintf("%v:%d", s.host, s.listener.Addr().(*net.TCPAddr).Port)
+				bindAddr = fmt.Sprintf("%v:%d", s.Host, s.listener.Addr().(*net.TCPAddr).Port)
 			} else {
 				fmt.Println("Exiting. User chose not to use a different port.")
 				os.Exit(1)
@@ -187,16 +161,17 @@ func (s *server) Start(ctx context.Context, support *ServerConfigSupport) error 
 
 func (s *server) install(w http.ResponseWriter, r *http.Request) {
 	pkgName := r.FormValue("packageName")
+	ctx := s.prepareContext(r.Context())
 	selectedVersion := r.FormValue("selectedVersion")
 	go func() {
 		status, err := install.NewInstaller(s.pkgClient).
 			WithStatusWriter(statuswriter.Stderr()).
-			InstallBlocking(s.ctx, pkgName, selectedVersion)
+			InstallBlocking(ctx, pkgName, selectedVersion)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "An error occurred installing %v: \n%v\n", pkgName, err)
 			return
 		}
-		manifest, err := manifest.GetInstalledManifest(s.ctx, pkgName)
+		manifest, err := manifest.GetInstalledManifest(ctx, pkgName)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "could not fetch manifest of %v: %v\n", pkgName, err)
 			return
@@ -209,7 +184,7 @@ func (s *server) install(w http.ResponseWriter, r *http.Request) {
 func (s *server) installModal(w http.ResponseWriter, r *http.Request) {
 	pkgName := r.FormValue("packageName")
 
-	_, _, manifest, err := describe.DescribePackage(s.ctx, pkgName)
+	_, _, manifest, err := describe.DescribePackage(s.prepareContext(r.Context()), pkgName)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "An error occurred fetching package details of %v: \n%v\n", pkgName, err)
 		return
@@ -240,15 +215,15 @@ func (s *server) installModalVersions(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
+	ctx := s.prepareContext(r.Context())
 	pkgName := r.FormValue("packageName")
-	pkg, err := list.Get(s.pkgClient, s.ctx, pkgName)
-	if err != nil {
+	var pkg v1alpha1.Package
+	if err := s.pkgClient.Packages().Get(ctx, pkgName, &pkg); err != nil {
 		fmt.Fprintf(os.Stderr, "An error occurred uninstalling %v: \n%v\n", pkgName, err)
 		return
 	}
 	// once we have blocking uninstall available, this should be changed to also broadcast the pending update first
-	err = uninstall.Uninstall(s.pkgClient, s.ctx, pkg)
-	if err != nil {
+	if err := uninstall.Uninstall(s.pkgClient, ctx, &pkg); err != nil {
 		fmt.Fprintf(os.Stderr, "An error occurred uninstalling %v: \n%v\n", pkgName, err)
 	}
 	s.broadcastPkgStatusUpdate(pkgName, nil, nil)
@@ -262,7 +237,7 @@ func (s *server) open(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := open.NewOpener().Open(s.ctx, pkgName, "")
+	result, err := open.NewOpener().Open(s.prepareContext(r.Context()), pkgName, "")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "could not open %v: %v\n", pkgName, err)
 	} else {
@@ -274,12 +249,12 @@ func (s *server) open(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) packages(w http.ResponseWriter, r *http.Request) {
-	if s.support != nil {
+	if err := s.checkPreconditions(r.Context()); err != nil {
 		http.Redirect(w, r, "/support", http.StatusFound)
 		return
 	}
 
-	packages, err := list.GetPackagesWithStatus(s.pkgClient, s.ctx, list.IncludePackageInfos)
+	packages, err := list.GetPackagesWithStatus(s.pkgClient, s.prepareContext(r.Context()), list.IncludePackageInfos)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "could not load packages: %v\n", err)
 		return
@@ -289,12 +264,12 @@ func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
-	if s.support != nil {
+	if err := s.checkPreconditions(r.Context()); err != nil {
 		http.Redirect(w, r, "/support", http.StatusFound)
 		return
 	}
 	pkgName := mux.Vars(r)["pkgName"]
-	pkg, status, manifest, err := describe.DescribePackage(s.ctx, pkgName)
+	pkg, status, manifest, err := describe.DescribePackage(s.prepareContext(r.Context()), pkgName)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "An error occurred fetching package details of %v: \n%v\n", pkgName, err)
 		return
@@ -308,12 +283,12 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) supportPage(w http.ResponseWriter, r *http.Request) {
-	if s.support != nil {
-		if s.support.BootstrapMissing {
+	if err := s.checkPreconditions(r.Context()); err != nil {
+		if err.BootstrapMissing() {
 			http.Redirect(w, r, "/bootstrap", http.StatusFound)
 			return
 		}
-		err := supportPageTmpl.Execute(w, s.support)
+		err := supportPageTmpl.Execute(w, err)
 		checkTmplError(err, "support")
 	} else {
 		http.Redirect(w, r, "/", http.StatusFound)
@@ -321,44 +296,85 @@ func (s *server) supportPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) bootstrapPage(w http.ResponseWriter, r *http.Request) {
+	ctx := s.prepareContext(r.Context())
 	if r.Method == "POST" {
 		client := bootstrap.NewBootstrapClient(
-			s.cfg,
+			s.restConfig,
 			"",
 			config.Version,
 			bootstrap.BootstrapTypeAio,
 		)
-		if err := client.Bootstrap(s.ctx); err != nil {
+		if err := client.Bootstrap(ctx); err != nil {
 			fmt.Fprintf(os.Stderr, "\nAn error occurred during bootstrap:\n%v\n", err)
 			err := bootstrapPageTmpl.ExecuteTemplate(w, "bootstrap-failure", nil)
 			checkTmplError(err, "bootstrap-failure")
 		} else {
-			s.support = nil
 			err := bootstrapPageTmpl.ExecuteTemplate(w, "bootstrap-success", nil)
 			checkTmplError(err, "bootstrap-success")
 		}
 	} else {
-		if s.support != nil && s.support.BootstrapMissing {
+		if configErr := s.checkPreconditions(ctx); configErr != nil {
 			// try to validate bootstrap again, if it failed last time:
-			if s.support.BootstrapCheckError != nil {
-				isBootstrapped, err := bootstrap.IsBootstrapped(s.ctx, s.cfg)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "\nFailed to check whether Glasskube is bootstrapped: %v\n\n", err)
+			if configErr.BootstrapMissing() {
+				isBootstrapped, bootstrapErr := bootstrap.IsBootstrapped(ctx, s.restConfig)
+				if bootstrapErr != nil {
+					fmt.Fprintf(os.Stderr, "\nFailed to check whether Glasskube is bootstrapped: %v\n\n", bootstrapErr)
 				} else if isBootstrapped {
-					s.support = nil
+					configErr = nil
 					http.Redirect(w, r, "/", http.StatusFound)
 					return
 				}
 			}
-			err := bootstrapPageTmpl.Execute(w, &map[string]any{
-				"Support":        s.support,
-				"CurrentContext": s.rawCfg.CurrentContext,
+			tplErr := bootstrapPageTmpl.Execute(w, &map[string]any{
+				"ConfigErr":      configErr,
+				"CurrentContext": s.rawConfig.CurrentContext,
 			})
-			checkTmplError(err, "bootstrap")
+			checkTmplError(tplErr, "bootstrap")
 		} else {
 			http.Redirect(w, r, "/", http.StatusFound)
 		}
 	}
+}
+
+func (server *server) loadFileConfig() {
+	server.loadConfig = func() (*rest.Config, *api.Config, error) { return kubeconfig.New(server.Kubeconfig) }
+}
+
+func (server *server) checkPreconditions(ctx context.Context) ServerConfigError {
+	if server.pkgClient == nil {
+		if err := server.initKubeConfig(); err != nil {
+			return err
+		}
+	}
+
+	isBootstrapped, err := bootstrap.IsBootstrapped(ctx, server.restConfig)
+	if !isBootstrapped || err != nil {
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "\nFailed to check whether Glasskube is bootstrapped: %v\n\n", err)
+		}
+		return bootstrapError(err)
+	}
+
+	return nil
+}
+
+func (server *server) initKubeConfig() ServerConfigError {
+	restConfig, rawConfig, err := server.loadConfig()
+	if err != nil {
+		return kubeconfigError(err)
+	}
+	client, err := client.New(restConfig)
+	if err != nil {
+		return kubeconfigError(err)
+	}
+	server.restConfig = restConfig
+	server.rawConfig = rawConfig
+	server.pkgClient = client
+	return nil
+}
+
+func (server *server) prepareContext(ctx context.Context) context.Context {
+	return client.SetupContextWithClient(ctx, server.restConfig, server.rawConfig, server.pkgClient)
 }
 
 func isPortConflictError(err error) bool {

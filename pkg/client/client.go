@@ -31,3 +31,7 @@ func New(cfg *rest.Config) (*PackageV1Alpha1Client, error) {
 	}
 	return &PackageV1Alpha1Client{restClient: restClient}, err
 }
+
+func init() {
+	_ = v1alpha1.AddToScheme(scheme.Scheme)
+}

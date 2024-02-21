@@ -61,7 +61,7 @@
   </div>
 
   <div class="col-md-6 p-lg-2 mx-auto">
-    {{ if eq .Support.BootstrapCheckError nil }}
+    {{ if eq .ConfigErr.Cause nil }}
     <p class="text-center pt-2">
       Glasskube is not yet installed in your current context <b>{{ .CurrentContext }}</b>. You can do so now by clicking the Bootstrap button:
     </p>
