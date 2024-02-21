@@ -11,6 +11,7 @@ import (
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/future"
+	"github.com/glasskube/glasskube/pkg/manifest"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -23,7 +24,6 @@ import (
 )
 
 type opener struct {
-	pkgClient  *client.PackageV1Alpha1Client
 	ksClient   kubernetes.Interface
 	restClient rest.Interface
 	stopCh     []chan struct{}
@@ -40,24 +40,18 @@ func (o *opener) Open(ctx context.Context, packageName string, entrypointName st
 		return nil, err
 	}
 
-	var pkg v1alpha1.Package
-	if err := o.pkgClient.Packages().Get(ctx, packageName, &pkg); err != nil {
-		return nil, fmt.Errorf("could not get package %v: %w", packageName, err)
-	}
-
-	var packageInfo v1alpha1.PackageInfo
-	if err := o.pkgClient.PackageInfos().Get(ctx, pkg.Spec.PackageInfo.Name, &packageInfo); err != nil {
+	manifest, err := manifest.GetInstalledManifest(ctx, packageName)
+	if err != nil {
 		return nil, fmt.Errorf("could not get PackageInfo for package %v: %w", packageName, err)
 	}
 
-	entrypoints := packageInfo.Status.Manifest.Entrypoints
-	if len(entrypoints) < 1 {
+	if len(manifest.Entrypoints) < 1 {
 		return nil, fmt.Errorf("package has no entrypoint")
 	}
 
 	if entrypointName != "" {
 		exists := false
-		for _, entrypoint := range entrypoints {
+		for _, entrypoint := range manifest.Entrypoints {
 			if entrypoint.Name == entrypointName {
 				exists = true
 				break
@@ -70,14 +64,14 @@ func (o *opener) Open(ctx context.Context, packageName string, entrypointName st
 
 	result := OpenResult{opener: o}
 	var futures []future.Future
-	for _, entrypoint := range entrypoints {
+	for _, entrypoint := range manifest.Entrypoints {
 		if entrypointName == "" || entrypoint.Name == entrypointName {
 			e := entrypoint
 			readyCh := make(chan struct{})
 			stopCh := make(chan struct{})
 			o.readyCh = append(o.readyCh, readyCh)
 			o.stopCh = append(o.stopCh, stopCh)
-			entrypointFuture, err := o.open(ctx, packageInfo.Status.Manifest, e, readyCh, stopCh)
+			entrypointFuture, err := o.open(ctx, manifest, e, readyCh, stopCh)
 			if err != nil {
 				o.stop()
 				epName := e.Name
@@ -99,10 +93,6 @@ func (o *opener) Open(ctx context.Context, packageName string, entrypointName st
 }
 
 func (o *opener) initFromContext(ctx context.Context) error {
-	if o.pkgClient == nil {
-		o.pkgClient = client.FromContext(ctx)
-	}
-
 	if o.ksClient == nil {
 		ksClient, err := kubernetes.NewForConfig(client.ConfigFromContext(ctx))
 		if err != nil {
