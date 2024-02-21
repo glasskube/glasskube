@@ -12,17 +12,28 @@ func New(filePath string) (*rest.Config, *api.Config, error) {
 	if filePath != "" {
 		loadingRules.ExplicitPath = filePath
 	}
-	loader := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{})
-	config, err := loader.ClientConfig()
+	return postProcess(clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, nil))
+}
+
+func FromBytes(data []byte) (*rest.Config, *api.Config, error) {
+	if config, err := clientcmd.NewClientConfigFromBytes(data); err != nil {
+		return nil, nil, err
+	} else {
+		return postProcess(config)
+	}
+}
+
+func postProcess(clientConfig clientcmd.ClientConfig) (*rest.Config, *api.Config, error) {
+	restConfig, err := clientConfig.ClientConfig()
 	if err != nil {
 		return nil, nil, err
 	}
-	rawConfig, err := loader.RawConfig()
+	rawConfig, err := clientConfig.RawConfig()
 	if err != nil {
 		return nil, nil, err
 	}
-	config.APIPath = "/api"
-	config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
-	_ = rest.SetKubernetesDefaults(config)
-	return config, &rawConfig, nil
+	restConfig.APIPath = "/api"
+	restConfig.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
+	_ = rest.SetKubernetesDefaults(restConfig)
+	return restConfig, &rawConfig, nil
 }

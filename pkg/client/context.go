@@ -5,8 +5,6 @@ import (
 
 	"k8s.io/client-go/tools/clientcmd/api"
 
-	"github.com/glasskube/glasskube/api/v1alpha1"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 )
 
@@ -21,17 +19,23 @@ const (
 )
 
 func SetupContext(ctx context.Context, config *rest.Config, rawConfig *api.Config) (context.Context, error) {
-	if err := v1alpha1.AddToScheme(scheme.Scheme); err != nil {
+	if pkgClient, err := New(config); err != nil {
 		return nil, err
+	} else {
+		return SetupContextWithClient(ctx, config, rawConfig, pkgClient), nil
 	}
-	pkgClient, err := New(config)
-	if err != nil {
-		return nil, err
-	}
-	ctx = context.WithValue(ctx, clientContextKey, pkgClient)
+}
+
+func SetupContextWithClient(
+	ctx context.Context,
+	config *rest.Config,
+	rawConfig *api.Config,
+	client *PackageV1Alpha1Client,
+) context.Context {
+	ctx = context.WithValue(ctx, clientContextKey, client)
 	ctx = context.WithValue(ctx, configContextKey, config)
 	ctx = context.WithValue(ctx, rawConfigContextKey, rawConfig)
-	return ctx, nil
+	return ctx
 }
 
 func FromContext(ctx context.Context) *PackageV1Alpha1Client {

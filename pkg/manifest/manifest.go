@@ -27,7 +27,9 @@ func GetInstalledManifestForPackage(ctx context.Context, pkg v1alpha1.Package) (
 	var packageInfo v1alpha1.PackageInfo
 	if err := pkgClient.PackageInfos().Get(ctx, packageInfoName, &packageInfo); err != nil {
 		return nil, err
-	} else {
+	} else if packageInfo.Status.Manifest != nil {
 		return packageInfo.Status.Manifest, nil
+	} else {
+		return nil, errors.New("package has no manifest")
 	}
 }
