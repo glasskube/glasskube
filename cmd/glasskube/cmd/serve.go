@@ -20,14 +20,13 @@ var serveCmd = &cobra.Command{
 	Long:    `Start server and open the UI.`,
 	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		var ctx = cmd.Context()
 		options := web.ServerOptions{
 			Host:       "localhost",
 			Port:       int32(serveCmdOptions.port),
 			Kubeconfig: config.Kubeconfig,
 		}
 		server := web.NewServer(options)
-		if err := server.Start(ctx); err != nil {
+		if err := server.Start(); err != nil {
 			fmt.Fprintf(os.Stderr, "An error occurred starting the webserver:\n\n%v\n", err)
 			os.Exit(1)
 		}

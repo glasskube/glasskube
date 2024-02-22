@@ -9,9 +9,9 @@ type ServerConfigError interface {
 	BootstrapMissing() bool
 }
 
-type defaultKubeConfigAccessor struct{}
+type kubeconfigDefaultLocationSupplier struct{}
 
-func (defaultKubeConfigAccessor) KubeconfigDefaultLocation() string {
+func (kubeconfigDefaultLocationSupplier) KubeconfigDefaultLocation() string {
 	return clientcmd.RecommendedHomeFile
 }
 
@@ -28,7 +28,7 @@ func (err wrappedErr) Unwrap() error {
 }
 
 type bootstrapErr struct {
-	defaultKubeConfigAccessor
+	kubeconfigDefaultLocationSupplier
 	wrappedErr
 }
 
@@ -40,12 +40,12 @@ func (bootstrapErr) KubeconfigMissing() bool {
 	return false
 }
 
-func bootstrapError(err error) ServerConfigError {
-	return &bootstrapErr{wrappedErr: wrappedErr{Cause: err}}
+func newBootstrapErr(cause error) ServerConfigError {
+	return &bootstrapErr{wrappedErr: wrappedErr{cause}}
 }
 
 type kubeconfigErr struct {
-	defaultKubeConfigAccessor
+	kubeconfigDefaultLocationSupplier
 	wrappedErr
 }
 
@@ -57,6 +57,6 @@ func (err kubeconfigErr) KubeconfigMissing() bool {
 	return clientcmd.IsEmptyConfig(err.Cause)
 }
 
-func kubeconfigError(err error) ServerConfigError {
-	return &kubeconfigErr{wrappedErr: wrappedErr{Cause: err}}
+func newKubeconfigErr(cause error) ServerConfigError {
+	return &kubeconfigErr{wrappedErr: wrappedErr{cause}}
 }

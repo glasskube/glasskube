@@ -34,16 +34,20 @@
 {{define "bootstrap-footer"}}
 <hr>
 <small>
-  For further information on bootstrapping, please consult the docs: <a href="https://glasskube.dev/docs/getting-started/bootstrap" class="text-dark" target="_blank">Bootstrap</a>.<br>
-  If you want to test Glasskube locally, check out <a class="text-dark" href="https://minikube.sigs.k8s.io/" target="_blank">minikube</a>.<br>
-  If you have any questions or encounter bugs, don't hesitate to reach out via <a href="https://github.com/glasskube/glasskube" class="text-dark" target="_blank">Github</a>
+  For further information on bootstrapping, please consult the docs: <a
+    href="https://glasskube.dev/docs/getting-started/bootstrap" class="text-dark" target="_blank">Bootstrap</a>.<br>
+  If you want to test Glasskube locally, check out <a class="text-dark" href="https://minikube.sigs.k8s.io/"
+    target="_blank">minikube</a>.<br>
+  If you have any questions or encounter bugs, don't hesitate to reach out via <a
+    href="https://github.com/glasskube/glasskube" class="text-dark" target="_blank">Github</a>
   or <a href="https://discord.gg/SxH6KUCGH7" class="text-dark" target="_blank">Discord</a>.
 </small>
 {{end}}
 
 {{define "bootstrap-button"}}
 <div class="my-4 d-flex justify-content-center">
-  <button class="btn btn-primary btn-lg py-2" hx-post="/bootstrap" hx-target="#bootstrap-content" hx-disabled-elt="this">
+  <button class="btn btn-primary btn-lg py-2" hx-post="/bootstrap" hx-target="#bootstrap-content"
+    hx-disabled-elt="this">
     {{ . }}
   </button>
 </div>
@@ -61,9 +65,10 @@
   </div>
 
   <div class="col-md-6 p-lg-2 mx-auto">
-    {{ if eq .ConfigErr.Cause nil }}
+    {{ if eq .Err nil }}
     <p class="text-center pt-2">
-      Glasskube is not yet installed in your current context <b>{{ .CurrentContext }}</b>. You can do so now by clicking the Bootstrap button:
+      Glasskube is not yet installed in your current context <b>{{ .CurrentContext }}</b>. You can do so now by clicking
+      the Bootstrap button:
     </p>
 
     {{ template "bootstrap-button" "Bootstrap Glasskube" }}
@@ -73,7 +78,8 @@
       Failed to check whether Glasskube is bootstrapped in your cluster.
     </div>
     <div>
-      If you have already successfully bootstrapped Glasskube previously, please check whether you have access to this cluster right now, e.g. with <code>kubectl</code>.
+      If you have already successfully bootstrapped Glasskube previously, please check whether you have access to this
+      cluster right now, e.g. with <code>kubectl</code>.
       For additional error information, please check the logs in the terminal!
     </div>
 
