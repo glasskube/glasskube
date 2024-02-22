@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"strings"
 
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -91,13 +92,13 @@ func getPackageRepoIndexURL(repoURL string) (string, error) {
 }
 
 func getPackageIndexURL(repoURL, name string) (string, error) {
-	return url.JoinPath(getBaseURL(repoURL), name, "versions.yaml")
+	return url.JoinPath(getBaseURL(repoURL), pathEscapeExt(name), "versions.yaml")
 }
 
 func getPackageManifestURL(repoURL, name, version string) (string, error) {
-	pathSegments := []string{name}
+	pathSegments := []string{pathEscapeExt(name)}
 	if version != "" {
-		pathSegments = append(pathSegments, version)
+		pathSegments = append(pathSegments, pathEscapeExt(version))
 	}
 	pathSegments = append(pathSegments, "package.yaml")
 	return url.JoinPath(getBaseURL(repoURL), pathSegments...)
@@ -109,4 +110,10 @@ func getBaseURL(explicitRepositoryURL string) string {
 	} else {
 		return defaultRepositoryURL
 	}
+}
+
+// pathEscapeExt is like url.PathEscape, but additionally escapes "+" characters.
+// This is required due to a bug in the default repository backend.
+func pathEscapeExt(s string) string {
+	return strings.Replace(url.PathEscape(s), "+", url.QueryEscape("+"), -1)
 }
