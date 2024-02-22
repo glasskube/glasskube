@@ -16,6 +16,7 @@ var (
 	pkgPageTmpl                 *template.Template
 	supportPageTmpl             *template.Template
 	bootstrapPageTmpl           *template.Template
+	kubeconfigPageTmpl          *template.Template
 	pkgOverviewBtnTmpl          *template.Template
 	pkgDetailBtnsTmpl           *template.Template
 	pkgInstallModalTmpl         *template.Template
@@ -37,23 +38,30 @@ func init() {
 	baseTemplate = template.Must(template.New("base.html").
 		Funcs(templateFuncs).
 		ParseFS(embededFs, path.Join(templatesDir, "layout", "base.html")))
-	pkgsPageTmpl = template.Must(
-		template.Must(baseTemplate.Clone()).
-			ParseFS(embededFs, path.Join(pagesDir, "packages.html"), path.Join(componentsDir, "*.html")))
-	pkgPageTmpl = template.Must(template.Must(baseTemplate.Clone()).
-		ParseFS(embededFs, path.Join(pagesDir, "package.html"), path.Join(componentsDir, "*.html")))
-	supportPageTmpl = template.Must(template.Must(baseTemplate.Clone()).
-		ParseFS(embededFs, path.Join(pagesDir, "support.html"), path.Join(componentsDir, "*.html")))
-	bootstrapPageTmpl = template.Must(template.Must(baseTemplate.Clone()).
-		ParseFS(embededFs, path.Join(pagesDir, "bootstrap.html"), path.Join(componentsDir, "*.html")))
-	pkgOverviewBtnTmpl = template.Must(template.New(pkg_overview_btn.TemplateId).
-		ParseFS(embededFs, path.Join(componentsDir, "pkg-overview-btn.html")))
-	pkgDetailBtnsTmpl = template.Must(template.New(pkg_detail_btns.TemplateId).
-		ParseFS(embededFs, path.Join(componentsDir, "pkg-detail-btns.html")))
-	pkgInstallModalTmpl = template.Must(template.New("pkg-install-modal").
-		ParseFS(embededFs, path.Join(componentsDir, "pkg-install-modal.html")))
-	pkgInstallModalVersionsTmpl = template.Must(template.New("pkg-install-modal-versions").
-		ParseFS(embededFs, path.Join(componentsDir, "pkg-install-modal-versions.html")))
+	pkgsPageTmpl = pageTmpl("packages.html")
+	pkgPageTmpl = pageTmpl("package.html")
+	supportPageTmpl = pageTmpl("support.html")
+	bootstrapPageTmpl = pageTmpl("bootstrap.html")
+	kubeconfigPageTmpl = pageTmpl("kubeconfig.html")
+	pkgOverviewBtnTmpl = componentTmpl(pkg_overview_btn.TemplateId, "pkg-overview-btn.html")
+	pkgDetailBtnsTmpl = componentTmpl(pkg_detail_btns.TemplateId, "pkg-detail-btns.html")
+	pkgInstallModalTmpl = componentTmpl("pkg-install-modal", "pkg-install-modal.html")
+	pkgInstallModalVersionsTmpl = componentTmpl("pkg-install-modal-versions", "pkg-install-modal-versions.html")
+}
+
+func pageTmpl(fileName string) *template.Template {
+	return template.Must(
+		template.Must(baseTemplate.Clone()).ParseFS(
+			embededFs,
+			path.Join(pagesDir, fileName),
+			path.Join(componentsDir, "*.html")))
+}
+
+func componentTmpl(id string, fileName string) *template.Template {
+	return template.Must(
+		template.New(id).ParseFS(
+			embededFs,
+			path.Join(componentsDir, fileName)))
 }
 
 func checkTmplError(e error, tmplName string) {

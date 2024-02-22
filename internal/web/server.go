@@ -6,37 +6,33 @@ import (
 	"embed"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"net"
 	"net/http"
 	"os"
 	"syscall"
 
-	"github.com/glasskube/glasskube/internal/repo"
-
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd/api"
-
-	"github.com/glasskube/glasskube/internal/config"
-	"github.com/glasskube/glasskube/pkg/bootstrap"
-	"github.com/glasskube/glasskube/pkg/kubeconfig"
-
-	"github.com/glasskube/glasskube/pkg/manifest"
-
-	"github.com/glasskube/glasskube/pkg/describe"
-
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
+	"github.com/glasskube/glasskube/internal/config"
+	"github.com/glasskube/glasskube/internal/repo"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_detail_btns"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_overview_btn"
-	"github.com/gorilla/mux"
-
+	"github.com/glasskube/glasskube/internal/web/handler"
+	"github.com/glasskube/glasskube/pkg/bootstrap"
 	"github.com/glasskube/glasskube/pkg/client"
+	"github.com/glasskube/glasskube/pkg/describe"
 	"github.com/glasskube/glasskube/pkg/install"
 	"github.com/glasskube/glasskube/pkg/list"
+	"github.com/glasskube/glasskube/pkg/manifest"
 	"github.com/glasskube/glasskube/pkg/open"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/glasskube/glasskube/pkg/uninstall"
+	"github.com/gorilla/mux"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 //go:embed root
@@ -49,24 +45,36 @@ type ServerOptions struct {
 	Kubeconfig string
 }
 
+func NewServer(options ServerOptions) *server {
+	server := server{
+		ServerOptions: options,
+		configLoader:  &defaultConfigLoader{options.Kubeconfig},
+		forwarders:    make(map[string]*open.OpenResult),
+	}
+	return &server
+}
+
 type server struct {
 	ServerOptions
+	configLoader
 	listener   net.Listener
 	restConfig *rest.Config
 	rawConfig  *api.Config
 	pkgClient  *client.PackageV1Alpha1Client
 	wsHub      *WsHub
 	forwarders map[string]*open.OpenResult
-	loadConfig func() (*rest.Config, *api.Config, error)
 }
 
-func NewServer(options ServerOptions) *server {
-	server := server{
-		ServerOptions: options,
-		forwarders:    make(map[string]*open.OpenResult),
-	}
-	server.loadFileConfig()
-	return &server
+func (s *server) RestConfig() *rest.Config {
+	return s.restConfig
+}
+
+func (s *server) RawConfig() *api.Config {
+	return s.rawConfig
+}
+
+func (s *server) Client() *client.PackageV1Alpha1Client {
+	return s.pkgClient
 }
 
 func (s *server) broadcastPkgStatusUpdate(
@@ -92,10 +100,12 @@ func (s *server) broadcastPkgStatusUpdate(
 	}()
 }
 
-func (s *server) Start(ctx context.Context) error {
+func (s *server) Start() error {
 	if s.listener != nil {
 		return errors.New("server is already listening")
 	}
+
+	_ = s.initKubeConfig()
 
 	root, err := fs.Sub(embededFs, "root")
 	if err != nil {
@@ -110,18 +120,18 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle("/favicon.ico", fileServer)
 	router.HandleFunc("/ws", s.wsHub.handler)
 	router.HandleFunc("/support", s.supportPage)
-	router.HandleFunc("/bootstrap", s.bootstrapPage)
-	router.HandleFunc("/packages", s.packages)
-	router.HandleFunc("/packages/install", s.install)
-	router.HandleFunc("/packages/install/modal", s.installModal)
-	router.HandleFunc("/packages/install/modal/versions", s.installModalVersions)
-	router.HandleFunc("/packages/uninstall", s.uninstall)
-	router.HandleFunc("/packages/open", s.open)
-	router.HandleFunc("/packages/{pkgName}", s.packageDetail)
-	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/packages", http.StatusFound)
-	})
-	http.Handle("/", router)
+	router.HandleFunc("/kubeconfig", s.kubeconfigPage)
+	router.Handle("/bootstrap", s.requireKubeconfig(s.bootstrapPage))
+	router.Handle("/kubeconfig/persist", s.requireKubeconfig(s.persistKubeconfig))
+	router.Handle("/packages", s.requireBootstrapped(s.packages))
+	router.Handle("/packages/install", s.requireBootstrapped(s.install))
+	router.Handle("/packages/install/modal", s.requireBootstrapped(s.installModal))
+	router.Handle("/packages/install/modal/versions", s.requireBootstrapped(s.installModalVersions))
+	router.Handle("/packages/uninstall", s.requireBootstrapped(s.uninstall))
+	router.Handle("/packages/open", s.requireBootstrapped(s.open))
+	router.Handle("/packages/{pkgName}", s.requireBootstrapped(s.packageDetail))
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/packages", http.StatusFound) })
+	http.Handle("/", s.enrichContext(router))
 
 	bindAddr := fmt.Sprintf("%v:%d", s.Host, s.Port)
 
@@ -161,17 +171,17 @@ func (s *server) Start(ctx context.Context) error {
 
 func (s *server) install(w http.ResponseWriter, r *http.Request) {
 	pkgName := r.FormValue("packageName")
-	ctx := s.prepareContext(r.Context())
 	selectedVersion := r.FormValue("selectedVersion")
+	ctxAsync := context.WithoutCancel(r.Context())
 	go func() {
 		status, err := install.NewInstaller(s.pkgClient).
 			WithStatusWriter(statuswriter.Stderr()).
-			InstallBlocking(ctx, pkgName, selectedVersion)
+			InstallBlocking(ctxAsync, pkgName, selectedVersion)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "An error occurred installing %v: \n%v\n", pkgName, err)
 			return
 		}
-		manifest, err := manifest.GetInstalledManifest(ctx, pkgName)
+		manifest, err := manifest.GetInstalledManifest(ctxAsync, pkgName)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "could not fetch manifest of %v: %v\n", pkgName, err)
 			return
@@ -184,7 +194,7 @@ func (s *server) install(w http.ResponseWriter, r *http.Request) {
 func (s *server) installModal(w http.ResponseWriter, r *http.Request) {
 	pkgName := r.FormValue("packageName")
 
-	_, _, manifest, err := describe.DescribePackage(s.prepareContext(r.Context()), pkgName)
+	_, _, manifest, err := describe.DescribePackage(r.Context(), pkgName)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "An error occurred fetching package details of %v: \n%v\n", pkgName, err)
 		return
@@ -215,7 +225,7 @@ func (s *server) installModalVersions(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
-	ctx := s.prepareContext(r.Context())
+	ctx := r.Context()
 	pkgName := r.FormValue("packageName")
 	var pkg v1alpha1.Package
 	if err := s.pkgClient.Packages().Get(ctx, pkgName, &pkg); err != nil {
@@ -237,7 +247,7 @@ func (s *server) open(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := open.NewOpener().Open(s.prepareContext(r.Context()), pkgName, "")
+	result, err := open.NewOpener().Open(r.Context(), pkgName, "")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "could not open %v: %v\n", pkgName, err)
 	} else {
@@ -249,12 +259,7 @@ func (s *server) open(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) packages(w http.ResponseWriter, r *http.Request) {
-	if err := s.checkPreconditions(r.Context()); err != nil {
-		http.Redirect(w, r, "/support", http.StatusFound)
-		return
-	}
-
-	packages, err := list.GetPackagesWithStatus(s.pkgClient, s.prepareContext(r.Context()), list.IncludePackageInfos)
+	packages, err := list.GetPackagesWithStatus(s.pkgClient, r.Context(), list.IncludePackageInfos)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "could not load packages: %v\n", err)
 		return
@@ -264,12 +269,8 @@ func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
-	if err := s.checkPreconditions(r.Context()); err != nil {
-		http.Redirect(w, r, "/support", http.StatusFound)
-		return
-	}
 	pkgName := mux.Vars(r)["pkgName"]
-	pkg, status, manifest, err := describe.DescribePackage(s.prepareContext(r.Context()), pkgName)
+	pkg, status, manifest, err := describe.DescribePackage(r.Context(), pkgName)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "An error occurred fetching package details of %v: \n%v\n", pkgName, err)
 		return
@@ -283,7 +284,7 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) supportPage(w http.ResponseWriter, r *http.Request) {
-	if err := s.checkPreconditions(r.Context()); err != nil {
+	if err := s.checkBootstrapped(r.Context()); err != nil {
 		if err.BootstrapMissing() {
 			http.Redirect(w, r, "/bootstrap", http.StatusFound)
 			return
@@ -296,7 +297,7 @@ func (s *server) supportPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) bootstrapPage(w http.ResponseWriter, r *http.Request) {
-	ctx := s.prepareContext(r.Context())
+	ctx := r.Context()
 	if r.Method == "POST" {
 		client := bootstrap.NewBootstrapClient(
 			s.restConfig,
@@ -313,38 +314,87 @@ func (s *server) bootstrapPage(w http.ResponseWriter, r *http.Request) {
 			checkTmplError(err, "bootstrap-success")
 		}
 	} else {
-		if configErr := s.checkPreconditions(ctx); configErr != nil {
-			// try to validate bootstrap again, if it failed last time:
-			if configErr.BootstrapMissing() {
-				isBootstrapped, bootstrapErr := bootstrap.IsBootstrapped(ctx, s.restConfig)
-				if bootstrapErr != nil {
-					fmt.Fprintf(os.Stderr, "\nFailed to check whether Glasskube is bootstrapped: %v\n\n", bootstrapErr)
-				} else if isBootstrapped {
-					configErr = nil
-					http.Redirect(w, r, "/", http.StatusFound)
-					return
-				}
-			}
-			tplErr := bootstrapPageTmpl.Execute(w, &map[string]any{
-				"ConfigErr":      configErr,
-				"CurrentContext": s.rawConfig.CurrentContext,
-			})
-			checkTmplError(tplErr, "bootstrap")
-		} else {
+		isBootstrapped, err := bootstrap.IsBootstrapped(ctx, s.restConfig)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "\nFailed to check whether Glasskube is bootstrapped: %v\n\n", err)
+		} else if isBootstrapped {
 			http.Redirect(w, r, "/", http.StatusFound)
+			return
 		}
+		tplErr := bootstrapPageTmpl.Execute(w, &map[string]any{
+			"Err":            err,
+			"CurrentContext": s.rawConfig.CurrentContext,
+		})
+		checkTmplError(tplErr, "bootstrap")
 	}
 }
 
-func (server *server) loadFileConfig() {
-	server.loadConfig = func() (*rest.Config, *api.Config, error) { return kubeconfig.New(server.Kubeconfig) }
+func (s *server) kubeconfigPage(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		file, _, err := r.FormFile("kubeconfig")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		data, err := io.ReadAll(file)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		s.loadBytesConfig(data)
+		if err := s.checkKubeconfig(); err != nil {
+			fmt.Fprintf(os.Stderr, "The selected kubeconfig is invalid: %v\n", err)
+		} else {
+			fmt.Fprintln(os.Stderr, "The selected kubeconfig is valid!")
+		}
+	}
+
+	configErr := s.checkKubeconfig()
+	var currentContext string
+	if s.rawConfig != nil {
+		currentContext = s.rawConfig.CurrentContext
+	}
+	tplErr := kubeconfigPageTmpl.Execute(w, map[string]any{
+		"ConfigErr":                 configErr,
+		"KubeconfigDefaultLocation": clientcmd.RecommendedHomeFile,
+		"CurrentContext":            currentContext,
+		"DefaultKubeconfigExists":   defaultKubeconfigExists(),
+	})
+	checkTmplError(tplErr, "kubeconfig")
 }
 
-func (server *server) checkPreconditions(ctx context.Context) ServerConfigError {
-	if server.pkgClient == nil {
-		if err := server.initKubeConfig(); err != nil {
-			return err
+func (s *server) persistKubeconfig(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		if !defaultKubeconfigExists() {
+			if err := clientcmd.WriteToFile(*s.rawConfig, clientcmd.RecommendedHomeFile); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			} else {
+				http.Redirect(w, r, "/", http.StatusFound)
+			}
+		} else {
+			fmt.Fprintln(os.Stderr, "default kubeconfig already exists! nothing was saved")
+			http.Error(w, "", http.StatusBadRequest)
 		}
+	} else {
+		http.Error(w, "only POST is supported", http.StatusMethodNotAllowed)
+	}
+}
+
+func (server *server) loadBytesConfig(data []byte) {
+	server.configLoader = &bytesConfigLoader{data}
+}
+
+func (server *server) checkKubeconfig() ServerConfigError {
+	if server.pkgClient == nil {
+		return server.initKubeConfig()
+	} else {
+		return nil
+	}
+}
+
+func (server *server) checkBootstrapped(ctx context.Context) ServerConfigError {
+	if err := server.checkKubeconfig(); err != nil {
+		return err
 	}
 
 	isBootstrapped, err := bootstrap.IsBootstrapped(ctx, server.restConfig)
@@ -352,20 +402,20 @@ func (server *server) checkPreconditions(ctx context.Context) ServerConfigError 
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "\nFailed to check whether Glasskube is bootstrapped: %v\n\n", err)
 		}
-		return bootstrapError(err)
+		return newBootstrapErr(err)
 	}
 
 	return nil
 }
 
 func (server *server) initKubeConfig() ServerConfigError {
-	restConfig, rawConfig, err := server.loadConfig()
+	restConfig, rawConfig, err := server.LoadConfig()
 	if err != nil {
-		return kubeconfigError(err)
+		return newKubeconfigErr(err)
 	}
 	client, err := client.New(restConfig)
 	if err != nil {
-		return kubeconfigError(err)
+		return newKubeconfigErr(err)
 	}
 	server.restConfig = restConfig
 	server.rawConfig = rawConfig
@@ -373,8 +423,47 @@ func (server *server) initKubeConfig() ServerConfigError {
 	return nil
 }
 
-func (server *server) prepareContext(ctx context.Context) context.Context {
-	return client.SetupContextWithClient(ctx, server.restConfig, server.rawConfig, server.pkgClient)
+func (s *server) enrichContext(h http.Handler) http.Handler {
+	return &handler.ContextEnrichingHandler{Source: s, Handler: h}
+}
+
+func (s *server) requireBootstrapped(h http.HandlerFunc) http.Handler {
+	return &handler.PreconditionHandler{
+		Precondition:  func(r *http.Request) error { return s.checkBootstrapped(r.Context()) },
+		Handler:       h,
+		FailedHandler: handleConfigError,
+	}
+}
+
+func (s *server) requireKubeconfig(h http.HandlerFunc) http.Handler {
+	return &handler.PreconditionHandler{
+		Precondition:  func(r *http.Request) error { return s.checkKubeconfig() },
+		Handler:       h,
+		FailedHandler: handleConfigError,
+	}
+}
+
+func handleConfigError(w http.ResponseWriter, r *http.Request, err error) {
+	if sce, ok := err.(ServerConfigError); ok {
+		if sce.BootstrapMissing() {
+			http.Redirect(w, r, "/bootstrap", http.StatusFound)
+		} else {
+			http.Redirect(w, r, "/support", http.StatusFound)
+		}
+	} else {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func defaultKubeconfigExists() bool {
+	if _, err := os.Stat(clientcmd.RecommendedHomeFile); err == nil {
+		return true
+	} else {
+		if !errors.Is(err, os.ErrNotExist) {
+			fmt.Fprintf(os.Stderr, "could not check kubeconfig file: %v", err)
+		}
+		return false
+	}
 }
 
 func isPortConflictError(err error) bool {
