@@ -28,14 +28,9 @@ var installCmd = &cobra.Command{
 	ValidArgsFunction: completeAvailablePackageNames,
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
+		config := client.RawConfigFromContext(ctx)
 		client := client.FromContext(ctx)
 		packageName := args[0]
-		var index repo.PackageRepoIndex
-		err := repo.FetchPackageRepoIndex("", &index)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error fetching package repository index: %v\n", err)
-			os.Exit(1)
-		}
 
 		if installCmdOptions.Version == "" && !installCmdOptions.EnableAutoUpdates {
 			fmt.Fprintf(os.Stderr, "Version not specified. The latest version of %v will be installed.\n", packageName)
@@ -45,13 +40,25 @@ var installCmd = &cobra.Command{
 				if err := repo.FetchPackageIndex("", packageName, &packageIndex); err != nil {
 					fmt.Fprintf(os.Stderr, "❗ Error: Could not fetch package metadata: %v\n", err)
 					if !cliutils.YesNoPrompt("Continue anyways? (Automatic updates will be enabled)", false) {
-						fmt.Fprintln(os.Stderr, "❌ Installation cancelled.")
-						os.Exit(1)
+						cancel()
 					}
 				} else {
 					installCmdOptions.Version = packageIndex.LatestVersion
 				}
 			}
+		}
+
+		var msg string
+		if installCmdOptions.Version != "" {
+			msg = fmt.Sprintf("%v (version %v) will be installed in your current cluster (%v).",
+				packageName, installCmdOptions.Version, config.CurrentContext)
+		} else {
+			msg = fmt.Sprintf("%v will be installed in your current cluster (%v).",
+				packageName, config.CurrentContext)
+		}
+
+		if !cliutils.YesNoPrompt(fmt.Sprintf("%v Continue?", msg), true) {
+			cancel()
 		}
 
 		status, err := install.NewInstaller(client).
@@ -65,7 +72,7 @@ var installCmd = &cobra.Command{
 		if status != nil {
 			switch status.Status {
 			case string(condition.Ready):
-				fmt.Printf("✅ %v installed successfully.\n", packageName)
+				fmt.Printf("✅ %v is now installed in %v.\n", packageName, config.CurrentContext)
 			default:
 				fmt.Printf("❌ %v installation has status %v, reason: %v\nMessage: %v\n",
 					packageName, status.Status, status.Reason, status.Message)
@@ -75,6 +82,11 @@ var installCmd = &cobra.Command{
 			os.Exit(1)
 		}
 	},
+}
+
+func cancel() {
+	fmt.Fprintln(os.Stderr, "❌ Installation cancelled.")
+	os.Exit(1)
 }
 
 func completeAvailablePackageNames(
@@ -106,12 +118,12 @@ func completeAvailablePackageVersions(
 	toComplete string,
 ) ([]string, cobra.ShellCompDirective) {
 	if len(args) == 0 {
-		return []string{}, cobra.ShellCompDirectiveNoFileComp
+		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
 	packageName := args[0]
 	var packageIndex repo.PackageIndex
 	if err := repo.FetchPackageIndex("", packageName, &packageIndex); err != nil {
-		return []string{}, cobra.ShellCompDirectiveError
+		return nil, cobra.ShellCompDirectiveError
 	}
 	versions := make([]string, 0, len(packageIndex.Versions))
 	for _, version := range packageIndex.Versions {
@@ -119,7 +131,7 @@ func completeAvailablePackageVersions(
 			versions = append(versions, version.Version)
 		}
 	}
-	return versions, 0
+	return versions, cobra.ShellCompDirectiveNoFileComp
 }
 
 func init() {
