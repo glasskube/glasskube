@@ -40,15 +40,14 @@ var uninstallCmd = &cobra.Command{
 			false,
 		)
 		if proceed {
-			fmt.Printf("Uninstalling %v...\n", pkgName)
-			if err := uninstall.NewUninstaller(client, &pkg).
+			if err := uninstall.NewUninstaller(client).
 				WithStatusWriter(statuswriter.Spinner()).
-				UninstallBlocking(cmd.Context(), pkgName); err != nil {
+				UninstallBlocking(cmd.Context(), &pkg); err != nil {
 				fmt.Fprintf(os.Stderr, "An error occurred during uninstallation:\n\n%v\n", err)
 				os.Exit(1)
 				return
 			}
-			fmt.Println("🗑️ Uninstalled successfully.")
+			fmt.Fprintf(os.Stderr, "🗑️ %v uninstalled successfully.\n", pkgName)
 		} else {
 			fmt.Println("❌ Uninstallation cancelled.")
 		}
