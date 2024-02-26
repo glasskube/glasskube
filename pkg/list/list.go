@@ -18,32 +18,17 @@ type PackageWithStatus struct {
 	InstalledManifest *v1alpha1.PackageManifest
 }
 
-type listOptions int64
-
-const (
-	IncludePackageInfos listOptions = 1 << iota
-	OnlyInstalled
-)
-
-const (
-	DefaultListOptions listOptions = 0
-)
-
-func Get(client *client.PackageV1Alpha1Client, ctx context.Context, name string) (*v1alpha1.Package, error) {
-	var pkg v1alpha1.Package
-	err := client.Packages().Get(ctx, name, &pkg)
-	if err != nil {
-		return nil, err
-	}
-	return &pkg, nil
+type ListOptions struct {
+	IncludePackageInfos bool
+	OnlyInstalled       bool
+	OnlyOutdated        bool
 }
 
 func GetPackagesWithStatus(
 	pkgClient *client.PackageV1Alpha1Client,
 	ctx context.Context,
-	options listOptions,
+	options ListOptions,
 ) ([]*PackageWithStatus, error) {
-	onlyInstalled := options&OnlyInstalled != 0
 
 	index, err := fetchRepoAndInstalled(pkgClient, ctx, options)
 	if err != nil {
@@ -56,7 +41,7 @@ func GetPackagesWithStatus(
 			PackageRepoIndexItem: *item.IndexItem,
 		}
 
-		if !onlyInstalled || item.Package != nil {
+		if !((options.OnlyInstalled && !item.Installed()) || (options.OnlyOutdated && !item.Outdated())) {
 			if item.Package != nil {
 				pkgWithStatus.Package = item.Package
 				pkgWithStatus.Status = client.GetStatusOrPending(&item.Package.Status)
@@ -78,7 +63,17 @@ type listResultTuple struct {
 	PackageInfo *v1alpha1.PackageInfo
 }
 
-func fetchRepoAndInstalled(pkgClient *client.PackageV1Alpha1Client, ctx context.Context, options listOptions) (
+func (item listResultTuple) Installed() bool {
+	return item.Package != nil
+}
+
+func (item listResultTuple) Outdated() bool {
+	return item.Package != nil && item.IndexItem != nil &&
+		item.Package.Spec.PackageInfo.Version != "" &&
+		item.Package.Spec.PackageInfo.Version != item.IndexItem.LatestVersion
+}
+
+func fetchRepoAndInstalled(pkgClient *client.PackageV1Alpha1Client, ctx context.Context, options ListOptions) (
 	[]listResultTuple,
 	error,
 ) {
@@ -105,7 +100,7 @@ func fetchRepoAndInstalled(pkgClient *client.PackageV1Alpha1Client, ctx context.
 		wg.Done()
 	}()
 
-	if options&IncludePackageInfos != 0 {
+	if options.IncludePackageInfos {
 		wg.Add(1)
 		go func() {
 			if err := pkgClient.PackageInfos().GetAll(ctx, &packageInfos); err != nil {

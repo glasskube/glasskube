@@ -261,7 +261,7 @@ func (s *server) open(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) packages(w http.ResponseWriter, r *http.Request) {
-	packages, err := list.GetPackagesWithStatus(s.pkgClient, r.Context(), list.IncludePackageInfos)
+	packages, err := list.GetPackagesWithStatus(s.pkgClient, r.Context(), list.ListOptions{IncludePackageInfos: true})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "could not load packages: %v\n", err)
 		return
