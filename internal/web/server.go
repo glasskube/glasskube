@@ -216,29 +216,45 @@ func (s *server) installModalVersions(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) updateModal(w http.ResponseWriter, r *http.Request) {
 	pkgName := r.FormValue("packageName")
-	var pkg v1alpha1.Package
-	if err := s.pkgClient.Packages().Get(r.Context(), pkgName, &pkg); err != nil {
-		fmt.Fprintf(os.Stderr, "An error occurred fetching package %v: \n%v\n", pkgName, err)
-		return
+	pkgs := make([]string, 0, 1)
+	if pkgName != "" {
+		pkgs = append(pkgs, pkgName)
 	}
 
-	if latestVersion, err := repo.GetLatestVersion("", pkgName); err != nil {
-		fmt.Fprintf(os.Stderr, "An error occurred fetching latest version of %v: \n%v\n", pkgName, err)
-	} else {
-		err := pkgUpdateModalTmpl.Execute(w, &map[string]any{
-			"Package":       pkg,
-			"LatestVersion": latestVersion,
-		})
-		checkTmplError(err, "pkgUpdateModalTmpl")
+	updates := make([]*map[string]any, 0)
+	updater := update.NewUpdater(s.pkgClient).WithStatusWriter(statuswriter.Stderr())
+	ut, err := updater.Prepare(r.Context(), pkgs)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "An error occurred preparing update of %v: \n%v\n", pkgName, err)
+		return
 	}
+	for _, u := range ut.Items {
+		if u.UpdateRequired() {
+			updates = append(updates, &map[string]any{
+				"Name":           u.Package.Name,
+				"CurrentVersion": u.Package.Spec.PackageInfo.Version,
+				"LatestVersion":  u.Version,
+			})
+		}
+	}
+
+	err = pkgUpdateModalTmpl.Execute(w, &map[string]any{
+		"Updates":     updates,
+		"PackageName": pkgName,
+	})
+	checkTmplError(err, "pkgUpdateModalTmpl")
 }
 
 func (s *server) update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	pkgName := r.FormValue("packageName")
+	pkgs := make([]string, 0, 1)
+	if pkgName != "" {
+		pkgs = append(pkgs, pkgName)
+	}
 
 	updater := update.NewUpdater(s.pkgClient).WithStatusWriter(statuswriter.Stderr())
-	ut, err := updater.Prepare(ctx, []string{pkgName})
+	ut, err := updater.Prepare(ctx, pkgs)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "An error occurred preparing update of %v: \n%v\n", pkgName, err)
 		return
@@ -292,9 +308,17 @@ func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(os.Stderr, "could not load packages: %v\n", err)
 		return
 	}
-	err = pkgsPageTmpl.Execute(w, map[string]any{
-		"CurrentContext": s.rawConfig.CurrentContext,
-		"Packages":       packages,
+	updatesAvailable := false
+	for _, pkg := range packages {
+		if pkg.Package != nil && pkg.Package.Spec.PackageInfo.Version != "" && pkg.Package.Spec.PackageInfo.Version != pkg.LatestVersion {
+			updatesAvailable = true
+			break
+		}
+	}
+	err = pkgsPageTmpl.Execute(w, &map[string]any{
+		"CurrentContext":   s.rawConfig.CurrentContext,
+		"Packages":         packages,
+		"UpdatesAvailable": updatesAvailable,
 	})
 	checkTmplError(err, "packages")
 }
