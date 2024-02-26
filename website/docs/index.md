@@ -129,7 +129,8 @@ Removes the given package from your cluster.
 
 Lists packages. By default, all packages available in the configured repository are shown, including their installation status in the given cluster.
 
-With the `--installed` flag you can restrict the list of packages to the once installed in your cluster.
+With the `--installed` flag you can restrict the list of packages to the ones installed in your cluster.
+If you only want to see installed packages that have a newer version available, use the `--outdated` flag.
 
 ### `glasskube open <package>`
 
