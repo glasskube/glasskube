@@ -77,6 +77,12 @@ func (r *PackageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	if !pkg.DeletionTimestamp.IsZero() {
+		err := conditions.SetUnknownAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions,
+			condition.Pending, "Package is being deleted")
+		return ctrl.Result{}, err
+	}
+
 	packageInfo, changed, err := r.ensurePackageInfo(ctx, &pkg)
 	if err != nil {
 		return requeue.Always(ctx, err)
