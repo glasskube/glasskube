@@ -58,15 +58,8 @@ func checkForUpdate() (bool, string) {
 
 func UpdateFetch() {
 	updateAvailable, latestVersion := checkForUpdate()
-
-	printUpdateMessage := func() {
-		fmt.Fprintf(os.Stderr, "\n   --------------------------------------------------------------------------------------------------------------- \n\n")
-		fmt.Fprintf(os.Stderr, "                                           Update available %s → %s\n", config.Version, latestVersion)
-		fmt.Fprintf(os.Stderr, "                              Please update glasskube to the latest version\n\n")
-		fmt.Fprintf(os.Stderr, "   --------------------------------------------------------------------------------------------------------------- \n\n")
-	}
-
 	if updateAvailable {
-		printUpdateMessage()
+		fmt.Fprintf(os.Stderr, "📣 A newer version of Glasskube is available: %s → %s\n", config.Version, latestVersion)
+		fmt.Fprintf(os.Stderr, "📘 Release notes: https://github.com/glasskube/glasskube/releases/tag/v%v\n\n", latestVersion)
 	}
 }
