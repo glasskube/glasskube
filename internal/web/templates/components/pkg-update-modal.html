@@ -2,28 +2,35 @@
 
 <div class="modal-dialog modal-dialog-centered" id="pkg-update-modal">
   <div class="modal-content">
-    <form hx-post="/packages/update">
+    <form hx-post="/packages/update" hx-target="#packages-update-warning" hx-swap="outerHTML">
       <div class="modal-header">
-        <h1 class="modal-title fs-5" id="exampleModalLabel">Update {{.Package.Name}}</h1>
+        <h1 class="modal-title fs-5" id="exampleModalLabel">Available Updates</h1>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body" id="pkg-update-modal-body">
-        <div class="row">
-          <label for="fromVersion" class="col-sm-4 col-form-label">Current Version</label>
-          <div class="col-sm-8">
-            <input type="text" readonly class="form-control-plaintext fw-bold" id="fromVersion" name="fromVersion" value="{{ .Package.Spec.PackageInfo.Version }}">
-          </div>
-        </div>
-        <div class="row">
-          <label for="toVersion" class="col-sm-4 col-form-label">Latest Version</label>
-          <div class="col-sm-8">
-            <input type="text" readonly class="form-control-plaintext fw-bold" id="toVersion" name="toVersion" value="{{ .LatestVersion }}">
-          </div>
-        </div>
+        <table class="table table-striped">
+          <thead>
+          <tr>
+            <td></td>
+            <td><b>Current Version</b></td>
+            <td><b>Latest Version</b></td>
+          </tr>
+          </thead>
+          <tbody>
+          {{ range .Updates }}
+            <tr>
+              <td><b>{{ .Name }}</b></td>
+              <td>{{ .CurrentVersion }}</td>
+              <td>{{ .LatestVersion }}</td>
+            </tr>
+          {{ end }}
+          </tbody>
+        </table>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-primary btn-sm" data-bs-dismiss="modal">Cancel</button>
-        <button type="submit" data-bs-dismiss="modal" name="packageName" value="{{ .Package.Name }}" class="btn btn-primary btn-sm">
+        <button type="submit" data-bs-dismiss="modal" name="packageName" class="btn btn-primary btn-sm"
+                {{ if ne 0 (len .PackageName) }} value="{{ .PackageName }}" {{end}} >
           Update
         </button>
       </div>

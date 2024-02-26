@@ -1,5 +1,14 @@
 {{define "body"}}
-<div class="container-lg mt-4" hx-trigger="htmx:historyRestore from:body" hx-get="/packages" hx-select="main" hx-target="main">
+<div class="container-lg mt-2" hx-trigger="htmx:historyRestore from:body" hx-get="/packages" hx-select="main" hx-target="main">
+  {{ if .UpdatesAvailable }}
+  <div class="alert alert-warning py-1 ps-2 pe-1 d-flex flex-row align-items-center" role="alert" id="packages-update-warning">
+    <span class="flex-grow-1">Updates for your packages are available!</span>
+    <button hx-get="/packages/update/modal" hx-target="#modal-container" hx-swap="innerHTML" hx-select="#pkg-update-modal"
+            class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#modal-container">
+      Update All
+    </button>
+  </div>
+  {{ end }}
   <div class="row row-cols-3 row-cols-xl-4 g-2">
     {{range .Packages}}
       <div class="col">
