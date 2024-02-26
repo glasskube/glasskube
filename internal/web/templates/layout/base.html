@@ -44,7 +44,12 @@
     </ul>
 
     <div class="navbar-collapse">
-      <ul class="navbar-nav ms-auto">
+      <ul class="navbar-nav ms-auto align-items-center gap-1">
+        {{if .CurrentContext}}
+        <li class="nav-item">
+          <span class="nav-link">Context: {{.CurrentContext}}</span>
+        </li>
+        {{end}}
         <li class="nav-item">
           <a class="cta cta-sm text-white" href="https://github.com/glasskube/glasskube" target="_blank">
             <span class="bi bi-github"></span>

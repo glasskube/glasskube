@@ -292,7 +292,10 @@ func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(os.Stderr, "could not load packages: %v\n", err)
 		return
 	}
-	err = pkgsPageTmpl.Execute(w, packages)
+	err = pkgsPageTmpl.Execute(w, map[string]any{
+		"CurrentContext": s.rawConfig.CurrentContext,
+		"Packages":       packages,
+	})
 	checkTmplError(err, "packages")
 }
 
@@ -308,10 +311,11 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(os.Stderr, "An error occurred fetching latest version of %v: \n%v\n", pkgName, err)
 	}
 	err = pkgPageTmpl.Execute(w, &map[string]any{
-		"Package":       pkg,
-		"Status":        status,
-		"Manifest":      manifest,
-		"LatestVersion": latestVersion,
+		"CurrentContext": s.rawConfig.CurrentContext,
+		"Package":        pkg,
+		"Status":         status,
+		"Manifest":       manifest,
+		"LatestVersion":  latestVersion,
 	})
 	checkTmplError(err, fmt.Sprintf("package-detail (%s)", pkgName))
 }
@@ -355,8 +359,8 @@ func (s *server) bootstrapPage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		tplErr := bootstrapPageTmpl.Execute(w, &map[string]any{
-			"Err":            err,
 			"CurrentContext": s.rawConfig.CurrentContext,
+			"Err":            err,
 		})
 		checkTmplError(tplErr, "bootstrap")
 	}
@@ -388,9 +392,9 @@ func (s *server) kubeconfigPage(w http.ResponseWriter, r *http.Request) {
 		currentContext = s.rawConfig.CurrentContext
 	}
 	tplErr := kubeconfigPageTmpl.Execute(w, map[string]any{
+		"CurrentContext":            currentContext,
 		"ConfigErr":                 configErr,
 		"KubeconfigDefaultLocation": clientcmd.RecommendedHomeFile,
-		"CurrentContext":            currentContext,
 		"DefaultKubeconfigExists":   defaultKubeconfigExists(),
 	})
 	checkTmplError(tplErr, "kubeconfig")

@@ -1,7 +1,7 @@
 {{define "body"}}
 <div class="container-lg mt-4" hx-trigger="htmx:historyRestore from:body" hx-get="/packages" hx-select="main" hx-target="main">
   <div class="row row-cols-3 row-cols-xl-4 g-2">
-    {{range .}}
+    {{range .Packages}}
       <div class="col">
         <div class="card h-100 border-primary border-1">
           <div class="card-body p-0 d-flex flex-column">
