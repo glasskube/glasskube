@@ -11,12 +11,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var listCmdOptions = struct {
+type ListCmdOptions struct {
 	ListInstalledOnly bool
+	ListOutdatedOnly  bool
 	ShowDescription   bool
 	ShowLatestVersion bool
 	More              bool
-}{}
+}
+
+func (o ListCmdOptions) toListOptions() list.ListOptions {
+	return list.ListOptions{
+		OnlyInstalled: o.ListInstalledOnly,
+		OnlyOutdated:  o.ListOutdatedOnly,
+	}
+}
+
+var listCmdOptions = ListCmdOptions{}
 
 var listCmd = &cobra.Command{
 	Use:     "list",
@@ -32,19 +42,21 @@ var listCmd = &cobra.Command{
 		}
 
 		pkgClient := client.FromContext(cmd.Context())
-		listOptions := list.DefaultListOptions
-		if listCmdOptions.ListInstalledOnly {
-			listOptions |= list.OnlyInstalled
-		}
-		pkgs, err := list.GetPackagesWithStatus(pkgClient, cmd.Context(), listOptions)
+		pkgs, err := list.GetPackagesWithStatus(pkgClient, cmd.Context(), listCmdOptions.toListOptions())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "An error occurred:\n\n%v\n", err)
 			os.Exit(1)
 			return
 		}
-		if listCmdOptions.ListInstalledOnly && len(pkgs) == 0 {
-			fmt.Println("There are currently no packages installed in your cluster.\n" +
-				"Run \"glasskube help install\" to get started.")
+		if len(pkgs) == 0 {
+			if listCmdOptions.ListOutdatedOnly {
+				fmt.Fprintln(os.Stderr, "All installed packages are up-to-date.")
+			} else if listCmdOptions.ListInstalledOnly {
+				fmt.Fprintln(os.Stderr, "There are currently no packages installed in your cluster.\n"+
+					"Run \"glasskube help install\" to get started.")
+			} else {
+				fmt.Fprintln(os.Stderr, "No packages found. This is probably a bug.")
+			}
 		} else {
 			printPackageTable(pkgs)
 		}
@@ -54,6 +66,8 @@ var listCmd = &cobra.Command{
 func init() {
 	listCmd.PersistentFlags().BoolVarP(&listCmdOptions.ListInstalledOnly, "installed", "i", false,
 		"list only installed packages")
+	listCmd.PersistentFlags().BoolVar(&listCmdOptions.ListOutdatedOnly, "outdated", false,
+		"list only outdated packages")
 	listCmd.PersistentFlags().BoolVar(&listCmdOptions.ShowDescription, "show-description", false,
 		"show the package description")
 	listCmd.PersistentFlags().BoolVar(&listCmdOptions.ShowLatestVersion, "show-latest", false,
