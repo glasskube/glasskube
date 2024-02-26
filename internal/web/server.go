@@ -232,10 +232,10 @@ func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(os.Stderr, "An error occurred uninstalling %v: \n%v\n", pkgName, err)
 		return
 	}
-	// once we have blocking uninstall available, this should be changed to also broadcast the pending update first
-	if err := uninstall.NewUninstaller(s.pkgClient, &pkg).
+	// TODO: this should be changed to also broadcast the pending update first
+	if err := uninstall.NewUninstaller(s.pkgClient).
 		WithStatusWriter(statuswriter.Stderr()).
-		Uninstall(ctx, pkgName); err != nil {
+		Uninstall(ctx, &pkg); err != nil {
 		fmt.Fprintf(os.Stderr, "An error occurred uninstalling %v: \n%v\n", pkgName, err)
 	}
 	s.broadcastPkgStatusUpdate(pkgName, nil, nil)
