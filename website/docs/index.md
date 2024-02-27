@@ -132,6 +132,10 @@ Lists packages. By default, all packages available in the configured repository 
 With the `--installed` flag you can restrict the list of packages to the ones installed in your cluster.
 If you only want to see installed packages that have a newer version available, use the `--outdated` flag.
 
+### `glasskube describe <package>`
+
+Shows additional information about the given package. 
+
 ### `glasskube open <package>`
 
 Opens the default entrypoint of the given package. 

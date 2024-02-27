@@ -56,7 +56,7 @@ func FetchLatestPackageManifest(repoURL, name string, target *packagesv1alpha1.P
 }
 
 func FetchPackageManifest(repoURL, name, version string, target *packagesv1alpha1.PackageManifest) error {
-	if url, err := getPackageManifestURL(repoURL, name, version); err != nil {
+	if url, err := GetPackageManifestURL(repoURL, name, version); err != nil {
 		return err
 	} else {
 		return fetchYAMLOrJSON(url, target)
@@ -116,7 +116,7 @@ func getPackageIndexURL(repoURL, name string) (string, error) {
 	return url.JoinPath(getBaseURL(repoURL), pathEscapeExt(name), "versions.yaml")
 }
 
-func getPackageManifestURL(repoURL, name, version string) (string, error) {
+func GetPackageManifestURL(repoURL, name, version string) (string, error) {
 	pathSegments := []string{pathEscapeExt(name)}
 	if version != "" {
 		pathSegments = append(pathSegments, pathEscapeExt(version))
