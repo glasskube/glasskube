@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 	"sync"
 	"time"
 
@@ -113,13 +112,13 @@ func getPackageRepoIndexURL(repoURL string) (string, error) {
 }
 
 func getPackageIndexURL(repoURL, name string) (string, error) {
-	return url.JoinPath(getBaseURL(repoURL), pathEscapeExt(name), "versions.yaml")
+	return url.JoinPath(getBaseURL(repoURL), url.PathEscape(name), "versions.yaml")
 }
 
 func GetPackageManifestURL(repoURL, name, version string) (string, error) {
-	pathSegments := []string{pathEscapeExt(name)}
+	pathSegments := []string{url.PathEscape(name)}
 	if version != "" {
-		pathSegments = append(pathSegments, pathEscapeExt(version))
+		pathSegments = append(pathSegments, url.PathEscape(version))
 	}
 	pathSegments = append(pathSegments, "package.yaml")
 	return url.JoinPath(getBaseURL(repoURL), pathSegments...)
@@ -131,10 +130,4 @@ func getBaseURL(explicitRepositoryURL string) string {
 	} else {
 		return defaultRepositoryURL
 	}
-}
-
-// pathEscapeExt is like url.PathEscape, but additionally escapes "+" characters.
-// This is required due to a bug in the default repository backend.
-func pathEscapeExt(s string) string {
-	return strings.Replace(url.PathEscape(s), "+", url.QueryEscape("+"), -1)
 }
