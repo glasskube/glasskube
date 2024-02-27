@@ -6,6 +6,8 @@ import (
 	"os"
 	"path"
 
+	"github.com/glasskube/glasskube/internal/repo"
+
 	"github.com/glasskube/glasskube/internal/web/components/pkg_detail_btns"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_overview_btn"
 )
@@ -32,8 +34,11 @@ func init() {
 		"ForPkgOverviewBtn": pkg_overview_btn.ForPkgOverviewBtn,
 		"ForPkgDetailBtns":  pkg_detail_btns.ForPkgDetailBtns,
 		"PackageManifestUrl": func(pkgName string) string {
-			// TODO get configured repository URL instead
-			return fmt.Sprintf("https://github.com/glasskube/packages/blob/main/packages/%s/package.yaml", pkgName)
+			if url, err := repo.GetPackageManifestURL("", pkgName, ""); err != nil {
+				return ""
+			} else {
+				return url
+			}
 		},
 	}
 	baseTemplate = template.Must(template.New("base.html").

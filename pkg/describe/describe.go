@@ -29,7 +29,6 @@ func DescribePackage(
 		}
 		returnedManifest = *installedManifest
 	} else {
-
 		// pkg not installed: use manifest from repo
 		_, err = repo.FetchLatestPackageManifest("", pkgName, &returnedManifest)
 		if err != nil {
