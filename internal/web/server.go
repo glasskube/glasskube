@@ -350,7 +350,11 @@ func (s *server) supportPage(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/bootstrap", http.StatusFound)
 			return
 		}
-		err := supportPageTmpl.Execute(w, err)
+		err := supportPageTmpl.Execute(w, &map[string]any{
+			"CurrentContext":            "",
+			"KubeconfigDefaultLocation": clientcmd.RecommendedHomeFile,
+			"Err":                       err,
+		})
 		checkTmplError(err, "support")
 	} else {
 		http.Redirect(w, r, "/", http.StatusFound)

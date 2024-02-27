@@ -6,16 +6,16 @@
         <h1>You're almost there!</h1>
       </div>
 
-      {{if .KubeconfigMissing}}
+      {{if .Err.KubeconfigMissing}}
       <p>
         Glasskube did not find a
         <a href="https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/"
           target="_blank">kubeconfig</a>
         file in the default location!
       </p>
-      {{else if not .BootstrapMissing}}
+      {{else if not .Err.BootstrapMissing}}
       <p class="text-center">Unfortunately, there is an error with your kubeconfig:</p>
-      <div class="alert alert-danger mb-3 font-monospace">{{.}}</div>
+      <div class="alert alert-danger mb-3 font-monospace">{{.Err}}</div>
       {{ end }}
 
       Please get a kubeconfig file from your cloud provider and drag & drop it here:
