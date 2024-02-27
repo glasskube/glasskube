@@ -1,0 +1,99 @@
+---
+slug: package-updates
+title: Glasskube v0.0.3 — Introducing Package Updates
+description: "Version 0.0.3, launched on February 27th: 10 contributors, 64 commits, introducing package update management."
+authors: [ pmig ]
+tags: [ glasskube, release, kubernetes ]
+---
+
+import Install from '../../src/partials/_install.mdx';
+
+*Glasskube v0.0.3 was released on February 27th, introducing package updates and many useful features for improved CLI and GUI experience.*
+
+
+Glasskube is fully open-source. Support us by leaving a star: [⭐ `glasskube/glasskube` ⭐](https://github.com/glasskube/glasskube/)
+
+## 🙏 Special thanks to all our contributors 🥰
+
+Once again, we can't thank our community enough for their valuable input and exciting contributions to Glasskube.
+We are happy you choose to be part of our journey in making Kubernetes package management easier for everyone.
+
+**This release includes:**
+
+- 👥 a total of 10 contributors
+- 🛠️ 64 commits
+- 💥 no breaking changes
+
+Watch our release video to get an overview of what has changed:
+
+<iframe width="100%" height="460" src="https://www.youtube-nocookie.com/embed/fbi2fdQiRrs?si=cSBxS_0R2VyrkbYL"
+        title="YouTube video player" frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
+## Most notable changes
+
+### Package Updates
+
+Updating packages is one of the most essential features of any package manager. That's why most of our efforts in the past two weeks
+have gone into the support for such updates via CLI and GUI. It's as easy as typing `glasskube update` into the command line,
+or a button click in the GUI.
+
+During package installation you now can decide whether you want automatic updates for the package, in which case the
+Glasskube package operator will take care of keeping you up to date at all times. You can of course opt out of this feature
+if you prefer to handle updates manually. Apart from that, with the `--version` flag you can choose which version of a package is to be installed,
+if your use case requires a specific version.
+
+![Package Updates](https://github.com/glasskube/glasskube/assets/7556574/36891ecd-a34b-4e02-87f0-c09f071ddfc5)
+
+For technical details, please have a look at the [package operator documentation](/docs/components/package-operator/#handling-package-updates).
+
+### Further improvements
+
+We also worked hard on improving existing commands and our GUI. Here's a list of further notable changes:
+
+* The `glasskube describe` command – and its GUI-complement, the package detail page – have been implemented for you to have a more detailed
+view on each of the packages available in Glasskube.
+* `glasskube list` has been extended with the new flags `--outdated` – listing only outdated packages, and `--show-latest` – showing the
+latest available version for each package.
+* All commands check for a newer version of Glasskube, and notify you if you are not up to date anymore.
+* Glasskube is now even easier to set up: The GUI comes with handy pages for selecting a kubeconfig and for bootstrapping Glasskube in a cluster.
+All CLI commands will also support you in setting up Glasskube in your cluster.
+* Streaming any kind of package status change directly into the GUI, making it easier for you to recognize when something is happening in the background.
+
+### BREAKING changes
+
+*This release does not contain any breaking changes*.
+
+## All Release Notes
+
+The release notes can be found here: [v0.0.3 release on GitHub](https://github.com/glasskube/glasskube/releases/tag/v0.0.3)
+
+All changes can be found here: [Comparing v0.0.2 to v0.0.3](https://github.com/glasskube/glasskube/compare/v0.0.2...v0.0.3)
+
+## How to upgrade
+
+Follow the installation instructions below to download the latest version of the Glasskube client.
+After that you need to upgrade the server component ([Package Operator](/docs/components/package-operator/)) by bootstrapping Glasskube again:
+
+```bash
+glasskube bootstrap
+```
+
+## Getting started
+
+Follow our [Getting Started guide](https://glasskube.dev/docs/getting-started/install) if you want to try Glasskube for yourself and install your first package.
+
+<Install/>
+
+
+## Get involved
+
+The easiest way to get involved is to tackle one of our [open issues](https://github.com/glasskube/glasskube/issues).
+You are also welcome to join our [Discord](https://discord.gg/SxH6KUCGH7).
+
+> **If you are a cloud native developer, please [submit your package](https://github.com/glasskube/glasskube/discussions/90)**.
+
+As Glasskube is still in its very early days, your feedback is highly appreciated.
+Let us know what you think, we would love to hear from you or support us by leaving a star on GitHub:
+
+[⭐ `glasskube/glasskube` ⭐](https://github.com/glasskube/glasskube/)
