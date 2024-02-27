@@ -14,9 +14,10 @@ Our pre releases are technical proof of concepts that aim to inspire technical f
 |--------|:-----------------------------------------------------------------------------------------------------------------------------------------------:|:------------------:|:--------------:|
 | v0.0.1 | - first working PackageOperator<br/>- first working client (UI & CLI)<br/>- install first packages (cert-manager, …) <br/>- `bootstrap` command | Released on Jan 31 |    Released    |
 | v0.0.2 |                                   - `open` command<br/>- real-time-updates<br/>- add more supported packages                                    | Released on Feb 09 |    Released    |
-| v0.0.3 |               - add package updates and outdated information<br/>- package configuration<br/>- support packages with dependencies               | Started on Feb 12  | In development |
-| v0.0.4 |                                                     - support backups<br/>- handle secrets                                                      |                    |    Planned     |
-| v0.0.5 |                                           - support version pinning<br/>- support package suspension                                            |                    |    Planned     |
+| v0.0.3 |                                  - add package updates and outdated information<br/>- support version pinning                                   | Released on Feb 27 |    Released    |
+| v0.0.4 |                                                      - support packages with dependencies                                                       | Started on Feb 28  | In development |
+| v0.0.5 |                                  - support package suspension<br/>- handle secrets<br/>- package configuration                                  |                    |    Planned     |
+| v0.0.6 |                                                                - support backups                                                                |                    |    Planned     |
 
 ## First Releases from v0.1.0 {#first-release}
 
