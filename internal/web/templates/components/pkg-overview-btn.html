@@ -1,11 +1,10 @@
 {{define "pkg-overview-btn"}}
 
-<span class="m-1 mt-auto" id="{{ .ButtonId }}" hx-swap-oob="{{ .Swap }}">
+<span id="{{ .ButtonId }}" hx-swap-oob="{{ .Swap }}">
   {{if eq .Status nil}}
-  <button hx-get="/packages/install/modal" hx-target="#modal-container" hx-swap="innerHTML" hx-select="#pkg-install-modal"
-          name="packageName" value="{{ .PackageName }}"
-          class="btn btn-primary btn-sm w-100"
-          data-bs-toggle="modal" data-bs-target="#modal-container">
+  <button hx-get="/packages/install/modal" hx-target="#modal-container" hx-swap="innerHTML"
+    hx-select="#pkg-install-modal" name="packageName" value="{{ .PackageName }}" class="btn btn-primary btn-sm w-100"
+    data-bs-toggle="modal" data-bs-target="#modal-container">
     Install
   </button>
   {{else if eq .Status.Status "Pending"}}
@@ -18,14 +17,13 @@
   </a>
   {{else if .UpdateAvailable}}
   <button hx-get="/packages/update/modal" hx-target="#modal-container" hx-swap="innerHTML" hx-select="#pkg-update-modal"
-          name="packageName" value="{{ .PackageName }}"
-          class="btn btn-warning btn-sm w-100"
-          data-bs-toggle="modal" data-bs-target="#modal-container">
+    name="packageName" value="{{ .PackageName }}" class="btn btn-warning btn-sm w-100" data-bs-toggle="modal"
+    data-bs-target="#modal-container">
     Update
   </button>
   {{else if and .Manifest .Manifest.Entrypoints }}
   <button class="btn btn-success btn-sm w-100" hx-post="/packages/open" hx-swap="none" name="packageName"
-          value="{{ .PackageName }}">
+    value="{{ .PackageName }}">
     <i class="bi bi-box-arrow-up-right"></i>
     <span>Open</span>
   </button>
