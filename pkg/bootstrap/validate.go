@@ -39,6 +39,7 @@ func IsBootstrapped(ctx context.Context, cfg *rest.Config) (bool, error) {
 	if pkgsErr != nil {
 		return false, pkgsErr
 	}
+
 	if pisErr != nil {
 		return false, pisErr
 	}
