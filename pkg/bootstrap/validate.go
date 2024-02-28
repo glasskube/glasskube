@@ -17,6 +17,7 @@ func IsBootstrapped(ctx context.Context, cfg *rest.Config) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+
 	var wg sync.WaitGroup
 	wg.Add(2)
 
