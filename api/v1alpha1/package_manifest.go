@@ -54,6 +54,11 @@ type PackageReference struct {
 	Url   string `json:"url" jsonschema:"required"`
 }
 
+type Dependency struct {
+	Name    string `json:"name" jsonschema:"required"`
+	Version string `json:"version,omitempty"`
+}
+
 type PackageManifest struct {
 	Name             string             `json:"name" jsonschema:"required"`
 	ShortDescription string             `json:"shortDescription,omitempty"`
@@ -68,4 +73,5 @@ type PackageManifest struct {
 	// DefaultNamespace to install the package. May be overridden.
 	DefaultNamespace string              `json:"defaultNamespace,omitempty" jsonschema:"required"`
 	Entrypoints      []PackageEntrypoint `json:"entrypoints,omitempty"`
+	Dependencies     []Dependency        `json:"dependencies,omitempty"`
 }

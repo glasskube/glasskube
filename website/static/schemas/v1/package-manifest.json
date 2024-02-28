@@ -2,6 +2,21 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://glasskube.dev/schemas/v1/package-manifest.json",
   "$defs": {
+    "Dependency": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name"
+      ]
+    },
     "HelmManifest": {
       "properties": {
         "repositoryUrl": {
@@ -126,6 +141,12 @@
     "entrypoints": {
       "items": {
         "$ref": "#/$defs/PackageEntrypoint"
+      },
+      "type": "array"
+    },
+    "dependencies": {
+      "items": {
+        "$ref": "#/$defs/Dependency"
       },
       "type": "array"
     }
