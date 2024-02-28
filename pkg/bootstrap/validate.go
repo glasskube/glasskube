@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
@@ -16,14 +17,32 @@ func IsBootstrapped(ctx context.Context, cfg *rest.Config) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	pkgsExist, err := crdExists(ctx, cs, "packages")
-	if err != nil {
-		return false, err
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	var pkgsExist, pisExist bool
+	var pkgsErr, pisErr error
+
+	go func() {
+		defer wg.Done()
+		pkgsExist, pkgsErr = crdExists(ctx, cs, "packages")
+	}()
+
+	go func() {
+		defer wg.Done()
+		pisExist, pisErr = crdExists(ctx, cs, "packageinfos")
+	}()
+
+	wg.Wait()
+
+	if pkgsErr != nil {
+		return false, pkgsErr
 	}
-	pisExist, err := crdExists(ctx, cs, "packageinfos")
-	if err != nil {
-		return false, err
+	if pisErr != nil {
+		return false, pisErr
 	}
+
 	return pkgsExist && pisExist, nil
 }
 
