@@ -1,5 +1,6 @@
 {{define "body"}}
-<div class="container-lg mt-2" hx-trigger="htmx:historyRestore from:body" hx-get="/packages/{{ .Manifest.Name }}" hx-select="main" hx-target="main">
+<div class="container-lg mt-2" hx-trigger="htmx:historyRestore from:body" hx-get="/packages/{{ .Manifest.Name }}"
+  hx-select="main" hx-target="main">
   <div class="row p-3 col-lg-10 offset-lg-1">
     <div class="d-flex flex-column">
       <div class="d-flex align-items-center">
@@ -7,7 +8,7 @@
 
           {{if eq .Manifest.IconUrl ""}}
           <!-- TODO the glasskube logo as fallback is probably not the best idea? -->
-          <img src="/static/assets/glasskube-logo.svg" alt="{{ .Manifest.Name}}"  style="width: 8rem; height:auto">
+          <img src="/static/assets/glasskube-logo.svg" alt="{{ .Manifest.Name}}" style="width: 8rem; height:auto">
           {{else}}
           <img src="{{ .Manifest.IconUrl}}" alt="{{ .Manifest.Name}}" style="width: 8rem; height:auto">
           {{end}}
@@ -16,9 +17,10 @@
         <div class="flex-grow-1 ps-0 pe-1 py-1">
           <div class="mb-2">
             <span class="d-flex ">
-              <h1 class="d-inline-flex flex-grow-1 text-dark m-0">{{ .Manifest.Name }}</h1>
+              <h1 class="text-reset d-inline-flex flex-grow-1 m-0">{{ .Manifest.Name }}</h1>
               <span class="align-self-center mx-auto">
-                {{template "pkg-detail-btns" ForPkgDetailBtns .Manifest.Name .Status .Manifest .Package .LatestVersion }}
+                {{template "pkg-detail-btns" ForPkgDetailBtns .Manifest.Name .Status .Manifest .Package .LatestVersion
+                }}
               </span>
             </span>
           </div>
@@ -26,21 +28,15 @@
             {{ .Manifest.ShortDescription }}
           </span>
           <div class="mt-2">
-            <a class="icon-link text-dark me-2" href="{{ .Manifest.Name | PackageManifestUrl}}" target="_blank">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-up-right" viewBox="0 0 16 16">
-                <path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5"/>
-                <path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z"/>
-              </svg>
+            <a class="icon-link text-reset me-2" href="{{ .Manifest.Name | PackageManifestUrl}}" target="_blank">
+              <span class="bi bi-box-arrow-up-right"></span>
               Glasskube Package Manifest
             </a>
             {{ range .Manifest.References }}
-              <a class="icon-link text-dark me-2" href="{{.Url}}" target="_blank">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-up-right" viewBox="0 0 16 16">
-                  <path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5"/>
-                  <path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z"/>
-                </svg>
-                {{.Label}}
-              </a>
+            <a class="icon-link text-reset me-2" href="{{.Url}}" target="_blank">
+              <span class="bi bi-box-arrow-up-right"></span>
+              {{.Label}}
+            </a>
             {{ end }}
           </div>
         </div>
@@ -49,23 +45,20 @@
     </div>
 
     <div class="mt-3">
-      <h2 class="text-dark">Package Details</h2>
+      <h2 class="text-reset">Package Details</h2>
 
       <span>
         {{if eq .Manifest.LongDescription ""}}
         <i>This package has no detailed description yet. You can request to change this here:
-          <a class="icon-link text-dark me-2" href="{{ .Manifest.Name | PackageManifestUrl}}" target="_blank">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-up-right" viewBox="0 0 16 16">
-              <path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5"/>
-              <path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z"/>
-            </svg>
+          <a class="icon-link text-reset me-2" href="{{ .Manifest.Name | PackageManifestUrl}}" target="_blank">
+            <span class="bi bi-box-arrow-up-right"></span>
             Glasskube Package Manifest
           </a>
         </i>
         {{else}}
         {{ .Manifest.LongDescription }}
         {{end}}
-        </span>
+      </span>
     </div>
 
   </div>
