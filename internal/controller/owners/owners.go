@@ -31,13 +31,26 @@ func NewOwnerManager(scheme *runtime.Scheme) *OwnerManager {
 }
 
 func (mgr *OwnerManager) HasOwner(owner client.Object, obj metav1.Object) (bool, error) {
-	if _, err := mgr.findOwnerReferenceIndex(owner, obj.GetOwnerReferences()); err != nil {
-		return true, nil
-	} else if err == ErrNoSuchOwner {
+	if _, err := mgr.findOwnerReferenceIndex(owner, obj.GetOwnerReferences()); err != nil && !errors.Is(err, ErrNoSuchOwner) {
+		return false, err
+	} else if errors.Is(err, ErrNoSuchOwner) {
 		return false, nil
 	} else {
-		return false, err
+		return true, nil
 	}
+}
+
+func (mgr *OwnerManager) HasAnyOwnerOfType(owner client.Object, obj metav1.Object) (bool, error) {
+	ownerGVK := owner.GetObjectKind().GroupVersionKind()
+	ownerGV := ownerGVK.GroupVersion()
+	for _, ref := range obj.GetOwnerReferences() {
+		if refGV, err := schema.ParseGroupVersion(ref.APIVersion); err != nil {
+			return false, err
+		} else if ownerGV == refGV {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func (mgr *OwnerManager) SetOwner(

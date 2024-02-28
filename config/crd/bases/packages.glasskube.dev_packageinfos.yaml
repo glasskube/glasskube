@@ -140,6 +140,17 @@ spec:
                   defaultNamespace:
                     description: DefaultNamespace to install the package. May be overridden.
                     type: string
+                  dependencies:
+                    items:
+                      properties:
+                        name:
+                          type: string
+                        version:
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    type: array
                   entrypoints:
                     items:
                       description: PackageEntrypoint defines a service port a user

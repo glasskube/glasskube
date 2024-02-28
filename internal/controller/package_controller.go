@@ -20,6 +20,9 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
+
+	"k8s.io/apimachinery/pkg/types"
 
 	"go.uber.org/multierr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -101,6 +104,10 @@ func (r *PackageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			return requeue.Always(ctx, err)
 		}
 
+		if result, err, dependenciesReady := r.ensureDependencies(ctx, req, piManifest, pkg); !dependenciesReady {
+			return result, err
+		}
+
 		if len(piManifest.Manifests) > 0 {
 			err := r.reconcilePlainManifests(ctx, &pkg, *packageInfo, piManifest)
 			return requeue.Always(ctx, err)
@@ -131,6 +138,99 @@ func (r *PackageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	} else {
 		err := conditions.SetUnknownAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.Pending, "PackageInfo status is unknown")
 		return requeue.Always(ctx, err)
+	}
+}
+
+func (r *PackageReconciler) ensureDependencies(
+	ctx context.Context,
+	req ctrl.Request,
+	piManifest *packagesv1alpha1.PackageManifest,
+	pkg packagesv1alpha1.Package,
+) (ctrl.Result, error, bool) {
+	log := ctrl.LoggerFrom(ctx)
+	if len(piManifest.Dependencies) > 0 {
+		log.V(1).Info("ensuring dependencies", "dependencies", piManifest.Dependencies)
+		var waitingFor []string
+		var failed []string
+		for _, dep := range piManifest.Dependencies {
+			var requiredPkg packagesv1alpha1.Package
+			if err := r.Get(ctx, types.NamespacedName{
+				Namespace: req.Namespace,
+				Name:      dep.Name,
+			}, &requiredPkg); err != nil {
+				if apierrors.IsNotFound(err) {
+					log.V(1).Info("Dependency not installed yet", "required", dep.Name)
+					newPkg := r.requiredPackage(&pkg, dep)
+					if _, err := controllerutil.CreateOrUpdate(ctx, r.Client, newPkg, func() error {
+						if err := r.SetOwner(&pkg, newPkg, owners.BlockOwnerDeletion); err != nil {
+							return fmt.Errorf("unable to set ownerReference on required package: %w", err)
+						}
+						return nil
+					}); err != nil {
+						log.Error(err, "Failed to create required package", "required", dep.Name)
+						failed = append(failed, dep.Name)
+					} else {
+						waitingFor = append(waitingFor, dep.Name)
+					}
+				} else {
+					log.Error(err, "Failed to check required package", "required", dep.Name)
+					failed = append(failed, dep.Name)
+				}
+			} else {
+				// if the required package already exists, we set the owner reference if
+				// * there already exists another package owner reference (i.e. it has been installed as dependency of another package)
+				// * but NOT if there exists no other package owner reference (i.e. it has been installed manually)
+				if ok, err := r.HasAnyOwnerOfType(&pkg, &requiredPkg); err != nil || ok {
+					if err != nil {
+						log.Error(err, "Failed to check for owner references", "owner", pkg.Name, "owned", requiredPkg.Name)
+					}
+					log.Info("Updating existing required package with new owner reference", "owner", pkg.Name, "owned", requiredPkg.Name)
+					if err := r.SetOwner(&pkg, &requiredPkg, owners.BlockOwnerDeletion); err != nil {
+						log.Error(err, "Failed to set owner reference", "owner", pkg.Name, "owned", requiredPkg.Name)
+						failed = append(failed, dep.Name)
+					}
+					if err := r.Update(ctx, &requiredPkg); err != nil {
+						log.Error(err, "Failed to updated required package", "owner", pkg.Name, "owned", requiredPkg.Name)
+						failed = append(failed, dep.Name)
+					}
+				}
+				if meta.IsStatusConditionTrue(requiredPkg.Status.Conditions, string(condition.Failed)) {
+					log.Error(err, "Required package has status Failed", "required", dep.Name)
+					failed = append(failed, dep.Name)
+				} else if !meta.IsStatusConditionTrue(requiredPkg.Status.Conditions, string(condition.Ready)) {
+					waitingFor = append(waitingFor, dep.Name)
+				}
+			}
+		}
+
+		if len(failed) > 0 {
+			err := conditions.SetFailedAndUpdate(ctx, r.Client, r.EventRecorder, &pkg, &pkg.Status.Conditions,
+				condition.InstallationFailed, fmt.Sprintf("required package(s) not installed: %v", strings.Join(failed, ",")))
+			r, err := requeue.Always(ctx, err)
+			return r, err, false
+		} else if len(waitingFor) > 0 {
+			err := conditions.SetUnknownAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions,
+				condition.Pending, fmt.Sprintf("waiting for required package(s) %v", strings.Join(waitingFor, ",")))
+			r, err := requeue.Always(ctx, err)
+			return r, err, false
+		}
+		log.V(1).Info("ensured dependencies", "dependencies", piManifest.Dependencies)
+	}
+	return ctrl.Result{}, nil, true
+}
+
+func (r *PackageReconciler) requiredPackage(pkg *packagesv1alpha1.Package, dep packagesv1alpha1.Dependency) *packagesv1alpha1.Package {
+	return &packagesv1alpha1.Package{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      dep.Name,
+			Namespace: pkg.Namespace,
+		},
+		Spec: packagesv1alpha1.PackageSpec{
+			PackageInfo: packagesv1alpha1.PackageInfoTemplate{
+				Name: dep.Name,
+				// TODO version handling, see #311
+			},
+		},
 	}
 }
 
@@ -348,5 +448,6 @@ func (r *PackageReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 	return controllerBuilder.
 		Owns(&packagesv1alpha1.PackageInfo{}, builder.MatchEveryOwner).
+		Owns(&packagesv1alpha1.Package{}, builder.MatchEveryOwner).
 		Complete(r)
 }
