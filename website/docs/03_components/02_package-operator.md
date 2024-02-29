@@ -14,11 +14,6 @@ The PackageInfo controller syncs the relevant `PackageInfo` resources with the m
 
 ## Handling Package Updates
 
-:::warning Disclaimer
-This part of the documention is not yet implemented in the latest version of Glasskube. 
-Find out more on our [roadmap](/roadmap).
-:::
-
 A Package may have it's `.spec.version` set. 
 This instructs the operator to install this exact version of the package. 
 We also call this version pinning.
