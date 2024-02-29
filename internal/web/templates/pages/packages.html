@@ -1,53 +1,68 @@
-{{define "body"}}
-<div class="container-lg mt-2" hx-trigger="htmx:historyRestore from:body" hx-get="/packages" hx-select="main"
-  hx-target="main">
-  {{ if .UpdatesAvailable }}
-  <div class="alert alert-warning py-1 ps-2 pe-1 d-flex flex-row align-items-center" role="alert"
-    id="packages-update-warning">
-    <span class="flex-grow-1">Updates for your packages are available!</span>
-    <button hx-get="/packages/update/modal" hx-target="#modal-container" hx-swap="innerHTML"
-      hx-select="#pkg-update-modal" class="btn btn-warning btn-sm" data-bs-toggle="modal"
-      data-bs-target="#modal-container">
-      Update All
-    </button>
-  </div>
-  {{ end }}
-  <div class="row row-cols-3 row-cols-xl-4 g-2">
-    {{range .Packages}}
-    <div class="col">
-      <div class="card bg-body-secondary h-100 border-primary border-1">
-        <div class="card-body p-1 d-flex flex-column gap-1">
-          <div hx-boost="true" class="flex-grow-1 d-flex align-items-center gap-1">
-            <div class="flex-shrink-0 align-self-center">
-              <a class="text-decoration-none" href="/packages/{{ .Name }}">
-                {{if eq .IconUrl ""}}
-                <!-- TODO the glasskube logo as fallback is probably not the best idea? -->
-                <img src="/static/assets/glasskube-logo.svg" alt="{{ .Name}}" style="width: 3.25rem; height:auto">
-                {{else}}
-                <img src="{{ .IconUrl }}" alt="{{ .Name }}" style="width: 3.25rem; height:auto">
-                {{end}}
-              </a>
-            </div>
-            <div class="flex-grow-1 align-self-start">
-              <a class="text-reset text-decoration-none" href="/packages/{{ .Name }}">
-                <h6 class="text-reset m-0">{{ .Name }}</h6>
-                <span class="lh-sm overflow-hidden" style="
+{{ define "body" }}
+  <div
+    class="container-lg mt-2"
+    hx-trigger="htmx:historyRestore from:body"
+    hx-get="/packages"
+    hx-select="main"
+    hx-target="main">
+    {{ if .UpdatesAvailable }}
+      <div
+        class="alert alert-warning py-1 ps-2 pe-1 d-flex flex-row align-items-center"
+        role="alert"
+        id="packages-update-warning">
+        <span class="flex-grow-1">Updates for your packages are available!</span>
+        <button
+          hx-get="/packages/update/modal"
+          hx-target="#modal-container"
+          hx-swap="innerHTML"
+          hx-select="#pkg-update-modal"
+          class="btn btn-warning btn-sm"
+          data-bs-toggle="modal"
+          data-bs-target="#modal-container">
+          Update All
+        </button>
+      </div>
+    {{ end }}
+    <div class="row row-cols-3 row-cols-xl-4 g-2">
+      {{ range .Packages }}
+        <div class="col">
+          <div class="card bg-body-secondary h-100 border-primary border-1">
+            <div class="card-body p-1 d-flex flex-column gap-1">
+              <div hx-boost="true" class="flex-grow-1 d-flex align-items-center gap-1">
+                <div class="flex-shrink-0 align-self-center">
+                  <a class="text-decoration-none" href="/packages/{{ .Name }}">
+                    {{ if eq .IconUrl "" }}
+                      <!-- TODO the glasskube logo as fallback is probably not the best idea? -->
+                      <img
+                        src="/static/assets/glasskube-logo.svg"
+                        alt="{{ .Name }}"
+                        style="width: 3.25rem; height:auto" />
+                    {{ else }}
+                      <img src="{{ .IconUrl }}" alt="{{ .Name }}" style="width: 3.25rem; height:auto" />
+                    {{ end }}
+                  </a>
+                </div>
+                <div class="flex-grow-1 align-self-start">
+                  <a class="text-reset text-decoration-none" href="/packages/{{ .Name }}">
+                    <h6 class="text-reset m-0">{{ .Name }}</h6>
+                    <span
+                      class="lh-sm overflow-hidden"
+                      style="
                         font-size: small;
                         display: -webkit-box;
                         -webkit-box-orient: vertical;
                         -webkit-line-clamp: 2">
-                  {{ .ShortDescription }}
-                </span>
-              </a>
+                      {{ .ShortDescription }}
+                    </span>
+                  </a>
+                </div>
+              </div>
+
+              {{ template "pkg-overview-btn" . | ForPkgOverviewBtn }}
             </div>
           </div>
-
-          {{template "pkg-overview-btn" . | ForPkgOverviewBtn }}
-
         </div>
-      </div>
+      {{ end }}
     </div>
-    {{end}}
   </div>
-</div>
-{{end}}
+{{ end }}

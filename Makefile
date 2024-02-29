@@ -70,6 +70,12 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	go vet ./...
 
+.PHONY: lint
+lint: lint-go lint-web
+
+.PHONY: lint-fix
+lint-fix: lint-go-fix lint-web-fix
+
 .PHONY: test
 test: manifests generate fmt vet envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test ./... -coverprofile cover.out
@@ -82,22 +88,22 @@ golangci-lint:
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell dirname $(GOLANGCI_LINT)) $(GOLANGCI_LINT_VERSION) ;\
 	}
 
-.PHONY: lint
-lint: golangci-lint ## Run golangci-lint linter & yamllint
+.PHONY: lint-go
+lint-go: golangci-lint ## Run golangci-lint linter & yamllint
 	$(GOLANGCI_LINT) run
 
 .PHONY: lint-fix
-lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes
+lint-go-fix: golangci-lint ## Run golangci-lint linter and perform fixes
 	$(GOLANGCI_LINT) run --fix
 
 ##@ Build
 
 .PHONY: build
-build: manifests generate fmt vet lint ## Build manager binary.
+build: manifests generate fmt vet lint-go ## Build manager binary.
 	go build -o $(OUT_DIR)/package-operator ./cmd/package-operator/
 
 .PHONY: build-cli
-build-cli: fmt vet lint web ## Build cli binary.
+build-cli: fmt vet lint-go lint-web web ## Build cli binary.
 	go build -o $(OUT_DIR)/glasskube ./cmd/glasskube/
 
 .PHONY: run
@@ -163,8 +169,16 @@ FRONTEND_TARGETS := internal/web/root/static/bundle/index.min.js internal/web/ro
 .PHONY: web
 web: $(FRONTEND_TARGETS) ## Build frontend bundles
 
+.PHONY: lint-web
+lint-web: node_modules ## Check frontend formatting
+	npm run prettier:check
+
+.PHONY: lint-web-fix
+lint-web-fix: node_modules ## Apply frontend formatting
+	npm run prettier:write
+
 $(FRONTEND_TARGETS): $(FRONTEND_SOURCES) node_modules esbuild.mjs
-	node esbuild.mjs
+	npm run build
 
 ## Install frontend dependencies
 node_modules: package-lock.json

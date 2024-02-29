@@ -3,7 +3,9 @@
   "license": "Apache-2.0",
   "scripts": {
     "postinstall": "npm run build",
-    "build": "node esbuild.mjs"
+    "build": "node esbuild.mjs",
+    "prettier:check": "prettier -c web/ internal/**/*.html",
+    "prettier:write": "prettier -w web/ internal/**/*.html"
   },
   "dependencies": {
     "@glasskube/theme": "0.1.1",
@@ -11,6 +13,31 @@
     "htmx.org": "1.9.10"
   },
   "devDependencies": {
-    "esbuild": "0.20.1"
+    "esbuild": "0.20.1",
+    "prettier": "3.2.5",
+    "prettier-plugin-go-template": "0.0.15"
+  },
+  "prettier": {
+    "plugins": [
+      "prettier-plugin-go-template"
+    ],
+    "bracketSameLine": true,
+    "singleQuote": true,
+    "semi": true,
+    "overrides": [
+      {
+        "files": "*.css",
+        "options": {
+          "singleQuote": false
+        }
+      },
+      {
+        "files": "*.html",
+        "options": {
+          "printWidth": 120,
+          "parser": "go-template"
+        }
+      }
+    ]
   }
 }
