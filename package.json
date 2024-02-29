@@ -1,0 +1,16 @@
+{
+  "author": "Glasskube",
+  "license": "Apache-2.0",
+  "scripts": {
+    "postinstall": "npm run build",
+    "build": "node esbuild.mjs"
+  },
+  "dependencies": {
+    "@glasskube/theme": "0.1.1",
+    "bootstrap": "5.3.3",
+    "htmx.org": "1.9.10"
+  },
+  "devDependencies": {
+    "esbuild": "0.20.1"
+  }
+}

@@ -4,14 +4,10 @@
 <head>
   <meta charset="UTF-8">
   <title>Glasskube</title>
-  <link type="text/css" rel="stylesheet" href="/static/css/theme.min.css" />
-  <link type="text/css" rel="stylesheet" href="/static/css/base.css" />
-
-  <script src="/static/js/bootstrap.bundle.min.js"></script> <!-- TODO version -->
-  <script src="/static/js/htmx-1.9.10.min.js"></script>
-  <script src="/static/js/ws-ext-1.9.10.js"></script>
-
+  <link type="text/css" rel="stylesheet" href="/static/bundle/index.min.css" />
+  <script src="/static/bundle/index.min.js"></script>
   <script type="text/javascript">
+    window.htmx =
     // htmx.logAll();
   </script>
 </head>
@@ -72,13 +68,13 @@
   </div>
 
   <script>
-    (() => {
-      const getColorSchemeQuery = () => window.matchMedia('(prefers-color-scheme: dark)')
-      const getPreferredTheme = () => getColorSchemeQuery().matches ? 'dark' : 'light';
-      const setPreferredTheme = () => document.body.setAttribute('data-bs-theme', getPreferredTheme());
-      setPreferredTheme();
-      getColorSchemeQuery().addEventListener('change', () => setPreferredTheme());
-    })()
+      (() => {
+        const getColorSchemeQuery = () => window.matchMedia('(prefers-color-scheme: dark)')
+        const getPreferredTheme = () => getColorSchemeQuery().matches ? 'dark' : 'light';
+        const setPreferredTheme = () => document.body.setAttribute('data-bs-theme', getPreferredTheme());
+        setPreferredTheme();
+        getColorSchemeQuery().addEventListener('change', () => setPreferredTheme());
+      })()
   </script>
 </body>
 
