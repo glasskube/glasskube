@@ -17,6 +17,7 @@ import (
 var installCmdOptions = struct {
 	Version           string
 	EnableAutoUpdates bool
+	NoWait            bool
 }{}
 
 var installCmd = &cobra.Command{
@@ -59,6 +60,34 @@ var installCmd = &cobra.Command{
 
 		if !cliutils.YesNoPrompt(fmt.Sprintf("%v Continue?", msg), true) {
 			cancel()
+		}
+
+		// if --no-wait is used
+		if installCmdOptions.NoWait {
+			go func() {
+				status, err := install.NewInstaller(client).
+					WithStatusWriter(statuswriter.Spinner()).
+					InstallBlocking(ctx, packageName, installCmdOptions.Version)
+
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
+					os.Exit(1)
+				}
+				if status != nil {
+					switch status.Status {
+					case string(condition.Ready):
+						fmt.Printf("✅ %v is now installed in %v.\n", packageName, config.CurrentContext)
+					default:
+						fmt.Printf("❌ %v installation has status %v, reason: %v\nMessage: %v\n",
+							packageName, status.Status, status.Reason, status.Message)
+					}
+				} else {
+					fmt.Fprintln(os.Stderr, "Installation status unknown - no error and no status have been observed (this is a bug).")
+					os.Exit(1)
+				}
+			}()
+			fmt.Println("Installation started in background")
+			return
 		}
 
 		status, err := install.NewInstaller(client).
@@ -141,5 +170,6 @@ func init() {
 	installCmd.PersistentFlags().BoolVar(&installCmdOptions.EnableAutoUpdates, "enable-auto-updates", false,
 		"enable automatic updates for this package")
 	installCmd.MarkFlagsMutuallyExclusive("version", "enable-auto-updates")
+	installCmd.PersistentFlags().BoolVar(&installCmdOptions.NoWait, "no-wait", false, "perform non-blocking install")
 	RootCmd.AddCommand(installCmd)
 }
