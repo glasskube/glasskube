@@ -17,6 +17,7 @@ import (
 var installCmdOptions = struct {
 	Version           string
 	EnableAutoUpdates bool
+	NoWait            bool
 }{}
 
 var installCmd = &cobra.Command{
@@ -31,6 +32,9 @@ var installCmd = &cobra.Command{
 		config := client.RawConfigFromContext(ctx)
 		client := client.FromContext(ctx)
 		packageName := args[0]
+
+		// Instantiate installer
+		installer := install.NewInstaller(client).WithStatusWriter(statuswriter.Spinner())
 
 		if installCmdOptions.Version == "" && !installCmdOptions.EnableAutoUpdates {
 			fmt.Fprintf(os.Stderr, "Version not specified. The latest version of %v will be installed.\n", packageName)
@@ -61,25 +65,33 @@ var installCmd = &cobra.Command{
 			cancel()
 		}
 
-		status, err := install.NewInstaller(client).
-			WithStatusWriter(statuswriter.Spinner()).
-			InstallBlocking(ctx, packageName, installCmdOptions.Version)
-
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
-			os.Exit(1)
-		}
-		if status != nil {
-			switch status.Status {
-			case string(condition.Ready):
-				fmt.Printf("✅ %v is now installed in %v.\n", packageName, config.CurrentContext)
-			default:
-				fmt.Printf("❌ %v installation has status %v, reason: %v\nMessage: %v\n",
-					packageName, status.Status, status.Reason, status.Message)
+		if installCmdOptions.NoWait {
+			if err := installer.Install(ctx, packageName, installCmdOptions.Version); err != nil {
+				fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
+				os.Exit(1)
 			}
+			fmt.Fprintf(os.Stderr,
+				"☑️  %v is being installed in the background.\n"+
+					"💡 Run \"glasskube describe %v\" to get the current status",
+				packageName, packageName)
 		} else {
-			fmt.Fprintln(os.Stderr, "Installation status unknown - no error and no status have been observed (this is a bug).")
-			os.Exit(1)
+			status, err := installer.InstallBlocking(ctx, packageName, installCmdOptions.Version)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
+				os.Exit(1)
+			}
+			if status != nil {
+				switch status.Status {
+				case string(condition.Ready):
+					fmt.Printf("✅ %v is now installed in %v.\n", packageName, config.CurrentContext)
+				default:
+					fmt.Printf("❌ %v installation has status %v, reason: %v\nMessage: %v\n",
+						packageName, status.Status, status.Reason, status.Message)
+				}
+			} else {
+				fmt.Fprintln(os.Stderr, "Installation status unknown - no error and no status have been observed (this is a bug).")
+				os.Exit(1)
+			}
 		}
 	},
 }
@@ -141,5 +153,6 @@ func init() {
 	installCmd.PersistentFlags().BoolVar(&installCmdOptions.EnableAutoUpdates, "enable-auto-updates", false,
 		"enable automatic updates for this package")
 	installCmd.MarkFlagsMutuallyExclusive("version", "enable-auto-updates")
+	installCmd.PersistentFlags().BoolVar(&installCmdOptions.NoWait, "no-wait", false, "perform non-blocking install")
 	RootCmd.AddCommand(installCmd)
 }
