@@ -28,3 +28,6 @@ dist/
 
 .idea/
 .vscode/
+
+node_modules/
+internal/web/root/static/bundle/

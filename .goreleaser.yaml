@@ -10,6 +10,7 @@ version: 1
 
 before:
   hooks:
+    - make web
     - go mod tidy
     - go generate ./...
     - hack/generate-manifests.sh

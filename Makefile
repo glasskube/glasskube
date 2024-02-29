@@ -97,7 +97,7 @@ build: manifests generate fmt vet lint ## Build manager binary.
 	go build -o $(OUT_DIR)/package-operator ./cmd/package-operator/
 
 .PHONY: build-cli
-build-cli: fmt vet lint ## Build cli binary.
+build-cli: fmt vet lint web ## Build cli binary.
 	go build -o $(OUT_DIR)/glasskube ./cmd/glasskube/
 
 .PHONY: run
@@ -154,6 +154,22 @@ deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in
 .PHONY: undeploy
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/default | $(KUBECTL) delete --ignore-not-found=$(ignore-not-found) -f -
+
+##@ Frontend
+
+FRONTEND_SOURCES := $(shell find web/ -type f)
+FRONTEND_TARGETS := internal/web/root/static/bundle/index.min.js internal/web/root/static/bundle/index.min.css
+
+.PHONY: web
+web: $(FRONTEND_TARGETS) ## Build frontend bundles
+
+$(FRONTEND_TARGETS): $(FRONTEND_SOURCES) node_modules esbuild.mjs
+	node esbuild.mjs
+
+## Install frontend dependencies
+node_modules: package-lock.json
+	npm install --no-save
+	@touch node_modules
 
 ##@ Build Dependencies
 
