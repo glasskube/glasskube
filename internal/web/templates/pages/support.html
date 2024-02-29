@@ -1,86 +1,102 @@
-{{define "body"}}
-<div class="container">
-  <div class="row">
-    <div class="col-md-8 offset-md-2 col-lg-6 offset-lg-3">
-      <div class="text-center my-3">
-        <h1>You're almost there!</h1>
-      </div>
-
-      {{if .Err.KubeconfigMissing}}
-      <p>
-        Glasskube did not find a
-        <a href="https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/"
-          target="_blank">kubeconfig</a>
-        file in the default location!
-      </p>
-      {{else if not .Err.BootstrapMissing}}
-      <p class="text-center">Unfortunately, there is an error with your kubeconfig:</p>
-      <div class="alert alert-danger mb-3 font-monospace">{{.Err}}</div>
-      {{ end }}
-
-      Please get a kubeconfig file from your cloud provider and drag & drop it here:
-
-      <form method="post" enctype="multipart/form-data" action="/kubeconfig" class="d-flex flex-column gap-1 my-3">
-        <div id="dropzone" class="rounded border border-primary bg-body-secondary d-flex align-items-stretch"
-          ondrop="dropHandler(event)" ondragover="dragHandler(event)">
-          <label for="kubeconfig" style="cursor: pointer;" class="flex-grow-1 py-4 px-2 text-center">
-            <strong class="text-primary">Select a file</strong>
-            or drag & drop it here&hellip;
-          </label>
-          <input id="kubeconfig" name="kubeconfig" type="file" required class="visually-hidden"
-            onchange="changeHandler()">
+{{ define "body" }}
+  <div class="container">
+    <div class="row">
+      <div class="col-md-8 offset-md-2 col-lg-6 offset-lg-3">
+        <div class="text-center my-3">
+          <h1>You're almost there!</h1>
         </div>
-        <button id="submit-kubeconfig" type="submit" class="cta visually-hidden"></button>
-      </form>
 
-      <p>Alternatively, you can copy it to this location on your computer:</p>
-      <p class="text-center lead mb-3 font-monospace">{{ .KubeconfigDefaultLocation }}</p>
-      <p>
-        Afterwards, stop the Glasskube Server in your terminal with CTRL+C, and then restart it with
-        <code>glasskube serve</code>.
-      </p>
+        {{ if .Err.KubeconfigMissing }}
+          <p>
+            Glasskube did not find a
+            <a
+              href="https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/"
+              target="_blank">
+              kubeconfig
+            </a>
+            file in the default location!
+          </p>
+        {{ else if not .Err.BootstrapMissing }}
+          <p class="text-center">Unfortunately, there is an error with your kubeconfig:</p>
+          <div class="alert alert-danger mb-3 font-monospace">{{ .Err }}</div>
+        {{ end }}
 
-      <hr>
+        Please get a kubeconfig file from your cloud provider and drag & drop it here:
 
-      <small>
-        If you want to test Glasskube locally, check out
-        <a href="https://minikube.sigs.k8s.io/" target="_blank">minikube</a>.<br>
-        If you have any questions or encounter bugs, don't hesitate to reach out via
-        <a href="https://github.com/glasskube/glasskube" target="_blank">Github</a>
-        or <a href="https://discord.gg/SxH6KUCGH7" target="_blank">Discord</a>.
-      </small>
+        <form method="post" enctype="multipart/form-data" action="/kubeconfig" class="d-flex flex-column gap-1 my-3">
+          <div
+            id="dropzone"
+            class="rounded border border-primary bg-body-secondary d-flex align-items-stretch"
+            ondrop="dropHandler(event)"
+            ondragover="dragHandler(event)">
+            <label for="kubeconfig" style="cursor: pointer;" class="flex-grow-1 py-4 px-2 text-center">
+              <strong class="text-primary">Select a file</strong>
+              or drag & drop it here&hellip;
+            </label>
+            <input
+              id="kubeconfig"
+              name="kubeconfig"
+              type="file"
+              required
+              class="visually-hidden"
+              onchange="changeHandler()" />
+          </div>
+          <button id="submit-kubeconfig" type="submit" class="cta visually-hidden"></button>
+        </form>
+
+        <p>Alternatively, you can copy it to this location on your computer:</p>
+        <p class="text-center lead mb-3 font-monospace">
+          {{ .KubeconfigDefaultLocation }}
+        </p>
+        <p>
+          Afterwards, stop the Glasskube Server in your terminal with CTRL+C, and then restart it with
+          <code>glasskube serve</code>.
+        </p>
+
+        <hr />
+
+        <small>
+          If you want to test Glasskube locally, check out
+          <a href="https://minikube.sigs.k8s.io/" target="_blank">minikube</a>.<br />
+          If you have any questions or encounter bugs, don't hesitate to reach out via
+          <a href="https://github.com/glasskube/glasskube" target="_blank">Github</a>
+          or
+          <a href="https://discord.gg/SxH6KUCGH7" target="_blank">Discord</a>.
+        </small>
+      </div>
     </div>
   </div>
-</div>
 
-<script type="text/javascript">
-  /**
-   * @type {HTMLInputElement}
-   */
-  const kubeconfigInput = document.getElementById('kubeconfig');
-  /**
-   * @type {HTMLButtonElement}
-   */
-  const kubeconfigSubmit = document.getElementById('submit-kubeconfig');
-  /**
-   * @param {DragEvent} ev
-   */
-  function dragHandler(ev) { ev.preventDefault(); }
-  /**
-   * @param {DragEvent} ev
-   */
-  function dropHandler(ev) {
-    ev.preventDefault();
-    kubeconfigInput.files = ev.dataTransfer.files;
-    changeHandler();
-  }
-  function changeHandler() {
-    if (kubeconfigInput.files.length > 0) {
-      kubeconfigSubmit.innerText = `Use ${kubeconfigInput.files[0].name}`
-      kubeconfigSubmit.classList.remove('visually-hidden');
-    } else {
-      kubeconfigSubmit.classList.add('visually-hidden');
+  <script type="text/javascript">
+    /**
+     * @type {HTMLInputElement}
+     */
+    const kubeconfigInput = document.getElementById('kubeconfig');
+    /**
+     * @type {HTMLButtonElement}
+     */
+    const kubeconfigSubmit = document.getElementById('submit-kubeconfig');
+    /**
+     * @param {DragEvent} ev
+     */
+    function dragHandler(ev) {
+      ev.preventDefault();
     }
-  }
-</script>
-{{end}}
+    /**
+     * @param {DragEvent} ev
+     */
+    function dropHandler(ev) {
+      ev.preventDefault();
+      kubeconfigInput.files = ev.dataTransfer.files;
+      changeHandler();
+    }
+    function changeHandler() {
+      if (kubeconfigInput.files.length > 0) {
+        kubeconfigSubmit.innerText = `Use ${kubeconfigInput.files[0].name}`;
+        kubeconfigSubmit.classList.remove('visually-hidden');
+      } else {
+        kubeconfigSubmit.classList.add('visually-hidden');
+      }
+    }
+  </script>
+{{ end }}
