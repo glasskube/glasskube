@@ -13,6 +13,8 @@
     "htmx.org": "1.9.10"
   },
   "devDependencies": {
+    "@commitlint/cli": "19.0.3",
+    "@commitlint/config-conventional": "19.0.3",
     "esbuild": "0.20.1",
     "prettier": "3.2.5",
     "prettier-plugin-go-template": "0.0.15"
@@ -39,5 +41,18 @@
         }
       }
     ]
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ],
+    "rules": {
+      "body-max-line-length": [
+        2,
+        "always",
+        1000
+      ]
+    },
+    "defaultIgnores": false
   }
 }
