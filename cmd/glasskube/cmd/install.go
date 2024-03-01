@@ -33,6 +33,9 @@ var installCmd = &cobra.Command{
 		client := client.FromContext(ctx)
 		packageName := args[0]
 
+		// Instantiate installer
+		installer := install.NewInstaller(client).WithStatusWriter(statuswriter.Spinner())
+
 		if installCmdOptions.Version == "" && !installCmdOptions.EnableAutoUpdates {
 			fmt.Fprintf(os.Stderr, "Version not specified. The latest version of %v will be installed.\n", packageName)
 
@@ -62,38 +65,20 @@ var installCmd = &cobra.Command{
 			cancel()
 		}
 
-		// if --no-wait is used
+		// Non-blocking install if --no-wait is used
 		if installCmdOptions.NoWait {
 			go func() {
-				status, err := install.NewInstaller(client).
-					WithStatusWriter(statuswriter.Spinner()).
-					InstallBlocking(ctx, packageName, installCmdOptions.Version)
-
-				if err != nil {
+				if err := installer.Install(ctx, packageName, installCmdOptions.Version); err != nil {
 					fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
 					os.Exit(1)
 				}
-				if status != nil {
-					switch status.Status {
-					case string(condition.Ready):
-						fmt.Printf("✅ %v is now installed in %v.\n", packageName, config.CurrentContext)
-					default:
-						fmt.Printf("❌ %v installation has status %v, reason: %v\nMessage: %v\n",
-							packageName, status.Status, status.Reason, status.Message)
-					}
-				} else {
-					fmt.Fprintln(os.Stderr, "Installation status unknown - no error and no status have been observed (this is a bug).")
-					os.Exit(1)
-				}
+				fmt.Printf("Installation of %v started in the background.\n", packageName)
 			}()
-			fmt.Println("Installation started in background")
 			return
 		}
 
-		status, err := install.NewInstaller(client).
-			WithStatusWriter(statuswriter.Spinner()).
-			InstallBlocking(ctx, packageName, installCmdOptions.Version)
-
+		// Blocking install
+		status, err := installer.InstallBlocking(ctx, packageName, installCmdOptions.Version)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
 			os.Exit(1)
