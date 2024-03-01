@@ -65,35 +65,26 @@ var installCmd = &cobra.Command{
 			cancel()
 		}
 
-		// Non-blocking install if --no-wait is used
 		if installCmdOptions.NoWait {
-			go func() {
-				if err := installer.Install(ctx, packageName, installCmdOptions.Version); err != nil {
-					fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
-					os.Exit(1)
-				}
-				fmt.Printf("Installation of %v started in the background.\n", packageName)
-			}()
-			return
-		}
-
-		// Blocking install
-		status, err := installer.InstallBlocking(ctx, packageName, installCmdOptions.Version)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
-			os.Exit(1)
-		}
-		if status != nil {
-			switch status.Status {
-			case string(condition.Ready):
-				fmt.Printf("✅ %v is now installed in %v.\n", packageName, config.CurrentContext)
-			default:
-				fmt.Printf("❌ %v installation has status %v, reason: %v\nMessage: %v\n",
-					packageName, status.Status, status.Reason, status.Message)
-			}
+			installer.Install(ctx, packageName, installCmdOptions.Version)
 		} else {
-			fmt.Fprintln(os.Stderr, "Installation status unknown - no error and no status have been observed (this is a bug).")
-			os.Exit(1)
+			status, err := installer.InstallBlocking(ctx, packageName, installCmdOptions.Version)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
+				os.Exit(1)
+			}
+			if status != nil {
+				switch status.Status {
+				case string(condition.Ready):
+					fmt.Printf("✅ %v is now installed in %v.\n", packageName, config.CurrentContext)
+				default:
+					fmt.Printf("❌ %v installation has status %v, reason: %v\nMessage: %v\n",
+						packageName, status.Status, status.Reason, status.Message)
+				}
+			} else {
+				fmt.Fprintln(os.Stderr, "Installation status unknown - no error and no status have been observed (this is a bug).")
+				os.Exit(1)
+			}
 		}
 	},
 }
