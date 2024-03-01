@@ -66,7 +66,10 @@ var installCmd = &cobra.Command{
 		}
 
 		if installCmdOptions.NoWait {
-			installer.Install(ctx, packageName, installCmdOptions.Version)
+			if err := installer.Install(ctx, packageName, installCmdOptions.Version); err != nil {
+				fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
+				os.Exit(1)
+			}
 		} else {
 			status, err := installer.InstallBlocking(ctx, packageName, installCmdOptions.Version)
 			if err != nil {
