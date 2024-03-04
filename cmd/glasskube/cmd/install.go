@@ -70,6 +70,10 @@ var installCmd = &cobra.Command{
 				fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
 				os.Exit(1)
 			}
+			fmt.Fprintf(os.Stderr,
+				"☑️  %v is being installed in the background.\n"+
+					"💡 Run \"glasskube describe %v\" to get the current status",
+				packageName, packageName)
 		} else {
 			status, err := installer.InstallBlocking(ctx, packageName, installCmdOptions.Version)
 			if err != nil {
