@@ -24,6 +24,10 @@ jobs:
         with:
           node-version: "20.9"
           cache: npm
+      - uses: actions/cache@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
+        with:
+          path: bin
+          key: ${{ runner.os }}-${{ hashFiles('Makefile', 'go.mod', 'go.sum') }}
       - name: Install dependencies
         run: npm ci
       - run: make all
