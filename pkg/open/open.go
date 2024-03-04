@@ -198,7 +198,12 @@ func (o *opener) pod(ctx context.Context, service *corev1.Service) (*corev1.Pod,
 	if len(pods.Items) < 1 {
 		return nil, fmt.Errorf("no pod found for service %v", service.Name)
 	}
-	return &pods.Items[0], nil
+	for _, pod := range pods.Items {
+		if isPodReady(pod) {
+			return &pod, nil
+		}
+	}
+	return nil, fmt.Errorf("no ready pod found for service %v", service.Name)
 }
 
 func portMapping(service *corev1.Service, pod *corev1.Pod, entrypoint v1alpha1.PackageEntrypoint) (string, error) {
@@ -265,4 +270,13 @@ func getBrowserUrl(entrypoint v1alpha1.PackageEntrypoint) string {
 		url.Scheme = entrypoint.Scheme
 	}
 	return url.String()
+}
+
+func isPodReady(pod corev1.Pod) bool {
+	for _, c := range pod.Status.Conditions {
+		if c.Type == corev1.PodReady && c.Status == corev1.ConditionTrue {
+			return true
+		}
+	}
+	return false
 }
