@@ -10,6 +10,7 @@ import (
 	sourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/controller/owners"
+	"github.com/glasskube/glasskube/internal/controller/owners/utils"
 	"github.com/glasskube/glasskube/internal/manifest"
 	"github.com/glasskube/glasskube/internal/manifest/result"
 	corev1 "k8s.io/api/core/v1"
@@ -49,23 +50,45 @@ func (a *FluxHelmAdapter) ControllerInit(buildr *builder.Builder, client client.
 	return nil
 }
 
-func (a *FluxHelmAdapter) Reconcile(ctx context.Context, pkg *packagesv1alpha1.Package, manifest *packagesv1alpha1.PackageManifest) (*result.ReconcileResult, error) {
+func (a *FluxHelmAdapter) Reconcile(
+	ctx context.Context,
+	pkg *packagesv1alpha1.Package,
+	manifest *packagesv1alpha1.PackageManifest,
+) (*result.ReconcileResult, error) {
+	log := ctrl.LoggerFrom(ctx)
+	var ownedResources []packagesv1alpha1.OwnedResourceRef
 	if namespace, err := a.ensureNamespace(ctx, pkg, manifest); err != nil {
 		return nil, err
-	} else if namespace.Status.Phase == corev1.NamespaceTerminating {
-		return result.Waiting("Namespace is still terminating"), nil
+	} else {
+		if _, err := utils.AddOwnedResourceRef(a.Scheme(), &ownedResources, namespace); err != nil {
+			log.Error(err, "could not add Namespace to ownedResources")
+		}
+		if namespace.Status.Phase == corev1.NamespaceTerminating {
+			return result.Waiting("Namespace is still terminating", ownedResources), nil
+		}
 	}
-	if err := a.ensureHelmRepository(ctx, pkg, manifest); err != nil {
+	if helmRepository, err := a.ensureHelmRepository(ctx, pkg, manifest); err != nil {
 		return nil, err
+	} else {
+		if _, err := utils.AddOwnedResourceRef(a.Scheme(), &ownedResources, helmRepository); err != nil {
+			log.Error(err, "could not add HelmRepository to ownedResources")
+		}
 	}
 	if helmRelease, err := a.ensureHelmRelease(ctx, pkg, manifest); err != nil {
 		return nil, err
 	} else {
-		return extractResult(helmRelease), nil
+		if _, err := utils.AddOwnedResourceRef(a.Scheme(), &ownedResources, helmRelease); err != nil {
+			log.Error(err, "could not add HelmRelease to ownedResources")
+		}
+		return extractResult(helmRelease, ownedResources), nil
 	}
 }
 
-func (a *FluxHelmAdapter) ensureNamespace(ctx context.Context, pkg *packagesv1alpha1.Package, manifest *packagesv1alpha1.PackageManifest) (*corev1.Namespace, error) {
+func (a *FluxHelmAdapter) ensureNamespace(
+	ctx context.Context,
+	pkg *packagesv1alpha1.Package,
+	manifest *packagesv1alpha1.PackageManifest,
+) (*corev1.Namespace, error) {
 	namespace := corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: manifest.DefaultNamespace,
@@ -87,7 +110,11 @@ func (a *FluxHelmAdapter) ensureNamespace(ctx context.Context, pkg *packagesv1al
 	}
 }
 
-func (a *FluxHelmAdapter) ensureHelmRepository(ctx context.Context, pkg *packagesv1alpha1.Package, manifest *packagesv1alpha1.PackageManifest) error {
+func (a *FluxHelmAdapter) ensureHelmRepository(
+	ctx context.Context,
+	pkg *packagesv1alpha1.Package,
+	manifest *packagesv1alpha1.PackageManifest,
+) (*sourcev1beta2.HelmRepository, error) {
 	helmRepository := sourcev1beta2.HelmRepository{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      manifest.Name,
@@ -101,14 +128,18 @@ func (a *FluxHelmAdapter) ensureHelmRepository(ctx context.Context, pkg *package
 		return a.SetOwner(pkg, &helmRepository, owners.BlockOwnerDeletion)
 	})
 	if err != nil {
-		return fmt.Errorf("could not ensure helm repository: %w", err)
+		return nil, fmt.Errorf("could not ensure helm repository: %w", err)
 	} else {
 		log.V(1).Info("ensured HelmRepository", "result", result)
-		return err
+		return &helmRepository, nil
 	}
 }
 
-func (a *FluxHelmAdapter) ensureHelmRelease(ctx context.Context, pkg *packagesv1alpha1.Package, manifest *packagesv1alpha1.PackageManifest) (*helmv1beta2.HelmRelease, error) {
+func (a *FluxHelmAdapter) ensureHelmRelease(
+	ctx context.Context,
+	pkg *packagesv1alpha1.Package,
+	manifest *packagesv1alpha1.PackageManifest,
+) (*helmv1beta2.HelmRelease, error) {
 	helmRelease := helmv1beta2.HelmRelease{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      manifest.Name,
@@ -137,21 +168,27 @@ func (a *FluxHelmAdapter) ensureHelmRelease(ctx context.Context, pkg *packagesv1
 	}
 }
 
-func extractResult(helmRelease *helmv1beta2.HelmRelease) *result.ReconcileResult {
+func extractResult(
+	helmRelease *helmv1beta2.HelmRelease,
+	ownedResources []packagesv1alpha1.OwnedResourceRef,
+) *result.ReconcileResult {
 	if readyCondition := meta.FindStatusCondition(helmRelease.Status.Conditions, "Ready"); readyCondition != nil {
+		message := fmt.Sprintf("flux: %v", readyCondition.Message)
 		if readyCondition.Status == metav1.ConditionTrue {
-			return result.Ready("flux: " + readyCondition.Message)
+			// TODO: Add HelmRepository, HelmRelease to owned resources
+			return result.Ready(message, ownedResources)
 		} else if readyCondition.Status == metav1.ConditionFalse {
 			if strings.Contains(readyCondition.Message, "latest generation of object has not been reconciled") {
-				return result.Waiting("flux: " + readyCondition.Message)
+				return result.Waiting(message, ownedResources)
 			} else {
-				return result.Failed("flux: " + readyCondition.Message)
+				return result.Failed(message, ownedResources)
 			}
 		}
 	}
-	if reconcilingCondition := meta.FindStatusCondition(helmRelease.Status.Conditions, "Reconciling"); reconcilingCondition != nil {
-		return result.Waiting("flux: " + reconcilingCondition.Message)
+	reconcilingCondition := meta.FindStatusCondition(helmRelease.Status.Conditions, "Reconciling")
+	if reconcilingCondition != nil {
+		return result.Waiting("flux: "+reconcilingCondition.Message, ownedResources)
 	} else {
-		return result.Waiting("Waiting for HelmRelease reconciliation")
+		return result.Waiting("Waiting for HelmRelease reconciliation", ownedResources)
 	}
 }

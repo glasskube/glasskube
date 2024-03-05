@@ -35,6 +35,7 @@ import (
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/controller"
 	"github.com/glasskube/glasskube/internal/manifest/helm/flux"
+	"github.com/glasskube/glasskube/internal/manifest/plain"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -91,10 +92,11 @@ func main() {
 	}
 
 	if err = (&controller.PackageReconciler{
-		Client:        mgr.GetClient(),
-		EventRecorder: mgr.GetEventRecorderFor("package-controller"),
-		Scheme:        mgr.GetScheme(),
-		Helm:          flux.NewAdapter(),
+		Client:          mgr.GetClient(),
+		EventRecorder:   mgr.GetEventRecorderFor("package-controller"),
+		Scheme:          mgr.GetScheme(),
+		HelmAdapter:     flux.NewAdapter(),
+		ManifestAdapter: plain.NewAdapter(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Package")
 		os.Exit(1)

@@ -1,5 +1,7 @@
 package result
 
+import "github.com/glasskube/glasskube/api/v1alpha1"
+
 type resultKind int
 
 const (
@@ -9,20 +11,21 @@ const (
 )
 
 type ReconcileResult struct {
-	kind    resultKind
-	Message string
+	kind           resultKind
+	Message        string
+	OwnedResources []v1alpha1.OwnedResourceRef
 }
 
-func Ready(message string) *ReconcileResult {
-	return &ReconcileResult{kind: ready, Message: message}
+func Ready(message string, ownedResources []v1alpha1.OwnedResourceRef) *ReconcileResult {
+	return &ReconcileResult{kind: ready, Message: message, OwnedResources: ownedResources}
 }
 
-func Waiting(message string) *ReconcileResult {
-	return &ReconcileResult{kind: waiting, Message: message}
+func Waiting(message string, ownedResources []v1alpha1.OwnedResourceRef) *ReconcileResult {
+	return &ReconcileResult{kind: waiting, Message: message, OwnedResources: ownedResources}
 }
 
-func Failed(message string) *ReconcileResult {
-	return &ReconcileResult{kind: failed, Message: message}
+func Failed(message string, ownedResources []v1alpha1.OwnedResourceRef) *ReconcileResult {
+	return &ReconcileResult{kind: failed, Message: message, OwnedResources: ownedResources}
 }
 
 func (r *ReconcileResult) IsReady() bool {
