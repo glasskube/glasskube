@@ -19,7 +19,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/types"
@@ -36,12 +35,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/glasskube/glasskube/api/v1alpha1"
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
-	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/controller/conditions"
 	"github.com/glasskube/glasskube/internal/controller/owners"
+	ownerutils "github.com/glasskube/glasskube/internal/controller/owners/utils"
 	"github.com/glasskube/glasskube/internal/controller/requeue"
 	"github.com/glasskube/glasskube/internal/manifest"
+	"github.com/glasskube/glasskube/internal/manifest/result"
 	"github.com/glasskube/glasskube/pkg/condition"
 )
 
@@ -50,9 +51,10 @@ type PackageReconciler struct {
 	client.Client
 	record.EventRecorder
 	*owners.OwnerManager
-	Scheme    *runtime.Scheme
-	Helm      manifest.ManifestAdapter
-	Kustomize manifest.ManifestAdapter
+	Scheme           *runtime.Scheme
+	ManifestAdapter  manifest.ManifestAdapter
+	HelmAdapter      manifest.ManifestAdapter
+	KustomizeAdapter manifest.ManifestAdapter
 }
 
 //+kubebuilder:rbac:groups=packages.glasskube.dev,resources=packages,verbs=get;list;watch;create;update;patch;delete
@@ -73,7 +75,6 @@ type PackageReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.3/pkg/reconcile
 func (r *PackageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := ctrl.LoggerFrom(ctx)
 	var pkg packagesv1alpha1.Package
 
 	if err := r.Get(ctx, req.NamespacedName, &pkg); err != nil {
@@ -86,83 +87,151 @@ func (r *PackageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
-	packageInfo, changed, err := r.ensurePackageInfo(ctx, &pkg)
-	if err != nil {
+	return r.reconcilePackage(ctx, pkg)
+}
+
+func (r *PackageReconciler) reconcilePackage(ctx context.Context, pkg v1alpha1.Package) (ctrl.Result, error) {
+	return (&PackageReconcilationContext{PackageReconciler: r, pkg: &pkg}).reconcile(ctx)
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *PackageReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	if r.OwnerManager == nil {
+		r.OwnerManager = owners.NewOwnerManager(r.Scheme)
+	}
+	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&packagesv1alpha1.Package{})
+	for _, adapter := range []manifest.ManifestAdapter{r.HelmAdapter, r.KustomizeAdapter, r.ManifestAdapter} {
+		if adapter != nil {
+			if err := adapter.ControllerInit(controllerBuilder, r.Client, r.Scheme); err != nil {
+				return err
+			}
+		}
+	}
+	return controllerBuilder.
+		Owns(&packagesv1alpha1.PackageInfo{}, builder.MatchEveryOwner).
+		Owns(&packagesv1alpha1.Package{}, builder.MatchEveryOwner).
+		Complete(r)
+}
+
+type PackageReconcilationContext struct {
+	*PackageReconciler
+	pkg                   *v1alpha1.Package
+	pi                    *v1alpha1.PackageInfo
+	isSuccess             bool
+	shouldUpdateStatus    bool
+	currentOwnedResources []v1alpha1.OwnedResourceRef
+}
+
+func (r *PackageReconcilationContext) setShouldUpdate(value bool) {
+	r.shouldUpdateStatus = r.shouldUpdateStatus || value
+}
+
+func (r *PackageReconcilationContext) reconcile(ctx context.Context) (ctrl.Result, error) {
+	log := ctrl.LoggerFrom(ctx)
+	if err := r.ensurePackageInfo(ctx); err != nil {
 		return requeue.Always(ctx, err)
 	}
-	if changed {
-		if err := r.Status().Update(ctx, &pkg); err != nil {
-			return requeue.Always(ctx, err)
-		}
-	}
 
-	if meta.IsStatusConditionTrue(packageInfo.Status.Conditions, string(condition.Ready)) {
-		log.V(1).Info("PackageInfo is ready", "packageInfo", packageInfo.Name)
-		piManifest := packageInfo.Status.Manifest
-		if piManifest == nil {
-			err := conditions.SetFailedAndUpdate(ctx, r.Client, r.EventRecorder, &pkg, &pkg.Status.Conditions, condition.UnsupportedFormat, "manifest must not be nil")
-			return requeue.Always(ctx, err)
-		}
-
-		if result, err, dependenciesReady := r.ensureDependencies(ctx, req, piManifest, pkg); !dependenciesReady {
-			return result, err
-		}
-
-		if len(piManifest.Manifests) > 0 {
-			err := r.reconcilePlainManifests(ctx, &pkg, *packageInfo, piManifest)
-			return requeue.Always(ctx, err)
-		} else if piManifest.Helm != nil {
-			if r.Helm != nil {
-				err := r.reconcileManifestWithAdapter(ctx, r.Helm, pkg, *packageInfo, piManifest)
-				return requeue.Always(ctx, err)
-			} else {
-				err := conditions.SetFailedAndUpdate(ctx, r.Client, r.EventRecorder, &pkg, &pkg.Status.Conditions, condition.UnsupportedFormat, "helm manifest not supported")
-				return requeue.Always(ctx, err)
-			}
-		} else if piManifest.Kustomize != nil {
-			if r.Kustomize != nil {
-				err := r.reconcileManifestWithAdapter(ctx, r.Kustomize, pkg, *packageInfo, piManifest)
-				return requeue.Always(ctx, err)
-			} else {
-				err := conditions.SetFailedAndUpdate(ctx, r.Client, r.EventRecorder, &pkg, &pkg.Status.Conditions, condition.UnsupportedFormat, "kustomize manifest not supported")
-				return requeue.Always(ctx, err)
-			}
-		} else {
-			err := r.afterSuccess(ctx, &pkg, *packageInfo, []packagesv1alpha1.OwnedResourceRef{}, condition.UpToDate, "PackageInfo has nothing to apply (no helm or kustomize manifest present)")
-			return requeue.Always(ctx, err)
-		}
-	} else if meta.IsStatusConditionFalse(packageInfo.Status.Conditions, string(condition.Ready)) {
-		packageInfoCondition := meta.FindStatusCondition(packageInfo.Status.Conditions, string(condition.Ready))
-		err := conditions.SetFailedAndUpdate(ctx, r.Client, r.EventRecorder, &pkg, &pkg.Status.Conditions, condition.Reason(packageInfoCondition.Reason), packageInfoCondition.Message)
-		return requeue.Always(ctx, err)
+	if meta.IsStatusConditionTrue(r.pi.Status.Conditions, string(condition.Ready)) {
+		log.V(1).Info("PackageInfo is ready", "packageInfo", r.pi.Name)
+		return r.reconcilePackageInfoReady(ctx)
+	} else if meta.IsStatusConditionFalse(r.pi.Status.Conditions, string(condition.Ready)) {
+		packageInfoCondition := meta.FindStatusCondition(r.pi.Status.Conditions, string(condition.Ready))
+		r.setShouldUpdate(
+			conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.Status.Conditions,
+				condition.Reason(packageInfoCondition.Reason), packageInfoCondition.Message))
+		return r.finalize(ctx)
 	} else {
-		err := conditions.SetUnknownAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.Pending, "PackageInfo status is unknown")
-		return requeue.Always(ctx, err)
+		r.setShouldUpdate(
+			conditions.SetUnknown(ctx, &r.pkg.Status.Conditions, condition.Pending, "PackageInfo status is unknown"))
+		return r.finalize(ctx)
 	}
 }
 
-func (r *PackageReconciler) ensureDependencies(
-	ctx context.Context,
-	req ctrl.Request,
-	piManifest *packagesv1alpha1.PackageManifest,
-	pkg packagesv1alpha1.Package,
-) (ctrl.Result, error, bool) {
+func (r *PackageReconcilationContext) reconcilePackageInfoReady(ctx context.Context) (ctrl.Result, error) {
+	piManifest := r.pi.Status.Manifest
+	if piManifest == nil {
+		r.setShouldUpdate(
+			conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.Status.Conditions,
+				condition.UnsupportedFormat, "manifest must not be nil"))
+		return r.finalizeNoRequeue(ctx)
+	}
+
+	if !r.ensureDependencies(ctx) {
+		return r.finalize(ctx)
+	}
+
+	// First, collect the adapters for all included manifests and ensure that they are supported.
+	// If one manifest type is not supported, no action must be performed!
+
+	var adaptersToRun []manifest.ManifestAdapter
+	if len(piManifest.Manifests) > 0 {
+		if r.ManifestAdapter == nil {
+			r.setShouldUpdate(
+				conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.Status.Conditions,
+					condition.UnsupportedFormat, "manifests not supported"))
+			return r.finalizeNoRequeue(ctx)
+		}
+		adaptersToRun = append(adaptersToRun, r.ManifestAdapter)
+	}
+	if piManifest.Kustomize != nil {
+		if r.KustomizeAdapter == nil {
+			r.setShouldUpdate(
+				conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.Status.Conditions,
+					condition.UnsupportedFormat, "kustomize not supported"))
+			return r.finalizeNoRequeue(ctx)
+		}
+		adaptersToRun = append(adaptersToRun, r.KustomizeAdapter)
+	}
+	if piManifest.Helm != nil {
+		if r.HelmAdapter == nil {
+			r.setShouldUpdate(
+				conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.Status.Conditions,
+					condition.UnsupportedFormat, "helm not supported"))
+			return r.finalizeNoRequeue(ctx)
+		}
+		adaptersToRun = append(adaptersToRun, r.HelmAdapter)
+	}
+
+	results := make([]result.ReconcileResult, 0, len(adaptersToRun))
+	var errs error
+	for _, adapter := range adaptersToRun {
+		if result, err := adapter.Reconcile(ctx, r.pkg, piManifest); err != nil {
+			errs = multierr.Append(errs, err)
+		} else {
+			results = append(results, *result)
+			ownerutils.Add(&r.currentOwnedResources, result.OwnedResources...)
+		}
+	}
+
+	if errs != nil {
+		r.setShouldUpdate(
+			conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.Status.Conditions,
+				condition.InstallationFailed, errs.Error()))
+		return r.finalizeWithError(ctx, errs)
+	} else if !r.handleAdapterResults(ctx, results) {
+		return r.finalize(ctx)
+	} else {
+		r.afterSuccess(ctx, results)
+		return r.finalize(ctx)
+	}
+}
+
+func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bool {
 	log := ctrl.LoggerFrom(ctx)
+	piManifest := r.pi.Status.Manifest
 	if len(piManifest.Dependencies) > 0 {
 		log.V(1).Info("ensuring dependencies", "dependencies", piManifest.Dependencies)
 		var waitingFor []string
 		var failed []string
 		for _, dep := range piManifest.Dependencies {
 			var requiredPkg packagesv1alpha1.Package
-			if err := r.Get(ctx, types.NamespacedName{
-				Namespace: req.Namespace,
-				Name:      dep.Name,
-			}, &requiredPkg); err != nil {
+			if err := r.Get(ctx, types.NamespacedName{Name: dep.Name}, &requiredPkg); err != nil {
 				if apierrors.IsNotFound(err) {
 					log.V(1).Info("Dependency not installed yet", "required", dep.Name)
-					newPkg := r.requiredPackage(&pkg, dep)
+					newPkg := r.requiredPackage(r.pkg, dep)
 					if _, err := controllerutil.CreateOrUpdate(ctx, r.Client, newPkg, func() error {
-						if err := r.SetOwner(&pkg, newPkg, owners.BlockOwnerDeletion); err != nil {
+						if err := r.SetOwner(r.pkg, newPkg, owners.BlockOwnerDeletion); err != nil {
 							return fmt.Errorf("unable to set ownerReference on required package: %w", err)
 						}
 						return nil
@@ -178,19 +247,21 @@ func (r *PackageReconciler) ensureDependencies(
 				}
 			} else {
 				// if the required package already exists, we set the owner reference if
-				// * there already exists another package owner reference (i.e. it has been installed as dependency of another package)
+				// * there already exists another package owner reference (i.e. it has been installed as dependency of
+				//	 another package)
 				// * but NOT if there exists no other package owner reference (i.e. it has been installed manually)
-				if ok, err := r.HasAnyOwnerOfType(&pkg, &requiredPkg); err != nil || ok {
+				if ok, err := r.HasAnyOwnerOfType(r.pkg, &requiredPkg); err != nil || ok {
 					if err != nil {
-						log.Error(err, "Failed to check for owner references", "owner", pkg.Name, "owned", requiredPkg.Name)
+						log.Error(err, "Failed to check for owner references", "owner", r.pkg.Name, "owned", requiredPkg.Name)
 					}
-					log.Info("Updating existing required package with new owner reference", "owner", pkg.Name, "owned", requiredPkg.Name)
-					if err := r.SetOwner(&pkg, &requiredPkg, owners.BlockOwnerDeletion); err != nil {
-						log.Error(err, "Failed to set owner reference", "owner", pkg.Name, "owned", requiredPkg.Name)
+					log.Info("Updating existing required package with new owner reference",
+						"owner", r.pkg.Name, "owned", requiredPkg.Name)
+					if err := r.SetOwner(r.pkg, &requiredPkg, owners.BlockOwnerDeletion); err != nil {
+						log.Error(err, "Failed to set owner reference", "owner", r.pkg.Name, "owned", requiredPkg.Name)
 						failed = append(failed, dep.Name)
 					}
 					if err := r.Update(ctx, &requiredPkg); err != nil {
-						log.Error(err, "Failed to updated required package", "owner", pkg.Name, "owned", requiredPkg.Name)
+						log.Error(err, "Failed to updated required package", "owner", r.pkg.Name, "owned", requiredPkg.Name)
 						failed = append(failed, dep.Name)
 					}
 				}
@@ -204,22 +275,25 @@ func (r *PackageReconciler) ensureDependencies(
 		}
 
 		if len(failed) > 0 {
-			err := conditions.SetFailedAndUpdate(ctx, r.Client, r.EventRecorder, &pkg, &pkg.Status.Conditions,
-				condition.InstallationFailed, fmt.Sprintf("required package(s) not installed: %v", strings.Join(failed, ",")))
-			r, err := requeue.Always(ctx, err)
-			return r, err, false
+			message := fmt.Sprintf("required package(s) not installed: %v", strings.Join(failed, ","))
+			r.setShouldUpdate(
+				conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.Status.Conditions, condition.InstallationFailed, message))
+			return false
 		} else if len(waitingFor) > 0 {
-			err := conditions.SetUnknownAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions,
-				condition.Pending, fmt.Sprintf("waiting for required package(s) %v", strings.Join(waitingFor, ",")))
-			r, err := requeue.Always(ctx, err)
-			return r, err, false
+			message := fmt.Sprintf("waiting for required package(s) %v", strings.Join(waitingFor, ","))
+			r.setShouldUpdate(
+				conditions.SetUnknown(ctx, &r.pkg.Status.Conditions, condition.Pending, message))
+			return false
 		}
 		log.V(1).Info("ensured dependencies", "dependencies", piManifest.Dependencies)
 	}
-	return ctrl.Result{}, nil, true
+	return true
 }
 
-func (r *PackageReconciler) requiredPackage(pkg *packagesv1alpha1.Package, dep packagesv1alpha1.Dependency) *packagesv1alpha1.Package {
+func (r *PackageReconciler) requiredPackage(
+	pkg *packagesv1alpha1.Package,
+	dep packagesv1alpha1.Dependency,
+) *packagesv1alpha1.Package {
 	return &packagesv1alpha1.Package{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      dep.Name,
@@ -234,26 +308,26 @@ func (r *PackageReconciler) requiredPackage(pkg *packagesv1alpha1.Package, dep p
 	}
 }
 
-func (r *PackageReconciler) ensurePackageInfo(ctx context.Context, pkg *packagesv1alpha1.Package) (*packagesv1alpha1.PackageInfo, bool, error) {
+func (r *PackageReconcilationContext) ensurePackageInfo(ctx context.Context) error {
 	packageInfo := packagesv1alpha1.PackageInfo{
-		ObjectMeta: metav1.ObjectMeta{Name: generatePackageInfoName(*pkg)},
+		ObjectMeta: metav1.ObjectMeta{Name: generatePackageInfoName(*r.pkg)},
 	}
 	log := ctrl.LoggerFrom(ctx).WithValues("PackageInfo", packageInfo.Name)
 
 	log.V(1).Info("ensuring PackageInfo")
 	result, err := controllerutil.CreateOrUpdate(ctx, r.Client, &packageInfo, func() error {
-		if err := r.SetOwner(pkg, &packageInfo, owners.BlockOwnerDeletion); err != nil {
+		if err := r.SetOwner(r.pkg, &packageInfo, owners.BlockOwnerDeletion); err != nil {
 			return fmt.Errorf("unable to set ownerReference on PackageInfo: %w", err)
 		}
 		packageInfo.Spec = packagesv1alpha1.PackageInfoSpec{
-			Name:          pkg.Spec.PackageInfo.Name,
-			Version:       pkg.Spec.PackageInfo.Version,
-			RepositoryUrl: pkg.Spec.PackageInfo.RepositoryUrl,
+			Name:          r.pkg.Spec.PackageInfo.Name,
+			Version:       r.pkg.Spec.PackageInfo.Version,
+			RepositoryUrl: r.pkg.Spec.PackageInfo.RepositoryUrl,
 		}
 		return nil
 	})
 	if err != nil {
-		return nil, false, fmt.Errorf("could not create or update PackageInfo: %w", err)
+		return fmt.Errorf("could not create or update PackageInfo: %w", err)
 	}
 
 	log.V(1).Info("ensured PackageInfo", "result", result)
@@ -266,12 +340,18 @@ func (r *PackageReconciler) ensurePackageInfo(ctx context.Context, pkg *packages
 			return r.Get(ctx, client.ObjectKeyFromObject(&packageInfo), &packageInfo)
 		})
 		if err != nil {
-			return nil, false, err
+			return err
 		}
 	}
 
-	changed := addOwnedResourceRef(&pkg.Status.OwnedPackageInfos, &packageInfo, &packageInfo)
-	return &packageInfo, changed, nil
+	if changed, err := ownerutils.AddOwnedResourceRef(r.Scheme, &r.pkg.Status.OwnedPackageInfos, &packageInfo); err != nil {
+		log.Error(err, "could not add PackageInfo to owned resources")
+	} else {
+		r.setShouldUpdate(changed)
+	}
+
+	r.pi = &packageInfo
+	return nil
 }
 
 func generatePackageInfoName(pkg packagesv1alpha1.Package) string {
@@ -282,125 +362,142 @@ func generatePackageInfoName(pkg packagesv1alpha1.Package) string {
 	}
 }
 
-func (r *PackageReconciler) reconcileManifestWithAdapter(ctx context.Context, adapter manifest.ManifestAdapter, pkg packagesv1alpha1.Package, packageInfo packagesv1alpha1.PackageInfo, piManifest *packagesv1alpha1.PackageManifest) error {
-	if result, err := adapter.Reconcile(ctx, &pkg, piManifest); err != nil {
-		log := ctrl.LoggerFrom(ctx)
-		log.Error(err, "could reconcile manifest")
-		return conditions.SetFailedAndUpdate(ctx, r.Client, r.EventRecorder, &pkg, &pkg.Status.Conditions, condition.UnsupportedFormat, "error during manifest reconciliation: "+err.Error())
-	} else if result.IsReady() {
-		return r.afterSuccess(ctx, &pkg, packageInfo, []packagesv1alpha1.OwnedResourceRef{}, condition.InstallationSucceeded, result.Message)
-	} else if result.IsWaiting() {
-		return conditions.SetUnknownAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.Pending, result.Message)
-	} else if result.IsFailed() {
-		return conditions.SetFailedAndUpdate(ctx, r.Client, r.EventRecorder, &pkg, &pkg.Status.Conditions, condition.InstallationFailed, result.Message)
+func (r *PackageReconcilationContext) handleAdapterResults(ctx context.Context, results []result.ReconcileResult) bool {
+	var firstFailed *result.ReconcileResult
+	var firstWaiting *result.ReconcileResult
+	for i, result := range results {
+		if result.IsFailed() && firstFailed == nil {
+			firstFailed = &results[i]
+		} else if result.IsWaiting() && firstWaiting == nil {
+			firstWaiting = &results[i]
+		}
+	}
+
+	if firstFailed != nil {
+		r.setShouldUpdate(
+			conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.Status.Conditions,
+				condition.InstallationFailed, firstFailed.Message))
+		return false
+	} else if firstWaiting != nil {
+		r.setShouldUpdate(
+			conditions.SetUnknown(ctx, &r.pkg.Status.Conditions, condition.Pending, firstWaiting.Message))
+		return false
 	} else {
-		return conditions.SetUnknownAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions, condition.UnsupportedFormat, result.Message)
+		return true
 	}
 }
 
-func (r *PackageReconciler) reconcilePlainManifests(ctx context.Context, pkg *packagesv1alpha1.Package, packageInfo packagesv1alpha1.PackageInfo, manifest *packagesv1alpha1.PackageManifest) error {
-	allOwned := make([]packagesv1alpha1.OwnedResourceRef, 0)
-	for _, m := range manifest.Manifests {
-		if owned, err := r.reconcilePlainManifest(ctx, *pkg, m); err != nil {
-			return conditions.SetFailedAndUpdate(ctx, r.Client, r.EventRecorder, pkg, &pkg.Status.Conditions, condition.InstallationFailed, err.Error())
+func (r *PackageReconcilationContext) afterSuccess(ctx context.Context, results []result.ReconcileResult) {
+	reason := condition.UpToDate
+	message := "PackageInfo has nothing to apply (no helm or kustomize manifest present)"
+	if len(results) > 0 {
+		messages := make([]string, 0, len(results))
+		for _, result := range results {
+			messages = append(messages, result.Message)
+		}
+		reason = condition.InstallationSucceeded
+		message = strings.Join(messages, "\n")
+	}
+
+	r.setShouldUpdate(
+		conditions.SetReady(ctx, r.EventRecorder, r.pkg, &r.pkg.Status.Conditions, reason, message))
+	r.setShouldUpdate(r.pkg.Status.Version != r.pi.Status.Version)
+	r.pkg.Status.Version = r.pi.Status.Version
+	r.isSuccess = true
+}
+
+func (r *PackageReconcilationContext) finalize(ctx context.Context) (ctrl.Result, error) {
+	return requeue.Always(ctx, r.actualFinalize(ctx))
+}
+
+func (r *PackageReconcilationContext) finalizeNoRequeue(ctx context.Context) (ctrl.Result, error) {
+	return requeue.OnError(ctx, r.actualFinalize(ctx))
+}
+
+func (r *PackageReconcilationContext) finalizeWithError(ctx context.Context, err error) (ctrl.Result, error) {
+	return requeue.Always(ctx, multierr.Append(err, r.actualFinalize(ctx)))
+}
+
+func (r *PackageReconcilationContext) actualFinalize(ctx context.Context) error {
+	log := ctrl.LoggerFrom(ctx)
+
+	r.setShouldUpdate(ownerutils.Add(&r.pkg.Status.OwnedResources, r.currentOwnedResources...))
+
+	var errs error
+	if r.isSuccess {
+		if err := r.cleanup(ctx); err != nil {
+			r.setShouldUpdate(
+				conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.Status.Conditions,
+					condition.InstallationFailed, fmt.Sprintf("cleanup failed: %v", err)))
+			errs = multierr.Append(errs, err)
+		}
+		log.V(1).Info("cleanup done")
+	}
+
+	if r.shouldUpdateStatus {
+		err := r.Status().Update(ctx, r.pkg)
+		if err != nil {
+			log.Error(err, "package status update failed")
 		} else {
-			allOwned = append(allOwned, owned...)
+			log.Info("package status updated")
 		}
+		errs = multierr.Append(errs, err)
 	}
-
-	return r.afterSuccess(ctx, pkg, packageInfo, allOwned, condition.InstallationSucceeded, "all manifests reconciled")
+	return errs
 }
 
-func (r *PackageReconciler) reconcilePlainManifest(ctx context.Context, pkg packagesv1alpha1.Package, manifest packagesv1alpha1.PlainManifest) ([]packagesv1alpha1.OwnedResourceRef, error) {
+func (r *PackageReconcilationContext) cleanup(ctx context.Context) error {
+	return multierr.Combine(
+		r.pruneOwnedResources(ctx),
+		r.pruneOwnedPackageInfos(ctx),
+	)
+}
+
+func (r *PackageReconcilationContext) pruneOwnedResources(ctx context.Context) error {
 	log := ctrl.LoggerFrom(ctx)
-	objectsToApply, err := clientutils.FetchResources(manifest.Url)
-	if err != nil {
-		return nil, err
-	}
-	log.V(1).Info("fetched "+manifest.Url, "objectCount", len(*objectsToApply))
-
-	ownedResources := make([]packagesv1alpha1.OwnedResourceRef, 0, len(*objectsToApply))
-
-	// TODO: check if namespace is terminating before applying
-
-	for _, obj := range *objectsToApply {
-		if err := r.SetOwner(&pkg, &obj, owners.BlockOwnerDeletion); err != nil {
-			return nil, fmt.Errorf("could set owner reference: %w", err)
-		}
-		if err := r.Patch(ctx, &obj, client.Apply, client.FieldOwner("packages.glasskube.dev/package-controller"), client.ForceOwnership); err != nil {
-			return nil, fmt.Errorf("could not apply resource: %w", err)
-		}
-		log.V(1).Info("applied resource", "kind", obj.GroupVersionKind(), "namespace", obj.GetNamespace(), "name", obj.GetName())
-		addOwnedResourceRef(&ownedResources, &obj, &obj)
-	}
-	return ownedResources, nil
-}
-
-func (r *PackageReconciler) afterSuccess(ctx context.Context, pkg *packagesv1alpha1.Package, packageInfo packagesv1alpha1.PackageInfo, newOwnedResources []packagesv1alpha1.OwnedResourceRef, reason condition.Reason, message string) error {
-	if err := r.pruneOwnedResources(ctx, pkg, newOwnedResources); err != nil {
-		return conditions.SetFailedAndUpdate(ctx, r.Client, r.EventRecorder, pkg, &pkg.Status.Conditions, condition.InstallationFailed, err.Error())
-	}
-	ownedResourcesChanged := !slices.Equal(pkg.Status.OwnedResources, newOwnedResources)
-	if ownedResourcesChanged {
-		pkg.Status.OwnedResources = newOwnedResources[:]
-	}
-
-	ownedPackageInfosChanged, err := r.pruneOwnedPackageInfos(ctx, pkg, packageInfo)
-	if err != nil {
-		return conditions.SetFailedAndUpdate(ctx, r.Client, r.EventRecorder, pkg, &pkg.Status.Conditions, condition.InstallationFailed, err.Error())
-	}
-
-	conditionsChanged := conditions.SetReady(ctx, r.EventRecorder, pkg, &pkg.Status.Conditions, reason, message)
-
-	pkg.Status.Version = packageInfo.Status.Version
-
-	if ownedPackageInfosChanged || ownedResourcesChanged || conditionsChanged {
-		return r.Status().Update(ctx, pkg)
-	}
-
-	return nil
-}
-
-func (r *PackageReconciler) pruneOwnedResources(ctx context.Context, pkg *packagesv1alpha1.Package, newOwnedResources []packagesv1alpha1.OwnedResourceRef) error {
-	log := ctrl.LoggerFrom(ctx)
-
+	var errs error
+	ownedResourcesCopy := r.pkg.Status.OwnedResources[:]
 OuterLoop:
-	for _, ref := range pkg.Status.OwnedResources {
-		for _, newRef := range newOwnedResources {
-			if refersToSameResource(ref, newRef) {
+	for _, ref := range r.pkg.Status.OwnedResources {
+		for _, newRef := range r.currentOwnedResources {
+			if ownerutils.RefersToSameResource(ref, newRef) {
 				continue OuterLoop
 			}
 		}
-		if err := r.Delete(ctx, ownedResourceRefToObject(ref)); err != nil {
-			if !apierrors.IsNotFound(err) {
-				return fmt.Errorf("could not prune resource: %w", err)
-			}
+		if err := r.Delete(ctx, ownerutils.OwnedResourceRefToObject(ref)); err != nil && !apierrors.IsNotFound(err) {
+			errs = multierr.Append(errs, fmt.Errorf("could not prune resource: %w", err))
+		} else {
+			log.V(1).Info("pruned resource", "reference", ref)
+			r.setShouldUpdate(ownerutils.Remove(&ownedResourcesCopy, ref))
 		}
-		log.V(1).Info("pruned resource", "reference", ref)
 	}
-	return nil
+	r.pkg.Status.OwnedResources = ownedResourcesCopy
+	return errs
 }
 
-func (r *PackageReconciler) pruneOwnedPackageInfos(ctx context.Context, pkg *packagesv1alpha1.Package, current packagesv1alpha1.PackageInfo) (bool, error) {
+func (r *PackageReconcilationContext) pruneOwnedPackageInfos(ctx context.Context) error {
 	log := ctrl.LoggerFrom(ctx)
-	currentRef := toOwnedResourceRef(&current, &current)
+	currentRef, err := ownerutils.ToOwnedResourceRef(r.Scheme, r.pi)
+	if err != nil {
+		return err
+	}
 	var compositeErr error
-	changed := false
-	for _, ref := range pkg.Status.OwnedPackageInfos {
-		if !refersToSameResource(ref, currentRef) {
+	for _, ref := range r.pkg.Status.OwnedPackageInfos {
+		if !ownerutils.RefersToSameResource(ref, currentRef) {
 			var packageInfo packagesv1alpha1.PackageInfo
-			if err := r.Get(ctx, client.ObjectKeyFromObject(ownedResourceRefToObject(ref)), &packageInfo); apierrors.IsNotFound(err) {
+			key := client.ObjectKeyFromObject(ownerutils.OwnedResourceRefToObject(ref))
+			if err := r.Get(ctx, key, &packageInfo); apierrors.IsNotFound(err) {
 				log.Info("PackageInfo not found", "PackageInfo", ref.Name)
 			} else if err != nil {
 				compositeErr = multierr.Append(compositeErr, err)
 				continue
 			} else {
-				if owned, err := objHasOwner(&packageInfo, pkg); err != nil {
+				if owned, err := ownerutils.ObjHasOwner(&packageInfo, r.pkg); err != nil {
 					compositeErr = multierr.Append(compositeErr, err)
 					continue
 				} else if owned {
 					// Remove the owner reference for pkg
-					if err := controllerutil.RemoveOwnerReference(pkg, &packageInfo, r.Scheme); err != nil {
+					if err := controllerutil.RemoveOwnerReference(r.pkg, &packageInfo, r.Scheme); err != nil {
 						compositeErr = multierr.Append(compositeErr, err)
 						continue
 					}
@@ -423,31 +520,9 @@ func (r *PackageReconciler) pruneOwnedPackageInfos(ctx context.Context, pkg *pac
 			}
 
 			// Remove the PackageInfo from the owned PackageInfos field of pkg
-			removeOwnedResourceRef(&pkg.Status.OwnedPackageInfos, ref)
-			changed = true
+			ownerutils.RemoveOwnedResourceRef(&r.pkg.Status.OwnedPackageInfos, ref)
+			r.setShouldUpdate(true)
 		}
 	}
-	return changed, compositeErr
-}
-
-// SetupWithManager sets up the controller with the Manager.
-func (r *PackageReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	if r.OwnerManager == nil {
-		r.OwnerManager = owners.NewOwnerManager(r.Scheme)
-	}
-	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&packagesv1alpha1.Package{})
-	if r.Helm != nil {
-		if err := r.Helm.ControllerInit(controllerBuilder, r.Client, r.Scheme); err != nil {
-			return err
-		}
-	}
-	if r.Kustomize != nil {
-		if err := r.Kustomize.ControllerInit(controllerBuilder, r.Client, r.Scheme); err != nil {
-			return err
-		}
-	}
-	return controllerBuilder.
-		Owns(&packagesv1alpha1.PackageInfo{}, builder.MatchEveryOwner).
-		Owns(&packagesv1alpha1.Package{}, builder.MatchEveryOwner).
-		Complete(r)
+	return compositeErr
 }

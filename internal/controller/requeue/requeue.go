@@ -17,10 +17,20 @@ func Always(ctx context.Context, err error) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
 	if err != nil {
 		log.Error(err, "error during reconciliation")
-		return requeueAfter(ErrorRequeueDuration), nil
+		return ctrl.Result{}, err
 	}
 	log.V(1).Info("reconciliation finished")
 	return requeueAfter(RequeueDuration), nil
+}
+
+func OnError(ctx context.Context, err error) (ctrl.Result, error) {
+	log := log.FromContext(ctx)
+	if err != nil {
+		log.Error(err, "error during reconciliation")
+	} else {
+		log.V(1).Info("reconciliation finished")
+	}
+	return ctrl.Result{}, err
 }
 
 func requeueAfter(duration time.Duration) ctrl.Result {
