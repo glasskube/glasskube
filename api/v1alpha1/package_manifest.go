@@ -47,6 +47,10 @@ type PackageEntrypoint struct {
 
 type PlainManifest struct {
 	Url string `json:"url" jsonschema:"required"`
+	// DefaultNamespace, if set to a non-empty string, is used for resources that are of a namespaced
+	// kind and do not have a namespace set.
+	// If at least one such a resource exists, the namespace is created implicitly.
+	DefaultNamespace string `json:"defaultNamespace,omitempty"`
 }
 
 type PackageReference struct {
