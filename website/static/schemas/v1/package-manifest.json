@@ -94,6 +94,9 @@
       "properties": {
         "url": {
           "type": "string"
+        },
+        "defaultNamespace": {
+          "type": "string"
         }
       },
       "additionalProperties": false,

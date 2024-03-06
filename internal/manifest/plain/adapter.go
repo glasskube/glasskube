@@ -10,7 +10,10 @@ import (
 	ownerutils "github.com/glasskube/glasskube/internal/controller/owners/utils"
 	"github.com/glasskube/glasskube/internal/manifest"
 	"github.com/glasskube/glasskube/internal/manifest/result"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -21,6 +24,7 @@ var fieldOwner = client.FieldOwner("packages.glasskube.dev/package-controller")
 type Adapter struct {
 	client.Client
 	*owners.OwnerManager
+	namespaceGVK schema.GroupVersionKind
 }
 
 func NewAdapter() manifest.ManifestAdapter {
@@ -33,6 +37,11 @@ func (a *Adapter) ControllerInit(builder *builder.Builder, client client.Client,
 		a.OwnerManager = owners.NewOwnerManager(scheme)
 	}
 	a.Client = client
+	if nsGVK, err := client.GroupVersionKindFor(&corev1.Namespace{}); err != nil {
+		return err
+	} else {
+		a.namespaceGVK = nsGVK
+	}
 	return nil
 }
 
@@ -44,7 +53,7 @@ func (a *Adapter) Reconcile(
 ) (*result.ReconcileResult, error) {
 	var allOwned []packagesv1alpha1.OwnedResourceRef
 	for _, m := range manifest.Manifests {
-		if owned, err := a.reconcilePlainManifest(ctx, *pkg, m); err != nil {
+		if owned, err := a.reconcilePlainManifest(ctx, *pkg, *manifest, m); err != nil {
 			return nil, err
 		} else {
 			allOwned = append(allOwned, owned...)
@@ -56,29 +65,81 @@ func (a *Adapter) Reconcile(
 func (r *Adapter) reconcilePlainManifest(
 	ctx context.Context,
 	pkg packagesv1alpha1.Package,
+	pkgManifest packagesv1alpha1.PackageManifest,
 	manifest packagesv1alpha1.PlainManifest,
 ) ([]packagesv1alpha1.OwnedResourceRef, error) {
 	log := ctrl.LoggerFrom(ctx)
-	objectsToApply, err := clientutils.FetchResources(manifest.Url)
-	if err != nil {
+	var objectsToApply []client.Object
+	if unstructured, err := clientutils.FetchResources(manifest.Url); err != nil {
 		return nil, err
+	} else {
+		// Unstructured implements client.Object but we need it as a reference so the interface is fulfilled.
+		objectsToApply = make([]client.Object, len(*unstructured))
+		for i := range *unstructured {
+			objectsToApply[i] = &(*unstructured)[i]
+		}
 	}
-	log.V(1).Info("fetched "+manifest.Url, "objectCount", len(*objectsToApply))
 
-	ownedResources := make([]packagesv1alpha1.OwnedResourceRef, 0, len(*objectsToApply))
+	log.V(1).Info("fetched "+manifest.Url, "objectCount", len(objectsToApply))
+
+	// Determine the name of the default namespace. The more specific name takes precedence
+	defaultNamespaceName := pkgManifest.DefaultNamespace
+	if len(manifest.DefaultNamespace) > 0 {
+		defaultNamespaceName = manifest.DefaultNamespace
+	}
+
+	if len(defaultNamespaceName) > 0 {
+		defaultNamespaceRequired := false
+		defaultNamespaceInList := false
+
+		// Determine if the default namespace is needed (at least one resource would be created in the default namespace)
+		// and set the namespace property to the default namespace for all objects that are known to be namespaced and do
+		// not have an explicit namespace.
+		// Also, determine if a namespace resource with the default namespace name already exists in the list.
+		for _, obj := range objectsToApply {
+			if obj.GetObjectKind().GroupVersionKind() == r.namespaceGVK && obj.GetName() == defaultNamespaceName {
+				defaultNamespaceInList = true
+			} else {
+				if isNamespaced, err := r.IsObjectNamespaced(obj); err != nil {
+					// It can not be determined whether this obj kind is namespaced.
+					// This can happen if the obj kind is a CRD or some other type that the client does not know.
+					// TODO: Should we assume it is namespaced or not? Or just throw an error?
+					return nil, err
+				} else if isNamespaced {
+					if obj.GetNamespace() == "" {
+						obj.SetNamespace(defaultNamespaceName)
+					}
+
+					if obj.GetNamespace() == defaultNamespaceName {
+						defaultNamespaceRequired = true
+					}
+				}
+			}
+		}
+
+		if defaultNamespaceRequired && !defaultNamespaceInList {
+			defaultNamespace := corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: defaultNamespaceName}}
+			// It is necessary to set the GVK manually on this namespace.
+			// This could be because we use SSA here.
+			// TODO: Find out why!
+			defaultNamespace.SetGroupVersionKind(r.namespaceGVK)
+			objectsToApply = append([]client.Object{&defaultNamespace}, objectsToApply...)
+		}
+	}
 
 	// TODO: check if namespace is terminating before applying
 
-	for _, obj := range *objectsToApply {
-		if err := r.SetOwner(&pkg, &obj, owners.BlockOwnerDeletion); err != nil {
+	ownedResources := make([]packagesv1alpha1.OwnedResourceRef, 0, len(objectsToApply))
+	for _, obj := range objectsToApply {
+		if err := r.SetOwner(&pkg, obj, owners.BlockOwnerDeletion); err != nil {
 			return nil, fmt.Errorf("could set owner reference: %w", err)
 		}
-		if err := r.Patch(ctx, &obj, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
+		if err := r.Patch(ctx, obj, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
 			return nil, fmt.Errorf("could not apply resource: %w", err)
 		}
 		log.V(1).Info("applied resource",
-			"kind", obj.GroupVersionKind(), "namespace", obj.GetNamespace(), "name", obj.GetName())
-		if _, err := ownerutils.AddOwnedResourceRef(r.Scheme(), &ownedResources, &obj); err != nil {
+			"kind", obj.GetObjectKind().GroupVersionKind(), "namespace", obj.GetNamespace(), "name", obj.GetName())
+		if _, err := ownerutils.AddOwnedResourceRef(r.Scheme(), &ownedResources, obj); err != nil {
 			return nil, err
 		}
 	}
