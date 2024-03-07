@@ -36,6 +36,7 @@ import (
 	"github.com/glasskube/glasskube/internal/controller"
 	"github.com/glasskube/glasskube/internal/manifest/helm/flux"
 	"github.com/glasskube/glasskube/internal/manifest/plain"
+	"github.com/glasskube/glasskube/internal/webhook"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -108,6 +109,14 @@ func main() {
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "PackageInfo")
 		os.Exit(1)
+	}
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err = (&webhook.PackageValidatingWebhook{
+			Client: mgr.GetClient(),
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "Package")
+			os.Exit(1)
+		}
 	}
 	//+kubebuilder:scaffold:builder
 

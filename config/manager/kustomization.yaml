@@ -1,6 +1,2 @@
 resources:
   - manager.yaml
-images:
-  - name: controller
-    newName: ghcr.io/glasskube/package-operator
-    newTag: v0.0.3 # x-release-please-version
