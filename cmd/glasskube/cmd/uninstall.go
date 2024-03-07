@@ -14,6 +14,7 @@ import (
 
 var uninstallCmdOptions = struct {
 	ForceUninstall bool
+	NoWait         bool
 }{}
 
 var uninstallCmd = &cobra.Command{
@@ -39,15 +40,23 @@ var uninstallCmd = &cobra.Command{
 			),
 			false,
 		)
+
+		uninstaller := uninstall.NewUninstaller(client).WithStatusWriter(statuswriter.Spinner())
 		if proceed {
-			if err := uninstall.NewUninstaller(client).
-				WithStatusWriter(statuswriter.Spinner()).
-				UninstallBlocking(cmd.Context(), &pkg); err != nil {
-				fmt.Fprintf(os.Stderr, "An error occurred during uninstallation:\n\n%v\n", err)
-				os.Exit(1)
-				return
+			if uninstallCmdOptions.NoWait {
+				if err := uninstaller.Uninstall(cmd.Context(), &pkg); err != nil {
+					fmt.Fprintf(os.Stderr, "An error occurred during uninstallation:\n\n%v\n", err)
+					os.Exit(1)
+				}
+				fmt.Fprintln(os.Stderr, "Uninstallation started in background")
+			} else {
+				if err := uninstaller.UninstallBlocking(cmd.Context(), &pkg); err != nil {
+					fmt.Fprintf(os.Stderr, "An error occurred during uninstallation:\n\n%v\n", err)
+					os.Exit(1)
+					return
+				}
+				fmt.Fprintf(os.Stderr, "🗑️ %v uninstalled successfully.\n", pkgName)
 			}
-			fmt.Fprintf(os.Stderr, "🗑️ %v uninstalled successfully.\n", pkgName)
 		} else {
 			fmt.Println("❌ Uninstallation cancelled.")
 		}
@@ -57,5 +66,6 @@ var uninstallCmd = &cobra.Command{
 func init() {
 	uninstallCmd.PersistentFlags().BoolVar(&uninstallCmdOptions.ForceUninstall, "force", false,
 		"skip the confirmation question and uninstall right away")
+	uninstallCmd.PersistentFlags().BoolVar(&uninstallCmdOptions.NoWait, "no-wait", false, "perform non-blocking uninstall")
 	RootCmd.AddCommand(uninstallCmd)
 }
