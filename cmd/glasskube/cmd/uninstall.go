@@ -51,9 +51,7 @@ var uninstallCmd = &cobra.Command{
 				}
 				fmt.Fprintln(os.Stderr, "Uninstallation started in background")
 			} else {
-				if err := uninstall.NewUninstaller(client).
-					WithStatusWriter(statuswriter.Spinner()).
-					UninstallBlocking(cmd.Context(), &pkg); err != nil {
+				if err := uninstaller.UninstallBlocking(cmd.Context(), &pkg); err != nil {
 					fmt.Fprintf(os.Stderr, "An error occurred during uninstallation:\n\n%v\n", err)
 					os.Exit(1)
 					return
