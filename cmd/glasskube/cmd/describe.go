@@ -23,7 +23,7 @@ var describeCmd = &cobra.Command{
 	ValidArgsFunction: completeAvailablePackageNames,
 	Run: func(cmd *cobra.Command, args []string) {
 		pkgName := args[0]
-		pkg, pkgStatus, manifest, err := describe.DescribePackage(cmd.Context(), pkgName)
+		pkg, pkgStatus, manifest, latestVersion, err := describe.DescribePackage(cmd.Context(), pkgName)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "❌ Could not describe package %v: %v\n", pkgName, err)
 			os.Exit(1)
@@ -33,7 +33,7 @@ var describeCmd = &cobra.Command{
 		fmt.Printf("%v %v\n", bold("Short Description:"), stringOrDash(manifest.ShortDescription))
 		fmt.Printf("%v \n%v\n", bold("Long Description:"), stringOrDash(manifest.LongDescription))
 		fmt.Printf("%v \n", bold("References:"))
-		version := ""
+		version := latestVersion
 		if pkg != nil {
 			version = pkg.Spec.PackageInfo.Version
 		}

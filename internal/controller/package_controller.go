@@ -377,11 +377,7 @@ func (r *PackageReconcilationContext) ensurePackageInfo(ctx context.Context) err
 }
 
 func generatePackageInfoName(pkg packagesv1alpha1.Package) string {
-	if pkg.Spec.PackageInfo.Version != "" {
-		return escapeResourceName(fmt.Sprintf("%v--%v", pkg.Spec.PackageInfo.Name, pkg.Spec.PackageInfo.Version))
-	} else {
-		return escapeResourceName(pkg.Spec.PackageInfo.Name)
-	}
+	return escapeResourceName(fmt.Sprintf("%v--%v", pkg.Spec.PackageInfo.Name, pkg.Spec.PackageInfo.Version))
 }
 
 func (r *PackageReconcilationContext) handleAdapterResults(ctx context.Context, results []result.ReconcileResult) bool {

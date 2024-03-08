@@ -36,7 +36,7 @@ func Render(w io.Writer, tmpl *template.Template, pkg *v1alpha1.Package, status 
 		PackageName:     pkg.Name,
 		Status:          status,
 		Manifest:        manifest,
-		UpdateAvailable: latestVersion != "" && pkg.Spec.PackageInfo.Version != "" && pkg.Spec.PackageInfo.Version != latestVersion,
+		UpdateAvailable: latestVersion != "" && pkg.Spec.PackageInfo.Version != latestVersion,
 	})
 }
 
@@ -54,6 +54,6 @@ func ForPkgDetailBtns(
 		PackageName:     pkgName,
 		Status:          status,
 		Manifest:        manifest,
-		UpdateAvailable: pkg != nil && pkg.Spec.PackageInfo.Version != "" && pkg.Spec.PackageInfo.Version != latestVersion,
+		UpdateAvailable: pkg != nil && pkg.Spec.PackageInfo.Version != latestVersion,
 	}
 }

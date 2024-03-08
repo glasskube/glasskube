@@ -69,7 +69,6 @@ func (item listResultTuple) Installed() bool {
 
 func (item listResultTuple) Outdated() bool {
 	return item.Package != nil && item.IndexItem != nil &&
-		item.Package.Spec.PackageInfo.Version != "" &&
 		item.Package.Spec.PackageInfo.Version != item.IndexItem.LatestVersion
 }
 

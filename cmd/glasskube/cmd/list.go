@@ -124,7 +124,7 @@ func versionString(pkg list.PackageWithStatus) string {
 
 		if statusVersion != "" {
 			versionAddons := []string{}
-			if specVersion != "" && statusVersion != specVersion {
+			if statusVersion != specVersion {
 				versionAddons = append(versionAddons, fmt.Sprintf("%v desired", specVersion))
 			}
 			if repoVersion != "" && statusVersion != repoVersion {
@@ -135,14 +135,11 @@ func versionString(pkg list.PackageWithStatus) string {
 			} else {
 				return statusVersion
 			}
-		} else if specVersion != "" {
-			if specVersion != repoVersion {
-				return fmt.Sprintf("%v (%v available)", specVersion, repoVersion)
-			} else {
-				return specVersion
-			}
+		}
+		if specVersion != repoVersion {
+			return fmt.Sprintf("%v (%v available)", specVersion, repoVersion)
 		} else {
-			return "n/a"
+			return specVersion
 		}
 	} else {
 		return ""

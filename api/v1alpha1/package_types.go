@@ -27,8 +27,8 @@ type PackageInfoTemplate struct {
 	// Name of the package to install
 	// +kubebuilder:validation:Required
 	Name string `json:"name"`
-	// Version of the package to install (optional)
-	Version string `json:"version,omitempty"`
+	// Version of the package to install
+	Version string `json:"version"`
 	// Optional URL of the repository to pull the package from
 	RepositoryUrl string `json:"repositoryUrl,omitempty"`
 }

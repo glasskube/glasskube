@@ -10,22 +10,30 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body" id="pkg-install-modal-body">
-          <div class="form-switch">
+          <div id="pkg-install-modal-versions">
+            {{ with $idx := .PackageIndex }}
+              <div class="input-group mt-1">
+                <label class="input-group-text" for="pkg-install-modal-version">Version</label>
+                <select class="form-select" id="pkg-install-modal-version" name="selectedVersion" required>
+                  {{ range $idx.Versions }}
+                    <option value="{{ .Version }}" {{ if eq .Version $idx.LatestVersion }}selected{{ end }}>
+                      {{ .Version }}
+                      {{ if eq .Version $idx.LatestVersion }}(latest){{ end }}
+                    </option>
+                  {{ end }}
+                </select>
+              </div>
+            {{ end }}
+          </div>
+          <div class="form-switch mt-2 mb-1">
             <input
               class="form-check-input"
               role="switch"
               type="checkbox"
               name="enableAutoUpdate"
-              id="enable-auto-update"
-              checked
-              hx-get="/packages/install/modal/versions?packageName={{ .PackageName }}"
-              hx-target="#pkg-install-modal-versions"
-              hx-swap="innerHTML" />
-            <label class="form-check-label ms-1" for="enable-auto-update">
-              Install Latest Version and Update Automatically
-            </label>
+              id="enable-auto-update" />
+            <label class="form-check-label ms-1" for="enable-auto-update">Enable Auto Updates</label>
           </div>
-          <div id="pkg-install-modal-versions"></div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-primary btn-sm" data-bs-dismiss="modal">Cancel</button>
