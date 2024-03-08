@@ -14,11 +14,9 @@ The PackageInfo controller syncs the relevant `PackageInfo` resources with the m
 
 ## Handling Package Updates
 
-A Package may have it's `.spec.version` set. 
+A Package must have it's `.spec.version` set. 
 This instructs the operator to install this exact version of the package. 
 We also call this version pinning.
-A Package's `.spec.version` may also be empty. 
-In that case the operator will try to automatically update the package to it's latest version.
 
 To update a package with a pinned version, run `glasskube update <package>`. 
 This will upate the package to the latest version. 
@@ -29,19 +27,14 @@ title: Package Reconciliation
 ---
 flowchart TB
   start((Start))
-  pinned{.spec.version present}
   ensurePinned[Create PackageInfo for .spec.version if missing]
-  ensureLatest[Create PackageInfo for latest version if missing]
   ready{PackageInfo is ready}
   ensureManifest[Ensure manifest]
   ensureManifestOk{Success}
   cleanup[Clean up old PackageInfos]
   end1([End])
 
-  start --> pinned
-  pinned -- yes --> ensurePinned
-  pinned -- no --> ensureLatest
-  ensureLatest --> ready
+  start --> ensurePinned
   ensurePinned --> ready
   ready -- yes --> ensureManifest
   ready -- no --> end1
@@ -57,27 +50,19 @@ title: PackageInfo Reconciliation
 ---
 flowchart TB
   start((Start))
-  pinned{.spec.version present}
-  noVersion{Versionless package?}
-  DP[Fetch package.yaml]
-  DV[Fetch versions.yaml]
   DVP[Fetch version/package.yaml]
   end1([End])
 
-  start --> pinned
-  pinned -- no --> noVersion
-  noVersion -- yes --> DP
-  noVersion -- no --> DV
-  pinned -- yes --> DVP
-  DV -- if ok --> DVP
-  DP --> end1
+  start --> DVP
   DVP --> end1
 ```
 
 ### FAQ
 **How is the latest version determined?**
 
-The package's `versions.yaml` is fetched from the repository. This file contains all available versions.
+The package's `versions.yaml` is fetched from the repository. This file contains all available versions and a field `latestVersion`. 
+Note that `latestVersion` might not be equal to the actual latest available version – think of a package where `latestVersion = v1.1.7`, 
+while there might already be a prerelease of a new major version like `v2.0.0-alpha.1`. 
 
 **How is a specific version of a package fetched?**
 

@@ -36,37 +36,35 @@ var installCmd = &cobra.Command{
 		// Instantiate installer
 		installer := install.NewInstaller(client).WithStatusWriter(statuswriter.Spinner())
 
-		if installCmdOptions.Version == "" && !installCmdOptions.EnableAutoUpdates {
-			fmt.Fprintf(os.Stderr, "Version not specified. The latest version of %v will be installed.\n", packageName)
-
-			if !cliutils.YesNoPrompt("Would you like to enable automatic updates?", true) {
-				var packageIndex repo.PackageIndex
-				if err := repo.FetchPackageIndex("", packageName, &packageIndex); err != nil {
-					fmt.Fprintf(os.Stderr, "❗ Error: Could not fetch package metadata: %v\n", err)
-					if !cliutils.YesNoPrompt("Continue anyways? (Automatic updates will be enabled)", false) {
-						cancel()
-					}
-				} else {
-					installCmdOptions.Version = packageIndex.LatestVersion
+		if installCmdOptions.Version == "" {
+			var packageIndex repo.PackageIndex
+			if err := repo.FetchPackageIndex("", packageName, &packageIndex); err != nil {
+				fmt.Fprintf(os.Stderr, "❗ Error: Could not fetch package metadata: %v\n", err)
+				os.Exit(1)
+			}
+			installCmdOptions.Version = packageIndex.LatestVersion
+			fmt.Fprintf(os.Stderr, "Version not specified. The latest version %v of %v will be installed.\n",
+				installCmdOptions.Version, packageName)
+			if !installCmdOptions.EnableAutoUpdates {
+				if cliutils.YesNoPrompt("Would you like to enable automatic updates?", false) {
+					installCmdOptions.EnableAutoUpdates = true
 				}
 			}
 		}
 
-		var msg string
-		if installCmdOptions.Version != "" {
-			msg = fmt.Sprintf("%v (version %v) will be installed in your current cluster (%v).",
-				packageName, installCmdOptions.Version, config.CurrentContext)
-		} else {
-			msg = fmt.Sprintf("%v will be installed in your current cluster (%v).",
-				packageName, config.CurrentContext)
+		autoUpdatesMsg := ""
+		if installCmdOptions.EnableAutoUpdates {
+			autoUpdatesMsg = "The package will be updated automatically. "
 		}
-
-		if !cliutils.YesNoPrompt(fmt.Sprintf("%v Continue?", msg), true) {
+		msg := fmt.Sprintf("%v (version %v) will be installed in your current cluster (%v).\n%v",
+			packageName, installCmdOptions.Version, config.CurrentContext, autoUpdatesMsg)
+		if !cliutils.YesNoPrompt(fmt.Sprintf("%vContinue?", msg), true) {
 			cancel()
 		}
 
 		if installCmdOptions.NoWait {
-			if err := installer.Install(ctx, packageName, installCmdOptions.Version); err != nil {
+			if err := installer.Install(
+				ctx, packageName, installCmdOptions.Version, installCmdOptions.EnableAutoUpdates); err != nil {
 				fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
 				os.Exit(1)
 			}
@@ -75,7 +73,8 @@ var installCmd = &cobra.Command{
 					"💡 Run \"glasskube describe %v\" to get the current status",
 				packageName, packageName)
 		} else {
-			status, err := installer.InstallBlocking(ctx, packageName, installCmdOptions.Version)
+			status, err := installer.InstallBlocking(ctx, packageName, installCmdOptions.Version,
+				installCmdOptions.EnableAutoUpdates)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
 				os.Exit(1)

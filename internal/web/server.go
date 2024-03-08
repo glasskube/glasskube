@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"syscall"
 
 	"github.com/glasskube/glasskube/pkg/update"
@@ -133,7 +134,6 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle("/packages", s.requireReady(s.packages))
 	router.Handle("/packages/install", s.requireReady(s.install))
 	router.Handle("/packages/install/modal", s.requireReady(s.installModal))
-	router.Handle("/packages/install/modal/versions", s.requireReady(s.installModalVersions))
 	router.Handle("/packages/update", s.requireReady(s.update))
 	router.Handle("/packages/update/modal", s.requireReady(s.updateModal))
 	router.Handle("/packages/uninstall", s.requireReady(s.uninstall))
@@ -181,9 +181,18 @@ func (s *server) Start(ctx context.Context) error {
 func (s *server) install(w http.ResponseWriter, r *http.Request) {
 	pkgName := r.FormValue("packageName")
 	selectedVersion := r.FormValue("selectedVersion")
+	enableAutoUpdateVal := r.FormValue("enableAutoUpdate")
+	if selectedVersion == "" {
+		var packageIndex repo.PackageIndex
+		if err := repo.FetchPackageIndex("", pkgName, &packageIndex); err != nil {
+			fmt.Fprintf(os.Stderr, "❗ Error: Could not fetch package metadata: %v\n", err)
+			return
+		}
+		selectedVersion = packageIndex.LatestVersion
+	}
 	err := install.NewInstaller(s.pkgClient).
 		WithStatusWriter(statuswriter.Stderr()).
-		Install(r.Context(), pkgName, selectedVersion)
+		Install(r.Context(), pkgName, selectedVersion, strings.ToLower(enableAutoUpdateVal) == "on")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "An error occurred installing %v: \n%v\n", pkgName, err)
 	}
@@ -191,27 +200,15 @@ func (s *server) install(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) installModal(w http.ResponseWriter, r *http.Request) {
 	pkgName := r.FormValue("packageName")
-	err := pkgInstallModalTmpl.Execute(w, &map[string]any{
-		"PackageName": pkgName,
-	})
-	checkTmplError(err, "pkgInstallModalTmpl")
-}
-
-func (s *server) installModalVersions(w http.ResponseWriter, r *http.Request) {
-	enableAutoUpdateVal := r.FormValue("enableAutoUpdate")
-	showVersions := enableAutoUpdateVal == ""
 	var idx repo.PackageIndex
-	if showVersions {
-		pkgName := r.FormValue("packageName")
-		if err := repo.FetchPackageIndex("", pkgName, &idx); err != nil {
-			fmt.Fprintf(os.Stderr, "An error occurred fetching versions of %v: %v\n", pkgName, err)
-		}
+	if err := repo.FetchPackageIndex("", pkgName, &idx); err != nil {
+		fmt.Fprintf(os.Stderr, "An error occurred fetching versions of %v: %v\n", pkgName, err)
 	}
-	err := pkgInstallModalVersionsTmpl.Execute(w, &map[string]any{
-		"ShowVersions": showVersions,
+	err := pkgInstallModalTmpl.Execute(w, &map[string]any{
+		"PackageName":  pkgName,
 		"PackageIndex": &idx,
 	})
-	checkTmplError(err, "pkgInstallModalVersionsTmpl")
+	checkTmplError(err, "pkgInstallModalTmpl")
 }
 
 func (s *server) updateModal(w http.ResponseWriter, r *http.Request) {
@@ -310,7 +307,7 @@ func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 	}
 	updatesAvailable := false
 	for _, pkg := range packages {
-		if pkg.Package != nil && pkg.Package.Spec.PackageInfo.Version != "" && pkg.Package.Spec.PackageInfo.Version != pkg.LatestVersion {
+		if pkg.Package != nil && pkg.Package.Spec.PackageInfo.Version != pkg.LatestVersion {
 			updatesAvailable = true
 			break
 		}
@@ -325,12 +322,15 @@ func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 	pkgName := mux.Vars(r)["pkgName"]
-	pkg, status, manifest, err := describe.DescribePackage(r.Context(), pkgName)
+	pkg, status, manifest, latestVersion, err := describe.DescribePackage(r.Context(), pkgName)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "An error occurred fetching package details of %v: \n%v\n", pkgName, err)
 		return
 	}
-	latestVersion, err := repo.GetLatestVersion("", pkgName)
+	if latestVersion == "" {
+		// TODO have a look at handling latestVersion as return value from DescribePackage again – seems weird
+		latestVersion, err = repo.GetLatestVersion("", pkgName)
+	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "An error occurred fetching latest version of %v: \n%v\n", pkgName, err)
 	}

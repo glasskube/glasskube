@@ -58,10 +58,11 @@ spec:
                       from
                     type: string
                   version:
-                    description: Version of the package to install (optional)
+                    description: Version of the package to install
                     type: string
                 required:
                 - name
+                - version
                 type: object
             required:
             - packageInfo

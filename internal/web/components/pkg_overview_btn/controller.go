@@ -33,19 +33,18 @@ func Render(w io.Writer, tmpl *template.Template, pkg *v1alpha1.Package, status 
 		PackageName:     pkg.Name,
 		Status:          status,
 		Manifest:        manifest,
-		UpdateAvailable: latestVersion != "" && pkg.Spec.PackageInfo.Version != "" && pkg.Spec.PackageInfo.Version != latestVersion,
+		UpdateAvailable: latestVersion != "" && pkg.Spec.PackageInfo.Version != latestVersion,
 	})
 }
 
 func ForPkgOverviewBtn(packageWithStatus *list.PackageWithStatus) *pkgOverviewBtnInput {
 	buttonId := getButtonId(packageWithStatus.Name)
 	return &pkgOverviewBtnInput{
-		ButtonId:    buttonId,
-		Swap:        "",
-		PackageName: packageWithStatus.Name,
-		Status:      packageWithStatus.Status,
-		Manifest:    packageWithStatus.InstalledManifest,
-		UpdateAvailable: packageWithStatus.Package != nil && packageWithStatus.Package.Spec.PackageInfo.Version != "" &&
-			packageWithStatus.Package.Spec.PackageInfo.Version != packageWithStatus.LatestVersion,
+		ButtonId:        buttonId,
+		Swap:            "",
+		PackageName:     packageWithStatus.Name,
+		Status:          packageWithStatus.Status,
+		Manifest:        packageWithStatus.InstalledManifest,
+		UpdateAvailable: packageWithStatus.Package != nil && packageWithStatus.Package.Spec.PackageInfo.Version != packageWithStatus.LatestVersion,
 	}
 }

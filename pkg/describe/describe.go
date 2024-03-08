@@ -14,7 +14,7 @@ import (
 func DescribePackage(
 	ctx context.Context,
 	pkgName string,
-) (*v1alpha1.Package, *client.PackageStatus, *v1alpha1.PackageManifest, error) {
+) (*v1alpha1.Package, *client.PackageStatus, *v1alpha1.PackageManifest, string, error) {
 	pkgClient := client.FromContext(ctx)
 	var pkg v1alpha1.Package
 	var status *client.PackageStatus
@@ -22,18 +22,19 @@ func DescribePackage(
 		// pkg installed: try to use installed manifest
 		status = client.GetStatusOrPending(&pkg.Status)
 		if installedManifest, err := manifest.GetInstalledManifestForPackage(ctx, pkg); err == nil {
-			return &pkg, status, installedManifest, nil
+			return &pkg, status, installedManifest, "", nil
 		} else if !(errors.Is(err, manifest.ErrPackageNoManifest) || apierrors.IsNotFound(err)) {
-			return nil, nil, nil, err
+			return nil, nil, nil, "", err
 		}
 	} else if !apierrors.IsNotFound(err) {
-		return nil, nil, nil, err
+		return nil, nil, nil, "", err
 	}
 
 	// pkg not installed or no manifest found: use manifest from repo
 	var packageManifest v1alpha1.PackageManifest
-	if _, err := repo.FetchLatestPackageManifest("", pkgName, &packageManifest); err != nil {
-		return nil, nil, nil, err
+	if latestVersion, err := repo.FetchLatestPackageManifest("", pkgName, &packageManifest); err != nil {
+		return nil, nil, nil, "", err
+	} else {
+		return &pkg, status, &packageManifest, latestVersion, nil
 	}
-	return &pkg, status, &packageManifest, nil
 }

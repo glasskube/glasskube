@@ -86,7 +86,7 @@ outer:
 	for _, pkg := range packagesToUpdate {
 		for _, indexItem := range index.Packages {
 			if indexItem.Name == pkg.Name {
-				if pkg.Spec.PackageInfo.Version != "" && pkg.Spec.PackageInfo.Version != indexItem.LatestVersion {
+				if pkg.Spec.PackageInfo.Version != indexItem.LatestVersion {
 					// this package should be updated
 					tx.Items = append(tx.Items, updateTransactionItem{
 						Package: pkg,

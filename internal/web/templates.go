@@ -13,20 +13,19 @@ import (
 )
 
 var (
-	baseTemplate                *template.Template
-	pkgsPageTmpl                *template.Template
-	pkgPageTmpl                 *template.Template
-	supportPageTmpl             *template.Template
-	bootstrapPageTmpl           *template.Template
-	kubeconfigPageTmpl          *template.Template
-	pkgOverviewBtnTmpl          *template.Template
-	pkgDetailBtnsTmpl           *template.Template
-	pkgInstallModalTmpl         *template.Template
-	pkgInstallModalVersionsTmpl *template.Template
-	pkgUpdateModalTmpl          *template.Template
-	templatesDir                = "templates"
-	componentsDir               = path.Join(templatesDir, "components")
-	pagesDir                    = path.Join(templatesDir, "pages")
+	baseTemplate        *template.Template
+	pkgsPageTmpl        *template.Template
+	pkgPageTmpl         *template.Template
+	supportPageTmpl     *template.Template
+	bootstrapPageTmpl   *template.Template
+	kubeconfigPageTmpl  *template.Template
+	pkgOverviewBtnTmpl  *template.Template
+	pkgDetailBtnsTmpl   *template.Template
+	pkgInstallModalTmpl *template.Template
+	pkgUpdateModalTmpl  *template.Template
+	templatesDir        = "templates"
+	componentsDir       = path.Join(templatesDir, "components")
+	pagesDir            = path.Join(templatesDir, "pages")
 )
 
 func init() {
@@ -52,7 +51,6 @@ func init() {
 	pkgOverviewBtnTmpl = componentTmpl(pkg_overview_btn.TemplateId, "pkg-overview-btn.html")
 	pkgDetailBtnsTmpl = componentTmpl(pkg_detail_btns.TemplateId, "pkg-detail-btns.html")
 	pkgInstallModalTmpl = componentTmpl("pkg-install-modal", "pkg-install-modal.html")
-	pkgInstallModalVersionsTmpl = componentTmpl("pkg-install-modal-versions", "pkg-install-modal-versions.html")
 	pkgUpdateModalTmpl = componentTmpl("pkg-update-modal", "pkg-update-modal.html")
 }
 

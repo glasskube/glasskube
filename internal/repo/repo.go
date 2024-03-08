@@ -20,33 +20,18 @@ var packageRepoIndex PackageRepoIndex
 
 func UpdatePackageManifest(pi *packagesv1alpha1.PackageInfo) (err error) {
 	var manifest packagesv1alpha1.PackageManifest
-	var version string
-	if pi.Spec.Version != "" {
-		// PackageInfo has explicit version in Spec
-		version = pi.Spec.Version
-		if err = FetchPackageManifest(pi.Spec.RepositoryUrl, pi.Spec.Name, version, &manifest); err != nil {
-			return
-		}
-	} else {
-		version, err = FetchLatestPackageManifest(pi.Spec.RepositoryUrl, pi.Spec.Name, &manifest)
-		if err != nil {
-			return
-		}
+	if err = FetchPackageManifest(pi.Spec.RepositoryUrl, pi.Spec.Name, pi.Spec.Version, &manifest); err != nil {
+		return
 	}
-
 	pi.Status.Manifest = &manifest
-	pi.Status.Version = version
+	pi.Status.Version = pi.Spec.Version
 	return nil
 }
 
 func FetchLatestPackageManifest(repoURL, name string, target *packagesv1alpha1.PackageManifest) (version string, err error) {
 	var versions PackageIndex
 	if err = FetchPackageIndex(repoURL, name, &versions); err != nil {
-		if !httperror.IsNotFound(err) {
-			return
-		}
-		// no versions.yaml file for package in repo. Try versionless manifest
-		version = ""
+		return
 	} else {
 		version = versions.LatestVersion
 	}
@@ -116,11 +101,7 @@ func getPackageIndexURL(repoURL, name string) (string, error) {
 }
 
 func GetPackageManifestURL(repoURL, name, version string) (string, error) {
-	pathSegments := []string{url.PathEscape(name)}
-	if version != "" {
-		pathSegments = append(pathSegments, url.PathEscape(version))
-	}
-	pathSegments = append(pathSegments, "package.yaml")
+	pathSegments := []string{url.PathEscape(name), url.PathEscape(version), "package.yaml"}
 	return url.JoinPath(getBaseURL(repoURL), pathSegments...)
 }
 
