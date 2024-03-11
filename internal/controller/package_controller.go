@@ -127,6 +127,7 @@ type PackageReconcilationContext struct {
 	isSuccess             bool
 	shouldUpdateStatus    bool
 	currentOwnedResources []v1alpha1.OwnedResourceRef
+	currentOwnedPackages  []v1alpha1.OwnedResourceRef
 }
 
 func (r *PackageReconcilationContext) setShouldUpdate(value bool) {
@@ -275,6 +276,7 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 		return false
 	}
 
+	var ownedPackages []packagesv1alpha1.OwnedResourceRef
 	var waitingFor []string
 	// if all requirements fulfilled, status can be checked
 	for _, dep := range r.pi.Status.Manifest.Dependencies {
@@ -307,6 +309,13 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 					}
 				}
 			}
+
+			if owned, err := ownerutils.ToOwnedResourceRef(r.Scheme, &requiredPkg); err != nil {
+				log.Error(err, "Failed to create OwnedResourceRef", "package", requiredPkg)
+				failed = append(failed, dep.Name)
+			} else {
+				ownedPackages = append(ownedPackages, owned)
+			}
 			if meta.IsStatusConditionTrue(requiredPkg.Status.Conditions, string(condition.Failed)) {
 				failed = append(failed, requiredPkg.Name)
 			} else if !meta.IsStatusConditionTrue(requiredPkg.Status.Conditions, string(condition.Ready)) {
@@ -326,6 +335,8 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 			conditions.SetUnknown(ctx, &r.pkg.Status.Conditions, condition.Pending, message))
 		return false
 	}
+
+	ownerutils.Add(&r.currentOwnedPackages, ownedPackages...)
 
 	return true
 }
@@ -440,6 +451,7 @@ func (r *PackageReconcilationContext) actualFinalize(ctx context.Context) error 
 	log := ctrl.LoggerFrom(ctx)
 
 	r.setShouldUpdate(ownerutils.Add(&r.pkg.Status.OwnedResources, r.currentOwnedResources...))
+	r.setShouldUpdate(ownerutils.Add(&r.pkg.Status.OwnedPackages, r.currentOwnedPackages...))
 
 	var errs error
 	if r.isSuccess {
@@ -468,6 +480,7 @@ func (r *PackageReconcilationContext) cleanup(ctx context.Context) error {
 	return multierr.Combine(
 		r.pruneOwnedResources(ctx),
 		r.pruneOwnedPackageInfos(ctx),
+		r.pruneOwnedPackages(ctx),
 	)
 }
 
@@ -543,4 +556,64 @@ func (r *PackageReconcilationContext) pruneOwnedPackageInfos(ctx context.Context
 		}
 	}
 	return compositeErr
+}
+
+func (r *PackageReconcilationContext) pruneOwnedPackages(ctx context.Context) error {
+	log := ctrl.LoggerFrom(ctx)
+	var errs error
+	ownedPackagesCopy := r.pkg.Status.OwnedPackages[:]
+OuterLoop:
+	for _, ref := range r.pkg.Status.OwnedPackages {
+		for _, newRef := range r.currentOwnedPackages {
+			if ownerutils.RefersToSameResource(ref, newRef) {
+				continue OuterLoop
+			}
+		}
+
+		var oldReqPkg v1alpha1.Package
+		if err := r.Get(ctx, types.NamespacedName{
+			Name:      ref.Name,
+			Namespace: ref.Namespace,
+		}, &oldReqPkg); err != nil {
+			if apierrors.IsNotFound(err) {
+				r.setShouldUpdate(ownerutils.Remove(&ownedPackagesCopy, ref))
+			} else {
+				log.Error(err, "Failed to get old required package", "oldPackage", ref.Name)
+			}
+		} else if owning, err := r.HasOwner(r.pkg, &oldReqPkg); err != nil {
+			log.Error(err, "Failed to check owner references of old required package", "oldPackage", ref.Name)
+		} else if owning {
+			var cnt int
+			cnt, err = r.CountOwnersOfType(r.pkg, &oldReqPkg)
+			if err != nil {
+				log.Error(err, "Failed to check owner references of old required package", "oldPackage", ref.Name)
+				continue
+			}
+			if err := r.RemoveOwner(r.pkg, &oldReqPkg); err != nil {
+				log.Error(err, "Failed to remove owner reference", "oldPackage", ref.Name)
+			} else if err := r.Update(ctx, &oldReqPkg); err != nil {
+				log.Error(err, "Failed to update old package with removed owner reference", "oldPackage", ref.Name)
+			} else {
+				r.setShouldUpdate(ownerutils.Remove(&ownedPackagesCopy, ref))
+				log.Info(fmt.Sprintf("Removed owner reference from %v to %v", r.pkg.Name, ref.Name))
+
+				if cnt == 1 {
+					// remove the old package if we were the only package owning it
+					deletePropagationForeground := metav1.DeletePropagationForeground
+					if err := r.Delete(ctx, ownerutils.OwnedResourceRefToObject(ref), &client.DeleteOptions{
+						PropagationPolicy: &deletePropagationForeground,
+					}); err != nil && !apierrors.IsNotFound(err) {
+						errs = multierr.Append(errs, fmt.Errorf("could not prune package: %w", err))
+					} else {
+						log.V(1).Info("pruned package", "reference", ref)
+						r.setShouldUpdate(ownerutils.Remove(&ownedPackagesCopy, ref))
+					}
+				}
+			}
+		} else {
+			r.setShouldUpdate(ownerutils.Remove(&ownedPackagesCopy, ref))
+		}
+	}
+	r.pkg.Status.OwnedPackages = ownedPackagesCopy
+	return errs
 }

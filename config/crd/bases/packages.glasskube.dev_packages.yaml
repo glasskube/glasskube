@@ -159,6 +159,26 @@ spec:
                   - version
                   type: object
                 type: array
+              ownedPackages:
+                items:
+                  properties:
+                    group:
+                      type: string
+                    kind:
+                      type: string
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    version:
+                      type: string
+                  required:
+                  - group
+                  - kind
+                  - name
+                  - version
+                  type: object
+                type: array
               ownedResources:
                 items:
                   properties:

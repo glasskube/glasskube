@@ -45,6 +45,7 @@ type PackageStatus struct {
 	Conditions        []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 	OwnedResources    []OwnedResourceRef `json:"ownedResources,omitempty"`
 	OwnedPackageInfos []OwnedResourceRef `json:"ownedPackageInfos,omitempty"`
+	OwnedPackages     []OwnedResourceRef `json:"ownedPackages,omitempty"`
 }
 
 //+kubebuilder:object:root=true
