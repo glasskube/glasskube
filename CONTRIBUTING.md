@@ -6,20 +6,24 @@ The goal of this document is to define some guidelines to streamline our contrib
 ## Getting started
 
 ### Where should I start?
+
 - If you are new to the project, please check out the [good first issue](https://github.com/glasskube/glasskube/labels/good%20first%20issue) label.
 - If you are looking for something to work on, check out our [open issues](hhttps://github.com/glasskube/glasskube/issues).
 - If you have an idea for a new feature, please open an issue, and we can discuss it.
 - We are also happy to help you find something to work on. Just reach out to us.
 
 ### Getting in touch with the community
+
 - Join our [Glasskube Discord Channel](https://discord.gg/SxH6KUCGH7)
 - Introduce yourself on the intros channel or open an issue to let us know that you are interested in contributing
 
 ### Discuss issues
+
 - Before you start working on something, propose and discuss your solution on the issue
 - If you are unsure about something, ask the community
 
 ### How do I contribute?
+
 - Fork the repository and clone it locally
 - Create a new branch and follow [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) guidelines for work undertaken
 - Assign yourself to the issue, if you are working on it (if you are not a member of the organization, please leave a comment on the issue)
@@ -29,6 +33,7 @@ The goal of this document is to define some guidelines to streamline our contrib
 - Wait for a review and address any comments
 
 ### Opening PRs
+
 - As long as you are working on your PR, please mark it as a draft
 - Please make sure that your PR is up-to-date with the latest changes in `main`
 - Fill out the PR template
@@ -36,6 +41,7 @@ The goal of this document is to define some guidelines to streamline our contrib
 - Make sure that your PR passes all checks
 
 ### Reviewing PRs
+
 - Be respectful and constructive
 - Assign yourself to the PR
 - Check if all checks are passing
@@ -58,14 +64,14 @@ We require all commits in this repository to adhere to the following commit mess
 
 The following `<type>`s are available:
 
-* `fix` (bug fix)
-* `feat` (includes new feature)
-* `docs` (update to our documentation)
-* `build` (update to the build config)
-* `perf` (performance improvement)
-* `style` (code style change without any other changes)
-* `refactor` (code refactoring)
-* `chore` (misc. routine tasks; e.g. dependency updates)
+- `fix` (bug fix)
+- `feat` (includes new feature)
+- `docs` (update to our documentation)
+- `build` (update to the build config)
+- `perf` (performance improvement)
+- `style` (code style change without any other changes)
+- `refactor` (code refactoring)
+- `chore` (misc. routine tasks; e.g. dependency updates)
 
 This format is based on [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 Please refer to the Conventional Commits specification for more details.
@@ -92,6 +98,8 @@ After you make more changes, simply run `make` again to recompile your changes.
 
 ### Executing
 
+#### glasskube
+
 In order to execute the `glasskube` binary locally, you can do this manually by creating a copy of it to your project directory.
 
 However, there's an easy and preferred way for doing this by creating an `alias` using the following command:
@@ -103,6 +111,35 @@ alias <alias-name> = /path/to/glasskube/binary
 This will make sure the `alias-name` is in sync with your glasskube binary. However, this is a temporary alias. If you'd like to create a permanent alias, you can read more about it [here](https://www.freecodecamp.org/news/how-to-create-your-own-command-in-linux/).
 
 **Note:** Don't use `alias-name` as _glasskube_ since the actual glasskube CLI tool installed locally will get in conflict with executable `glasskube` binary.
+
+#### package-operator
+
+**tl;dr:** Use [minikube](https://minikube.sigs.k8s.io/docs/) during development and run: `make install webhook cert run`
+
+For development, we provide the following `make` targets:
+
+- `make install` installs the package-operator CRDs in the current cluster.
+- `make webhook` installs the package-operator webhook CRDs in the current cluster, including a patch to allow using the package-operator running on the local machine for the validating admission webhook (only works on minikube).
+- `make cert` runs the package-operator cert-manager locally to generate a self signed TLS certificate and patch the ValidatingWebhookConfiguration with the CA bundle. The TLS certificate is valid for 1 year, but is saved in a temporary directory, so it is recommended to run this task at least once everytime the machine is restarted.
+- `make run` runs the package-operator locally.
+- `make docker-build` builds a docker image for the package-operator.
+- `make deploy` applies the full package-operator manifest (excluding dependencies) in the current cluster.
+
+The package-operator ships with a ValidatingAdmissionWebhook. While it is not mandatory to use it during development, we do recommend that you do. Just follow these steps:
+
+1. `make install` creates the package-operator CRDs in your cluster.
+2. `make webhook` creates an "ExternalName" service in your cluster that points to your host machine. This only works if you use [minikube](https://minikube.sigs.k8s.io/docs/), if you want to use [kind](https://kind.sigs.k8s.io/) instead, take a look at [this issue](https://github.com/kubernetes-sigs/kind/issues/1200).
+3. With the webhook configuration in place, you have to generate a TLS certificate locally and patch the webhook configuration with the CA bundle by running `make cert`.
+4. Run the operator using your preferred environment, or `make run`.
+
+When changing the manifests, it is recommended to deploy the package-operator in a minikube cluster. To achieve this, you will have to do three things:
+
+1. Point your local docker CLI to the minikube docker daemon:
+   `minikube docker-env` for more info
+2. Build the docker image:
+   `make docker-build`
+3. Deploy the operator using the locally built image:
+   `make deploy`
 
 ### Testing
 
