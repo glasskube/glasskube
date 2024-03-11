@@ -46,14 +46,30 @@ var describeCmd = &cobra.Command{
 			fmt.Printf(" * %v: %v\n", ref.Label, ref.Url)
 		}
 
-		fmt.Println("\nEntrypoints:")
+		fmt.Printf("\n%v\n", bold("Entrypoints:"))
 		if len(*entrypoints) == 0 {
-			fmt.Println("No Entry Points")
+			fmt.Fprintln(os.Stderr, " * No Entry Points")
 		} else {
 			for _, i := range *entrypoints {
-				fmt.Fprintf(os.Stderr, "Name: %s | ServiceName: %s | Port: %v | LocalPort: %v | Scheme: %s\n", i.Name, i.ServiceName, i.Port, i.LocalPort, i.Scheme)
+				fmt.Fprintf(os.Stderr, " * ")
+				if i.Name != "" {
+					fmt.Fprintf(os.Stderr, "Name: %s, ", i.Name)
+				}
+				if i.ServiceName != "" {
+					fmt.Fprintf(os.Stderr, "ServiceName: %s, ", i.ServiceName)
+				}
+				if i.Port != 0 {
+					fmt.Fprintf(os.Stderr, "Port: %v, ", i.Port)
+				}
+				if i.LocalPort != 0 {
+					fmt.Fprintf(os.Stderr, "LocalPort: %v, ", i.LocalPort)
+				}
+				if i.Scheme != "" {
+					fmt.Fprintf(os.Stderr, "Scheme: %s\n", i.Scheme)
+				}
 			}
 		}
+
 		fmt.Printf("\n%v %v\n", bold("Status:"), status(pkgStatus))
 
 	},
