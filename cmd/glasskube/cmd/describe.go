@@ -23,7 +23,7 @@ var describeCmd = &cobra.Command{
 	ValidArgsFunction: completeAvailablePackageNames,
 	Run: func(cmd *cobra.Command, args []string) {
 		pkgName := args[0]
-		pkg, pkgStatus, manifest, err := describe.DescribePackage(cmd.Context(), pkgName)
+		pkg, pkgStatus, manifest, entrypoints, err := describe.DescribePackage(cmd.Context(), pkgName)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "❌ Could not describe package %v: %v\n", pkgName, err)
 			os.Exit(1)
@@ -45,7 +45,17 @@ var describeCmd = &cobra.Command{
 		for _, ref := range manifest.References {
 			fmt.Printf(" * %v: %v\n", ref.Label, ref.Url)
 		}
+
+		fmt.Println("\nEntrypoints:")
+		if len(*entrypoints) == 0 {
+			fmt.Println("No Entry Points")
+		} else {
+			for _, i := range *entrypoints {
+				fmt.Fprintf(os.Stderr, "Name: %s | ServiceName: %s | Port: %v | LocalPort: %v | Scheme: %s\n", i.Name, i.ServiceName, i.Port, i.LocalPort, i.Scheme)
+			}
+		}
 		fmt.Printf("\n%v %v\n", bold("Status:"), status(pkgStatus))
+
 	},
 }
 
