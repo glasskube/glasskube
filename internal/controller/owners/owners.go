@@ -53,6 +53,20 @@ func (mgr *OwnerManager) HasAnyOwnerOfType(owner client.Object, obj metav1.Objec
 	return false, nil
 }
 
+func (mgr *OwnerManager) CountOwnersOfType(owner client.Object, obj metav1.Object) (int, error) {
+	ownerGVK := owner.GetObjectKind().GroupVersionKind()
+	ownerGV := ownerGVK.GroupVersion()
+	count := 0
+	for _, ref := range obj.GetOwnerReferences() {
+		if refGV, err := schema.ParseGroupVersion(ref.APIVersion); err != nil {
+			return 0, err
+		} else if ownerGV == refGV {
+			count = count + 1
+		}
+	}
+	return count, nil
+}
+
 func (mgr *OwnerManager) SetOwner(
 	owner client.Object,
 	obj metav1.Object,
@@ -78,6 +92,10 @@ func (mgr *OwnerManager) SetOwner(
 	obj.SetOwnerReferences(references)
 
 	return nil
+}
+
+func (mgr *OwnerManager) RemoveOwner(owner client.Object, obj metav1.Object) error {
+	return controllerutil.RemoveOwnerReference(owner, obj, mgr.scheme)
 }
 
 func (mgr *OwnerManager) findOwnerReferenceIndex(owner client.Object, references []metav1.OwnerReference) (int, error) {
