@@ -63,7 +63,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Set up kubectl
-        uses: azure/setup-kubectl@901a10e89ea615cf61f57ac05cecdf23e7de06d8 # v3
+        uses: azure/setup-kubectl@3e0aec4d80787158d308d7b364cb1b702e7feb7f # v4
         with:
           version: "v1.29.1"
       - name: Run GoReleaser
