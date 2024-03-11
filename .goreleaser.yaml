@@ -16,7 +16,8 @@ before:
     - hack/generate-manifests.sh
 
 builds:
-  - env:
+  - id: glasskube
+    env:
       - CGO_ENABLED=0
     goos:
       - linux
@@ -98,6 +99,8 @@ nfpms:
         dst: /usr/share/doc/nfpm/copyright
         file_info:
           mode: 0644
+    builds:
+      - glasskube
 
 brews:
   - name: glasskube
@@ -138,7 +141,8 @@ archives:
     format_overrides:
       - goos: windows
         format: zip
-    allow_different_binary_count: true
+    builds:
+      - glasskube
 
 changelog:
   disable: true
