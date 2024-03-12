@@ -1,5 +1,49 @@
 # Changelog
 
+## [0.0.4](https://github.com/glasskube/glasskube/compare/v0.0.3...v0.0.4) (2024-03-12)
+
+
+### Features
+
+* **cli:** add --no-await in install command ([51bc1be](https://github.com/glasskube/glasskube/commit/51bc1be5444deb722fa96d26804e3cf8b2560aec))
+* **cli:** add --no-await in uninstall command ([a166b36](https://github.com/glasskube/glasskube/commit/a166b36460ff7ce6c903f244c8baa1c69af50f12))
+* **client:** parallelize IsBootstrap function ([8d8559e](https://github.com/glasskube/glasskube/commit/8d8559e0fc938ff54ea348efc02095579dc3d24b))
+* **package-controller:** install package dependencies ([#111](https://github.com/glasskube/glasskube/issues/111)) ([3c83668](https://github.com/glasskube/glasskube/commit/3c83668ea65d240b678864e522d98a72f87d4cee))
+* **package-controller:** support versions for dependent packages ([#311](https://github.com/glasskube/glasskube/issues/311)) ([e22a401](https://github.com/glasskube/glasskube/commit/e22a4019405e2beb35595484b9207d0ad7b00350))
+* **package-operator:** add default namespace handling for manifests ([97e17a5](https://github.com/glasskube/glasskube/commit/97e17a5ff8bbb57f73fbcd9d39d1700797b0be6d))
+* **package-operator:** add handling of packages with helm and manifests ([149a8c7](https://github.com/glasskube/glasskube/commit/149a8c7e5d7deb7f192cb76e189e4f2b42a6bf3c))
+* **ui:** add dark mode ([60ad43e](https://github.com/glasskube/glasskube/commit/60ad43ebda9cb9d34fdebb80635ec2667d12db15))
+
+
+### Bug Fixes
+
+* change opener to choose first ready pod ([b018081](https://github.com/glasskube/glasskube/commit/b018081693ce689c26c2fe11a7dd1de4293d95a9))
+* **deps:** update module github.com/onsi/ginkgo/v2 to v2.16.0 ([b268277](https://github.com/glasskube/glasskube/commit/b26827731447b2f7e04152057b1fede9bd753f5d))
+* **ui, cli:** add fallback to manifest from repo ([0e5d024](https://github.com/glasskube/glasskube/commit/0e5d0243244be949db6ac502db4eb33f3a835332))
+* **ui:** hide global update notification ([#355](https://github.com/glasskube/glasskube/issues/355)) ([d2e60ca](https://github.com/glasskube/glasskube/commit/d2e60cadc657942ce23ac23da7210381faae2266))
+
+
+### Other
+
+* add commitlint to root project ([54fd3a9](https://github.com/glasskube/glasskube/commit/54fd3a90348f7b38dd3da8ea2a33b048d5517f6c))
+* add prettier for web formatting ([1493268](https://github.com/glasskube/glasskube/commit/1493268e46bb72c81dba19d430e1d0ccf501045f))
+* **deps:** update actions/checkout digest to 9bb5618 ([12303a2](https://github.com/glasskube/glasskube/commit/12303a22b2f1e526a2379295958936295d8f7f94))
+* **deps:** update azure/setup-kubectl action to v4 ([cbb4712](https://github.com/glasskube/glasskube/commit/cbb4712254115dbfba3f12fa91ce7b85b54262eb))
+* **deps:** update commitlint monorepo to v19.1.0 ([170e905](https://github.com/glasskube/glasskube/commit/170e905410d6e464355b09e9b65ff5e7e2511cc6))
+* **deps:** update dependency typescript to ~5.4.0 ([004dcbe](https://github.com/glasskube/glasskube/commit/004dcbeb3cf776c57badff153eff3f00ca44d5af))
+* **deps:** update google-github-actions/release-please-action action to v4.1.0 ([30871fa](https://github.com/glasskube/glasskube/commit/30871faf683ce392c78e89b955520fab971ad3fe))
+
+
+### Docs
+
+* remove disclaimer from package update section ([7cf43eb](https://github.com/glasskube/glasskube/commit/7cf43ebde2ec47316ce2a111572488079f15d368))
+* **website:** adapt roadmap to match our new release convention ([ff41302](https://github.com/glasskube/glasskube/commit/ff413026b39b57e1b95bf4fbcad787aded2ca739))
+* **website:** add latest release to roadmap ([319d33e](https://github.com/glasskube/glasskube/commit/319d33e9aa4a74b113e959f52f15a709a82c6ba1))
+* **website:** add latest release video ([b58eb3b](https://github.com/glasskube/glasskube/commit/b58eb3bd651bb6eb60dcdcfec309a4a5caa98229))
+* **website:** add shadow to screenshot ([d1b1b9d](https://github.com/glasskube/glasskube/commit/d1b1b9d1b51b0e4c27269c6930b16960436ad701))
+* **website:** add v0.0.3 release blogpost ([e080966](https://github.com/glasskube/glasskube/commit/e08096676f1e49ede03a07711d00bd3e7d2c4dda))
+* **website:** fix release video url ([3b8a07b](https://github.com/glasskube/glasskube/commit/3b8a07b245a4918cd916a5902aa72c1e4d3f91ae))
+
 ## [0.0.3](https://github.com/glasskube/glasskube/compare/v0.0.2...v0.0.3) (2024-02-27)
 
 
