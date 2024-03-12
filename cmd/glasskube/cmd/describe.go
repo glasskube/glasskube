@@ -23,7 +23,7 @@ var describeCmd = &cobra.Command{
 	ValidArgsFunction: completeAvailablePackageNames,
 	Run: func(cmd *cobra.Command, args []string) {
 		pkgName := args[0]
-		pkg, pkgStatus, manifest, entrypoints, err := describe.DescribePackage(cmd.Context(), pkgName)
+		pkg, pkgStatus, manifest, err := describe.DescribePackage(cmd.Context(), pkgName)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "❌ Could not describe package %v: %v\n", pkgName, err)
 			os.Exit(1)
@@ -47,26 +47,28 @@ var describeCmd = &cobra.Command{
 		}
 
 		fmt.Printf("\n%v\n", bold("Entrypoints:"))
-		if len(*entrypoints) == 0 {
+		if len(manifest.Entrypoints) == 0 {
 			fmt.Fprintln(os.Stderr, " * No Entry Points")
 		} else {
-			for _, i := range *entrypoints {
-				fmt.Fprintf(os.Stderr, " * ")
+			for _, i := range manifest.Entrypoints {
+				var messageParts []string
 				if i.Name != "" {
-					fmt.Fprintf(os.Stderr, "Name: %s, ", i.Name)
+					messageParts = append(messageParts, fmt.Sprintf("Name: %s", i.Name))
 				}
 				if i.ServiceName != "" {
-					fmt.Fprintf(os.Stderr, "ServiceName: %s, ", i.ServiceName)
+					messageParts = append(messageParts, fmt.Sprintf("ServiceName: %s", i.ServiceName))
 				}
 				if i.Port != 0 {
-					fmt.Fprintf(os.Stderr, "Port: %v, ", i.Port)
+					messageParts = append(messageParts, fmt.Sprintf("Port: %v", i.Port))
 				}
 				if i.LocalPort != 0 {
-					fmt.Fprintf(os.Stderr, "LocalPort: %v, ", i.LocalPort)
+					messageParts = append(messageParts, fmt.Sprintf("LocalPort: %v", i.LocalPort))
 				}
 				if i.Scheme != "" {
-					fmt.Fprintf(os.Stderr, "Scheme: %s\n", i.Scheme)
+					messageParts = append(messageParts, fmt.Sprintf("Scheme: %s", i.Scheme))
 				}
+				entrypointMsg := strings.Join(messageParts, ", ")
+				fmt.Fprintf(os.Stderr, " * %s\n", entrypointMsg)
 			}
 		}
 

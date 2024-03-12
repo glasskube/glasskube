@@ -325,7 +325,7 @@ func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 	pkgName := mux.Vars(r)["pkgName"]
-	pkg, status, manifest, _, err := describe.DescribePackage(r.Context(), pkgName)
+	pkg, status, manifest, err := describe.DescribePackage(r.Context(), pkgName)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "An error occurred fetching package details of %v: \n%v\n", pkgName, err)
 		return
