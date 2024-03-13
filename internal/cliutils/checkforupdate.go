@@ -34,7 +34,7 @@ func versionIsGreater(version1, version2 string) bool {
 	return len(v1) < len(v2)
 }
 
-func checkForUpdate() (bool, string) {
+func CheckForUpdate() (bool, string) {
 	url := "https://glasskube.dev/release.json"
 
 	resp, _ := http.Get(url)
@@ -57,7 +57,7 @@ func checkForUpdate() (bool, string) {
 }
 
 func UpdateFetch() {
-	updateAvailable, latestVersion := checkForUpdate()
+	updateAvailable, latestVersion := CheckForUpdate()
 	if updateAvailable {
 		fmt.Fprintf(os.Stderr, "📣 A newer version of Glasskube is available: %s → %s\n", config.Version, latestVersion)
 		fmt.Fprintf(os.Stderr, "📘 Release notes: https://github.com/glasskube/glasskube/releases/tag/v%v\n\n", latestVersion)
