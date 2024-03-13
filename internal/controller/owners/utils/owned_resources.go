@@ -66,7 +66,7 @@ func RemoveOwnedResourceRef(refs *[]packagesv1alpha1.OwnedResourceRef, ref packa
 }
 
 func ToOwnedResourceRef(scheme *runtime.Scheme, obj client.Object) (packagesv1alpha1.OwnedResourceRef, error) {
-	if gvk, err := getGVK(scheme, obj); err != nil {
+	if gvk, err := GetGVK(scheme, obj); err != nil {
 		return packagesv1alpha1.OwnedResourceRef{}, err
 	} else {
 		return packagesv1alpha1.OwnedResourceRef{
@@ -85,7 +85,7 @@ func OwnedResourceRefToObject(ref packagesv1alpha1.OwnedResourceRef) client.Obje
 	return &obj
 }
 
-func getGVK(scheme *runtime.Scheme, obj client.Object) (metav1.GroupVersionKind, error) {
+func GetGVK(scheme *runtime.Scheme, obj client.Object) (metav1.GroupVersionKind, error) {
 	if gvks, _, err := scheme.ObjectKinds(obj); err != nil {
 		return metav1.GroupVersionKind{}, err
 	} else {

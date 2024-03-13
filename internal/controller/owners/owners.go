@@ -3,6 +3,7 @@ package owners
 import (
 	"errors"
 
+	"github.com/glasskube/glasskube/internal/controller/owners/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -41,16 +42,27 @@ func (mgr *OwnerManager) HasOwner(owner client.Object, obj metav1.Object) (bool,
 }
 
 func (mgr *OwnerManager) HasAnyOwnerOfType(owner client.Object, obj metav1.Object) (bool, error) {
-	ownerGVK := owner.GetObjectKind().GroupVersionKind()
-	ownerGV := ownerGVK.GroupVersion()
+	filtered, err := mgr.OwnersOfType(owner, obj)
+	return len(filtered) > 0, err
+}
+
+func (mgr *OwnerManager) OwnersOfType(owner client.Object, obj metav1.Object) ([]metav1.OwnerReference, error) {
+	ownerGVK, err := utils.GetGVK(mgr.scheme, owner)
+	if err != nil {
+		return nil, err
+	}
+	ownerGV := schema.GroupVersionKind(ownerGVK).GroupVersion()
+	var filtered []metav1.OwnerReference
 	for _, ref := range obj.GetOwnerReferences() {
-		if refGV, err := schema.ParseGroupVersion(ref.APIVersion); err != nil {
-			return false, err
-		} else if ownerGV == refGV {
-			return true, nil
+		if ownerGVK.Kind == ref.Kind {
+			if refGV, err := schema.ParseGroupVersion(ref.APIVersion); err != nil {
+				return filtered, err
+			} else if ownerGV == refGV {
+				filtered = append(filtered, ref)
+			}
 		}
 	}
-	return false, nil
+	return filtered, nil
 }
 
 func (mgr *OwnerManager) CountOwnersOfType(owner client.Object, obj metav1.Object) (int, error) {

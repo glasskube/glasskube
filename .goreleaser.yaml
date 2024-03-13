@@ -33,6 +33,13 @@ builds:
       - linux
     main: ./cmd/package-operator
     binary: package-operator
+  - id: cert-manager
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    main: ./cmd/cert-manager
+    binary: cert-manager
 
 dockers:
   - image_templates:

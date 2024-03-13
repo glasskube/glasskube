@@ -230,7 +230,7 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 	log.V(1).Info("ensuring dependencies", "dependencies", r.pi.Status.Manifest.Dependencies)
 
 	var failed []string
-	if result, err := r.dependencyMgr.Validate(ctx, r.pkg, r.pi); err != nil {
+	if result, err := r.dependencyMgr.Validate(ctx, r.pkg, r.pi.Status.Manifest); err != nil {
 		r.setShouldUpdate(
 			conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.Status.Conditions,
 				condition.InstallationFailed, fmt.Sprintf("error validating dependencies: %v", err)))

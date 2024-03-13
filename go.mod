@@ -9,6 +9,7 @@ require (
 	github.com/fatih/color v1.16.0
 	github.com/fluxcd/helm-controller/api v0.37.4
 	github.com/fluxcd/source-controller/api v1.2.4
+	github.com/go-logr/logr v1.4.1
 	github.com/google/go-containerregistry v0.19.0
 	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/websocket v1.5.1
@@ -32,12 +33,12 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.2 // indirect
+	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.8.0 // indirect
 	github.com/fluxcd/pkg/apis/acl v0.1.0 // indirect
 	github.com/fluxcd/pkg/apis/kustomize v1.3.0 // indirect
 	github.com/fluxcd/pkg/apis/meta v1.3.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
-	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
 	github.com/go-openapi/jsonpointer v0.20.2 // indirect
 	github.com/go-openapi/jsonreference v0.20.4 // indirect

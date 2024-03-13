@@ -107,7 +107,7 @@ var _ = Describe("Dependency Manager", func() {
 
 		When("P has no dependencies", func() {
 			It("should return OK", func(ctx context.Context) {
-				res, err := dm.Validate(ctx, p, pi)
+				res, err := dm.Validate(ctx, p, pi.Status.Manifest)
 				Expect(err).ShouldNot(HaveOccurred())
 				Expect(res).ShouldNot(BeNil())
 				Expect(res.Status).Should(Equal(ValidationResultStatusOk))
@@ -134,7 +134,7 @@ var _ = Describe("Dependency Manager", func() {
 
 					When("no other package dependent on D", func() {
 						It("should return OK", func(ctx context.Context) {
-							res, err := dm.Validate(ctx, p, pi)
+							res, err := dm.Validate(ctx, p, pi.Status.Manifest)
 							Expect(err).ShouldNot(HaveOccurred())
 							Expect(res).ShouldNot(BeNil())
 							Expect(res.Status).Should(Equal(ValidationResultStatusOk))
@@ -158,7 +158,7 @@ var _ = Describe("Dependency Manager", func() {
 
 						When("X and Y require no version range of D", func() {
 							It("should return OK", func(ctx context.Context) {
-								res, err := dm.Validate(ctx, p, pi)
+								res, err := dm.Validate(ctx, p, pi.Status.Manifest)
 								Expect(err).ShouldNot(HaveOccurred())
 								Expect(res).ShouldNot(BeNil())
 								Expect(res.Status).Should(Equal(ValidationResultStatusOk))
@@ -170,7 +170,7 @@ var _ = Describe("Dependency Manager", func() {
 						When("X requires D in version range", func() {
 							It("should return OK", func(ctx context.Context) {
 								xi.Status.Manifest.Dependencies[0].Version = ">= 1, < 2"
-								res, err := dm.Validate(ctx, p, pi)
+								res, err := dm.Validate(ctx, p, pi.Status.Manifest)
 								Expect(err).ShouldNot(HaveOccurred())
 								Expect(res).ShouldNot(BeNil())
 								Expect(res.Status).Should(Equal(ValidationResultStatusOk))
@@ -182,7 +182,7 @@ var _ = Describe("Dependency Manager", func() {
 						When("Y requires D in version range", func() {
 							It("should return OK", func(ctx context.Context) {
 								yi.Status.Manifest.Dependencies[0].Version = "1.x.x"
-								res, err := dm.Validate(ctx, p, pi)
+								res, err := dm.Validate(ctx, p, pi.Status.Manifest)
 								Expect(err).ShouldNot(HaveOccurred())
 								Expect(res).ShouldNot(BeNil())
 								Expect(res.Status).Should(Equal(ValidationResultStatusOk))
@@ -195,7 +195,7 @@ var _ = Describe("Dependency Manager", func() {
 							It("should return OK", func(ctx context.Context) {
 								xi.Status.Manifest.Dependencies[0].Version = ">= 1, < 2"
 								yi.Status.Manifest.Dependencies[0].Version = "1.x.x"
-								res, err := dm.Validate(ctx, p, pi)
+								res, err := dm.Validate(ctx, p, pi.Status.Manifest)
 								Expect(err).ShouldNot(HaveOccurred())
 								Expect(res).ShouldNot(BeNil())
 								Expect(res.Status).Should(Equal(ValidationResultStatusOk))
@@ -210,7 +210,7 @@ var _ = Describe("Dependency Manager", func() {
 
 					It("should return a RESOLVABLE result with D in latest", func(ctx context.Context) {
 						latestVersion = "1.1.7"
-						res, err := dm.Validate(ctx, p, pi)
+						res, err := dm.Validate(ctx, p, pi.Status.Manifest)
 						Expect(err).ShouldNot(HaveOccurred())
 						Expect(res).ShouldNot(BeNil())
 						Expect(res.Status).Should(Equal(ValidationResultStatusResolvable))
@@ -242,7 +242,7 @@ var _ = Describe("Dependency Manager", func() {
 
 							It("should return OK if D's version is in required range", func(ctx context.Context) {
 								d, di = createPackageAndInfo("D", "1.3.0")
-								res, err := dm.Validate(ctx, p, pi)
+								res, err := dm.Validate(ctx, p, pi.Status.Manifest)
 								Expect(err).ShouldNot(HaveOccurred())
 								Expect(res).ShouldNot(BeNil())
 								Expect(res.Status).Should(Equal(ValidationResultStatusOk))
@@ -252,7 +252,7 @@ var _ = Describe("Dependency Manager", func() {
 
 							It("should return CONFLICT if D's version is too old", func(ctx context.Context) {
 								d, di = createPackageAndInfo("D", "1.2.1")
-								res, err := dm.Validate(ctx, p, pi)
+								res, err := dm.Validate(ctx, p, pi.Status.Manifest)
 								Expect(err).ShouldNot(HaveOccurred())
 								Expect(res).ShouldNot(BeNil())
 								Expect(res.Status).Should(Equal(ValidationResultStatusConflict))
@@ -267,7 +267,7 @@ var _ = Describe("Dependency Manager", func() {
 
 							It("should return CONFLICT if D's version is too new", func(ctx context.Context) {
 								d, di = createPackageAndInfo("D", "2.0.0-alpha.2")
-								res, err := dm.Validate(ctx, p, pi)
+								res, err := dm.Validate(ctx, p, pi.Status.Manifest)
 								Expect(err).ShouldNot(HaveOccurred())
 								Expect(res).ShouldNot(BeNil())
 								Expect(res.Status).Should(Equal(ValidationResultStatusConflict))
@@ -298,7 +298,7 @@ var _ = Describe("Dependency Manager", func() {
 
 							It("should return OK if D's version is in required range", func(ctx context.Context) {
 								d, di = createPackageAndInfo("D", "1.3.1")
-								res, err := dm.Validate(ctx, p, pi)
+								res, err := dm.Validate(ctx, p, pi.Status.Manifest)
 								Expect(err).ShouldNot(HaveOccurred())
 								Expect(res).ShouldNot(BeNil())
 								Expect(res.Status).Should(Equal(ValidationResultStatusOk))
@@ -308,7 +308,7 @@ var _ = Describe("Dependency Manager", func() {
 
 							It("should return CONFLICT if D's version is too old", func(ctx context.Context) {
 								d, di = createPackageAndInfo("D", "1.1.7")
-								res, err := dm.Validate(ctx, p, pi)
+								res, err := dm.Validate(ctx, p, pi.Status.Manifest)
 								Expect(err).ShouldNot(HaveOccurred())
 								Expect(res).ShouldNot(BeNil())
 								Expect(res.Status).Should(Equal(ValidationResultStatusConflict))
@@ -323,7 +323,7 @@ var _ = Describe("Dependency Manager", func() {
 
 							It("should return CONFLICT if D's version is too new", func(ctx context.Context) {
 								d, di = createPackageAndInfo("D", "2.0.0-alpha.2")
-								res, err := dm.Validate(ctx, p, pi)
+								res, err := dm.Validate(ctx, p, pi.Status.Manifest)
 								Expect(err).ShouldNot(HaveOccurred())
 								Expect(res).ShouldNot(BeNil())
 								Expect(res.Status).Should(Equal(ValidationResultStatusConflict))
@@ -355,7 +355,7 @@ var _ = Describe("Dependency Manager", func() {
 
 						It("should return OK if D's version is in required range", func(ctx context.Context) {
 							d, di = createPackageAndInfo("D", "1.4.0")
-							res, err := dm.Validate(ctx, p, pi)
+							res, err := dm.Validate(ctx, p, pi.Status.Manifest)
 							Expect(err).ShouldNot(HaveOccurred())
 							Expect(res).ShouldNot(BeNil())
 							Expect(res.Status).Should(Equal(ValidationResultStatusOk))
@@ -365,7 +365,7 @@ var _ = Describe("Dependency Manager", func() {
 
 						It("should return CONFLICT if D's version is too old", func(ctx context.Context) {
 							d, di = createPackageAndInfo("D", "1.2.1")
-							res, err := dm.Validate(ctx, p, pi)
+							res, err := dm.Validate(ctx, p, pi.Status.Manifest)
 							Expect(err).ShouldNot(HaveOccurred())
 							Expect(res).ShouldNot(BeNil())
 							Expect(res.Status).Should(Equal(ValidationResultStatusConflict))
@@ -380,7 +380,7 @@ var _ = Describe("Dependency Manager", func() {
 
 						It("should return CONFLICT if D's version is too new", func(ctx context.Context) {
 							d, di = createPackageAndInfo("D", "2.0.0")
-							res, err := dm.Validate(ctx, p, pi)
+							res, err := dm.Validate(ctx, p, pi.Status.Manifest)
 							Expect(err).ShouldNot(HaveOccurred())
 							Expect(res).ShouldNot(BeNil())
 							Expect(res.Status).Should(Equal(ValidationResultStatusConflict))
@@ -399,7 +399,7 @@ var _ = Describe("Dependency Manager", func() {
 
 					It("should return a RESOLVABLE result with latest D", func(ctx context.Context) {
 						latestVersion = "1.7.4"
-						res, err := dm.Validate(ctx, p, pi)
+						res, err := dm.Validate(ctx, p, pi.Status.Manifest)
 						Expect(err).ShouldNot(HaveOccurred())
 						Expect(res).ShouldNot(BeNil())
 						Expect(res.Status).Should(Equal(ValidationResultStatusResolvable))
@@ -431,7 +431,7 @@ var _ = Describe("Dependency Manager", func() {
 					It("Should return OK", func(ctx context.Context) {
 						d, di = createPackageAndInfo("D", "118.0.0")
 						e, ei = createPackageAndInfo("E", "11.80.0")
-						res, err := dm.Validate(ctx, p, pi)
+						res, err := dm.Validate(ctx, p, pi.Status.Manifest)
 						Expect(err).ShouldNot(HaveOccurred())
 						Expect(res).ShouldNot(BeNil())
 						Expect(res.Status).Should(Equal(ValidationResultStatusOk))
@@ -443,7 +443,7 @@ var _ = Describe("Dependency Manager", func() {
 				When("D, E do not exist", func() {
 					It("Should return RESOLVABLE result with D, E as requirements", func(ctx context.Context) {
 						latestVersion = "1.1.7"
-						res, err := dm.Validate(ctx, p, pi)
+						res, err := dm.Validate(ctx, p, pi.Status.Manifest)
 						Expect(err).ShouldNot(HaveOccurred())
 						Expect(res).ShouldNot(BeNil())
 						Expect(res.Status).Should(Equal(ValidationResultStatusResolvable))
