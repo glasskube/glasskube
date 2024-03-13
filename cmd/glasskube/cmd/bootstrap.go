@@ -13,6 +13,7 @@ import (
 type bootstrapOptions struct {
 	url           string
 	bootstrapType bootstrap.BootstrapType
+	latest        bool
 }
 
 var bootstrapCmdOptions = bootstrapOptions{
@@ -28,6 +29,18 @@ var bootstrapCmd = &cobra.Command{
 	PreRun: cliutils.SetupClientContext(false),
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg, _ := cliutils.RequireConfig(config.Kubeconfig)
+
+		if bootstrapCmdOptions.latest {
+			if releaseInfo, err := cliutils.FetchLatestRelease(); err != nil {
+				fmt.Fprintln(os.Stderr, "No updates available, bootstrapping with currently installed version.")
+			} else {
+				bootstrapCmdOptions.url = fmt.Sprintf(
+					"https://github.com/glasskube/glasskube/releases/download/v%s/manifest-aio.yaml",
+					releaseInfo.Version,
+				)
+			}
+		}
+
 		client := bootstrap.NewBootstrapClient(
 			cfg,
 			bootstrapCmdOptions.url,
@@ -45,5 +58,8 @@ func init() {
 	RootCmd.AddCommand(bootstrapCmd)
 	bootstrapCmd.Flags().StringVarP(&bootstrapCmdOptions.url, "url", "u", "", "URL to fetch the Glasskube operator from")
 	bootstrapCmd.Flags().VarP(&bootstrapCmdOptions.bootstrapType, "type", "t", `Type of manifest to use for bootstrapping`)
+	bootstrapCmd.Flags().BoolVar(&bootstrapCmdOptions.latest, "latest", config.Version == "dev",
+		"Fetch and bootstrap the latest version")
 	bootstrapCmd.MarkFlagsMutuallyExclusive("url", "type")
+	bootstrapCmd.MarkFlagsMutuallyExclusive("url", "latest")
 }
