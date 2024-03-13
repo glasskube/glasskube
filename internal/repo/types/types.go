@@ -1,4 +1,4 @@
-package repo
+package types
 
 type PackageIndex struct {
 	Versions      []PackageIndexItem `json:"versions" jsonschema:"required"`
