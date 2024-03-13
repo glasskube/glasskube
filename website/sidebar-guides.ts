@@ -8,8 +8,8 @@ const sidebars: SidebarsConfig = {
       label: 'Categories',
       link: {
         type: 'generated-index',
-        title: 'Categories',
-        description: "⚠️ Learn how to install your favorite Kubernetes add-on's using the Glasskube package manager ⚠️",
+        title: 'Package Installation Guides',
+        description: "⚠️ Learn how to install your favorite Kubernetes add-ons using the Glasskube package manager ⚠️",
         slug: '/categories/',
       },
       items: [
