@@ -6,10 +6,12 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/repo"
 
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/pkg/client"
+	"github.com/glasskube/glasskube/pkg/condition"
 	"github.com/glasskube/glasskube/pkg/describe"
 	"github.com/spf13/cobra"
 )
@@ -29,81 +31,124 @@ var describeCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		bold := color.New(color.Bold).SprintFunc()
-		fmt.Printf("%v %v\n", bold("Package Name:"), manifest.Name)
-		fmt.Printf("%v %v\n", bold("Short Description:"), stringOrDash(manifest.ShortDescription))
-		fmt.Println()
-		fmt.Printf("%v \n%v\n", bold("Long Description:"), stringOrDash(manifest.LongDescription))
+
+		fmt.Println(bold("Package:"), nameAndDescription(manifest))
+		fmt.Println(bold("Version:"), version(pkg, latestVersion))
+		fmt.Println(bold("Status: "), status(pkgStatus))
+
+		if len(manifest.Entrypoints) > 0 {
+			fmt.Println()
+			fmt.Println(bold("Entrypoints:"))
+			printEntrypoints(manifest)
+		}
+
 		if len(manifest.Dependencies) > 0 {
 			fmt.Println()
 			fmt.Println(bold("Dependencies:"))
-			for _, dep := range manifest.Dependencies {
-				fmt.Printf(" * %v", dep.Name)
-				if len(dep.Version) > 0 {
-					fmt.Printf(" (%v)", dep.Version)
-				}
-				fmt.Println()
-			}
+			printDependencies(manifest)
 		}
+
 		fmt.Println()
 		fmt.Printf("%v \n", bold("References:"))
-		version := latestVersion
-		if pkg != nil {
-			version = pkg.Spec.PackageInfo.Version
-		}
-		if url, err := repo.GetPackageManifestURL("", manifest.Name, version); err != nil {
-			fmt.Fprintf(os.Stderr, "❌ Could not get package manifest url: %v\n", err)
-		} else {
-			fmt.Printf(" * Glasskube Package Manifest: %v\n", url)
-		}
-		for _, ref := range manifest.References {
-			fmt.Printf(" * %v: %v\n", ref.Label, ref.Url)
-		}
+		printReferences(pkg, manifest, latestVersion)
 
-		fmt.Printf("\n%v\n", bold("Entrypoints:"))
-		if len(manifest.Entrypoints) == 0 {
-			fmt.Fprintln(os.Stderr, " * No Entry Points")
-		} else {
-			for _, i := range manifest.Entrypoints {
-				var messageParts []string
-				if i.Name != "" {
-					messageParts = append(messageParts, fmt.Sprintf("Name: %s", i.Name))
-				}
-				if i.ServiceName != "" {
-					messageParts = append(messageParts, fmt.Sprintf("ServiceName: %s", i.ServiceName))
-				}
-				if i.Port != 0 {
-					messageParts = append(messageParts, fmt.Sprintf("Port: %v", i.Port))
-				}
-				if i.LocalPort != 0 {
-					messageParts = append(messageParts, fmt.Sprintf("LocalPort: %v", i.LocalPort))
-				}
-				if i.Scheme != "" {
-					messageParts = append(messageParts, fmt.Sprintf("Scheme: %s", i.Scheme))
-				}
-				entrypointMsg := strings.Join(messageParts, ", ")
-				fmt.Fprintf(os.Stderr, " * %s\n", entrypointMsg)
-			}
+		trimmedDescription := strings.TrimSpace(manifest.LongDescription)
+		if len(trimmedDescription) > 0 {
+			fmt.Println()
+			fmt.Println(bold("Long Description:"))
+			fmt.Println(trimmedDescription)
 		}
-
-		fmt.Printf("\n%v %v\n", bold("Status:"), status(pkgStatus))
-
 	},
 }
 
-func stringOrDash(longDesc string) string {
-	if len(strings.TrimSpace(longDesc)) > 0 {
-		return longDesc
+func printEntrypoints(manifest *v1alpha1.PackageManifest) {
+	for _, i := range manifest.Entrypoints {
+		var messageParts []string
+		if i.Name != "" {
+			messageParts = append(messageParts, fmt.Sprint("Name: ", i.Name))
+		}
+		if i.ServiceName != "" {
+			messageParts = append(messageParts, fmt.Sprintf("Remote: %s:%v", i.ServiceName, i.Port))
+		}
+		var localUrl string
+		if i.Scheme != "" {
+			localUrl += i.Scheme + "://localhost:"
+		} else {
+			localUrl += "http://localhost:"
+		}
+		if i.LocalPort != 0 {
+			localUrl += fmt.Sprint(i.LocalPort)
+		} else {
+			localUrl += fmt.Sprint(i.Port)
+		}
+		localUrl += "/"
+		messageParts = append(messageParts, fmt.Sprint("Local: ", localUrl))
+		entrypointMsg := strings.Join(messageParts, ", ")
+		fmt.Fprintf(os.Stderr, " * %s\n", entrypointMsg)
+	}
+}
+
+func printDependencies(manifest *v1alpha1.PackageManifest) {
+	for _, dep := range manifest.Dependencies {
+		fmt.Printf(" * %v", dep.Name)
+		if len(dep.Version) > 0 {
+			fmt.Printf(" (%v)", dep.Version)
+		}
+		fmt.Println()
+	}
+}
+
+func printReferences(pkg *v1alpha1.Package, manifest *v1alpha1.PackageManifest, latestVersion string) {
+	version := latestVersion
+	if pkg != nil {
+		version = pkg.Spec.PackageInfo.Version
+	}
+	if url, err := repo.GetPackageManifestURL("", manifest.Name, version); err != nil {
+		fmt.Fprintf(os.Stderr, "❌ Could not get package manifest url: %v\n", err)
 	} else {
-		return "–"
+		fmt.Printf(" * Glasskube Package Manifest: %v\n", url)
+	}
+	for _, ref := range manifest.References {
+		fmt.Printf(" * %v: %v\n", ref.Label, ref.Url)
 	}
 }
 
 func status(pkgStatus *client.PackageStatus) string {
 	if pkgStatus != nil {
-		return pkgStatus.Status
+		switch pkgStatus.Status {
+		case string(condition.Ready):
+			return color.GreenString(pkgStatus.Status)
+		case string(condition.Failed):
+			return color.RedString(pkgStatus.Status)
+		default:
+			return pkgStatus.Status
+		}
 	} else {
-		return "Not installed"
+		return color.New(color.Faint).Sprint("Not installed")
 	}
+}
+
+func version(pkg *v1alpha1.Package, latestVersion string) string {
+	if len(latestVersion) == 0 {
+		if pkg.Spec.PackageInfo.Version != pkg.Status.Version {
+			return fmt.Sprintf("%v (desired: %v)", pkg.Status.Version, pkg.Spec.PackageInfo.Version)
+		} else {
+			return pkg.Status.Version
+		}
+	} else {
+		return latestVersion
+	}
+}
+
+func nameAndDescription(manifest *v1alpha1.PackageManifest) string {
+	var bld strings.Builder
+	_, _ = bld.WriteString(manifest.Name)
+	trimmedDescription := strings.TrimSpace(manifest.ShortDescription)
+	if len(trimmedDescription) > 0 {
+		_, _ = bld.WriteString(" — ")
+		_, _ = bld.WriteString(trimmedDescription)
+	}
+	return bld.String()
 }
 
 func init() {
