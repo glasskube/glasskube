@@ -77,7 +77,7 @@ func (r *PackageInfoReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		}
 
 		log.Info("updating manifest")
-		if err := repo.UpdatePackageManifest(&packageInfo); err != nil {
+		if err := updatePackageManifest(&packageInfo); err != nil {
 			err1 := conditions.SetFailedAndUpdate(ctx, r.Client, r.EventRecorder, &packageInfo, &packageInfo.Status.Conditions,
 				condition.SyncFailed, err.Error())
 			return requeue.Always(ctx, multierr.Append(err, err1))
@@ -118,6 +118,16 @@ func shouldSyncFromRepo(pi packagesv1alpha1.PackageInfo) bool {
 	return pi.Status.LastUpdateTimestamp == nil ||
 		(pi.Spec.Version != "" && pi.Spec.Version != pi.Status.Version) ||
 		time.Since(pi.Status.LastUpdateTimestamp.Time) > repositorySyncInterval
+}
+
+func updatePackageManifest(pi *packagesv1alpha1.PackageInfo) (err error) {
+	var manifest packagesv1alpha1.PackageManifest
+	if err = repo.FetchPackageManifest(pi.Spec.RepositoryUrl, pi.Spec.Name, pi.Spec.Version, &manifest); err != nil {
+		return
+	}
+	pi.Status.Manifest = &manifest
+	pi.Status.Version = pi.Spec.Version
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

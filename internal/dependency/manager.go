@@ -46,15 +46,16 @@ type ValidationResult struct {
 }
 
 type defaultRepoAdapter struct {
+	repo client.RepoClient
 }
 
 func (a *defaultRepoAdapter) GetLatestVersion(repo string, pkgName string) (string, error) {
-	return repo2.GetLatestVersion(repo, pkgName)
+	return a.repo.GetLatestVersion(repo, pkgName)
 }
 
 func (a *defaultRepoAdapter) GetMaxVersionCompatibleWith(repo string, pkgName string, versionRange string) (string, error) {
 	var idx repo2.PackageIndex
-	if err := repo2.FetchPackageIndex(repo, pkgName, &idx); err != nil {
+	if err := a.repo.FetchPackageIndex(repo, pkgName, &idx); err != nil {
 		return "", err
 	}
 	constraint, err := semver.NewConstraint(versionRange)
@@ -81,15 +82,19 @@ func (a *defaultRepoAdapter) GetMaxVersionCompatibleWith(repo string, pkgName st
 func NewDependencyManager(adapter adapter.ClientAdapter) *DependendcyManager {
 	return &DependendcyManager{
 		clientAdapter: adapter,
-		repoAdapter:   &defaultRepoAdapter{},
+		repoAdapter:   &defaultRepoAdapter{repo: repo2.DefaultClient},
 	}
 }
 
-func (dm *DependendcyManager) Validate(ctx context.Context, pkg *v1alpha1.Package, pkgInfo *v1alpha1.PackageInfo) (*ValidationResult, error) {
-	if pkg == nil || pkgInfo == nil || pkgInfo.Status.Manifest == nil {
+func (dm *DependendcyManager) WithRepo(repo client.RepoClient) *DependendcyManager {
+	dm.repoAdapter = &defaultRepoAdapter{repo: repo}
+	return dm
+}
+
+func (dm *DependendcyManager) Validate(ctx context.Context, pkg *v1alpha1.Package, piManifest *v1alpha1.PackageManifest) (*ValidationResult, error) {
+	if pkg == nil || piManifest == nil {
 		return nil, errors.New("nil not allowed")
 	}
-	piManifest := pkgInfo.Status.Manifest
 	var requirements []PackageWithVersion
 	var conflicts []Conflict
 
