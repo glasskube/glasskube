@@ -31,7 +31,20 @@ var describeCmd = &cobra.Command{
 		bold := color.New(color.Bold).SprintFunc()
 		fmt.Printf("%v %v\n", bold("Package Name:"), manifest.Name)
 		fmt.Printf("%v %v\n", bold("Short Description:"), stringOrDash(manifest.ShortDescription))
+		fmt.Println()
 		fmt.Printf("%v \n%v\n", bold("Long Description:"), stringOrDash(manifest.LongDescription))
+		if len(manifest.Dependencies) > 0 {
+			fmt.Println()
+			fmt.Println(bold("Dependencies:"))
+			for _, dep := range manifest.Dependencies {
+				fmt.Printf(" * %v", dep.Name)
+				if len(dep.Version) > 0 {
+					fmt.Printf(" (%v)", dep.Version)
+				}
+				fmt.Println()
+			}
+		}
+		fmt.Println()
 		fmt.Printf("%v \n", bold("References:"))
 		version := latestVersion
 		if pkg != nil {
