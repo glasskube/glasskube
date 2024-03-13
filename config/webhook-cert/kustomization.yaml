@@ -1,0 +1,4 @@
+resources:
+  - job.yaml
+  - cronjob.yaml
+  - rbac.yaml

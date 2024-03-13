@@ -3,13 +3,16 @@ package dependency
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/glasskube/glasskube/internal/dependency/adapter"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	repo2 "github.com/glasskube/glasskube/internal/repo"
+	"github.com/glasskube/glasskube/internal/repo/client"
 )
 
 type DependendcyManager struct {
@@ -39,10 +42,24 @@ type Conflict struct {
 	Required PackageWithVersion
 }
 
+func (cf Conflict) String() string {
+	return fmt.Sprintf("%v (required: %v, actual: %v)", cf.Required.Name, cf.Required.Version, cf.Actual.Version)
+}
+
+type Conflicts []Conflict
+
+func (cf Conflicts) String() string {
+	s := make([]string, len(cf))
+	for i, c := range cf {
+		s[i] = c.String()
+	}
+	return strings.Join(s, ", ")
+}
+
 type ValidationResult struct {
 	Status       ValidationResultStatus
 	Requirements []PackageWithVersion
-	Conflicts    []Conflict
+	Conflicts    Conflicts
 }
 
 type defaultRepoAdapter struct {
