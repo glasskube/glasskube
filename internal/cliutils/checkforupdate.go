@@ -34,22 +34,27 @@ func versionIsGreater(version1, version2 string) bool {
 	return len(v1) < len(v2)
 }
 
-func CheckForUpdate() (bool, string) {
+func FetchLatestRelease() (*ReleaseInfo, error) {
 	url := "https://glasskube.dev/release.json"
 
 	resp, _ := http.Get(url)
 
 	defer func() {
 		_ = resp.Body.Close()
-
 	}()
 
 	var releaseInfo ReleaseInfo
 	if err := json.NewDecoder(resp.Body).Decode(&releaseInfo); err != nil {
-		return false, ""
+		return nil, err
 	}
 
-	if versionIsGreater(config.Version, releaseInfo.Version) {
+	return &releaseInfo, nil
+}
+
+func CheckForUpdate() (bool, string) {
+	if releaseInfo, err := FetchLatestRelease(); err != nil {
+		return false, ""
+	} else if versionIsGreater(config.Version, releaseInfo.Version) {
 		return true, releaseInfo.Version
 	}
 
