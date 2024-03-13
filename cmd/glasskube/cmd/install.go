@@ -5,7 +5,11 @@ import (
 	"os"
 	"strings"
 
+	"github.com/fatih/color"
+	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
+	"github.com/glasskube/glasskube/internal/dependency"
+	clientadapter "github.com/glasskube/glasskube/internal/dependency/adapter/goclient"
 	"github.com/glasskube/glasskube/internal/repo"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/condition"
@@ -30,11 +34,11 @@ var installCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 		config := client.RawConfigFromContext(ctx)
-		client := client.FromContext(ctx)
+		pkgClient := client.FromContext(ctx)
+		dm := dependency.NewDependencyManager(clientadapter.NewGoClientAdapter(pkgClient))
+		installer := install.NewInstaller(pkgClient).WithStatusWriter(statuswriter.Spinner())
+		bold := color.New(color.Bold).SprintFunc()
 		packageName := args[0]
-
-		// Instantiate installer
-		installer := install.NewInstaller(client).WithStatusWriter(statuswriter.Spinner())
 
 		if installCmdOptions.Version == "" {
 			var packageIndex repo.PackageIndex
@@ -45,20 +49,45 @@ var installCmd = &cobra.Command{
 			installCmdOptions.Version = packageIndex.LatestVersion
 			fmt.Fprintf(os.Stderr, "Version not specified. The latest version %v of %v will be installed.\n",
 				installCmdOptions.Version, packageName)
-			if !installCmdOptions.EnableAutoUpdates {
-				if cliutils.YesNoPrompt("Would you like to enable automatic updates?", false) {
-					installCmdOptions.EnableAutoUpdates = true
-				}
+		}
+
+		installationPlan := []dependency.PackageWithVersion{{Name: packageName, Version: installCmdOptions.Version}}
+
+		var manifest v1alpha1.PackageManifest
+		if err := repo.FetchPackageManifest("", packageName, installCmdOptions.Version, &manifest); err != nil {
+			fmt.Fprintf(os.Stderr, "❗ Error: Could not fetch package manifest: %v\n", err)
+			os.Exit(1)
+		} else if validationResult, err :=
+			dm.Validate(ctx, client.NewPackage(packageName, installCmdOptions.Version), &manifest); err != nil {
+			fmt.Fprintf(os.Stderr, "❗ Error: Could not validate dependencies: %v\n", err)
+			os.Exit(1)
+		} else if len(validationResult.Conflicts) > 0 {
+			fmt.Fprintf(os.Stderr, "❗ Error: %v cannot be installed due to conflicts: %v\n",
+				packageName, validationResult.Conflicts)
+			os.Exit(1)
+		} else if len(validationResult.Requirements) > 0 {
+			installationPlan = append(installationPlan, validationResult.Requirements...)
+		}
+
+		if !installCmdOptions.EnableAutoUpdates {
+			if cliutils.YesNoPrompt("Would you like to enable automatic updates?", false) {
+				installCmdOptions.EnableAutoUpdates = true
 			}
 		}
 
-		autoUpdatesMsg := ""
-		if installCmdOptions.EnableAutoUpdates {
-			autoUpdatesMsg = "The package will be updated automatically. "
+		fmt.Fprintln(os.Stderr, bold("Summary:"))
+		fmt.Fprintf(os.Stderr, " * The following packages will be installed in your cluster (%v):\n", config.CurrentContext)
+		for i, p := range installationPlan {
+			fmt.Fprintf(os.Stderr, "    %v. %v (version %v)\n", i+1, p.Name, p.Version)
 		}
-		msg := fmt.Sprintf("%v (version %v) will be installed in your current cluster (%v).\n%v",
-			packageName, installCmdOptions.Version, config.CurrentContext, autoUpdatesMsg)
-		if !cliutils.YesNoPrompt(fmt.Sprintf("%vContinue?", msg), true) {
+		if installCmdOptions.EnableAutoUpdates {
+			fmt.Fprintln(os.Stderr, " * Automatic updates will be", bold("enabled"))
+
+		} else {
+			fmt.Fprintln(os.Stderr, " * Automatic updates will be", bold("not enabled"))
+		}
+
+		if !cliutils.YesNoPrompt("Continue?", true) {
 			cancel()
 		}
 
@@ -151,7 +180,7 @@ func init() {
 	_ = installCmd.RegisterFlagCompletionFunc("version", completeAvailablePackageVersions)
 	installCmd.PersistentFlags().BoolVar(&installCmdOptions.EnableAutoUpdates, "enable-auto-updates", false,
 		"enable automatic updates for this package")
-	installCmd.MarkFlagsMutuallyExclusive("version", "enable-auto-updates")
 	installCmd.PersistentFlags().BoolVar(&installCmdOptions.NoWait, "no-wait", false, "perform non-blocking install")
+	installCmd.MarkFlagsMutuallyExclusive("version", "enable-auto-updates")
 	RootCmd.AddCommand(installCmd)
 }
