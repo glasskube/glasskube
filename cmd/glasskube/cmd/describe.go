@@ -45,7 +45,35 @@ var describeCmd = &cobra.Command{
 		for _, ref := range manifest.References {
 			fmt.Printf(" * %v: %v\n", ref.Label, ref.Url)
 		}
+
+		fmt.Printf("\n%v\n", bold("Entrypoints:"))
+		if len(manifest.Entrypoints) == 0 {
+			fmt.Fprintln(os.Stderr, " * No Entry Points")
+		} else {
+			for _, i := range manifest.Entrypoints {
+				var messageParts []string
+				if i.Name != "" {
+					messageParts = append(messageParts, fmt.Sprintf("Name: %s", i.Name))
+				}
+				if i.ServiceName != "" {
+					messageParts = append(messageParts, fmt.Sprintf("ServiceName: %s", i.ServiceName))
+				}
+				if i.Port != 0 {
+					messageParts = append(messageParts, fmt.Sprintf("Port: %v", i.Port))
+				}
+				if i.LocalPort != 0 {
+					messageParts = append(messageParts, fmt.Sprintf("LocalPort: %v", i.LocalPort))
+				}
+				if i.Scheme != "" {
+					messageParts = append(messageParts, fmt.Sprintf("Scheme: %s", i.Scheme))
+				}
+				entrypointMsg := strings.Join(messageParts, ", ")
+				fmt.Fprintf(os.Stderr, " * %s\n", entrypointMsg)
+			}
+		}
+
 		fmt.Printf("\n%v %v\n", bold("Status:"), status(pkgStatus))
+
 	},
 }
 
