@@ -22,7 +22,6 @@ import (
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
-	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/repo"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_detail_btns"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_overview_btn"
@@ -364,13 +363,8 @@ func (s *server) supportPage(w http.ResponseWriter, r *http.Request) {
 func (s *server) bootstrapPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	if r.Method == "POST" {
-		client := bootstrap.NewBootstrapClient(
-			s.restConfig,
-			"",
-			config.Version,
-			bootstrap.BootstrapTypeAio,
-		)
-		if err := client.Bootstrap(ctx); err != nil {
+		client := bootstrap.NewBootstrapClient(s.restConfig)
+		if err := client.Bootstrap(ctx, bootstrap.DefaultOptions()); err != nil {
 			fmt.Fprintf(os.Stderr, "\nAn error occurred during bootstrap:\n%v\n", err)
 			err := bootstrapPageTmpl.ExecuteTemplate(w, "bootstrap-failure", nil)
 			checkTmplError(err, "bootstrap-failure")

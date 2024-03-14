@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/constants"
+	"github.com/glasskube/glasskube/internal/releaseinfo"
 
 	"github.com/fatih/color"
 	"github.com/glasskube/glasskube/internal/clientutils"
@@ -22,33 +24,45 @@ import (
 )
 
 type BootstrapClient struct {
-	url          string
-	version      string
 	clientConfig *rest.Config
+}
+
+type BootstrapOptions struct {
+	Type   BootstrapType
+	Url    string
+	Latest bool
+}
+
+func DefaultOptions() BootstrapOptions {
+	return BootstrapOptions{Type: BootstrapTypeAio, Latest: config.IsDevBuild()}
 }
 
 const installMessage = `
 ## Installing GLASSKUBE ##
 🧊 The missing Package Manager for Kubernetes 📦`
 
-func NewBootstrapClient(config *rest.Config, url string, version string, bootstrapType BootstrapType) *BootstrapClient {
-	if url == "" {
-		url = fmt.Sprintf("https://github.com/glasskube/glasskube/releases/download/v%v/manifest-%v.yaml",
-			version, bootstrapType)
-	}
-
-	return &BootstrapClient{
-		url:          url,
-		version:      version,
-		clientConfig: config,
-	}
+func NewBootstrapClient(config *rest.Config) *BootstrapClient {
+	return &BootstrapClient{clientConfig: config}
 }
 
-func (c *BootstrapClient) Bootstrap(ctx context.Context) error {
+func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOptions) error {
 	fmt.Println(installMessage)
 
-	statusMessage("Fetching Glasskube manifest from "+c.url, true)
-	manifests, err := clientutils.FetchResources(c.url)
+	if options.Url == "" {
+		version := config.Version
+		if options.Latest {
+			if releaseInfo, err := releaseinfo.FetchLatestRelease(); err != nil {
+				return fmt.Errorf("could not determine latest version: %w", err)
+			} else {
+				version = releaseInfo.Version
+			}
+		}
+		options.Url = fmt.Sprintf("https://github.com/glasskube/glasskube/releases/download/v%v/manifest-%v.yaml",
+			version, options.Type)
+	}
+
+	statusMessage("Fetching Glasskube manifest from "+options.Url, true)
+	manifests, err := clientutils.FetchResources(options.Url)
 	if err != nil {
 		statusMessage("Couldn't fetch Glasskube manifests", false)
 		return err
