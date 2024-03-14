@@ -6,7 +6,6 @@ import (
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/dependency"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var ErrInvalidObject = errors.New("validator called with unexpected object type")
@@ -17,8 +16,8 @@ func newConflictError(conflicts dependency.Conflicts) error {
 	return fmt.Errorf("%w: %v", ErrDependencyConflict, conflicts)
 }
 
-func newConflictErrorDelete(owner metav1.OwnerReference) error {
-	return fmt.Errorf("%w: dependency of %v", ErrDependencyConflict, owner.Name)
+func newConflictErrorDelete(owner string) error {
+	return fmt.Errorf("%w: dependency of %v", ErrDependencyConflict, owner)
 }
 
 func newTransitiveError(requirement dependency.PackageWithVersion, dependency v1alpha1.Dependency) error {

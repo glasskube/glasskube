@@ -5,6 +5,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/glasskube/glasskube/internal/controller/owners"
+	"k8s.io/client-go/kubernetes/scheme"
+
 	"github.com/fatih/color"
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
@@ -35,7 +38,8 @@ var installCmd = &cobra.Command{
 		ctx := cmd.Context()
 		config := client.RawConfigFromContext(ctx)
 		pkgClient := client.FromContext(ctx)
-		dm := dependency.NewDependencyManager(clientadapter.NewGoClientAdapter(pkgClient))
+		dm := dependency.NewDependencyManager(clientadapter.NewGoClientAdapter(pkgClient),
+			owners.NewOwnerManager(scheme.Scheme))
 		installer := install.NewInstaller(pkgClient).WithStatusWriter(statuswriter.Spinner())
 		bold := color.New(color.Bold).SprintFunc()
 		packageName := args[0]

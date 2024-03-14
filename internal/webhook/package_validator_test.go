@@ -25,10 +25,11 @@ func newPackageValidatingWebhook(objects ...client.Object) *PackageValidatingWeb
 	fakeClient := fake.NewClientBuilder().
 		WithObjects(objects...).
 		Build()
+	ownerManager := owners.NewOwnerManager(scheme.Scheme)
 	return &PackageValidatingWebhook{
 		Client:       fakeClient,
-		OwnerManager: owners.NewOwnerManager(scheme.Scheme),
-		DependendcyManager: dependency.NewDependencyManager(ctrladapter.NewControllerRuntimeAdapter(fakeClient)).
+		OwnerManager: ownerManager,
+		DependendcyManager: dependency.NewDependencyManager(ctrladapter.NewControllerRuntimeAdapter(fakeClient), ownerManager).
 			WithRepo(&fakeRepo),
 		repo: &fakeRepo,
 	}
@@ -204,5 +205,7 @@ var _ = Describe("PackageValidatingWebhook", Ordered, func() {
 				})
 			})
 		})
+
+		// TODO tests without owner reference but with owning ref from the other side
 	})
 })

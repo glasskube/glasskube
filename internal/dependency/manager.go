@@ -7,6 +7,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/glasskube/glasskube/internal/controller/owners"
+	"github.com/glasskube/glasskube/internal/controller/owners/utils"
+
 	"github.com/glasskube/glasskube/internal/dependency/adapter"
 
 	"github.com/Masterminds/semver/v3"
@@ -18,6 +21,7 @@ import (
 type DependendcyManager struct {
 	clientAdapter adapter.ClientAdapter
 	repoAdapter   adapter.RepoAdapter
+	*owners.OwnerManager
 }
 
 type ValidationResultStatus string
@@ -96,10 +100,11 @@ func (a *defaultRepoAdapter) GetMaxVersionCompatibleWith(repo string, pkgName st
 	}
 }
 
-func NewDependencyManager(adapter adapter.ClientAdapter) *DependendcyManager {
+func NewDependencyManager(adapter adapter.ClientAdapter, ownerMgr *owners.OwnerManager) *DependendcyManager {
 	return &DependendcyManager{
 		clientAdapter: adapter,
 		repoAdapter:   &defaultRepoAdapter{repo: repo2.DefaultClient},
+		OwnerManager:  ownerMgr,
 	}
 }
 
@@ -126,7 +131,7 @@ func (dm *DependendcyManager) Validate(ctx context.Context, pkg *v1alpha1.Packag
 				requirements = append(requirements, *req)
 			}
 		} else if dependency.Version != "" {
-			if conflict, err := dm.checkConflict(requiredPkg.Spec.PackageInfo.Version, dependency); err != nil {
+			if conflict, err := dm.CheckConflict(requiredPkg.Spec.PackageInfo.Version, dependency); err != nil {
 				return nil, err
 			} else if conflict != nil {
 				conflicts = append(conflicts, *conflict)
@@ -147,7 +152,7 @@ func (dm *DependendcyManager) Validate(ctx context.Context, pkg *v1alpha1.Packag
 	}, nil
 }
 
-func (dm *DependendcyManager) checkConflict(existingVersionStr string, dependency v1alpha1.Dependency) (*Conflict, error) {
+func (dm *DependendcyManager) CheckConflict(existingVersionStr string, dependency v1alpha1.Dependency) (*Conflict, error) {
 	existingVersion, err := semver.NewVersion(existingVersionStr)
 	if err != nil {
 		return nil, err
@@ -190,4 +195,104 @@ func (dm *DependendcyManager) createRequirement(dependency v1alpha1.Dependency) 
 		}
 	}
 	return requirement, nil
+}
+
+type dependentTuple struct {
+	Pkg        *v1alpha1.Package
+	Dependency v1alpha1.Dependency
+}
+
+func (dm *DependendcyManager) IsUpdateAllowed(ctx context.Context, pkg *v1alpha1.Package, version string) (Conflicts, error) {
+	dependents, err := dm.GetDependents(ctx, pkg, GetDependentsOptions{IncludeDependencies: true})
+	if err != nil {
+		return nil, err
+	}
+	var conflicts []Conflict
+	for _, dependent := range dependents {
+		if dependent.Dependency.Version == "" {
+			continue
+		} else if c, err := dm.CheckConflict(version, dependent.Dependency); err != nil {
+			return nil, err
+		} else if c != nil {
+			conflicts = append(conflicts, *c)
+		}
+	}
+	return conflicts, nil
+}
+
+type GetDependentsOptions struct {
+	PackageList         *v1alpha1.PackageList
+	IncludeDependencies bool
+}
+
+func (dm *DependendcyManager) GetDependents(ctx context.Context, pkg *v1alpha1.Package, options GetDependentsOptions) ([]dependentTuple, error) {
+	var owningPkgs []v1alpha1.Package
+
+	if ownersOfType, err := dm.OwnersOfType(&v1alpha1.Package{}, pkg); err != nil {
+		return nil, err
+	} else if len(ownersOfType) > 0 {
+		// if there is at least one Package owning it, means that all ownersOfType are represented as owner references
+		for _, owner := range ownersOfType {
+			if owningPkg, err := dm.clientAdapter.GetPackage(ctx, owner.Name); err != nil || owningPkg == nil {
+				return nil, err
+			} else {
+				owningPkgs = append(owningPkgs, *owningPkg)
+			}
+		}
+	} else {
+		// otherwise we get the owners by iterating over all packages and search for matching OwnedPackages
+		pkgRef, err := utils.ToOwnedResourceRef(dm.GetScheme(), pkg)
+		if err != nil {
+			return nil, err
+		}
+
+		var pkgs *v1alpha1.PackageList
+		if options.PackageList != nil {
+			pkgs = options.PackageList
+		} else if pkgs, err = dm.clientAdapter.ListPackages(ctx); err != nil {
+			return nil, err
+		}
+
+		for _, otherPkg := range pkgs.Items {
+			for _, ownedPkgRef := range otherPkg.Status.OwnedPackages {
+				if !ownedPkgRef.MarkedForDeletion && ownedPkgRef == pkgRef {
+					owningPkgs = append(owningPkgs, otherPkg)
+				}
+			}
+		}
+	}
+
+	var dependents []dependentTuple
+	for i, owningPkg := range owningPkgs {
+		if options.IncludeDependencies {
+			if dt, err := dm.getDependency(ctx, &owningPkg, pkg.Name); err != nil {
+				return nil, err
+			} else if dt != nil {
+				dependents = append(dependents, *dt)
+			}
+		} else {
+			dependents = append(dependents, dependentTuple{Pkg: &owningPkgs[i]})
+		}
+	}
+
+	return dependents, nil
+}
+
+func (dm *DependendcyManager) getDependency(ctx context.Context, pkg *v1alpha1.Package, dependency string) (*dependentTuple, error) {
+	pkgInfo, err := dm.clientAdapter.GetPackageInfo(ctx, pkg.Status.OwnedPackageInfos[0].Name)
+	if err != nil {
+		return nil, err
+	}
+	if pkgInfo.Status.Manifest == nil {
+		return nil, nil
+	}
+	for _, dep := range pkgInfo.Status.Manifest.Dependencies {
+		if dep.Name == dependency {
+			return &dependentTuple{
+				Pkg:        pkg,
+				Dependency: dep,
+			}, nil
+		}
+	}
+	return nil, nil
 }
