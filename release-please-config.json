@@ -10,7 +10,7 @@
       "draft": false,
       "extra-files": [
         "README.md",
-        "config/manager/kustomization.yaml",
+        "config/default/kustomization.yaml",
         "website/src/partials/_install.mdx",
         {
           "type": "json",
