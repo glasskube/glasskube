@@ -274,6 +274,13 @@ func (s *server) updateModal(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 	}
+	for _, req := range ut.Requirements {
+		updates = append(updates, &map[string]any{
+			"Name":           req.Name,
+			"CurrentVersion": "-",
+			"LatestVersion":  req.Version,
+		})
+	}
 
 	err = pkgUpdateModalTmpl.Execute(w, &map[string]any{
 		"Updates":     updates,

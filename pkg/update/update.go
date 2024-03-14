@@ -5,17 +5,24 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/controller/owners"
+	"github.com/glasskube/glasskube/internal/dependency"
+	clientadapter "github.com/glasskube/glasskube/internal/dependency/adapter/goclient"
 	"github.com/glasskube/glasskube/internal/repo"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/condition"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/scheme"
 )
 
 type UpdateTransaction struct {
-	Items []updateTransactionItem
+	Items         []updateTransactionItem
+	ConflictItems []updateTransactionItemConflict
+	Requirements  []dependency.PackageWithVersion
 }
 
 func (tx UpdateTransaction) IsEmpty() bool {
@@ -32,6 +39,11 @@ type updateTransactionItem struct {
 	Version string
 }
 
+type updateTransactionItemConflict struct {
+	updateTransactionItem
+	Conflicts dependency.Conflicts
+}
+
 func (txi updateTransactionItem) UpdateRequired() bool {
 	return txi.Version != ""
 }
@@ -39,12 +51,17 @@ func (txi updateTransactionItem) UpdateRequired() bool {
 type updater struct {
 	client client.PackageV1Alpha1Client
 	status statuswriter.StatusWriter
+	dm     *dependency.DependendcyManager
 }
 
 func NewUpdater(client client.PackageV1Alpha1Client) *updater {
 	return &updater{
 		client: client,
 		status: statuswriter.Noop(),
+		dm: dependency.NewDependencyManager(
+			clientadapter.NewGoClientAdapter(client),
+			owners.NewOwnerManager(scheme.Scheme),
+		),
 	}
 }
 
@@ -82,17 +99,32 @@ func (c *updater) Prepare(ctx context.Context, packageNames []string) (*UpdateTr
 		return nil, fmt.Errorf("failed to fetch index: %v", err)
 	}
 
+	requirementsSet := make(map[dependency.PackageWithVersion]struct{})
 	var tx UpdateTransaction
 outer:
 	for _, pkg := range packagesToUpdate {
 		for _, indexItem := range index.Packages {
 			if indexItem.Name == pkg.Name {
-				if pkg.Spec.PackageInfo.Version != indexItem.LatestVersion {
-					// this package should be updated
-					tx.Items = append(tx.Items, updateTransactionItem{
-						Package: pkg,
-						Version: indexItem.LatestVersion,
-					})
+				if isUpgradable(pkg.Spec.PackageInfo.Version, indexItem.LatestVersion) {
+					item := updateTransactionItem{Package: pkg, Version: indexItem.LatestVersion}
+					var manifest v1alpha1.PackageManifest
+					if err := repo.FetchPackageManifest("", pkg.Name, indexItem.LatestVersion, &manifest); err != nil {
+						return nil, err
+					}
+					if result, err := c.dm.Validate(ctx, &manifest); err != nil {
+						return nil, err
+					} else if cf, err := c.dm.IsUpdateAllowed(ctx, &pkg, indexItem.LatestVersion); err != nil {
+						return nil, err
+					} else if len(result.Conflicts) > 0 || len(cf) > 0 {
+						// This package can't be updated due to conflicts
+						tx.ConflictItems = append(tx.ConflictItems, updateTransactionItemConflict{item, append(result.Conflicts, cf...)})
+					} else {
+						for _, req := range result.Requirements {
+							requirementsSet[req] = struct{}{}
+						}
+						// this package should be updated
+						tx.Items = append(tx.Items, item)
+					}
 				} else if len(packageNames) > 0 {
 					// this package is already up-to-date but an update was requested via argument
 					tx.Items = append(tx.Items, updateTransactionItem{Package: pkg})
@@ -104,7 +136,28 @@ outer:
 		return nil, fmt.Errorf("package %v not found in index", pkg.Name)
 	}
 
+	for req := range requirementsSet {
+		tx.Requirements = append(tx.Requirements, req)
+	}
+
 	return &tx, nil
+}
+
+// isUpgradable checks if latest is greater than installed, according to semver
+// As a fallback if either cannot be parsed as semver, it returns whether they are different.
+func isUpgradable(installed, latest string) bool {
+	var parsedInstalled, parsedLatest *semver.Version
+	var err error
+	if parsedInstalled, err = semver.NewVersion(installed); err != nil {
+		parsedInstalled = nil
+	} else if parsedLatest, err = semver.NewVersion(latest); err != nil {
+		parsedLatest = nil
+	}
+	if parsedLatest != nil && parsedInstalled != nil {
+		return parsedLatest.GreaterThan(parsedInstalled)
+	} else {
+		return installed != latest
+	}
 }
 
 func (c *updater) Apply(ctx context.Context, tx *UpdateTransaction) error {
