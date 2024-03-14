@@ -65,6 +65,9 @@ func printTransaction(tx update.UpdateTransaction) {
 				item.Package.Name, item.Package.Spec.PackageInfo.Version)
 		}
 	}
+	for _, req := range tx.Requirements {
+		fmt.Fprintf(w, "%v:\t-\t-> %v\n", req.Name, req.Version)
+	}
 	_ = w.Flush()
 }
 
