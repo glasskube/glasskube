@@ -44,6 +44,16 @@ func Remove(refs *[]packagesv1alpha1.OwnedResourceRef, toRemove packagesv1alpha1
 	return false
 }
 
+func MarkForDeletion(refs *[]packagesv1alpha1.OwnedResourceRef, toRemove packagesv1alpha1.OwnedResourceRef) bool {
+	for i, ref := range *refs {
+		if RefersToSameResource(ref, toRemove) {
+			(*refs)[i].MarkedForDeletion = true
+			return true
+		}
+	}
+	return false
+}
+
 func AddOwnedResourceRef(
 	scheme *runtime.Scheme,
 	refs *[]packagesv1alpha1.OwnedResourceRef,

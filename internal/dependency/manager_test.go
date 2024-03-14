@@ -2,6 +2,7 @@ package dependency
 
 import (
 	"context"
+	"strings"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
@@ -22,6 +23,34 @@ func (a *testClientAdapter) GetPackage(ctx context.Context, pkgName string) (*v1
 	} else {
 		return nil, nil
 	}
+}
+
+func (a *testClientAdapter) GetPackageInfo(ctx context.Context, pkgInfoName string) (*v1alpha1.PackageInfo, error) {
+	if strings.HasPrefix(pkgInfoName, "P") && pi != nil {
+		return pi, nil
+	} else if strings.HasPrefix(pkgInfoName, "D") && di != nil {
+		return di, nil
+	} else if strings.HasPrefix(pkgInfoName, "E") && ei != nil {
+		return ei, nil
+	} else {
+		return nil, nil
+	}
+}
+
+func (a *testClientAdapter) ListPackages(ctx context.Context) (*v1alpha1.PackageList, error) {
+	var items []v1alpha1.Package
+	if p != nil {
+		items = append(items, *p)
+	}
+	if d != nil {
+		items = append(items, *d)
+	}
+	if e != nil {
+		items = append(items, *e)
+	}
+	return &v1alpha1.PackageList{
+		Items: items,
+	}, nil
 }
 
 type testRepoAdapter struct {

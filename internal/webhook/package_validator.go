@@ -11,7 +11,6 @@ import (
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	"go.uber.org/multierr"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -31,7 +30,7 @@ var _ webhook.CustomValidator = &PackageValidatingWebhook{}
 
 func (p *PackageValidatingWebhook) SetupWithManager(mgr ctrl.Manager) error {
 	p.OwnerManager = owners.NewOwnerManager(p.Scheme())
-	p.DependendcyManager = dependency.NewDependencyManager(ctrladapter.NewControllerRuntimeAdapter(p.Client))
+	p.DependendcyManager = dependency.NewDependencyManager(ctrladapter.NewControllerRuntimeAdapter(p.Client), p.OwnerManager)
 	p.repo = repo.DefaultClient
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&v1alpha1.Package{}).
@@ -78,15 +77,12 @@ func (p *PackageValidatingWebhook) ValidateDelete(ctx context.Context, obj runti
 	log := ctrl.LoggerFrom(ctx)
 	if pkg, ok := obj.(*v1alpha1.Package); ok {
 		log.Info("validate delete", "name", pkg.Name)
-		if dependants, err := p.OwnersOfType(&v1alpha1.Package{}, pkg); err != nil {
+		if dependants, err := p.GetDependents(ctx, pkg, dependency.GetDependentsOptions{IncludeDependencies: false}); err != nil {
 			return nil, err
 		} else if len(dependants) > 0 {
 			for _, dep := range dependants {
-				var depPkg v1alpha1.Package
-				if err := p.Get(ctx, types.NamespacedName{Name: dep.Name}, &depPkg); err != nil {
-					return nil, err
-				} else if depPkg.DeletionTimestamp.IsZero() {
-					return nil, newConflictErrorDelete(dependants[0])
+				if dep.Pkg.DeletionTimestamp.IsZero() {
+					return nil, newConflictErrorDelete(dep.Pkg.Name)
 				}
 			}
 		}
@@ -105,9 +101,11 @@ func (p *PackageValidatingWebhook) validateCreateOrUpdate(ctx context.Context, p
 
 	if result, err := p.Validate(ctx, pkg, &manifest); err != nil {
 		return err
-	} else if len(result.Conflicts) > 0 {
+	} else if parentConflicts, err := p.IsUpdateAllowed(ctx, pkg, pkg.Spec.PackageInfo.Version); err != nil {
+		return err
+	} else if len(result.Conflicts) > 0 || len(parentConflicts) > 0 {
 		// Conflicts are not allowed.
-		return newConflictError(result.Conflicts)
+		return newConflictError(append(result.Conflicts, parentConflicts...))
 	} else if len(result.Requirements) > 0 {
 		// Transitive dependencies are not supported yet, so we validate that a required package does not have any
 		// dependencies itself.

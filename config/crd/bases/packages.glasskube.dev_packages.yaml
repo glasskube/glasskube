@@ -146,6 +146,8 @@ spec:
                       type: string
                     kind:
                       type: string
+                    markedForDeletion:
+                      type: boolean
                     name:
                       type: string
                     namespace:
@@ -166,6 +168,8 @@ spec:
                       type: string
                     kind:
                       type: string
+                    markedForDeletion:
+                      type: boolean
                     name:
                       type: string
                     namespace:
@@ -186,6 +190,8 @@ spec:
                       type: string
                     kind:
                       type: string
+                    markedForDeletion:
+                      type: boolean
                     name:
                       type: string
                     namespace:

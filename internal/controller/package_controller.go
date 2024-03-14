@@ -104,7 +104,7 @@ func (r *PackageReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		r.OwnerManager = owners.NewOwnerManager(r.Scheme)
 	}
 	if r.dependencyMgr == nil {
-		r.dependencyMgr = dependency.NewDependencyManager(controllerruntime.NewControllerRuntimeAdapter(r.Client))
+		r.dependencyMgr = dependency.NewDependencyManager(controllerruntime.NewControllerRuntimeAdapter(r.Client), r.OwnerManager)
 	}
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&packagesv1alpha1.Package{})
 	for _, adapter := range []manifest.ManifestAdapter{r.HelmAdapter, r.KustomizeAdapter, r.ManifestAdapter} {
@@ -583,32 +583,37 @@ OuterLoop:
 		} else if owning, err := r.HasOwner(r.pkg, &oldReqPkg); err != nil {
 			log.Error(err, "Failed to check owner references of old required package", "oldPackage", ref.Name)
 		} else if owning {
-			var cnt int
-			cnt, err = r.CountOwnersOfType(r.pkg, &oldReqPkg)
-			if err != nil {
-				log.Error(err, "Failed to check owner references of old required package", "oldPackage", ref.Name)
-				continue
-			}
-			if err := r.RemoveOwner(r.pkg, &oldReqPkg); err != nil {
-				log.Error(err, "Failed to remove owner reference", "oldPackage", ref.Name)
-			} else if err := r.Update(ctx, &oldReqPkg); err != nil {
-				log.Error(err, "Failed to update old package with removed owner reference", "oldPackage", ref.Name)
-			} else {
-				r.setShouldUpdate(ownerutils.Remove(&ownedPackagesCopy, ref))
-				log.Info(fmt.Sprintf("Removed owner reference from %v to %v", r.pkg.Name, ref.Name))
+			if ref.MarkedForDeletion {
+				log.Info(fmt.Sprintf("reference from %v to %v marked for deletion will be removed", r.pkg.Name, ref.Name))
+				var cnt int
+				cnt, err = r.CountOwnersOfType(r.pkg, &oldReqPkg)
+				if err != nil {
+					log.Error(err, "Failed to check owner references of old required package", "oldPackage", ref.Name)
+					continue
+				}
 
-				if cnt == 1 {
-					// remove the old package if we were the only package owning it
-					deletePropagationForeground := metav1.DeletePropagationForeground
-					if err := r.Delete(ctx, ownerutils.OwnedResourceRefToObject(ref), &client.DeleteOptions{
-						PropagationPolicy: &deletePropagationForeground,
-					}); err != nil && !apierrors.IsNotFound(err) {
-						errs = multierr.Append(errs, fmt.Errorf("could not prune package: %w", err))
-					} else {
-						log.V(1).Info("pruned package", "reference", ref)
-						r.setShouldUpdate(ownerutils.Remove(&ownedPackagesCopy, ref))
+				if err := r.RemoveOwner(r.pkg, &oldReqPkg); err != nil {
+					log.Error(err, "Failed to remove owner reference", "oldPackage", ref.Name)
+				} else if err := r.Update(ctx, &oldReqPkg); err != nil {
+					log.Error(err, "Failed to update old package with removed owner reference", "oldPackage", ref.Name)
+				} else {
+					log.Info(fmt.Sprintf("Removed owner reference from %v to %v", r.pkg.Name, ref.Name))
+
+					if cnt == 1 {
+						// remove the old package if we were the only package owning it
+						deletePropagationForeground := metav1.DeletePropagationForeground
+						if err := r.Delete(ctx, ownerutils.OwnedResourceRefToObject(ref), &client.DeleteOptions{
+							PropagationPolicy: &deletePropagationForeground,
+						}); err != nil && !apierrors.IsNotFound(err) {
+							errs = multierr.Append(errs, fmt.Errorf("could not prune package: %w", err))
+						} else {
+							log.V(1).Info("pruned package", "reference", ref)
+						}
 					}
 				}
+			} else {
+				log.Info(fmt.Sprintf("marking for deletion: reference from %v to %v", r.pkg.Name, ref.Name))
+				r.setShouldUpdate(ownerutils.MarkForDeletion(&ownedPackagesCopy, ref))
 			}
 		} else {
 			r.setShouldUpdate(ownerutils.Remove(&ownedPackagesCopy, ref))

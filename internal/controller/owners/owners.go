@@ -31,6 +31,10 @@ func NewOwnerManager(scheme *runtime.Scheme) *OwnerManager {
 	return &OwnerManager{scheme: scheme}
 }
 
+func (mgr *OwnerManager) GetScheme() *runtime.Scheme {
+	return mgr.scheme
+}
+
 func (mgr *OwnerManager) HasOwner(owner client.Object, obj metav1.Object) (bool, error) {
 	if _, err := mgr.findOwnerReferenceIndex(owner, obj.GetOwnerReferences()); err != nil && !errors.Is(err, ErrNoSuchOwner) {
 		return false, err
