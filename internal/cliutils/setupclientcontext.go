@@ -26,6 +26,9 @@ func SetupClientContext(requireBootstrapped bool) func(cmd *cobra.Command, args 
 		} else {
 			cmd.SetContext(ctx)
 		}
+		if err := CheckPackageOperatorVersion(cmd.Context()); err != nil {
+			fmt.Fprintf(os.Stderr, "Error checking PackageOperator version:\n\n%v\n", err)
+		}
 	}
 }
 
