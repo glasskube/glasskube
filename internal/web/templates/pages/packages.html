@@ -5,24 +5,7 @@
     hx-get="/packages"
     hx-select="main"
     hx-target="main">
-    {{ if .UpdatesAvailable }}
-      <div
-        class="visually-hidden alert alert-warning py-1 ps-2 pe-1 d-flex flex-row align-items-center"
-        role="alert"
-        id="packages-update-warning">
-        <span class="flex-grow-1">Updates for your packages are available!</span>
-        <button
-          hx-get="/packages/update/modal"
-          hx-target="#modal-container"
-          hx-swap="innerHTML"
-          hx-select="#pkg-update-modal"
-          class="btn btn-warning btn-sm"
-          data-bs-toggle="modal"
-          data-bs-target="#modal-container">
-          Update All
-        </button>
-      </div>
-    {{ end }}
+    {{ template "pkg-update-alert" . | ForPkgUpdateAlert }}
     <div class="row row-cols-3 row-cols-xl-4 g-2">
       {{ range .Packages }}
         <div class="col">

@@ -30,6 +30,7 @@ import (
 	"github.com/glasskube/glasskube/internal/repo"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_detail_btns"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_overview_btn"
+	"github.com/glasskube/glasskube/internal/web/components/pkg_update_alert"
 	"github.com/glasskube/glasskube/internal/web/handler"
 	"github.com/glasskube/glasskube/pkg/bootstrap"
 	"github.com/glasskube/glasskube/pkg/client"
@@ -104,6 +105,14 @@ func (s *server) broadcastPkg(pkg *v1alpha1.Package, status *client.PackageStatu
 		var bf bytes.Buffer
 		err := pkg_detail_btns.Render(&bf, pkgDetailBtnsTmpl, pkg, status, installedManifest, latestVersion)
 		checkTmplError(err, fmt.Sprintf("%s (%s)", pkg_detail_btns.TemplateId, pkg.Name))
+		if err == nil {
+			s.wsHub.Broadcast <- bf.Bytes()
+		}
+	}()
+	go func() {
+		var bf bytes.Buffer
+		err := pkg_update_alert.Render(&bf, pkgUpdateAlertTmpl, s.isUpdateAvailable(context.TODO()))
+		checkTmplError(err, fmt.Sprintf("%s (%s)", pkg_update_alert.TemplateId, pkg.Name))
 		if err == nil {
 			s.wsHub.Broadcast <- bf.Bytes()
 		}
@@ -330,17 +339,11 @@ func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(os.Stderr, "could not load packages: %v\n", err)
 		return
 	}
-	updatesAvailable := false
-	for _, pkg := range packages {
-		if pkg.Package != nil && pkg.Package.Spec.PackageInfo.Version != pkg.LatestVersion {
-			updatesAvailable = true
-			break
-		}
-	}
+
 	err = pkgsPageTmpl.Execute(w, &map[string]any{
 		"CurrentContext":   s.rawConfig.CurrentContext,
 		"Packages":         packages,
-		"UpdatesAvailable": updatesAvailable,
+		"UpdatesAvailable": s.isUpdateAvailable(r.Context()),
 	})
 	checkTmplError(err, "packages")
 }
@@ -609,6 +612,15 @@ func (s *server) initInformer(ctx context.Context) (cache.Store, cache.Controlle
 			},
 		},
 	)
+}
+
+func (s *server) isUpdateAvailable(ctx context.Context) bool {
+	if tx, err := update.NewUpdater(s.pkgClient).Prepare(ctx, []string{}); err != nil {
+		fmt.Fprintf(os.Stderr, "Error checking for updates: %v", err)
+		return false
+	} else {
+		return !tx.IsEmpty()
+	}
 }
 
 func isPortConflictError(err error) bool {

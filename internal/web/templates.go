@@ -12,6 +12,7 @@ import (
 
 	"github.com/glasskube/glasskube/internal/web/components/pkg_detail_btns"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_overview_btn"
+	"github.com/glasskube/glasskube/internal/web/components/pkg_update_alert"
 )
 
 var (
@@ -25,6 +26,7 @@ var (
 	pkgDetailBtnsTmpl   *template.Template
 	pkgInstallModalTmpl *template.Template
 	pkgUpdateModalTmpl  *template.Template
+	pkgUpdateAlertTmpl  *template.Template
 	templatesDir        = "templates"
 	componentsDir       = path.Join(templatesDir, "components")
 	pagesDir            = path.Join(templatesDir, "pages")
@@ -34,6 +36,7 @@ func init() {
 	templateFuncs := template.FuncMap{
 		"ForPkgOverviewBtn": pkg_overview_btn.ForPkgOverviewBtn,
 		"ForPkgDetailBtns":  pkg_detail_btns.ForPkgDetailBtns,
+		"ForPkgUpdateAlert": pkg_update_alert.ForPkgUpdateAlert,
 		"PackageManifestUrl": func(pkgName string, pkg *v1alpha1.Package, latestVersion string) string {
 			var version string
 			if pkg != nil && pkg.Spec.PackageInfo.Version != "" {
@@ -58,6 +61,7 @@ func init() {
 	kubeconfigPageTmpl = pageTmpl("kubeconfig.html")
 	pkgOverviewBtnTmpl = componentTmpl(pkg_overview_btn.TemplateId, "pkg-overview-btn.html")
 	pkgDetailBtnsTmpl = componentTmpl(pkg_detail_btns.TemplateId, "pkg-detail-btns.html")
+	pkgUpdateAlertTmpl = componentTmpl(pkg_update_alert.TemplateId, "pkg-update-alert.html")
 	pkgInstallModalTmpl = componentTmpl("pkg-install-modal", "pkg-install-modal.html")
 	pkgUpdateModalTmpl = componentTmpl("pkg-update-modal", "pkg-update-modal.html")
 }

@@ -44,6 +44,7 @@ type updater struct {
 func NewUpdater(client client.PackageV1Alpha1Client) *updater {
 	return &updater{
 		client: client,
+		status: statuswriter.Noop(),
 	}
 }
 
