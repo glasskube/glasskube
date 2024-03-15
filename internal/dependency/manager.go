@@ -113,8 +113,8 @@ func (dm *DependendcyManager) WithRepo(repo client.RepoClient) *DependendcyManag
 	return dm
 }
 
-func (dm *DependendcyManager) Validate(ctx context.Context, pkg *v1alpha1.Package, piManifest *v1alpha1.PackageManifest) (*ValidationResult, error) {
-	if pkg == nil || piManifest == nil {
+func (dm *DependendcyManager) Validate(ctx context.Context, piManifest *v1alpha1.PackageManifest) (*ValidationResult, error) {
+	if piManifest == nil {
 		return nil, errors.New("nil not allowed")
 	}
 	var requirements []PackageWithVersion

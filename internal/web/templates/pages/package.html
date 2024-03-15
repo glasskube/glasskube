@@ -35,7 +35,10 @@
               {{ .Manifest.ShortDescription }}
             </span>
             <div class="mt-2">
-              <a class="icon-link text-reset me-2" href="{{ .Manifest.Name | PackageManifestUrl }}" target="_blank">
+              <a
+                class="icon-link text-reset me-2"
+                href="{{ PackageManifestUrl .Manifest.Name .Package .LatestVersion }}"
+                target="_blank">
                 <span class="bi bi-box-arrow-up-right"></span>
                 Glasskube Package Manifest
               </a>
@@ -57,7 +60,10 @@
           {{ if eq .Manifest.LongDescription "" }}
             <i
               >This package has no detailed description yet. You can request to change this here:
-              <a class="icon-link text-reset me-2" href="{{ .Manifest.Name | PackageManifestUrl }}" target="_blank">
+              <a
+                class="icon-link text-reset me-2"
+                href="{{ PackageManifestUrl .Manifest.Name .Package .LatestVersion }}"
+                target="_blank">
                 <span class="bi bi-box-arrow-up-right"></span>
                 Glasskube Package Manifest
               </a>
@@ -67,6 +73,21 @@
           {{ end }}
         </span>
       </div>
+
+      {{ if ne .Manifest.Dependencies nil }}
+        <div class="mt-3">
+          <h2 class="text-reset">Package Dependencies</h2>
+
+          <ul>
+            {{ range .Manifest.Dependencies }}
+              <li>
+                <a class="text-reset" hx-boost="true" href="/packages/{{ .Name }}">{{ .Name }}</a>
+                {{ if ne .Version "" }}({{ .Version }}){{ end }}
+              </li>
+            {{ end }}
+          </ul>
+        </div>
+      {{ end }}
     </div>
   </div>
 {{ end }}

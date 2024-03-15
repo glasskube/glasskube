@@ -14,6 +14,11 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/glasskube/glasskube/internal/controller/owners"
+	"github.com/glasskube/glasskube/internal/dependency"
+	"github.com/glasskube/glasskube/internal/dependency/adapter/goclient"
+	"k8s.io/client-go/kubernetes/scheme"
+
 	"github.com/glasskube/glasskube/pkg/update"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -71,6 +76,7 @@ type server struct {
 	informerStore cache.Store
 	informerCtrl  cache.Controller
 	forwarders    map[string]*open.OpenResult
+	dependencyMgr *dependency.DependendcyManager
 }
 
 func (s *server) RestConfig() *rest.Config {
@@ -199,13 +205,33 @@ func (s *server) install(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) installModal(w http.ResponseWriter, r *http.Request) {
 	pkgName := r.FormValue("packageName")
+	selectedVersion := r.FormValue("selectedVersion")
 	var idx repo.PackageIndex
 	if err := repo.FetchPackageIndex("", pkgName, &idx); err != nil {
 		fmt.Fprintf(os.Stderr, "An error occurred fetching versions of %v: %v\n", pkgName, err)
+		return
 	}
-	err := pkgInstallModalTmpl.Execute(w, &map[string]any{
-		"PackageName":  pkgName,
-		"PackageIndex": &idx,
+	if selectedVersion == "" {
+		selectedVersion = idx.LatestVersion
+	}
+	var mf v1alpha1.PackageManifest
+	if err := repo.FetchPackageManifest("", pkgName, selectedVersion, &mf); err != nil {
+		fmt.Fprintf(os.Stderr, "An error occurred fetching manifest of %v in version %v: %v\n", pkgName, selectedVersion, err)
+		return
+	}
+
+	res, err := s.dependencyMgr.Validate(r.Context(), &mf)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "An error occurred validating dependencies of %v in version %v: %v\n", pkgName, selectedVersion, err)
+		return
+	}
+
+	err = pkgInstallModalTmpl.Execute(w, &map[string]any{
+		"PackageName":      pkgName,
+		"PackageIndex":     &idx,
+		"SelectedVersion":  selectedVersion,
+		"ShowConflicts":    res.Status == dependency.ValidationResultStatusConflict,
+		"ValidationResult": res,
 	})
 	checkTmplError(err, "pkgInstallModalTmpl")
 }
@@ -479,6 +505,7 @@ func (server *server) initKubeConfig() ServerConfigError {
 	server.restConfig = restConfig
 	server.rawConfig = rawConfig
 	server.pkgClient = client
+	server.dependencyMgr = dependency.NewDependencyManager(goclient.NewGoClientAdapter(server.pkgClient), owners.NewOwnerManager(scheme.Scheme))
 	return nil
 }
 

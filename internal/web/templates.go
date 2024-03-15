@@ -6,6 +6,8 @@ import (
 	"os"
 	"path"
 
+	"github.com/glasskube/glasskube/api/v1alpha1"
+
 	"github.com/glasskube/glasskube/internal/repo"
 
 	"github.com/glasskube/glasskube/internal/web/components/pkg_detail_btns"
@@ -32,8 +34,14 @@ func init() {
 	templateFuncs := template.FuncMap{
 		"ForPkgOverviewBtn": pkg_overview_btn.ForPkgOverviewBtn,
 		"ForPkgDetailBtns":  pkg_detail_btns.ForPkgDetailBtns,
-		"PackageManifestUrl": func(pkgName string) string {
-			if url, err := repo.GetPackageManifestURL("", pkgName, ""); err != nil {
+		"PackageManifestUrl": func(pkgName string, pkg *v1alpha1.Package, latestVersion string) string {
+			var version string
+			if pkg != nil && pkg.Spec.PackageInfo.Version != "" {
+				version = pkg.Spec.PackageInfo.Version
+			} else {
+				version = latestVersion
+			}
+			if url, err := repo.GetPackageManifestURL("", pkgName, version); err != nil {
 				return ""
 			} else {
 				return url

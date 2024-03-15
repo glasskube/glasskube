@@ -62,7 +62,7 @@ var installCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "❗ Error: Could not fetch package manifest: %v\n", err)
 			os.Exit(1)
 		} else if validationResult, err :=
-			dm.Validate(ctx, client.NewPackage(packageName, installCmdOptions.Version), &manifest); err != nil {
+			dm.Validate(ctx, &manifest); err != nil {
 			fmt.Fprintf(os.Stderr, "❗ Error: Could not validate dependencies: %v\n", err)
 			os.Exit(1)
 		} else if len(validationResult.Conflicts) > 0 {

@@ -11,19 +11,27 @@
         </div>
         <div class="modal-body" id="pkg-install-modal-body">
           <div id="pkg-install-modal-versions">
-            {{ with $idx := .PackageIndex }}
-              <div class="input-group mt-1">
-                <label class="input-group-text" for="pkg-install-modal-version">Version</label>
-                <select class="form-select" id="pkg-install-modal-version" name="selectedVersion" required>
+            <div class="input-group mt-1">
+              <label class="input-group-text" for="pkg-install-modal-version">Version</label>
+              <select
+                class="form-select"
+                id="pkg-install-modal-version"
+                name="selectedVersion"
+                required
+                hx-get="/packages/install/modal?packageName={{ .PackageName }}"
+                hx-target="#modal-container"
+                hx-swap="innerHTML"
+                hx-select="#pkg-install-modal">
+                {{ with $idx := .PackageIndex }}
                   {{ range $idx.Versions }}
-                    <option value="{{ .Version }}" {{ if eq .Version $idx.LatestVersion }}selected{{ end }}>
+                    <option value="{{ .Version }}" {{ if eq .Version $.SelectedVersion }}selected{{ end }}>
                       {{ .Version }}
                       {{ if eq .Version $idx.LatestVersion }}(latest){{ end }}
                     </option>
                   {{ end }}
-                </select>
-              </div>
-            {{ end }}
+                {{ end }}
+              </select>
+            </div>
           </div>
           <div class="form-switch mt-2 mb-1">
             <input
@@ -34,6 +42,26 @@
               id="enable-auto-update" />
             <label class="form-check-label ms-1" for="enable-auto-update">Enable Auto Updates</label>
           </div>
+          {{ if $.ShowConflicts }}
+            <div class="alert alert-danger m-0" role="alert">
+              <span>Cannot install due to dependency conflicts:</span>
+              <ul class="mb-0 mt-1">
+                {{ range .ValidationResult.Conflicts }}
+                  <li>{{ .Actual.Name }} (required: {{ .Required.Version }}, actual: {{ .Actual.Version }})</li>
+                {{ end }}
+              </ul>
+            </div>
+          {{ else }}
+            <div class="alert alert-success m-0" role="alert">
+              <span>The following packages will be installed:</span>
+              <ul class="mb-0 mt-1">
+                <li>{{ $.PackageName }} ({{ $.SelectedVersion }})</li>
+                {{ range .ValidationResult.Requirements }}
+                  <li>{{ .Name }} ({{ .Version }})</li>
+                {{ end }}
+              </ul>
+            </div>
+          {{ end }}
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-primary btn-sm" data-bs-dismiss="modal">Cancel</button>
@@ -42,7 +70,8 @@
             data-bs-dismiss="modal"
             name="packageName"
             value="{{ .PackageName }}"
-            class="btn btn-primary btn-sm">
+            {{ if .ShowConflicts }}disabled{{ end }}
+            class="btn btn-primary btn-sm {{ if .ShowConflicts }}disabled{{ end }}">
             Install
           </button>
         </div>
