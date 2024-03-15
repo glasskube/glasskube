@@ -71,7 +71,7 @@ type server struct {
 	listener      net.Listener
 	restConfig    *rest.Config
 	rawConfig     *api.Config
-	pkgClient     *client.PackageV1Alpha1Client
+	pkgClient     client.PackageV1Alpha1Client
 	wsHub         *WsHub
 	informerStore cache.Store
 	informerCtrl  cache.Controller
@@ -87,7 +87,7 @@ func (s *server) RawConfig() *api.Config {
 	return s.rawConfig
 }
 
-func (s *server) Client() *client.PackageV1Alpha1Client {
+func (s *server) Client() client.PackageV1Alpha1Client {
 	return s.pkgClient
 }
 
@@ -512,7 +512,8 @@ func (server *server) initKubeConfig() ServerConfigError {
 func (server *server) startInformer(ctx context.Context) {
 	if server.informerStore == nil && server.informerCtrl == nil {
 		server.informerStore, server.informerCtrl = server.initInformer(ctx)
-		go server.informerCtrl.Run(make(<-chan struct{}))
+		go server.informerCtrl.Run(ctx.Done())
+		server.pkgClient = server.pkgClient.WithPackageStore(server.informerStore)
 	}
 }
 
@@ -567,15 +568,16 @@ func defaultKubeconfigExists() bool {
 }
 
 func (s *server) initInformer(ctx context.Context) (cache.Store, cache.Controller) {
+	pkgClient := s.pkgClient
 	return cache.NewInformer(
 		&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				var pkgList v1alpha1.PackageList
-				err := s.pkgClient.Packages().GetAll(ctx, &pkgList)
+				err := pkgClient.Packages().GetAll(ctx, &pkgList)
 				return &pkgList, err
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-				return s.pkgClient.Packages().Watch(ctx)
+				return pkgClient.Packages().Watch(ctx)
 			},
 		},
 		&v1alpha1.Package{},

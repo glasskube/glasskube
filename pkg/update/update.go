@@ -37,11 +37,11 @@ func (txi updateTransactionItem) UpdateRequired() bool {
 }
 
 type updater struct {
-	client *client.PackageV1Alpha1Client
+	client client.PackageV1Alpha1Client
 	status statuswriter.StatusWriter
 }
 
-func NewUpdater(client *client.PackageV1Alpha1Client) *updater {
+func NewUpdater(client client.PackageV1Alpha1Client) *updater {
 	return &updater{
 		client: client,
 	}

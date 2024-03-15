@@ -14,13 +14,13 @@ import (
 )
 
 type uninstaller struct {
-	client *client.PackageV1Alpha1Client
+	client client.PackageV1Alpha1Client
 	status statuswriter.StatusWriter
 }
 
 var deletePropagationForeground = metav1.DeletePropagationForeground
 
-func NewUninstaller(pkgClient *client.PackageV1Alpha1Client) *uninstaller {
+func NewUninstaller(pkgClient client.PackageV1Alpha1Client) *uninstaller {
 	return &uninstaller{client: pkgClient, status: statuswriter.Noop()}
 }
 
