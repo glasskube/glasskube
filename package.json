@@ -10,7 +10,7 @@
   "dependencies": {
     "@glasskube/theme": "0.1.1",
     "bootstrap": "5.3.3",
-    "htmx.org": "1.9.10"
+    "htmx.org": "1.9.11"
   },
   "devDependencies": {
     "@commitlint/cli": "19.2.0",
