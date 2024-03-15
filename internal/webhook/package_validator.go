@@ -99,7 +99,7 @@ func (p *PackageValidatingWebhook) validateCreateOrUpdate(ctx context.Context, p
 		return err
 	}
 
-	if result, err := p.Validate(ctx, pkg, &manifest); err != nil {
+	if result, err := p.Validate(ctx, &manifest); err != nil {
 		return err
 	} else if parentConflicts, err := p.IsUpdateAllowed(ctx, pkg, pkg.Spec.PackageInfo.Version); err != nil {
 		return err
