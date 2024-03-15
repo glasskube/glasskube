@@ -28,11 +28,12 @@ func getButtonId(pkgName string) string {
 func Render(w io.Writer, tmpl *template.Template, pkg *v1alpha1.Package, status *client.PackageStatus, manifest *v1alpha1.PackageManifest, latestVersion string) error {
 	buttonId := getButtonId(pkg.Name)
 	return tmpl.ExecuteTemplate(w, TemplateId, &pkgOverviewBtnInput{
-		ButtonId:        buttonId,
-		Swap:            fmt.Sprintf("outerHTML:#%s", buttonId),
-		PackageName:     pkg.Name,
-		Status:          status,
-		Manifest:        manifest,
+		ButtonId:    buttonId,
+		Swap:        fmt.Sprintf("outerHTML:#%s", buttonId),
+		PackageName: pkg.Name,
+		Status:      status,
+		Manifest:    manifest,
+		// TODO: Use semver check
 		UpdateAvailable: latestVersion != "" && pkg.Spec.PackageInfo.Version != latestVersion,
 	})
 }
@@ -40,11 +41,12 @@ func Render(w io.Writer, tmpl *template.Template, pkg *v1alpha1.Package, status 
 func ForPkgOverviewBtn(packageWithStatus *list.PackageWithStatus) *pkgOverviewBtnInput {
 	buttonId := getButtonId(packageWithStatus.Name)
 	return &pkgOverviewBtnInput{
-		ButtonId:        buttonId,
-		Swap:            "",
-		PackageName:     packageWithStatus.Name,
-		Status:          packageWithStatus.Status,
-		Manifest:        packageWithStatus.InstalledManifest,
+		ButtonId:    buttonId,
+		Swap:        "",
+		PackageName: packageWithStatus.Name,
+		Status:      packageWithStatus.Status,
+		Manifest:    packageWithStatus.InstalledManifest,
+		// TODO: Use semver check
 		UpdateAvailable: packageWithStatus.Package != nil && packageWithStatus.Package.Spec.PackageInfo.Version != packageWithStatus.LatestVersion,
 	}
 }
