@@ -594,15 +594,17 @@ func (s *server) initInformer(ctx context.Context) (cache.Store, cache.Controlle
 			UpdateFunc: func(oldObj, newObj any) {
 				if pkg, ok := newObj.(*v1alpha1.Package); ok {
 					ctx := client.SetupContextWithClient(ctx, s.restConfig, s.rawConfig, s.pkgClient)
-					if mf, err := manifest.GetInstalledManifestForPackage(ctx, *pkg); err != nil && !errors.Is(err, manifest.ErrPackageNoManifest) {
+					mf, err := manifest.GetInstalledManifestForPackage(ctx, *pkg)
+					if err != nil {
 						fmt.Fprintf(os.Stderr, "Error fetching manifest for package %v: %v\n", pkg.Name, err)
-					} else {
-						if latestVersion, err := repo.GetLatestVersion("", pkg.Name); err != nil {
-							fmt.Fprintf(os.Stderr, "An error occurred fetching latest version of %v: \n%v\n", pkg.Name, err)
-						} else {
-							s.broadcastPkg(pkg, client.GetStatusOrPending(&pkg.Status), mf, latestVersion)
-						}
+						mf = nil
 					}
+					latestVersion, err := repo.GetLatestVersion("", pkg.Name)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "An error occurred fetching latest version of %v: \n%v\n", pkg.Name, err)
+						latestVersion = ""
+					}
+					s.broadcastPkg(pkg, client.GetStatusOrPending(&pkg.Status), mf, latestVersion)
 				}
 			},
 			DeleteFunc: func(obj any) {
