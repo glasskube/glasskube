@@ -11,7 +11,7 @@ import (
 type ContextDataSupplier interface {
 	RestConfig() *rest.Config
 	RawConfig() *api.Config
-	Client() *client.PackageV1Alpha1Client
+	Client() client.PackageV1Alpha1Client
 }
 
 type ContextEnrichingHandler struct {

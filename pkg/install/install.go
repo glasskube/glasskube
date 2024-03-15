@@ -13,11 +13,11 @@ import (
 )
 
 type installer struct {
-	client *client.PackageV1Alpha1Client
+	client client.PackageV1Alpha1Client
 	status statuswriter.StatusWriter
 }
 
-func NewInstaller(pkgClient *client.PackageV1Alpha1Client) *installer {
+func NewInstaller(pkgClient client.PackageV1Alpha1Client) *installer {
 	return &installer{client: pkgClient, status: statuswriter.Noop()}
 }
 

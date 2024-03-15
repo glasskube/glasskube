@@ -25,7 +25,7 @@ type ListOptions struct {
 }
 
 func GetPackagesWithStatus(
-	pkgClient *client.PackageV1Alpha1Client,
+	pkgClient client.PackageV1Alpha1Client,
 	ctx context.Context,
 	options ListOptions,
 ) ([]*PackageWithStatus, error) {
@@ -72,7 +72,7 @@ func (item listResultTuple) Outdated() bool {
 		item.Package.Spec.PackageInfo.Version != item.IndexItem.LatestVersion
 }
 
-func fetchRepoAndInstalled(pkgClient *client.PackageV1Alpha1Client, ctx context.Context, options ListOptions) (
+func fetchRepoAndInstalled(pkgClient client.PackageV1Alpha1Client, ctx context.Context, options ListOptions) (
 	[]listResultTuple,
 	error,
 ) {

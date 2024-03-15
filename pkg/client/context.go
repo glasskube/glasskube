@@ -30,7 +30,7 @@ func SetupContextWithClient(
 	ctx context.Context,
 	config *rest.Config,
 	rawConfig *api.Config,
-	client *PackageV1Alpha1Client,
+	client PackageV1Alpha1Client,
 ) context.Context {
 	ctx = context.WithValue(ctx, clientContextKey, client)
 	ctx = context.WithValue(ctx, configContextKey, config)
@@ -38,10 +38,10 @@ func SetupContextWithClient(
 	return ctx
 }
 
-func FromContext(ctx context.Context) *PackageV1Alpha1Client {
+func FromContext(ctx context.Context) PackageV1Alpha1Client {
 	value := ctx.Value(clientContextKey)
 	if value != nil {
-		if client, ok := value.(*PackageV1Alpha1Client); ok {
+		if client, ok := value.(PackageV1Alpha1Client); ok {
 			return client
 		}
 	}

@@ -9,10 +9,10 @@ import (
 )
 
 type GoClientAdapter struct {
-	pkgClient *client.PackageV1Alpha1Client
+	pkgClient client.PackageV1Alpha1Client
 }
 
-func NewGoClientAdapter(pkgClient *client.PackageV1Alpha1Client) *GoClientAdapter {
+func NewGoClientAdapter(pkgClient client.PackageV1Alpha1Client) *GoClientAdapter {
 	return &GoClientAdapter{
 		pkgClient: pkgClient,
 	}
