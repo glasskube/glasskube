@@ -124,6 +124,20 @@ function HomepageVideo() {
 
   );
 }
+function loadScript () {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const elementId = "hs-script";
+  if (document.getElementById(elementId) === null) {
+    const script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src = "https://js-eu1.hs-scripts.com/144345473.js";
+    script.id = elementId;
+    document.head.appendChild(script);
+  }
+}
 
 function HomepageNewsletter() {
   const { siteConfig } = useDocusaurusContext();
@@ -156,6 +170,9 @@ class NewsletterForm extends React.Component<any, { value: string }> {
   }
 
   handleChange(event) {
+    if (!this.state.value) {
+      loadScript();
+    }
     this.setState({ value: event.target.value });
   }
 
