@@ -1,9 +1,12 @@
 package client
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"sync"
 	"time"
 
@@ -15,13 +18,25 @@ import (
 
 type defaultClient struct {
 	defaultRepositoryURL string
-	idxMutex             sync.Mutex
-	idxUpdate            time.Time
-	packageRepoIndex     types.PackageRepoIndex
+	maxCacheAge          time.Duration
+	cache                sync.Map
+	debug                bool
 }
 
-func New(repoURL string) RepoClient {
-	return &defaultClient{defaultRepositoryURL: repoURL}
+type cacheItem struct {
+	bytes   []byte
+	updated time.Time
+	mutex   sync.Mutex
+}
+
+func New(repoURL string, maxCacheAge time.Duration) *defaultClient {
+	return &defaultClient{defaultRepositoryURL: repoURL, maxCacheAge: maxCacheAge}
+}
+
+func NewDebug(repoURL string, maxCacheAge time.Duration) *defaultClient {
+	c := New(repoURL, maxCacheAge)
+	c.debug = true
+	return c
 }
 
 // FetchLatestPackageManifest implements repo.RepoClient.
@@ -65,15 +80,11 @@ func (c *defaultClient) FetchPackageRepoIndex(repoURL string, target *types.Pack
 
 // GetLatestVersion implements repo.RepoClient.
 func (c *defaultClient) GetLatestVersion(repoURL string, pkgName string) (string, error) {
-	c.idxMutex.Lock()
-	defer c.idxMutex.Unlock()
-	if len(c.packageRepoIndex.Packages) == 0 || c.idxUpdate.Add(5*time.Minute).Before(time.Now()) {
-		if err := c.FetchPackageRepoIndex(repoURL, &c.packageRepoIndex); err != nil {
-			return "", err
-		}
-		c.idxUpdate = time.Now()
+	var idx types.PackageRepoIndex
+	if err := c.FetchPackageRepoIndex(repoURL, &idx); err != nil {
+		return "", err
 	}
-	for _, pkg := range c.packageRepoIndex.Packages {
+	for _, pkg := range idx.Packages {
 		if pkg.Name == pkgName {
 			return pkg.LatestVersion, nil
 		}
@@ -82,6 +93,37 @@ func (c *defaultClient) GetLatestVersion(repoURL string, pkgName string) (string
 }
 
 func (c *defaultClient) fetchYAMLOrJSON(url string, target any) error {
+	cached := &cacheItem{}
+	if c, hit := c.cache.LoadOrStore(url, cached); hit {
+		if c, ok := c.(*cacheItem); ok {
+			cached = c
+		} else {
+			return errors.New("unexpected cache type")
+		}
+	}
+
+	if cached.updated.Add(c.maxCacheAge).After(time.Now()) {
+		if c.debug {
+			fmt.Fprintln(os.Stderr, "cache hit", url)
+		}
+		return yaml.Unmarshal(cached.bytes, target)
+	}
+
+	cached.mutex.Lock()
+	defer cached.mutex.Unlock()
+
+	// try again after acquiring the mutex
+	if cached.updated.Add(c.maxCacheAge).After(time.Now()) {
+		if c.debug {
+			fmt.Fprintln(os.Stderr, "cache hit (after lock)", url)
+		}
+		return yaml.Unmarshal(cached.bytes, target)
+	}
+
+	if c.debug {
+		fmt.Fprintln(os.Stderr, "cache miss", url)
+	}
+
 	resp, err := http.Get(url)
 	if err != nil {
 		return err
@@ -90,7 +132,15 @@ func (c *defaultClient) fetchYAMLOrJSON(url string, target any) error {
 	if err = httperror.CheckResponse(resp); err != nil {
 		return fmt.Errorf("failed to fetch %v: %w", url, err)
 	}
-	return yaml.NewYAMLOrJSONDecoder(resp.Body, 4096).Decode(target)
+	if bytes, err := io.ReadAll(resp.Body); err != nil {
+		return err
+	} else if err := yaml.Unmarshal(bytes, target); err != nil {
+		return err
+	} else {
+		cached.bytes = bytes
+		cached.updated = time.Now()
+		return nil
+	}
 }
 
 func (c *defaultClient) getPackageRepoIndexURL(repoURL string) (string, error) {
