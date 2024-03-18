@@ -41,7 +41,7 @@
                 </div>
               </div>
 
-              {{ template "pkg-overview-btn" . | ForPkgOverviewBtn }}
+              {{ template "pkg-overview-btn" ForPkgOverviewBtn . (index $.PackageUpdateAvailable .Name) }}
             </div>
           </div>
         </div>

@@ -28,7 +28,7 @@ func getSwap(id string) string {
 	return fmt.Sprintf("outerHTML:#%s", id)
 }
 
-func Render(w io.Writer, tmpl *template.Template, pkg *v1alpha1.Package, status *client.PackageStatus, manifest *v1alpha1.PackageManifest, latestVersion string) error {
+func Render(w io.Writer, tmpl *template.Template, pkg *v1alpha1.Package, status *client.PackageStatus, manifest *v1alpha1.PackageManifest, updateAvailable bool) error {
 	id := getId(pkg.Name)
 	return tmpl.ExecuteTemplate(w, TemplateId, &pkgDetailBtnsInput{
 		ContainerId:     id,
@@ -36,7 +36,7 @@ func Render(w io.Writer, tmpl *template.Template, pkg *v1alpha1.Package, status 
 		PackageName:     pkg.Name,
 		Status:          status,
 		Manifest:        manifest,
-		UpdateAvailable: latestVersion != "" && pkg.Spec.PackageInfo.Version != latestVersion,
+		UpdateAvailable: updateAvailable,
 	})
 }
 
@@ -45,7 +45,7 @@ func ForPkgDetailBtns(
 	status *client.PackageStatus,
 	manifest *v1alpha1.PackageManifest,
 	pkg *v1alpha1.Package,
-	latestVersion string,
+	updateAvailable bool,
 ) *pkgDetailBtnsInput {
 	id := getId(pkgName)
 	return &pkgDetailBtnsInput{
@@ -54,6 +54,6 @@ func ForPkgDetailBtns(
 		PackageName:     pkgName,
 		Status:          status,
 		Manifest:        manifest,
-		UpdateAvailable: pkg != nil && pkg.Spec.PackageInfo.Version != latestVersion,
+		UpdateAvailable: updateAvailable,
 	}
 }

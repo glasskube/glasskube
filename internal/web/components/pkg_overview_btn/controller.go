@@ -25,28 +25,26 @@ func getButtonId(pkgName string) string {
 	return fmt.Sprintf("%v-%v", TemplateId, pkgName)
 }
 
-func Render(w io.Writer, tmpl *template.Template, pkg *v1alpha1.Package, status *client.PackageStatus, manifest *v1alpha1.PackageManifest, latestVersion string) error {
+func Render(w io.Writer, tmpl *template.Template, pkg *v1alpha1.Package, status *client.PackageStatus, manifest *v1alpha1.PackageManifest, updateAvailable bool) error {
 	buttonId := getButtonId(pkg.Name)
 	return tmpl.ExecuteTemplate(w, TemplateId, &pkgOverviewBtnInput{
-		ButtonId:    buttonId,
-		Swap:        fmt.Sprintf("outerHTML:#%s", buttonId),
-		PackageName: pkg.Name,
-		Status:      status,
-		Manifest:    manifest,
-		// TODO: Use semver check
-		UpdateAvailable: latestVersion != "" && pkg.Spec.PackageInfo.Version != latestVersion,
+		ButtonId:        buttonId,
+		Swap:            fmt.Sprintf("outerHTML:#%s", buttonId),
+		PackageName:     pkg.Name,
+		Status:          status,
+		Manifest:        manifest,
+		UpdateAvailable: updateAvailable,
 	})
 }
 
-func ForPkgOverviewBtn(packageWithStatus *list.PackageWithStatus) *pkgOverviewBtnInput {
+func ForPkgOverviewBtn(packageWithStatus *list.PackageWithStatus, updateAvailable bool) *pkgOverviewBtnInput {
 	buttonId := getButtonId(packageWithStatus.Name)
 	return &pkgOverviewBtnInput{
-		ButtonId:    buttonId,
-		Swap:        "",
-		PackageName: packageWithStatus.Name,
-		Status:      packageWithStatus.Status,
-		Manifest:    packageWithStatus.InstalledManifest,
-		// TODO: Use semver check
-		UpdateAvailable: packageWithStatus.Package != nil && packageWithStatus.Package.Spec.PackageInfo.Version != packageWithStatus.LatestVersion,
+		ButtonId:        buttonId,
+		Swap:            "",
+		PackageName:     packageWithStatus.Name,
+		Status:          packageWithStatus.Status,
+		Manifest:        packageWithStatus.InstalledManifest,
+		UpdateAvailable: updateAvailable,
 	}
 }

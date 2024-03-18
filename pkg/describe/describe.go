@@ -32,9 +32,10 @@ func DescribePackage(
 
 	// pkg not installed or no manifest found: use manifest from repo
 	var packageManifest v1alpha1.PackageManifest
+	// TODO: Returning latestVersion in this way seems weird. We should find a better way.
 	if latestVersion, err := repo.FetchLatestPackageManifest("", pkgName, &packageManifest); err != nil {
 		return nil, nil, nil, "", err
 	} else {
-		return &pkg, status, &packageManifest, latestVersion, nil
+		return nil, nil, &packageManifest, latestVersion, nil
 	}
 }

@@ -92,10 +92,24 @@ func (s *server) Client() client.PackageV1Alpha1Client {
 	return s.pkgClient
 }
 
-func (s *server) broadcastPkg(pkg *v1alpha1.Package, status *client.PackageStatus, installedManifest *v1alpha1.PackageManifest, latestVersion string) {
+func (s *server) broadcastPkg(pkg *v1alpha1.Package, status *client.PackageStatus, installedManifest *v1alpha1.PackageManifest) {
 	go func() {
 		var bf bytes.Buffer
-		err := pkg_overview_btn.Render(&bf, pkgOverviewBtnTmpl, pkg, status, installedManifest, latestVersion)
+		err := pkg_update_alert.Render(&bf, pkgUpdateAlertTmpl, s.isUpdateAvailable(context.TODO()))
+		checkTmplError(err, fmt.Sprintf("%s (%s)", pkg_update_alert.TemplateId, pkg.Name))
+		if err == nil {
+			s.wsHub.Broadcast <- bf.Bytes()
+		}
+	}()
+
+	updateAvailable := false
+	if installedManifest != nil {
+		updateAvailable = s.isUpdateAvailable(context.TODO(), pkg.Name)
+	}
+
+	go func() {
+		var bf bytes.Buffer
+		err := pkg_overview_btn.Render(&bf, pkgOverviewBtnTmpl, pkg, status, installedManifest, updateAvailable)
 		checkTmplError(err, fmt.Sprintf("%s (%s)", pkg_overview_btn.TemplateId, pkg.Name))
 		if err == nil {
 			s.wsHub.Broadcast <- bf.Bytes()
@@ -103,16 +117,8 @@ func (s *server) broadcastPkg(pkg *v1alpha1.Package, status *client.PackageStatu
 	}()
 	go func() {
 		var bf bytes.Buffer
-		err := pkg_detail_btns.Render(&bf, pkgDetailBtnsTmpl, pkg, status, installedManifest, latestVersion)
+		err := pkg_detail_btns.Render(&bf, pkgDetailBtnsTmpl, pkg, status, installedManifest, updateAvailable)
 		checkTmplError(err, fmt.Sprintf("%s (%s)", pkg_detail_btns.TemplateId, pkg.Name))
-		if err == nil {
-			s.wsHub.Broadcast <- bf.Bytes()
-		}
-	}()
-	go func() {
-		var bf bytes.Buffer
-		err := pkg_update_alert.Render(&bf, pkgUpdateAlertTmpl, s.isUpdateAvailable(context.TODO()))
-		checkTmplError(err, fmt.Sprintf("%s (%s)", pkg_update_alert.TemplateId, pkg.Name))
 		if err == nil {
 			s.wsHub.Broadcast <- bf.Bytes()
 		}
@@ -340,10 +346,19 @@ func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Call isUpdateAvailable for each installed package.
+	// This is not the same as getting all updates in a single transaction, because some dependency
+	// conflicts could be resolvable by installing individual packages.
+	packageUpdateAvailable := map[string]bool{}
+	for _, pkg := range packages {
+		packageUpdateAvailable[pkg.Name] = pkg.Package != nil && s.isUpdateAvailable(r.Context(), pkg.Name)
+	}
+
 	err = pkgsPageTmpl.Execute(w, &map[string]any{
-		"CurrentContext":   s.rawConfig.CurrentContext,
-		"Packages":         packages,
-		"UpdatesAvailable": s.isUpdateAvailable(r.Context()),
+		"CurrentContext":         s.rawConfig.CurrentContext,
+		"Packages":               packages,
+		"PackageUpdateAvailable": packageUpdateAvailable,
+		"UpdatesAvailable":       s.isUpdateAvailable(r.Context()),
 	})
 	checkTmplError(err, "packages")
 }
@@ -363,11 +378,12 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(os.Stderr, "An error occurred fetching latest version of %v: \n%v\n", pkgName, err)
 	}
 	err = pkgPageTmpl.Execute(w, &map[string]any{
-		"CurrentContext": s.rawConfig.CurrentContext,
-		"Package":        pkg,
-		"Status":         status,
-		"Manifest":       manifest,
-		"LatestVersion":  latestVersion,
+		"CurrentContext":  s.rawConfig.CurrentContext,
+		"Package":         pkg,
+		"Status":          status,
+		"Manifest":        manifest,
+		"LatestVersion":   latestVersion,
+		"UpdateAvailable": pkg != nil && s.isUpdateAvailable(r.Context(), pkgName),
 	})
 	checkTmplError(err, fmt.Sprintf("package-detail (%s)", pkgName))
 }
@@ -588,7 +604,7 @@ func (s *server) initInformer(ctx context.Context) (cache.Store, cache.Controlle
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj any) {
 				if pkg, ok := obj.(*v1alpha1.Package); ok {
-					s.broadcastPkg(pkg, client.GetStatusOrPending(&pkg.Status), nil, "")
+					s.broadcastPkg(pkg, client.GetStatusOrPending(&pkg.Status), nil)
 				}
 			},
 			UpdateFunc: func(oldObj, newObj any) {
@@ -599,25 +615,20 @@ func (s *server) initInformer(ctx context.Context) (cache.Store, cache.Controlle
 						fmt.Fprintf(os.Stderr, "Error fetching manifest for package %v: %v\n", pkg.Name, err)
 						mf = nil
 					}
-					latestVersion, err := repo.GetLatestVersion("", pkg.Name)
-					if err != nil {
-						fmt.Fprintf(os.Stderr, "An error occurred fetching latest version of %v: \n%v\n", pkg.Name, err)
-						latestVersion = ""
-					}
-					s.broadcastPkg(pkg, client.GetStatusOrPending(&pkg.Status), mf, latestVersion)
+					s.broadcastPkg(pkg, client.GetStatusOrPending(&pkg.Status), mf)
 				}
 			},
 			DeleteFunc: func(obj any) {
 				if pkg, ok := obj.(*v1alpha1.Package); ok {
-					s.broadcastPkg(pkg, client.GetStatus(&pkg.Status), nil, "")
+					s.broadcastPkg(pkg, client.GetStatus(&pkg.Status), nil)
 				}
 			},
 		},
 	)
 }
 
-func (s *server) isUpdateAvailable(ctx context.Context) bool {
-	if tx, err := update.NewUpdater(s.pkgClient).Prepare(ctx, []string{}); err != nil {
+func (s *server) isUpdateAvailable(ctx context.Context, packages ...string) bool {
+	if tx, err := update.NewUpdater(s.pkgClient).Prepare(ctx, packages); err != nil {
 		fmt.Fprintf(os.Stderr, "Error checking for updates: %v", err)
 		return false
 	} else {
