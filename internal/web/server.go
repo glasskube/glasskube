@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"embed"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -332,15 +331,9 @@ func (s *server) open(w http.ResponseWriter, r *http.Request) {
 	result, err := open.NewOpener().Open(r.Context(), pkgName, "")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "could not open %v: %v\n", pkgName, err)
-		w.WriteHeader(http.StatusBadRequest) // You can use a different status code if needed
-		errorMsg := struct {
-			Message string `json:"error"`
-		}{
-			Message: fmt.Sprintf("could not open %v: %v", pkgName, err),
-		}
+		w.WriteHeader(http.StatusBadRequest)
 		errorAlert := `<div class="alert alert-danger" role="alert">` + err.Error() + `</div>`
 		w.Write([]byte(errorAlert))
-		json.NewEncoder(w).Encode(errorMsg)
 	} else {
 		s.forwarders[pkgName] = result
 		result.WaitReady()

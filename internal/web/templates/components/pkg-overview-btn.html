@@ -46,15 +46,6 @@
     <span>Open</span>
 </button>
 
-<script>
-document.addEventListener('htmx:afterSwap', function(event) {
-    var xhr = event.detail.xhr;
-    if (xhr && xhr.status === 400) {
-        alert('Error: Bad Request');
-    }
-});
-</script>
-
     {{ else }}
       <a href="/packages/{{ .PackageName }}" hx-boost="true" class="btn btn-success btn-sm w-100">
         <i class="bi bi-check-lg"></i>
