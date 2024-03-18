@@ -4,11 +4,15 @@ IMG ?= ghcr.io/glasskube/package-operator:snapshot
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.28.0
 
+# Allows to override name and location of the "go" binary.
+# This allows using different versions of Go, as outlined in the documentation: https://go.dev/doc/manage-install
+GOCMD?=go
+
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
-ifeq (,$(shell go env GOBIN))
-GOBIN=$(shell go env GOPATH)/bin
+ifeq (,$(shell $(GOCMD) env GOBIN))
+GOBIN=$(shell $(GOCMD) env GOPATH)/bin
 else
-GOBIN=$(shell go env GOBIN)
+GOBIN=$(shell $(GOCMD) env GOBIN)
 endif
 
 # CONTAINER_TOOL defines the container tool to be used for building images.
@@ -48,7 +52,7 @@ help: ## Display this help.
 
 .PHONY: schema-gen
 schema-gen: # Generate a schema.json file for the package manifest type.
-	go run ./internal/cmd/schema-gen
+	$(GOCMD) run ./internal/cmd/schema-gen
 
 .PHONY: manifests
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
@@ -60,15 +64,15 @@ generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and
 
 .PHONY: tidy
 tidy: ## Run go mod tidy
-	go mod tidy
+	$(GOCMD) mod tidy
 
 .PHONY: fmt
 fmt: ## Run go fmt against code.
-	go fmt ./...
+	$(GOCMD) fmt ./...
 
 .PHONY: vet
 vet: ## Run go vet against code.
-	go vet ./...
+	$(GOCMD) vet ./...
 
 .PHONY: lint
 lint: lint-go lint-web
@@ -78,7 +82,7 @@ lint-fix: lint-go-fix lint-web-fix
 
 .PHONY: test
 test: manifests generate fmt vet envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test ./... -coverprofile cover.out
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" $(GOCMD) test ./... -coverprofile cover.out
 
 GOLANGCI_LINT = $(shell pwd)/bin/golangci-lint
 GOLANGCI_LINT_VERSION ?= v1.54.2
@@ -100,23 +104,23 @@ lint-go-fix: golangci-lint ## Run golangci-lint linter and perform fixes
 
 .PHONY: build
 build: manifests generate fmt vet lint-go ## Build manager binary.
-	go build -o $(OUT_DIR)/package-operator ./cmd/package-operator/
+	$(GOCMD) build -o $(OUT_DIR)/package-operator ./cmd/package-operator/
 
 .PHONY: build-cert
 build-cert: manifests generate fmt vet lint-go ## Build manager binary.
-	go build -o $(OUT_DIR)/cert-manager ./cmd/cert-manager/
+	$(GOCMD) build -o $(OUT_DIR)/cert-manager ./cmd/cert-manager/
 
 .PHONY: build-cli
 build-cli: fmt vet lint-go lint-web web ## Build cli binary.
-	go build -o $(OUT_DIR)/glasskube ./cmd/glasskube/
+	$(GOCMD) build -o $(OUT_DIR)/glasskube ./cmd/glasskube/
 
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
-	go run ./cmd/package-operator/
+	$(GOCMD) run ./cmd/package-operator/
 
 .PHONY: cert
 cert: manifests generate fmt vet
-	go run ./cmd/cert-manager/ --cert-dir /tmp/k8s-webhook-server/serving-certs
+	$(GOCMD) run ./cmd/cert-manager/ --cert-dir /tmp/k8s-webhook-server/serving-certs
 
 # If you wish to build the manager image targeting other platforms you can use the --platform flag.
 # (i.e. docker build --platform linux/arm64). However, you must enable docker buildKit for it.
@@ -225,15 +229,15 @@ $(KUSTOMIZE): $(LOCALBIN)
 		echo "$(LOCALBIN)/kustomize version is not expected $(KUSTOMIZE_VERSION). Removing it before installing."; \
 		rm -rf $(LOCALBIN)/kustomize; \
 	fi
-	test -s $(LOCALBIN)/kustomize || GOBIN=$(LOCALBIN) GO111MODULE=on go install sigs.k8s.io/kustomize/kustomize/v5@$(KUSTOMIZE_VERSION)
+	test -s $(LOCALBIN)/kustomize || GOBIN=$(LOCALBIN) GO111MODULE=on $(GOCMD) install sigs.k8s.io/kustomize/kustomize/v5@$(KUSTOMIZE_VERSION)
 
 .PHONY: controller-gen
 controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary. If wrong version is installed, it will be overwritten.
 $(CONTROLLER_GEN): $(LOCALBIN)
 	test -s $(LOCALBIN)/controller-gen && $(LOCALBIN)/controller-gen --version | grep -q $(CONTROLLER_TOOLS_VERSION) || \
-	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION)
+	GOBIN=$(LOCALBIN) $(GOCMD) install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION)
 
 .PHONY: envtest
 envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
 $(ENVTEST): $(LOCALBIN)
-	test -s $(LOCALBIN)/setup-envtest || GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+	test -s $(LOCALBIN)/setup-envtest || GOBIN=$(LOCALBIN) $(GOCMD) install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
