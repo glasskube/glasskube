@@ -34,17 +34,17 @@
       </button>
     {{ else if and .Manifest .Manifest.Entrypoints }}
     <button
-    class="btn btn-success btn-sm w-100"
-    hx-post="/packages/open"
-    hx-swap="none"
-    hx-vals=".PackageName"
-    hx-trigger="click load"
-    name="packageName"
-    value="{{ .PackageName }}"
-    hx-headers="{'Accept': 'application/json'}">
-    <i class="bi bi-box-arrow-up-right"></i>
-    <span>Open</span>
-</button>
+        class="btn btn-success btn-sm w-100"
+        hx-post="/packages/open"
+        hx-swap="none"
+        hx-vals=".PackageName"
+        hx-trigger="click load"
+        name="packageName"
+        value="{{ .PackageName }}"
+        hx-headers="{'Accept': 'application/json'}">
+        <i class="bi bi-box-arrow-up-right"></i>
+        <span>Open</span>
+    </button>
 
     {{ else }}
       <a href="/packages/{{ .PackageName }}" hx-boost="true" class="btn btn-success btn-sm w-100">
