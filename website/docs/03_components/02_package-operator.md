@@ -7,6 +7,7 @@ The package operator follows the [Kubernetes Operator Pattern](https://kubernete
 The Package controller manages the `Package` resources of the cluster. 
 
 Whenever a `Package` has been created, changed or deleted these changes will be picked up and applied by the Package controller.
+The Package controller also makes sure that dependencies of a `Package` are met without conflicting installations, by applying the logic described [here](#dependency-management).
 
 ## PackageInfo Controller
 
@@ -70,13 +71,16 @@ Instead of fetching `repository.xyz/package-name/package.yaml`, the operator fet
 
 Check the [package repository documentation](../package-repository#structure) for more information.
 
-## Dependency Management (WIP)
+## Dependency Management
+
+Dependency Management is a cross-cutting concern that is being handled in all glasskube components (GUI, CLI, Operator). 
+The following decision tree states how the Package Operator is handling dependencies. 
 
 ### Package Operator – reconciling package P depending on package D (P -> D):
 
 #### Assumptions:
-* Each involved referred package has status Ready, i.e. none of the referred packages are currently being deleted or updated, and their installation has not failed
-* Each involved referred package has a `Spec.PackageInfo.Version` set, and it is equal to its `Status.Version`
+* Each involved referred package has status Ready, i.e. none of the referred packages are currently being deleted or updated, and their installation has not failed.
+* Each involved referred package has a `Spec.PackageInfo.Version` set, and it is equal to its `Status.Version`.
 * When the result of a situation is a dependency conflict, it might either be resolvable or not. Either way, the operator does not resolve such a conflict directly, but rather
 the components interacting with the user (CLI, UI) need to guide them through potential resolution. Consequently, the only time the operator does resolve an unfulfilled
 dependency, the "result" is denoted as `install`. 
