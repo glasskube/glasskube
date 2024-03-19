@@ -52,6 +52,8 @@
       </div>
     </nav>
 
+    <div id="error-container" class="container-lg mt-2"></div>
+
     <main id="main">
       {{ template "body" . }}
     </main>
@@ -59,7 +61,14 @@
     <div class="modal" id="modal-container" tabindex="-1" style="display: none" aria-hidden="false">
       <div class="modal-dialog" role="document"></div>
     </div>
-
+    <script>
+      document.addEventListener('htmx:responseError', function (event) {
+        const xhr = event.detail.xhr;
+        if (xhr && xhr.status === 400 && xhr.responseText) {
+          document.getElementById('error-container').innerHTML = xhr.responseText;
+        }
+      });
+    </script>
     <script>
       (() => {
         const getColorSchemeQuery = () => window.matchMedia('(prefers-color-scheme: dark)');

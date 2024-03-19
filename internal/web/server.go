@@ -331,6 +331,14 @@ func (s *server) open(w http.ResponseWriter, r *http.Request) {
 	result, err := open.NewOpener().Open(r.Context(), pkgName, "")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "could not open %v: %v\n", pkgName, err)
+		w.WriteHeader(http.StatusBadRequest)
+		errorAlert := `<div class="alert alert-danger alert-dismissible" role="alert">` +
+			"<div>" + err.Error() + "</div>" +
+			`<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>` +
+			"</div>"
+		if _, err := w.Write([]byte(errorAlert)); err != nil {
+			fmt.Fprintf(os.Stderr, "Error in write: %v", err)
+		}
 	} else {
 		s.forwarders[pkgName] = result
 		result.WaitReady()
@@ -508,7 +516,6 @@ func (server *server) checkBootstrapped(ctx context.Context) ServerConfigError {
 		}
 		return newBootstrapErr(err)
 	}
-
 	return nil
 }
 

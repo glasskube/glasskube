@@ -36,7 +36,8 @@
       <button
         class="btn btn-success btn-sm w-100"
         hx-post="/packages/open"
-        hx-swap="none"
+        hx-swap="innerHTML"
+        hx-target="#error-container"
         name="packageName"
         value="{{ .PackageName }}">
         <i class="bi bi-box-arrow-up-right"></i>
