@@ -14,6 +14,8 @@ import (
 func CheckForUpdate() (*string, error) {
 	if releaseInfo, err := releaseinfo.FetchLatestRelease(); err != nil {
 		return nil, err
+	} else if config.IsDevBuild() {
+		return &releaseInfo.Version, nil
 	} else if version, err := semver.NewVersion(config.Version); err != nil {
 		return nil, err
 	} else if latestVersion, err := semver.NewVersion(releaseInfo.Version); err != nil {
