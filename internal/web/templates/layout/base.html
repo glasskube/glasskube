@@ -8,24 +8,6 @@
     <script type="text/javascript">
       // htmx.logAll();
     </script>
-    <style>
-      .error-container {
-        background-color: transparent;
-        color: white;
-        padding: 0.5rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      .error-message {
-        flex: 1;
-      }
-
-      .cancel-button {
-        margin-left: 0.5rem;
-      }
-    </style>
   </head>
 
   <body hx-ext="ws" ws-connect="/ws" hx-indicator="#indicator">
@@ -70,8 +52,9 @@
       </div>
     </nav>
 
+    <div id="error-container" class="container-lg mt-2"></div>
+
     <main id="main">
-      <div id="errorContainer" class="container-lg mt-2"></div>
       {{ template "body" . }}
     </main>
 
@@ -80,24 +63,11 @@
     </div>
     <script>
       document.addEventListener('htmx:responseError', function (event) {
-        var xhr = event.detail.xhr;
-        if (xhr && xhr.status === 400) {
-          var errorContainer = document.getElementById('errorContainer');
-          errorContainer.innerHTML = `
-                    <div class="error-container">
-                        <span class="error-message">${xhr.responseText}</span>
-                        <button type="button" class="btn btn-sm btn-danger cancel-button" onclick="hideError()">
-                            <i class="fas fa-times"></i> Cancel
-                        </button>
-                    </div>
-                `;
+        const xhr = event.detail.xhr;
+        if (xhr && xhr.status === 400 && xhr.responseText) {
+          document.getElementById('error-container').innerHTML = xhr.responseText;
         }
       });
-
-      function hideError() {
-        var errorContainer = document.getElementById('errorContainer');
-        errorContainer.innerHTML = '';
-      }
     </script>
     <script>
       (() => {
