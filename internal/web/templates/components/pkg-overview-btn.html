@@ -33,7 +33,7 @@
         Update
       </button>
     {{ else if and .Manifest .Manifest.Entrypoints }}
-    <button
+      <button
         class="btn btn-success btn-sm w-100"
         hx-post="/packages/open"
         hx-swap="none"
@@ -44,8 +44,7 @@
         hx-headers="{'Accept': 'application/json'}">
         <i class="bi bi-box-arrow-up-right"></i>
         <span>Open</span>
-    </button>
-
+      </button>
     {{ else }}
       <a href="/packages/{{ .PackageName }}" hx-boost="true" class="btn btn-success btn-sm w-100">
         <i class="bi bi-check-lg"></i>
