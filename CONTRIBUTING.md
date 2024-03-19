@@ -141,6 +141,32 @@ When changing the manifests, it is recommended to deploy the package-operator in
 3. Deploy the operator using the locally built image:
    `make deploy`
 
+#### Web Development
+
+We have a minimal set of dependencies that need to be installed to work on the web UI locally. Install them with `make web`.
+This will download and install the [glasskube theme](https://github.com/glasskube/theme),  [Bootstrap](https://getbootstrap.com/) and [htmx](https://htmx.org). 
+
+After this you are ready to go by running the `serve` command: `go run cmd/glasskube/main.go serve`. 
+
+We are aware that the developer experience for the web part could be improved, e.g. by [introducing hot reload](https://github.com/glasskube/glasskube/issues/170).
+
+#### Custom Package Repository
+
+Sometimes it's necessary to develop and test new features and their different edge cases, and the official package repository does not include these cases yet.
+
+In this case, you can host your own repository locally and change the package repository URL in the code.
+
+1. Clone the [packages repository](https://github.com/glasskube/packages).
+2. Make your changes locally and host it, e.g. with [caddy](https://caddyserver.com/docs/command-line): `caddy file-server --root . --listen :9684` from the root directory of the packages project.
+3. In `internal/repo/interface.go`, change the repository URL to `http://localhost:9684/packages`. 
+4. Make sure to restart your applications (operator, CLI, UI), such that the local repository is being used everywhere.
+
+We do not have a command line option yet to change the repository URL, so for now the code change is necessary.
+
+Also note that some of the information in the repository is redundant by design, to reduce the amount of queries against the repo.
+For example, the `index.yaml` contains a `latestVersion` for each package, but the `latestVersion` is also defined in each package index file. 
+Please make sure to have consistent and valid state in your local repo. 
+
 ### Testing
 
 Unit tests for the project can be executed by running:
