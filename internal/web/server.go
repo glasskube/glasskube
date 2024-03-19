@@ -514,7 +514,6 @@ func (server *server) checkBootstrapped(ctx context.Context) ServerConfigError {
 		}
 		return newBootstrapErr(err)
 	}
-
 	return nil
 }
 
