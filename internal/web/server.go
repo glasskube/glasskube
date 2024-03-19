@@ -333,7 +333,10 @@ func (s *server) open(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(os.Stderr, "could not open %v: %v\n", pkgName, err)
 		w.WriteHeader(http.StatusBadRequest)
 		errorAlert := `<div class="alert alert-danger" role="alert">` + err.Error() + `</div>`
-		w.Write([]byte(errorAlert))
+		_, err := w.Write([]byte(errorAlert))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error in write: %v", err)
+		}
 	} else {
 		s.forwarders[pkgName] = result
 		result.WaitReady()
