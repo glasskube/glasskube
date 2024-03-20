@@ -5,12 +5,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Masterminds/semver/v3"
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/controller/owners"
 	"github.com/glasskube/glasskube/internal/dependency"
 	clientadapter "github.com/glasskube/glasskube/internal/dependency/adapter/goclient"
 	"github.com/glasskube/glasskube/internal/repo"
+	"github.com/glasskube/glasskube/internal/semver"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/condition"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
@@ -105,7 +105,7 @@ outer:
 	for _, pkg := range packagesToUpdate {
 		for _, indexItem := range index.Packages {
 			if indexItem.Name == pkg.Name {
-				if isUpgradable(pkg.Spec.PackageInfo.Version, indexItem.LatestVersion) {
+				if semver.IsUpgradable(pkg.Spec.PackageInfo.Version, indexItem.LatestVersion) {
 					item := updateTransactionItem{Package: pkg, Version: indexItem.LatestVersion}
 					var manifest v1alpha1.PackageManifest
 					if err := repo.FetchPackageManifest("", pkg.Name, indexItem.LatestVersion, &manifest); err != nil {
@@ -141,23 +141,6 @@ outer:
 	}
 
 	return &tx, nil
-}
-
-// isUpgradable checks if latest is greater than installed, according to semver
-// As a fallback if either cannot be parsed as semver, it returns whether they are different.
-func isUpgradable(installed, latest string) bool {
-	var parsedInstalled, parsedLatest *semver.Version
-	var err error
-	if parsedInstalled, err = semver.NewVersion(installed); err != nil {
-		parsedInstalled = nil
-	} else if parsedLatest, err = semver.NewVersion(latest); err != nil {
-		parsedLatest = nil
-	}
-	if parsedLatest != nil && parsedInstalled != nil {
-		return parsedLatest.GreaterThan(parsedInstalled)
-	} else {
-		return installed != latest
-	}
 }
 
 func (c *updater) Apply(ctx context.Context, tx *UpdateTransaction) error {
