@@ -17,7 +17,7 @@ var openCmd = &cobra.Command{
 	Long: `Open the Web UI of a package.
 If the package manifest has more than one entrypoint, specify the name of the entrypoint to open.`,
 	Args:   cobra.RangeArgs(1, 2),
-	PreRun: cliutils.SetupClientContext(true),
+	PreRun: cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
 	Run: func(cmd *cobra.Command, args []string) {
 		pkgName := args[0]
 		var entrypointName string

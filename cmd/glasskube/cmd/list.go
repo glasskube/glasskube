@@ -34,7 +34,7 @@ var listCmd = &cobra.Command{
 	Short:   "List packages",
 	Long: "List packages. By default, all available packages of the given repository are shown, " +
 		"as well as their installation status in your cluster.\nYou can choose to only show installed packages.",
-	PreRun: cliutils.SetupClientContext(true),
+	PreRun: cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
 	Run: func(cmd *cobra.Command, args []string) {
 		if listCmdOptions.More {
 			listCmdOptions.ShowLatestVersion = true

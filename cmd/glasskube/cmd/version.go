@@ -13,7 +13,7 @@ var versioncmd = &cobra.Command{
 	Use:    "version",
 	Short:  "Print the version of glasskube and package-operator",
 	Long:   `Print the version of glasskube and package-operator`,
-	PreRun: cliutils.SetupClientContext(false),
+	PreRun: cliutils.SetupClientContext(false, &rootCmdOptions.SkipUpdateCheck),
 	Run: func(cmd *cobra.Command, args []string) {
 		glasskubeVersion := config.Version
 		fmt.Fprintf(os.Stderr, "glasskube: v%s\n", glasskubeVersion)

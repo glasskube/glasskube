@@ -20,7 +20,7 @@ import (
 var updateCmd = &cobra.Command{
 	Use:               "update [packages...]",
 	Short:             "Update some or all packages in your cluster",
-	PreRun:            cliutils.SetupClientContext(true),
+	PreRun:            cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
 	ValidArgsFunction: completeInstalledPackageNames,
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
