@@ -23,6 +23,7 @@ rules:
     resources:
       - secrets
     verbs:
+      - create
       - patch
 
 ---
