@@ -26,9 +26,28 @@ Inside a package's directory there must be a `versions.yaml` that contains a lis
 There must be a subdirectory for each version containing a `package.yaml` file.
 A `package.yaml` contains a manifest of that package which holds information such as longer descriptions and included files.
 
+### Version Numbers
+
+The version number of a package must follow the [semver specification](https://semver.org), with the additional constraint that the build number of a version is only allowed to consist of digits. 
+Although the specification states that [build numbers must be ignored](https://semver.org/#spec-item-10) when determining version precedence, 
+we see no other way than to do so. Therefore, we only allow digits in the build number, such that we can decide which version is newer. 
+
+This is important for Glasskube to distinguish between two different versions of a package manifest, that might have the same underlying software version of a package.
+For example, there could be a package  `kubernetes-dashboard` in version `2.7.0`. 
+The preferred way to make this version available in the Glasskube package repository, is to create a version `2.7.0+1`. 
+If the package manifest turns out to be faulty and need to be corrected (e.g. typos, wrong entrypoints, wrong dependencies), or if some metadata needs to be changed (e.g. links, description), 
+the maintainer can add a version `2.7.0+2` without changing the underlying app version of `2.7.0`. 
+
 ## Package Manifest
 
 ### Dependencies
 
 A package can declare dependencies that need to exist in a cluster, before the desired package can be installed. 
 Each dependency is a Glasskube package identified by its name. Optionally, a specific version or version range can be defined.
+
+#### Version Ranges
+
+Sometimes it is important to pin down what versions of a dependency should be used by a package. 
+Often, this will not only be one version, but a range of versions. There is no common specification for semver ranges, 
+but there seem to be some common expectations of to what version range specifications look like.
+We mostly rely on the [Masterminds/semver](https://github.com/Masterminds/semver) package to do version constraint checks, which itself works with version range syntax close to js/npm and Rust/Cargo. 
