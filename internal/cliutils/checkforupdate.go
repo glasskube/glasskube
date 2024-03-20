@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Masterminds/semver/v3"
 	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/releaseinfo"
+	"github.com/glasskube/glasskube/internal/semver"
 )
 
 // CheckForUpdate determines the new version by fetching the latest release info.
@@ -16,11 +16,7 @@ func CheckForUpdate() (*string, error) {
 		return nil, err
 	} else if config.IsDevBuild() {
 		return &releaseInfo.Version, nil
-	} else if version, err := semver.NewVersion(config.Version); err != nil {
-		return nil, err
-	} else if latestVersion, err := semver.NewVersion(releaseInfo.Version); err != nil {
-		return nil, err
-	} else if latestVersion.GreaterThan(version) {
+	} else if semver.IsUpgradable(config.Version, releaseInfo.Version) {
 		return &releaseInfo.Version, nil
 	} else {
 		return nil, nil
