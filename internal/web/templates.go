@@ -6,15 +6,14 @@ import (
 	"os"
 	"path"
 
-	"github.com/glasskube/glasskube/internal/web/components/alert"
-
+	"github.com/fsnotify/fsnotify"
 	"github.com/glasskube/glasskube/api/v1alpha1"
-
 	"github.com/glasskube/glasskube/internal/repo"
-
+	"github.com/glasskube/glasskube/internal/web/components/alert"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_detail_btns"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_overview_btn"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_update_alert"
+	"go.uber.org/multierr"
 )
 
 var (
@@ -30,12 +29,31 @@ var (
 	pkgUpdateModalTmpl  *template.Template
 	pkgUpdateAlertTmpl  *template.Template
 	alertTmpl           *template.Template
+	templatesBaseDir    = "internal/web"
 	templatesDir        = "templates"
 	componentsDir       = path.Join(templatesDir, "components")
 	pagesDir            = path.Join(templatesDir, "pages")
 )
 
-func init() {
+func watchTemplates() error {
+	watcher, err := fsnotify.NewWatcher()
+	err = multierr.Combine(
+		err,
+		watcher.Add(path.Join(templatesBaseDir, componentsDir)),
+		watcher.Add(path.Join(templatesBaseDir, templatesDir, "layout")),
+		watcher.Add(path.Join(templatesBaseDir, pagesDir)),
+	)
+	if err == nil {
+		go func() {
+			for range watcher.Events {
+				parseTemplates()
+			}
+		}()
+	}
+	return err
+}
+
+func parseTemplates() {
 	templateFuncs := template.FuncMap{
 		"ForPkgOverviewBtn": pkg_overview_btn.ForPkgOverviewBtn,
 		"ForPkgDetailBtns":  pkg_detail_btns.ForPkgDetailBtns,
@@ -57,7 +75,7 @@ func init() {
 	}
 	baseTemplate = template.Must(template.New("base.html").
 		Funcs(templateFuncs).
-		ParseFS(embededFs, path.Join(templatesDir, "layout", "base.html")))
+		ParseFS(webFs, path.Join(templatesDir, "layout", "base.html")))
 	pkgsPageTmpl = pageTmpl("packages.html")
 	pkgPageTmpl = pageTmpl("package.html")
 	supportPageTmpl = pageTmpl("support.html")
@@ -74,7 +92,7 @@ func init() {
 func pageTmpl(fileName string) *template.Template {
 	return template.Must(
 		template.Must(baseTemplate.Clone()).ParseFS(
-			embededFs,
+			webFs,
 			path.Join(pagesDir, fileName),
 			path.Join(componentsDir, "*.html")))
 }
@@ -82,7 +100,7 @@ func pageTmpl(fileName string) *template.Template {
 func componentTmpl(id string, fileName string) *template.Template {
 	return template.Must(
 		template.New(id).ParseFS(
-			embededFs,
+			webFs,
 			path.Join(componentsDir, fileName)))
 }
 

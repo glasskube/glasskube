@@ -14,6 +14,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/controller/owners"
 	"github.com/glasskube/glasskube/internal/dependency"
 	"github.com/glasskube/glasskube/internal/dependency/adapter/goclient"
@@ -49,7 +50,17 @@ import (
 
 //go:embed root
 //go:embed templates
-var embededFs embed.FS
+var embeddedFs embed.FS
+var webFs fs.FS = embeddedFs
+
+func init() {
+	if config.IsDevBuild() {
+		if _, err := os.Lstat(templatesBaseDir); err == nil {
+			fmt.Println("using DirFS")
+			webFs = os.DirFS(templatesBaseDir)
+		}
+	}
+}
 
 type ServerOptions struct {
 	Host       string
@@ -135,7 +146,14 @@ func (s *server) Start(ctx context.Context) error {
 		s.startInformer(ctx)
 	}
 
-	root, err := fs.Sub(embededFs, "root")
+	if config.IsDevBuild() {
+		if err := watchTemplates(); err != nil {
+			fmt.Fprintf(os.Stderr, "templates will not be parsed after changes: %v\n", err)
+		}
+	}
+	parseTemplates()
+
+	root, err := fs.Sub(webFs, "root")
 	if err != nil {
 		return err
 	}
