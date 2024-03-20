@@ -21,7 +21,7 @@ var describeCmd = &cobra.Command{
 	Short:             "Describe a package",
 	Long:              "Shows additional information about the given package.",
 	Args:              cobra.ExactArgs(1),
-	PreRun:            cliutils.SetupClientContext(true),
+	PreRun:            cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
 	ValidArgsFunction: completeAvailablePackageNames,
 	Run: func(cmd *cobra.Command, args []string) {
 		pkgName := args[0]

@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func SetupClientContext(requireBootstrapped bool) func(cmd *cobra.Command, args []string) {
+func SetupClientContext(requireBootstrapped bool, skipUpdateCheck *bool) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
 		cfg, rawCfg := RequireConfig(config.Kubeconfig)
 		if requireBootstrapped {
@@ -25,6 +25,11 @@ func SetupClientContext(requireBootstrapped bool) func(cmd *cobra.Command, args 
 			os.Exit(1)
 		} else {
 			cmd.SetContext(ctx)
+		}
+		if !*skipUpdateCheck {
+			if err := CheckPackageOperatorVersion(cmd.Context()); err != nil {
+				fmt.Fprintf(os.Stderr, "Error checking PackageOperator version:\n\n%v\n", err)
+			}
 		}
 	}
 }

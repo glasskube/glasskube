@@ -26,7 +26,7 @@ var bootstrapCmd = &cobra.Command{
 	Long: "Bootstraps Glasskube in a Kubernetes cluster, " +
 		"thereby installing the Glasskube operator and checking if the installation was successful.",
 	Args:   cobra.NoArgs,
-	PreRun: cliutils.SetupClientContext(false),
+	PreRun: cliutils.SetupClientContext(false, &rootCmdOptions.SkipUpdateCheck),
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg, _ := cliutils.RequireConfig(config.Kubeconfig)
 		client := bootstrap.NewBootstrapClient(cfg)
