@@ -23,19 +23,30 @@ func DescribePackage(
 		status = client.GetStatusOrPending(&pkg.Status)
 		if installedManifest, err := manifest.GetInstalledManifestForPackage(ctx, pkg); err == nil {
 			return &pkg, status, installedManifest, "", nil
-		} else if !(errors.Is(err, manifest.ErrPackageNoManifest) || apierrors.IsNotFound(err)) {
+		} else if !(errors.Is(err, manifest.ErrPackageNoManifest) ||
+			errors.Is(err, manifest.ErrPackageNoOwnedPackageInfo) ||
+			apierrors.IsNotFound(err)) {
 			return nil, nil, nil, "", err
 		}
 	} else if !apierrors.IsNotFound(err) {
 		return nil, nil, nil, "", err
 	}
 
-	// pkg not installed or no manifest found: use manifest from repo
 	var packageManifest v1alpha1.PackageManifest
-	// TODO: Returning latestVersion in this way seems weird. We should find a better way.
-	if latestVersion, err := repo.FetchLatestPackageManifest("", pkgName, &packageManifest); err != nil {
-		return nil, nil, nil, "", err
+	if pkg.Spec.PackageInfo.Version != "" {
+		// pkg is installed, but has either no manifest or owned package info (yet): use manifest in this version from repo
+		if err := repo.FetchPackageManifest("", pkgName, pkg.Spec.PackageInfo.Version, &packageManifest); err != nil {
+			return nil, nil, nil, "", err
+		} else {
+			return &pkg, status, &packageManifest, "", nil
+		}
 	} else {
-		return nil, nil, &packageManifest, latestVersion, nil
+		// pkg not installed: use latest manifest from repo
+		// TODO: Returning latestVersion in this way seems weird. We should find a better way.
+		if latestVersion, err := repo.FetchLatestPackageManifest("", pkgName, &packageManifest); err != nil {
+			return nil, nil, nil, "", err
+		} else {
+			return nil, nil, &packageManifest, latestVersion, nil
+		}
 	}
 }
