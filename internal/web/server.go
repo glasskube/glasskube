@@ -56,7 +56,6 @@ var webFs fs.FS = embeddedFs
 func init() {
 	if config.IsDevBuild() {
 		if _, err := os.Lstat(templatesBaseDir); err == nil {
-			fmt.Println("using DirFS")
 			webFs = os.DirFS(templatesBaseDir)
 		}
 	}
@@ -256,7 +255,7 @@ func (s *server) installModal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := s.dependencyMgr.Validate(r.Context(), &mf)
+	res, err := s.dependencyMgr.Validate(r.Context(), &mf, selectedVersion)
 	if err != nil {
 		s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred validating dependencies of %v in version %v", pkgName, selectedVersion))
 		return

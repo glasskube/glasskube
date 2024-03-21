@@ -55,14 +55,16 @@ var installCmd = &cobra.Command{
 				installCmdOptions.Version, packageName)
 		}
 
-		installationPlan := []dependency.PackageWithVersion{{Name: packageName, Version: installCmdOptions.Version}}
+		installationPlan := []dependency.Requirement{
+			{PackageWithVersion: dependency.PackageWithVersion{Name: packageName, Version: installCmdOptions.Version}},
+		}
 
 		var manifest v1alpha1.PackageManifest
 		if err := repo.FetchPackageManifest("", packageName, installCmdOptions.Version, &manifest); err != nil {
 			fmt.Fprintf(os.Stderr, "❗ Error: Could not fetch package manifest: %v\n", err)
 			os.Exit(1)
 		} else if validationResult, err :=
-			dm.Validate(ctx, &manifest); err != nil {
+			dm.Validate(ctx, &manifest, installCmdOptions.Version); err != nil {
 			fmt.Fprintf(os.Stderr, "❗ Error: Could not validate dependencies: %v\n", err)
 			os.Exit(1)
 		} else if len(validationResult.Conflicts) > 0 {

@@ -5,32 +5,23 @@ import (
 	"strings"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/repo/client/fake"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+var fakeRepo = &fake.FakeClient{}
+
 type testClientAdapter struct {
 }
 
-func (a *testClientAdapter) GetPackage(ctx context.Context, pkgName string) (*v1alpha1.Package, error) {
-	if pkgName == "P" && p != nil {
-		return p, nil
-	} else if pkgName == "D" && d != nil {
-		return d, nil
-	} else if pkgName == "E" && e != nil {
-		return e, nil
-	} else {
-		return nil, nil
-	}
-}
-
 func (a *testClientAdapter) GetPackageInfo(ctx context.Context, pkgInfoName string) (*v1alpha1.PackageInfo, error) {
-	if strings.HasPrefix(pkgInfoName, "P") && pi != nil {
+	if strings.HasPrefix(pkgInfoName, "p") && pi != nil {
 		return pi, nil
-	} else if strings.HasPrefix(pkgInfoName, "D") && di != nil {
+	} else if strings.HasPrefix(pkgInfoName, "d") && di != nil {
 		return di, nil
-	} else if strings.HasPrefix(pkgInfoName, "E") && ei != nil {
+	} else if strings.HasPrefix(pkgInfoName, "e") && ei != nil {
 		return ei, nil
 	} else {
 		return nil, nil
@@ -53,27 +44,14 @@ func (a *testClientAdapter) ListPackages(ctx context.Context) (*v1alpha1.Package
 	}, nil
 }
 
-type testRepoAdapter struct {
-}
-
-func (a *testRepoAdapter) GetLatestVersion(repo string, pkgName string) (string, error) {
-	return latestVersion, nil
-}
-
-func (a *testRepoAdapter) GetMaxVersionCompatibleWith(repo string, pkgName string, versionRange string) (string, error) {
-	return latestVersion, nil
-}
-
 func createDependencyManager() *DependendcyManager {
-	return &DependendcyManager{
-		clientAdapter: &testClientAdapter{},
-		repoAdapter:   &testRepoAdapter{},
-	}
+	return NewDependencyManager(&testClientAdapter{}, nil).WithRepo(fakeRepo)
 }
 
 var dm *DependendcyManager
 
-// For the following test suite, we always use the Package p (name "P") as the package who's dependencies should be checked
+// For the following test suite, we always use the Package p (name "P") as the package who's dependencies should be
+// checked.
 // Package d (name "D") is the dependency (such that P depends on D) or does not exist, and Packages x (name "X") and
 // y (name "Y") are additional optional packages having a dependency on D. For tests where P has multiple dependencies,
 // we additionally use Package e (name "E").
@@ -82,10 +60,11 @@ var d, e, p, x, y *v1alpha1.Package
 // di, ei, pi, xi, yi are the corresponding PackageInfo's to the package d, p, x, y
 var di, ei, pi, xi, yi *v1alpha1.PackageInfo
 
-// latestVersion is used as a mock string which will be returned by the testRepoAdapter
-var latestVersion string
-
 func createPackageAndInfo(name string, version string) (*v1alpha1.Package, *v1alpha1.PackageInfo) {
+	manifest := v1alpha1.PackageManifest{
+		Name: name,
+	}
+	fakeRepo.AddPackage(name, version, &manifest)
 	return &v1alpha1.Package{
 			ObjectMeta: v1.ObjectMeta{
 				Name: name,
@@ -96,16 +75,15 @@ func createPackageAndInfo(name string, version string) (*v1alpha1.Package, *v1al
 					Version: version,
 				},
 			},
+			Status: v1alpha1.PackageStatus{OwnedPackageInfos: []v1alpha1.OwnedResourceRef{{Name: name}}},
 		}, &v1alpha1.PackageInfo{
 			Spec: v1alpha1.PackageInfoSpec{
 				Name:    name,
 				Version: version,
 			},
 			Status: v1alpha1.PackageInfoStatus{
-				Version: version,
-				Manifest: &v1alpha1.PackageManifest{
-					Name: name,
-				},
+				Version:  version,
+				Manifest: &manifest,
 			},
 		}
 }
@@ -118,6 +96,7 @@ var _ = Describe("Dependency Manager", func() {
 	})
 
 	AfterEach(func() {
+		fakeRepo.Clear()
 		p = nil
 		pi = nil
 		d = nil
@@ -129,14 +108,13 @@ var _ = Describe("Dependency Manager", func() {
 		y = nil
 		yi = nil
 		dm = nil
-		latestVersion = ""
 	})
 
 	Describe("Validation", func() {
 
 		When("P has no dependencies", func() {
 			It("should return OK", func(ctx context.Context) {
-				res, err := dm.Validate(ctx, pi.Status.Manifest)
+				res, err := dm.Validate(ctx, pi.Status.Manifest, p.Spec.PackageInfo.Version)
 				Expect(err).ShouldNot(HaveOccurred())
 				Expect(res).ShouldNot(BeNil())
 				Expect(res.Status).Should(Equal(ValidationResultStatusOk))
@@ -163,7 +141,7 @@ var _ = Describe("Dependency Manager", func() {
 
 					When("no other package dependent on D", func() {
 						It("should return OK", func(ctx context.Context) {
-							res, err := dm.Validate(ctx, pi.Status.Manifest)
+							res, err := dm.Validate(ctx, pi.Status.Manifest, p.Spec.PackageInfo.Version)
 							Expect(err).ShouldNot(HaveOccurred())
 							Expect(res).ShouldNot(BeNil())
 							Expect(res.Status).Should(Equal(ValidationResultStatusOk))
@@ -187,7 +165,7 @@ var _ = Describe("Dependency Manager", func() {
 
 						When("X and Y require no version range of D", func() {
 							It("should return OK", func(ctx context.Context) {
-								res, err := dm.Validate(ctx, pi.Status.Manifest)
+								res, err := dm.Validate(ctx, pi.Status.Manifest, p.Spec.PackageInfo.Version)
 								Expect(err).ShouldNot(HaveOccurred())
 								Expect(res).ShouldNot(BeNil())
 								Expect(res.Status).Should(Equal(ValidationResultStatusOk))
@@ -199,7 +177,7 @@ var _ = Describe("Dependency Manager", func() {
 						When("X requires D in version range", func() {
 							It("should return OK", func(ctx context.Context) {
 								xi.Status.Manifest.Dependencies[0].Version = ">= 1, < 2"
-								res, err := dm.Validate(ctx, pi.Status.Manifest)
+								res, err := dm.Validate(ctx, pi.Status.Manifest, p.Spec.PackageInfo.Version)
 								Expect(err).ShouldNot(HaveOccurred())
 								Expect(res).ShouldNot(BeNil())
 								Expect(res.Status).Should(Equal(ValidationResultStatusOk))
@@ -211,7 +189,7 @@ var _ = Describe("Dependency Manager", func() {
 						When("Y requires D in version range", func() {
 							It("should return OK", func(ctx context.Context) {
 								yi.Status.Manifest.Dependencies[0].Version = "1.x.x"
-								res, err := dm.Validate(ctx, pi.Status.Manifest)
+								res, err := dm.Validate(ctx, pi.Status.Manifest, p.Spec.PackageInfo.Version)
 								Expect(err).ShouldNot(HaveOccurred())
 								Expect(res).ShouldNot(BeNil())
 								Expect(res.Status).Should(Equal(ValidationResultStatusOk))
@@ -224,7 +202,7 @@ var _ = Describe("Dependency Manager", func() {
 							It("should return OK", func(ctx context.Context) {
 								xi.Status.Manifest.Dependencies[0].Version = ">= 1, < 2"
 								yi.Status.Manifest.Dependencies[0].Version = "1.x.x"
-								res, err := dm.Validate(ctx, pi.Status.Manifest)
+								res, err := dm.Validate(ctx, pi.Status.Manifest, p.Spec.PackageInfo.Version)
 								Expect(err).ShouldNot(HaveOccurred())
 								Expect(res).ShouldNot(BeNil())
 								Expect(res.Status).Should(Equal(ValidationResultStatusOk))
@@ -236,10 +214,11 @@ var _ = Describe("Dependency Manager", func() {
 				})
 
 				When("D does not exist", func() {
-
+					BeforeEach(func() {
+						fakeRepo.AddPackage("D", "1.1.7", &v1alpha1.PackageManifest{Name: "D"})
+					})
 					It("should return a RESOLVABLE result with D in latest", func(ctx context.Context) {
-						latestVersion = "1.1.7"
-						res, err := dm.Validate(ctx, pi.Status.Manifest)
+						res, err := dm.Validate(ctx, pi.Status.Manifest, p.Spec.PackageInfo.Version)
 						Expect(err).ShouldNot(HaveOccurred())
 						Expect(res).ShouldNot(BeNil())
 						Expect(res.Status).Should(Equal(ValidationResultStatusResolvable))
@@ -271,7 +250,7 @@ var _ = Describe("Dependency Manager", func() {
 
 							It("should return OK if D's version is in required range", func(ctx context.Context) {
 								d, di = createPackageAndInfo("D", "1.3.0")
-								res, err := dm.Validate(ctx, pi.Status.Manifest)
+								res, err := dm.Validate(ctx, pi.Status.Manifest, p.Spec.PackageInfo.Version)
 								Expect(err).ShouldNot(HaveOccurred())
 								Expect(res).ShouldNot(BeNil())
 								Expect(res.Status).Should(Equal(ValidationResultStatusOk))
@@ -281,7 +260,7 @@ var _ = Describe("Dependency Manager", func() {
 
 							It("should return CONFLICT if D's version is too old", func(ctx context.Context) {
 								d, di = createPackageAndInfo("D", "1.2.1")
-								res, err := dm.Validate(ctx, pi.Status.Manifest)
+								res, err := dm.Validate(ctx, pi.Status.Manifest, p.Spec.PackageInfo.Version)
 								Expect(err).ShouldNot(HaveOccurred())
 								Expect(res).ShouldNot(BeNil())
 								Expect(res.Status).Should(Equal(ValidationResultStatusConflict))
@@ -296,7 +275,7 @@ var _ = Describe("Dependency Manager", func() {
 
 							It("should return CONFLICT if D's version is too new", func(ctx context.Context) {
 								d, di = createPackageAndInfo("D", "2.0.0-alpha.2")
-								res, err := dm.Validate(ctx, pi.Status.Manifest)
+								res, err := dm.Validate(ctx, pi.Status.Manifest, p.Spec.PackageInfo.Version)
 								Expect(err).ShouldNot(HaveOccurred())
 								Expect(res).ShouldNot(BeNil())
 								Expect(res.Status).Should(Equal(ValidationResultStatusConflict))
@@ -327,7 +306,7 @@ var _ = Describe("Dependency Manager", func() {
 
 							It("should return OK if D's version is in required range", func(ctx context.Context) {
 								d, di = createPackageAndInfo("D", "1.3.1")
-								res, err := dm.Validate(ctx, pi.Status.Manifest)
+								res, err := dm.Validate(ctx, pi.Status.Manifest, p.Spec.PackageInfo.Version)
 								Expect(err).ShouldNot(HaveOccurred())
 								Expect(res).ShouldNot(BeNil())
 								Expect(res.Status).Should(Equal(ValidationResultStatusOk))
@@ -337,7 +316,7 @@ var _ = Describe("Dependency Manager", func() {
 
 							It("should return CONFLICT if D's version is too old", func(ctx context.Context) {
 								d, di = createPackageAndInfo("D", "1.1.7")
-								res, err := dm.Validate(ctx, pi.Status.Manifest)
+								res, err := dm.Validate(ctx, pi.Status.Manifest, p.Spec.PackageInfo.Version)
 								Expect(err).ShouldNot(HaveOccurred())
 								Expect(res).ShouldNot(BeNil())
 								Expect(res.Status).Should(Equal(ValidationResultStatusConflict))
@@ -352,7 +331,7 @@ var _ = Describe("Dependency Manager", func() {
 
 							It("should return CONFLICT if D's version is too new", func(ctx context.Context) {
 								d, di = createPackageAndInfo("D", "2.0.0-alpha.2")
-								res, err := dm.Validate(ctx, pi.Status.Manifest)
+								res, err := dm.Validate(ctx, pi.Status.Manifest, p.Spec.PackageInfo.Version)
 								Expect(err).ShouldNot(HaveOccurred())
 								Expect(res).ShouldNot(BeNil())
 								Expect(res.Status).Should(Equal(ValidationResultStatusConflict))
@@ -384,7 +363,7 @@ var _ = Describe("Dependency Manager", func() {
 
 						It("should return OK if D's version is in required range", func(ctx context.Context) {
 							d, di = createPackageAndInfo("D", "1.4.0")
-							res, err := dm.Validate(ctx, pi.Status.Manifest)
+							res, err := dm.Validate(ctx, pi.Status.Manifest, p.Spec.PackageInfo.Version)
 							Expect(err).ShouldNot(HaveOccurred())
 							Expect(res).ShouldNot(BeNil())
 							Expect(res.Status).Should(Equal(ValidationResultStatusOk))
@@ -394,7 +373,7 @@ var _ = Describe("Dependency Manager", func() {
 
 						It("should return CONFLICT if D's version is too old", func(ctx context.Context) {
 							d, di = createPackageAndInfo("D", "1.2.1")
-							res, err := dm.Validate(ctx, pi.Status.Manifest)
+							res, err := dm.Validate(ctx, pi.Status.Manifest, p.Spec.PackageInfo.Version)
 							Expect(err).ShouldNot(HaveOccurred())
 							Expect(res).ShouldNot(BeNil())
 							Expect(res.Status).Should(Equal(ValidationResultStatusConflict))
@@ -409,7 +388,7 @@ var _ = Describe("Dependency Manager", func() {
 
 						It("should return CONFLICT if D's version is too new", func(ctx context.Context) {
 							d, di = createPackageAndInfo("D", "2.0.0")
-							res, err := dm.Validate(ctx, pi.Status.Manifest)
+							res, err := dm.Validate(ctx, pi.Status.Manifest, p.Spec.PackageInfo.Version)
 							Expect(err).ShouldNot(HaveOccurred())
 							Expect(res).ShouldNot(BeNil())
 							Expect(res.Status).Should(Equal(ValidationResultStatusConflict))
@@ -425,10 +404,12 @@ var _ = Describe("Dependency Manager", func() {
 				})
 
 				When("D does not exist", func() {
+					BeforeEach(func() {
+						fakeRepo.AddPackage("D", "1.7.4", &v1alpha1.PackageManifest{Name: "D"})
+					})
 
 					It("should return a RESOLVABLE result with latest D", func(ctx context.Context) {
-						latestVersion = "1.7.4"
-						res, err := dm.Validate(ctx, pi.Status.Manifest)
+						res, err := dm.Validate(ctx, pi.Status.Manifest, p.Spec.PackageInfo.Version)
 						Expect(err).ShouldNot(HaveOccurred())
 						Expect(res).ShouldNot(BeNil())
 						Expect(res.Status).Should(Equal(ValidationResultStatusResolvable))
@@ -454,13 +435,11 @@ var _ = Describe("Dependency Manager", func() {
 			})
 
 			When("P requires no version ranges of D and E", func() {
-
 				When("D, E exist", func() {
-
 					It("Should return OK", func(ctx context.Context) {
 						d, di = createPackageAndInfo("D", "118.0.0")
 						e, ei = createPackageAndInfo("E", "11.80.0")
-						res, err := dm.Validate(ctx, pi.Status.Manifest)
+						res, err := dm.Validate(ctx, pi.Status.Manifest, p.Spec.PackageInfo.Version)
 						Expect(err).ShouldNot(HaveOccurred())
 						Expect(res).ShouldNot(BeNil())
 						Expect(res.Status).Should(Equal(ValidationResultStatusOk))
@@ -470,9 +449,13 @@ var _ = Describe("Dependency Manager", func() {
 				})
 
 				When("D, E do not exist", func() {
+					BeforeEach(func() {
+						fakeRepo.AddPackage("D", "1.1.7", &v1alpha1.PackageManifest{Name: "D"})
+						fakeRepo.AddPackage("E", "1.1.7", &v1alpha1.PackageManifest{Name: "E"})
+					})
+
 					It("Should return RESOLVABLE result with D, E as requirements", func(ctx context.Context) {
-						latestVersion = "1.1.7"
-						res, err := dm.Validate(ctx, pi.Status.Manifest)
+						res, err := dm.Validate(ctx, pi.Status.Manifest, p.Spec.PackageInfo.Version)
 						Expect(err).ShouldNot(HaveOccurred())
 						Expect(res).ShouldNot(BeNil())
 						Expect(res.Status).Should(Equal(ValidationResultStatusResolvable))
@@ -500,78 +483,6 @@ var _ = Describe("Dependency Manager", func() {
 	// TODO test IsUpdateAllowed()
 
 	Describe("CheckConflict", func() {
-
-		DescribeTable("Checking version ranges",
-			func(versionRange string, version string, valid bool) {
-				conflict, err := dm.CheckConflict(version, v1alpha1.Dependency{Version: versionRange})
-				if valid {
-					Expect(conflict).To(BeNil())
-					Expect(err).NotTo(HaveOccurred())
-				} else {
-					Expect(conflict).NotTo(BeNil())
-					Expect(err).NotTo(HaveOccurred())
-				}
-			},
-			Entry("When minor version is pinned", ">=1.2.0 <1.3.0", "1.2.0", true),
-			Entry("When minor version is pinned", ">=1.2.0 <1.3.0", "1.2.0+0", true),
-			Entry("When minor version is pinned", ">=1.2.0 <1.3.0", "1.2.4", true),
-			Entry("When minor version is pinned", ">=1.2.0 <1.3.0", "1.2.9", true),
-			Entry("When minor version is pinned", ">=1.2.0 <1.3.0", "1.1.9", false),
-			Entry("When minor version is pinned", ">=1.2.0 <1.3.0", "1.2.0-rc.1", false),
-			Entry("When minor version is pinned", ">=1.2.0 <1.3.0", "1.3.0-alpha.1", false),
-			Entry("When minor version is pinned", ">=1.2.0 <1.3.0", "1.3.0", false),
-
-			Entry("When minor version is pinned with ~", "~1.2.0", "1.2.0", true),
-			Entry("When minor version is pinned with ~", "~1.2.0", "1.2.0+0", true),
-			Entry("When minor version is pinned with ~", "~1.2.0", "1.2.4", true),
-			Entry("When minor version is pinned with ~", "~1.2.0", "1.2.9", true),
-			Entry("When minor version is pinned with ~", "~1.2.0", "1.1.9", false),
-			Entry("When minor version is pinned with ~", "~1.2.0", "1.2.0-rc.1", false),
-			Entry("When minor version is pinned with ~", "~1.2.0", "1.3.0-alpha.1", false),
-			Entry("When minor version is pinned with ~", "~1.2.0", "1.3.0", false),
-
-			Entry("When minor version is pinned with ~", "~1.2", "1.2.0", true),
-			Entry("When minor version is pinned with ~", "~1.2", "1.2.0+0", true),
-			Entry("When minor version is pinned with ~", "~1.2", "1.2.4", true),
-			Entry("When minor version is pinned with ~", "~1.2", "1.2.9", true),
-			Entry("When minor version is pinned with ~", "~1.2", "1.1.9", false),
-			Entry("When minor version is pinned with ~", "~1.2", "1.2.0-rc.1", false),
-			Entry("When minor version is pinned with ~", "~1.2", "1.3.0-alpha.1", false),
-			Entry("When minor version is pinned with ~", "~1.2", "1.3.0", false),
-
-			Entry("When minor version is pinned with .x", "1.2.x", "1.2.0", true),
-			Entry("When minor version is pinned with .x", "1.2.x", "1.2.0+0", true),
-			Entry("When minor version is pinned with .x", "1.2.x", "1.2.4", true),
-			Entry("When minor version is pinned with .x", "1.2.x", "1.2.9", true),
-			Entry("When minor version is pinned with .x", "1.2.x", "1.1.9", false),
-			Entry("When minor version is pinned with .x", "1.2.x", "1.2.0-rc.1", false),
-			Entry("When minor version is pinned with .x", "1.2.x", "1.3.0-alpha.1", false),
-			Entry("When minor version is pinned with .x", "1.2.x", "1.3.0", false),
-
-			Entry("When major version is pinned with ^", "^1", "1.0.0", true),
-			Entry("When major version is pinned with ^", "^1", "1.3.5", true),
-			Entry("When major version is pinned with ^", "^1", "1.7.9+1", true),
-			Entry("When major version is pinned with ^", "^1", "1.0.0-rc.1", false),
-			Entry("When major version is pinned with ^", "^1", "2.0.0-rc.1", false),
-			Entry("When major version is pinned with ^", "^1", "2.0.0", false),
-
-			Entry("When major version is pinned with .x", "1.x", "1.0.0", true),
-			Entry("When major version is pinned with .x", "1.x", "1.3.5", true),
-			Entry("When major version is pinned with .x", "1.x", "1.7.9+1", true),
-			Entry("When major version is pinned with .x", "1.x", "1.0.0-rc.1", false),
-			Entry("When major version is pinned with .x", "1.x", "2.0.0-rc.1", false),
-			Entry("When major version is pinned with .x", "1.x", "2.0.0", false),
-
-			Entry("When a prerelease is the minimum", ">= 1.0.0-alpha.1", "1.0.0-alpha.1", true),
-			Entry("When a prerelease is the minimum", ">= 1.0.0-alpha.1", "1.0.0-beta.0", true),
-			Entry("When a prerelease is the minimum", ">= 1.0.0-alpha.1", "1.0.0-rc.0", true),
-			Entry("When a prerelease is the minimum", ">= 1.0.0-alpha.1", "1.0.0+0", true),
-			Entry("When a prerelease is the minimum", ">= 1.0.0-alpha.1", "3.0.0", true),
-			Entry("When a prerelease is the minimum", ">= 1.0.0-alpha.1", "1.0.0-alpha.0", false),
-
-			Entry("When a minimum contains a build number", ">= 1.0.0+3", "1.0.0+3", true),
-			Entry("When a minimum contains a build number", ">= 1.0.0+3", "1.0.0+2", true), // TODO to be fixed with #405
-		)
 
 	})
 

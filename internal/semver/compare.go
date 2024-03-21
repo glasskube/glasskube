@@ -11,45 +11,38 @@ import (
 // Am important deviation from the semver standard is that this function DOES try to interpret
 // the version metadata as a number when comparing.
 func IsUpgradable(installed, desired string) bool {
-	var parsedInstalled, parsedDesired *semver.Version
-	var err error
-	if parsedInstalled, err = semver.NewVersion(installed); err != nil {
-		parsedInstalled = nil
-	} else if parsedDesired, err = semver.NewVersion(desired); err != nil {
-		parsedDesired = nil
-	}
-	if parsedDesired != nil && parsedInstalled != nil {
-		if parsedDesired.GreaterThan(parsedInstalled) {
-			return true
-		} else if parsedDesired.Equal(parsedInstalled) {
-			return isUpgradableMetadata(parsedInstalled, parsedDesired)
-		} else {
-			return false
-		}
-	} else {
+	if parsedInstalled, err := semver.NewVersion(installed); err != nil {
 		return installed != desired
+	} else if parsedDesired, err := semver.NewVersion(desired); err != nil {
+		return installed != desired
+	} else {
+		return IsVersionUpgradable(parsedInstalled, parsedDesired)
 	}
 }
 
-func isUpgradableMetadata(installed, latest *semver.Version) bool {
-	latestMeta := latest.Metadata()
+func IsVersionUpgradable(installed, desired *semver.Version) bool {
+	return desired.GreaterThan(installed) || (desired.Equal(installed) && isUpgradableMetadata(installed, desired))
+}
+
+func isUpgradableMetadata(installed, desired *semver.Version) bool {
+	desiredMeta := desired.Metadata()
 	installedMeta := installed.Metadata()
 
-	if latestMeta == installedMeta {
+	if desiredMeta == installedMeta {
 		return false
 	}
 
-	if latestMeta == "" {
+	if desiredMeta == "" {
 		return false
 	} else if installedMeta == "" {
 		return true
 	}
 
-	if latestMetaInt, err := strconv.Atoi(latestMeta); err != nil {
-		return installedMeta != latestMeta
+	if desiredMetadataInt, err := strconv.Atoi(desiredMeta); err != nil {
+		return installedMeta != desiredMeta
 	} else if installedMetaInt, err := strconv.Atoi(installedMeta); err != nil {
-		return installedMeta != latestMeta
+		return installedMeta != desiredMeta
 	} else {
-		return installedMetaInt < latestMetaInt
+		return installedMetaInt < desiredMetadataInt
 	}
 }

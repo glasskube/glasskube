@@ -1,4 +1,4 @@
-package controller
+package names
 
 import (
 	"regexp"

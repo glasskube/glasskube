@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/glasskube/glasskube/internal/dependency/adapter/controllerruntime"
+	"github.com/glasskube/glasskube/internal/names"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/glasskube/glasskube/internal/dependency"
@@ -230,13 +231,17 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 	log.V(1).Info("ensuring dependencies", "dependencies", r.pi.Status.Manifest.Dependencies)
 
 	var failed []string
-	if result, err := r.dependencyMgr.Validate(ctx, r.pi.Status.Manifest); err != nil {
+	if result, err := r.dependencyMgr.Validate(ctx, r.pi.Status.Manifest, r.pkg.Spec.PackageInfo.Version); err != nil {
 		r.setShouldUpdate(
 			conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.Status.Conditions,
 				condition.InstallationFailed, fmt.Sprintf("error validating dependencies: %v", err)))
 		return false
 	} else if result.Status == dependency.ValidationResultStatusResolvable {
 		for _, requirement := range result.Requirements {
+			if requirement.Transitive {
+				// Only direct dependencies should be touched in the context of the reconciliation of a package.
+				continue
+			}
 			newPkg := &packagesv1alpha1.Package{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      requirement.Name,
@@ -343,7 +348,7 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 
 func (r *PackageReconcilationContext) ensurePackageInfo(ctx context.Context) error {
 	packageInfo := packagesv1alpha1.PackageInfo{
-		ObjectMeta: metav1.ObjectMeta{Name: generatePackageInfoName(*r.pkg)},
+		ObjectMeta: metav1.ObjectMeta{Name: names.PackageInfoName(*r.pkg)},
 	}
 	log := ctrl.LoggerFrom(ctx).WithValues("PackageInfo", packageInfo.Name)
 
@@ -385,10 +390,6 @@ func (r *PackageReconcilationContext) ensurePackageInfo(ctx context.Context) err
 
 	r.pi = &packageInfo
 	return nil
-}
-
-func generatePackageInfoName(pkg packagesv1alpha1.Package) string {
-	return escapeResourceName(fmt.Sprintf("%v--%v", pkg.Spec.PackageInfo.Name, pkg.Spec.PackageInfo.Version))
 }
 
 func (r *PackageReconcilationContext) handleAdapterResults(ctx context.Context, results []result.ReconcileResult) bool {
