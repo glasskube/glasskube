@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/names"
 	"github.com/glasskube/glasskube/internal/repo"
 	"github.com/glasskube/glasskube/pkg/client"
 	"go.uber.org/multierr"
@@ -120,14 +121,11 @@ func fetchRepoAndInstalled(pkgClient client.PackageV1Alpha1Client, ctx context.C
 		for j, clusterPackage := range packages.Items {
 			if indexPackage.Name == clusterPackage.Name {
 				result[i].Package = &packages.Items[j]
-				if len(clusterPackage.Status.OwnedPackageInfos) > 0 {
-					// TODO: It would be better to use .Spec.PackageInfo to get the name of the correct PackageInfo
-					packageInfoName := clusterPackage.Status.OwnedPackageInfos[len(clusterPackage.Status.OwnedPackageInfos)-1].Name
-					for k, packageInfo := range packageInfos.Items {
-						if packageInfo.Name == packageInfoName {
-							result[i].PackageInfo = &packageInfos.Items[k]
-							break
-						}
+				packageInfoName := names.PackageInfoName(clusterPackage)
+				for k, packageInfo := range packageInfos.Items {
+					if packageInfo.Name == packageInfoName {
+						result[i].PackageInfo = &packageInfos.Items[k]
+						break
 					}
 				}
 				break

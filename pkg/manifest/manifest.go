@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/glasskube/glasskube/internal/names"
 	"github.com/glasskube/glasskube/pkg/client"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
@@ -23,12 +24,8 @@ func GetInstalledManifest(ctx context.Context, pkgName string) (*v1alpha1.Packag
 
 func GetInstalledManifestForPackage(ctx context.Context, pkg v1alpha1.Package) (*v1alpha1.PackageManifest, error) {
 	pkgClient := client.FromContext(ctx)
-	if len(pkg.Status.OwnedPackageInfos) == 0 {
-		return nil, ErrPackageNoOwnedPackageInfo
-	}
-	packageInfoName := pkg.Status.OwnedPackageInfos[len(pkg.Status.OwnedPackageInfos)-1].Name
 	var packageInfo v1alpha1.PackageInfo
-	if err := pkgClient.PackageInfos().Get(ctx, packageInfoName, &packageInfo); err != nil {
+	if err := pkgClient.PackageInfos().Get(ctx, names.PackageInfoName(pkg), &packageInfo); err != nil {
 		return nil, err
 	} else if packageInfo.Status.Manifest != nil {
 		return packageInfo.Status.Manifest, nil

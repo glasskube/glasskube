@@ -22,7 +22,7 @@ import (
 type UpdateTransaction struct {
 	Items         []updateTransactionItem
 	ConflictItems []updateTransactionItemConflict
-	Requirements  []dependency.PackageWithVersion
+	Requirements  []dependency.Requirement
 }
 
 func (tx UpdateTransaction) IsEmpty() bool {
@@ -99,7 +99,7 @@ func (c *updater) Prepare(ctx context.Context, packageNames []string) (*UpdateTr
 		return nil, fmt.Errorf("failed to fetch index: %v", err)
 	}
 
-	requirementsSet := make(map[dependency.PackageWithVersion]struct{})
+	requirementsSet := make(map[dependency.Requirement]struct{})
 	var tx UpdateTransaction
 outer:
 	for _, pkg := range packagesToUpdate {
@@ -111,13 +111,11 @@ outer:
 					if err := repo.FetchPackageManifest("", pkg.Name, indexItem.LatestVersion, &manifest); err != nil {
 						return nil, err
 					}
-					if result, err := c.dm.Validate(ctx, &manifest); err != nil {
+					if result, err := c.dm.Validate(ctx, &manifest, indexItem.LatestVersion); err != nil {
 						return nil, err
-					} else if cf, err := c.dm.IsUpdateAllowed(ctx, &pkg, indexItem.LatestVersion); err != nil {
-						return nil, err
-					} else if len(result.Conflicts) > 0 || len(cf) > 0 {
+					} else if len(result.Conflicts) > 0 {
 						// This package can't be updated due to conflicts
-						tx.ConflictItems = append(tx.ConflictItems, updateTransactionItemConflict{item, append(result.Conflicts, cf...)})
+						tx.ConflictItems = append(tx.ConflictItems, updateTransactionItemConflict{item, result.Conflicts})
 					} else {
 						for _, req := range result.Requirements {
 							requirementsSet[req] = struct{}{}

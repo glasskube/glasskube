@@ -2,11 +2,13 @@ package webhook
 
 import (
 	"context"
+	"errors"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/controller/owners"
 	"github.com/glasskube/glasskube/internal/dependency"
 	ctrladapter "github.com/glasskube/glasskube/internal/dependency/adapter/controllerruntime"
+	"github.com/glasskube/glasskube/internal/dependency/graph"
 	"github.com/glasskube/glasskube/internal/repo"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	"go.uber.org/multierr"
@@ -77,13 +79,16 @@ func (p *PackageValidatingWebhook) ValidateDelete(ctx context.Context, obj runti
 	log := ctrl.LoggerFrom(ctx)
 	if pkg, ok := obj.(*v1alpha1.Package); ok {
 		log.Info("validate delete", "name", pkg.Name)
-		if dependants, err := p.GetDependents(ctx, pkg, dependency.GetDependentsOptions{IncludeDependencies: false}); err != nil {
+		if g, err := p.NewGraph(ctx); err != nil {
 			return nil, err
-		} else if len(dependants) > 0 {
-			for _, dep := range dependants {
-				if dep.Pkg.DeletionTimestamp.IsZero() {
-					return nil, newConflictErrorDelete(dep.Pkg.Name)
+		} else {
+			if _, err := g.ValidateDelete(pkg.Name); err != nil {
+				for _, err1 := range multierr.Errors(err) {
+					if !errors.Is(err1, &graph.DependencyError{}) {
+						return nil, err1
+					}
 				}
+				return nil, newConflictErrorDelete(err)
 			}
 		}
 		return nil, nil
@@ -99,28 +104,11 @@ func (p *PackageValidatingWebhook) validateCreateOrUpdate(ctx context.Context, p
 		return err
 	}
 
-	if result, err := p.Validate(ctx, &manifest); err != nil {
+	if result, err := p.Validate(ctx, &manifest, pkg.Spec.PackageInfo.Version); err != nil {
 		return err
-	} else if parentConflicts, err := p.IsUpdateAllowed(ctx, pkg, pkg.Spec.PackageInfo.Version); err != nil {
-		return err
-	} else if len(result.Conflicts) > 0 || len(parentConflicts) > 0 {
+	} else if len(result.Conflicts) > 0 {
 		// Conflicts are not allowed.
-		return newConflictError(append(result.Conflicts, parentConflicts...))
-	} else if len(result.Requirements) > 0 {
-		// Transitive dependencies are not supported yet, so we validate that a required package does not have any
-		// dependencies itself.
-		// TODO: Add support for validating transitive dependencies.
-		var errs error
-		for _, req := range result.Requirements {
-			var depManifest v1alpha1.PackageManifest
-			err := p.repo.FetchPackageManifest("", req.Name, req.Version, &depManifest)
-			if err != nil {
-				errs = multierr.Append(errs, err)
-			} else if len(depManifest.Dependencies) > 0 {
-				errs = multierr.Append(errs, newTransitiveError(req, depManifest.Dependencies[0]))
-			}
-		}
-		return errs
+		return newConflictError(result.Conflicts)
 	} else {
 		return nil
 	}

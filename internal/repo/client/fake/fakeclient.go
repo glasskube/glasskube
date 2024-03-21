@@ -10,21 +10,21 @@ import (
 
 // FakeClient is a mock implementation of RepoClient for use in tests
 type FakeClient struct {
-	Packages map[string]map[string]v1alpha1.PackageManifest
+	Packages map[string]map[string]*v1alpha1.PackageManifest
 }
 
-func (f *FakeClient) AddPackage(name, version string, manifest v1alpha1.PackageManifest) {
+func (f *FakeClient) AddPackage(name, version string, manifest *v1alpha1.PackageManifest) {
 	if f.Packages == nil {
 		f.Clear()
 	}
 	if _, ok := f.Packages[name]; !ok {
-		f.Packages[name] = map[string]v1alpha1.PackageManifest{}
+		f.Packages[name] = map[string]*v1alpha1.PackageManifest{}
 	}
 	f.Packages[name][version] = manifest
 }
 
 func (f *FakeClient) Clear() {
-	f.Packages = map[string]map[string]v1alpha1.PackageManifest{}
+	f.Packages = map[string]map[string]*v1alpha1.PackageManifest{}
 }
 
 var _ client.RepoClient = &FakeClient{}
@@ -33,7 +33,7 @@ var _ client.RepoClient = &FakeClient{}
 func (f *FakeClient) FetchLatestPackageManifest(repoURL string, name string, target *v1alpha1.PackageManifest) (version string, err error) {
 	if versions, ok := f.Packages[name]; ok {
 		for v, m := range versions {
-			*target = m
+			*target = *m
 			return v, nil
 		}
 	}
@@ -58,7 +58,7 @@ func (f *FakeClient) FetchPackageIndex(repoURL string, name string, target *type
 func (f *FakeClient) FetchPackageManifest(repoURL string, name string, version string, target *v1alpha1.PackageManifest) error {
 	if versions, ok := f.Packages[name]; ok {
 		if manifest, ok := versions[version]; ok {
-			*target = manifest
+			*target = *manifest
 			return nil
 		}
 	}
