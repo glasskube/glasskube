@@ -1,9 +1,9 @@
 {{ define "pkg-update-modal" }}
   <div class="modal-dialog modal-dialog-centered" id="pkg-update-modal">
     <div class="modal-content">
-      <form hx-post="/packages/update" hx-swap="none">
+      <form hx-post="/packages/update">
         <div class="modal-header">
-          <h1 class="modal-title fs-5" id="exampleModalLabel">Available Updates</h1>
+          <h1 class="modal-title fs-5">Available Updates</h1>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body" id="pkg-update-modal-body">

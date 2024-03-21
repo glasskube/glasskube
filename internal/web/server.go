@@ -62,6 +62,8 @@ func init() {
 	}
 }
 
+const TriggerRefreshPackageDetail = "gk:refresh-package-detail"
+
 type ServerOptions struct {
 	Host       string
 	Port       int32
@@ -233,7 +235,9 @@ func (s *server) install(w http.ResponseWriter, r *http.Request) {
 		Install(r.Context(), pkgName, selectedVersion, strings.ToLower(enableAutoUpdateVal) == "on")
 	if err != nil {
 		s.respondAlertAndLog(w, err, "An error occurred installing "+pkgName)
+		return
 	}
+	addHxTrigger(w, TriggerRefreshPackageDetail)
 }
 
 func (s *server) installModal(w http.ResponseWriter, r *http.Request) {
@@ -328,6 +332,7 @@ func (s *server) update(w http.ResponseWriter, r *http.Request) {
 		s.respondAlertAndLog(w, err, "An error occurred updating"+pkgName)
 		return
 	}
+	addHxTrigger(w, TriggerRefreshPackageDetail)
 }
 
 func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
@@ -335,7 +340,6 @@ func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
 	pkgName := r.FormValue("packageName")
 	var pkg v1alpha1.Package
 	if err := s.pkgClient.Packages().Get(ctx, pkgName, &pkg); err != nil {
-		fmt.Fprintf(os.Stderr, "An error occurred fetching %v during uninstall: \n%v\n", pkgName, err)
 		s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred fetching %v during uninstall", pkgName))
 		return
 	}
@@ -343,7 +347,9 @@ func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
 		WithStatusWriter(statuswriter.Stderr()).
 		Uninstall(ctx, &pkg); err != nil {
 		s.respondAlertAndLog(w, err, "An error occurred uninstalling "+pkgName)
+		return
 	}
+	addHxTrigger(w, TriggerRefreshPackageDetail)
 }
 
 func (s *server) open(w http.ResponseWriter, r *http.Request) {
@@ -661,6 +667,10 @@ func (s *server) isUpdateAvailable(ctx context.Context, packages ...string) bool
 	} else {
 		return !tx.IsEmpty()
 	}
+}
+
+func addHxTrigger(w http.ResponseWriter, trigger string) {
+	w.Header().Add("HX-Trigger", trigger)
 }
 
 func (s *server) respondAlertAndLog(w http.ResponseWriter, err error, wrappingMsg string) {

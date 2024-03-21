@@ -10,6 +10,7 @@ import (
 )
 
 var ErrPackageNoManifest = errors.New("package has no manifest")
+var ErrPackageNoOwnedPackageInfo = errors.New("package has no owned PackageInfo")
 
 func GetInstalledManifest(ctx context.Context, pkgName string) (*v1alpha1.PackageManifest, error) {
 	pkgClient := client.FromContext(ctx)
@@ -23,7 +24,7 @@ func GetInstalledManifest(ctx context.Context, pkgName string) (*v1alpha1.Packag
 func GetInstalledManifestForPackage(ctx context.Context, pkg v1alpha1.Package) (*v1alpha1.PackageManifest, error) {
 	pkgClient := client.FromContext(ctx)
 	if len(pkg.Status.OwnedPackageInfos) == 0 {
-		return nil, errors.New("Package has no owned PackageInfo")
+		return nil, ErrPackageNoOwnedPackageInfo
 	}
 	packageInfoName := pkg.Status.OwnedPackageInfos[len(pkg.Status.OwnedPackageInfos)-1].Name
 	var packageInfo v1alpha1.PackageInfo
