@@ -52,6 +52,10 @@
       </div>
     </nav>
 
+    <div id="ws-error-container" class="visually-hidden container-lg mt-2">
+      <div class="alert alert-danger" role="alert" id="ws-error-container-message"></div>
+    </div>
+
     <div id="error-container" class="container-lg mt-2"></div>
 
     <main id="main">
@@ -77,6 +81,23 @@
         setPreferredTheme();
         getColorSchemeQuery().addEventListener('change', () => setPreferredTheme());
       })();
+    </script>
+    <script>
+      var wsOnline = true;
+      document.addEventListener('htmx:wsClose', function () {
+        wsOnline = false;
+        document.getElementById('ws-error-container').classList.remove('visually-hidden');
+        document.getElementById('ws-error-container-message').innerHTML =
+          'You are disconnected from the server. Make sure to run <code>glasskube serve</code> and refresh this page!';
+      });
+      document.addEventListener('htmx:wsOpen', function () {
+        if (!wsOnline) {
+          wsOnline = true;
+          const msg = document.getElementById('ws-error-container-message');
+          msg.innerText =
+            'You have been disconnected for a while. Please refresh this page to make sure you are up to date!';
+        }
+      });
     </script>
   </body>
 </html>
