@@ -1,5 +1,75 @@
 # Changelog
 
+## [0.1.0](https://github.com/glasskube/glasskube/compare/v0.0.4...v0.1.0) (2024-03-21)
+
+
+### Features
+
+* add cached package client ([4c2a18f](https://github.com/glasskube/glasskube/commit/4c2a18fc9785ff87e8e2fa214145f8edf169b154))
+* add generic caching to repo client ([c69eff9](https://github.com/glasskube/glasskube/commit/c69eff901e03c15ad4451d6059ac4d1d7850f1d0))
+* add version mismatch detection for package-operator ([#373](https://github.com/glasskube/glasskube/issues/373)) ([af2e2ed](https://github.com/glasskube/glasskube/commit/af2e2ed364079b44f3ecab89a18761c310db1345))
+* **cli, ui:** check dependencies and show newly installed packages at update ([#113](https://github.com/glasskube/glasskube/issues/113), [#114](https://github.com/glasskube/glasskube/issues/114)) ([1b69fde](https://github.com/glasskube/glasskube/commit/1b69fde8cfb7c68906237142c257e581e17393ae))
+* **cli:** add `--latest` flag to bootstrap command ([#361](https://github.com/glasskube/glasskube/issues/361)) ([11cbca8](https://github.com/glasskube/glasskube/commit/11cbca899b56d0eb0df97a647cbe34047d331e62))
+* **cli:** add showing dependencies in `describe` command ([a495ebc](https://github.com/glasskube/glasskube/commit/a495ebcae88da6abf6cba0fd817d2fe987ce0843))
+* **cli:** add validating dependencies in install command ([f8f72c3](https://github.com/glasskube/glasskube/commit/f8f72c3368c28213688fee06806785cdb619324d))
+* **cli:** change `describe` command to be more clear ([9e3faf3](https://github.com/glasskube/glasskube/commit/9e3faf384955e49769265d36065f27cba3064195))
+* **cli:** show entrypoints in glasskube describe command ([#346](https://github.com/glasskube/glasskube/issues/346)) ([fb0a824](https://github.com/glasskube/glasskube/commit/fb0a8241896a5383ce2766428021ea0c2b351d3c))
+* mandatory package version ([#341](https://github.com/glasskube/glasskube/issues/341)) ([7cc7ba8](https://github.com/glasskube/glasskube/commit/7cc7ba8550d8581fd0bdb570a30d946a3b1aee16))
+* **package-operator:** add validating webhook and cert generation ([328dd58](https://github.com/glasskube/glasskube/commit/328dd58a1aaa9faff37e0c19b16dca2c7526ab93))
+* **package-operator:** prevent invalid updates and deletions ([#364](https://github.com/glasskube/glasskube/issues/364)) ([26e3ddb](https://github.com/glasskube/glasskube/commit/26e3ddb9a320d658834386596db7e7c1b7877eab))
+* prune package dependencies ([#318](https://github.com/glasskube/glasskube/issues/318)) ([4c2af36](https://github.com/glasskube/glasskube/commit/4c2af3611d41b63895a11b70a27cf7c1eb7abada))
+* **ui:** add syncing update notification via websocket ([c249fa1](https://github.com/glasskube/glasskube/commit/c249fa12ed660c7e419e489c51fe0b4a79a85c35))
+* **ui:** handle dependencies at installation ([#114](https://github.com/glasskube/glasskube/issues/114)) ([3f6f510](https://github.com/glasskube/glasskube/commit/3f6f510cae031fe8581f08479b05fdfc91fe2d27))
+* **ui:** show a notification when "open" fails ([#393](https://github.com/glasskube/glasskube/issues/393)) ([bbe36dc](https://github.com/glasskube/glasskube/commit/bbe36dc1e0c0c0e6381c0acf075490586373a8fd))
+* **ui:** use updater for single package update check ([90b7661](https://github.com/glasskube/glasskube/commit/90b7661bf39b51e0bdc3d46953204dc80ab7ca23))
+
+
+### Bug Fixes
+
+* **cli, ui:** add support for bootstrap latest via ui, implicit request ([77f72f2](https://github.com/glasskube/glasskube/commit/77f72f2d49367ffa241c06419da6d558e0d115fc))
+* **cli:** update check fails in dev environment ([e2f2d2d](https://github.com/glasskube/glasskube/commit/e2f2d2d657189fe67f83b8cbc2ffe2d6b1cf0936))
+* consider semver metadata when comparing installed vs latest version ([#397](https://github.com/glasskube/glasskube/issues/397)) ([5121a95](https://github.com/glasskube/glasskube/commit/5121a95f461ad512e388034b655a7230d601a85e))
+* **deps:** update dependency htmx.org to v1.9.11 ([86eec99](https://github.com/glasskube/glasskube/commit/86eec99c029e3c46957e22abf89d0ff8af9d7b71))
+* **deps:** update kubernetes packages to v0.29.3 ([510907e](https://github.com/glasskube/glasskube/commit/510907e4ebb1077b7dd0d4efec6e0f73683c5c07))
+* **deps:** update module github.com/google/go-containerregistry to v0.19.1 ([fc868b1](https://github.com/glasskube/glasskube/commit/fc868b169321dccafac6aa1c3d6c17d1e189ea29))
+* **deps:** update module github.com/onsi/ginkgo/v2 to v2.17.0 ([04fa04f](https://github.com/glasskube/glasskube/commit/04fa04fc55cf3477b87cbd267ae514397ddd999f))
+* **deps:** update module github.com/onsi/gomega to v1.32.0 ([48c2669](https://github.com/glasskube/glasskube/commit/48c2669ba42b417e1a7bf1d5bd889b25c1f8a8f6))
+* **package-operator:** add missing permissions for webhook-cert ([82c5cd0](https://github.com/glasskube/glasskube/commit/82c5cd054c6d1e7388a98a69fce7b80898bf8ed0))
+* **ui:** change server informer to also broadcast after errors ([497c2b8](https://github.com/glasskube/glasskube/commit/497c2b87dd6313402d83eb800a23ce23bd69505a))
+* **ui:** make link color readable on dark mode ([28991c9](https://github.com/glasskube/glasskube/commit/28991c94a1e8c894019fcebdbf7856076eb1e64d))
+
+
+### Other
+
+* change config manifest structure to use default ([0fb1a4d](https://github.com/glasskube/glasskube/commit/0fb1a4dc1f8e4c988e6507716dfbe0a3862461c4))
+* change next release to 0.1.0 ([e69df6b](https://github.com/glasskube/glasskube/commit/e69df6b52103e81794e3df6343a1f1d7402dba23))
+* **deps:** update actions/cache action to v4.0.2 ([0dfcbaa](https://github.com/glasskube/glasskube/commit/0dfcbaad09ab05b068b5285fdcb612646026c39b))
+* **deps:** update actions/checkout digest to b4ffde6 ([e11aeec](https://github.com/glasskube/glasskube/commit/e11aeec174323ca6f4f62457f63ed219aaf8af9f))
+* **deps:** update dependency @commitlint/cli to v19.2.0 ([f7c7ac1](https://github.com/glasskube/glasskube/commit/f7c7ac1936dbf02413cea4c1f66caab3929c5c88))
+* **deps:** update dependency @commitlint/cli to v19.2.1 ([5e2d7f6](https://github.com/glasskube/glasskube/commit/5e2d7f6f14590e20cc3e6887cc6e2a2e07cddc4a))
+* **deps:** update dependency esbuild to v0.20.2 ([d079bf2](https://github.com/glasskube/glasskube/commit/d079bf2383ffa41db37dab9fcf89c20fecfbe909))
+* **deps:** update dependency typescript to v5.4.3 ([1f217c9](https://github.com/glasskube/glasskube/commit/1f217c9702b610c8a83626b6bf2d71cffe7a9bbb))
+* **deps:** update docker/login-action digest to e92390c ([fd0b915](https://github.com/glasskube/glasskube/commit/fd0b9157b32a4b48d6c58f8618ea89177cf214cd))
+* **deps:** update ghcr.io/glasskube/package-operator docker tag to v0.0.4 ([30fec9c](https://github.com/glasskube/glasskube/commit/30fec9c5bfe73e40bb1886ac59cea9951979330b))
+* remove redundant image in manager kustomization ([9b9ea29](https://github.com/glasskube/glasskube/commit/9b9ea29db82e6fe8401cea8f3c1c4a0ded2b4803))
+* update release-please extra files ([48f6d43](https://github.com/glasskube/glasskube/commit/48f6d431c85186e274f8c74c7d5285c2649dfee1))
+
+
+### Docs
+
+* add web development section in contributing guide ([8876f98](https://github.com/glasskube/glasskube/commit/8876f982ad61f8e82befdbe1c450083215ebef48))
+* describe dependencies and changes to package repo ([#316](https://github.com/glasskube/glasskube/issues/316)) ([f34dfb4](https://github.com/glasskube/glasskube/commit/f34dfb4ae7d423badeeceb8feb7c79a0cca2858f))
+* update contributing guide on how to run operator ([5f03733](https://github.com/glasskube/glasskube/commit/5f037338c1f4a2813c9f9d5e4186b3d9bbef1407))
+* update guides sidebar ([2fced23](https://github.com/glasskube/glasskube/commit/2fced239a6be69515afb77840e637099f1a3fd5e))
+* updates guides sidebar title ([761faec](https://github.com/glasskube/glasskube/commit/761faecb8ea715261b19257b037c79609cadacbc))
+* versioning ([b526cf1](https://github.com/glasskube/glasskube/commit/b526cf14f51ca86b348d6803f487d6350fbe1305))
+* **website:** add hs-script to newsletter ([6b6a261](https://github.com/glasskube/glasskube/commit/6b6a2618206f8e28463b6b6cbaa7c011050ed0c0))
+
+
+### Refactoring
+
+* add repo client interface and fake client for testing ([5a9fc7a](https://github.com/glasskube/glasskube/commit/5a9fc7af3925fa1d5d9fa5bc76269a0c1060c037))
+
 ## [0.0.4](https://github.com/glasskube/glasskube/compare/v0.0.3...v0.0.4) (2024-03-12)
 
 
