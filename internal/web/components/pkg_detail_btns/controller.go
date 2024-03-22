@@ -13,7 +13,6 @@ const TemplateId = "pkg-detail-btns"
 
 type pkgDetailBtnsInput struct {
 	ContainerId     string
-	Swap            string
 	PackageName     string
 	Status          *client.PackageStatus
 	Manifest        *v1alpha1.PackageManifest
@@ -24,15 +23,10 @@ func getId(pkgName string) string {
 	return fmt.Sprintf("%v-%v", TemplateId, pkgName)
 }
 
-func getSwap(id string) string {
-	return fmt.Sprintf("outerHTML:#%s", id)
-}
-
 func Render(w io.Writer, tmpl *template.Template, pkg *v1alpha1.Package, status *client.PackageStatus, manifest *v1alpha1.PackageManifest, updateAvailable bool) error {
 	id := getId(pkg.Name)
 	return tmpl.ExecuteTemplate(w, TemplateId, &pkgDetailBtnsInput{
 		ContainerId:     id,
-		Swap:            getSwap(id),
 		PackageName:     pkg.Name,
 		Status:          status,
 		Manifest:        manifest,
@@ -50,7 +44,6 @@ func ForPkgDetailBtns(
 	id := getId(pkgName)
 	return &pkgDetailBtnsInput{
 		ContainerId:     id,
-		Swap:            "",
 		PackageName:     pkgName,
 		Status:          status,
 		Manifest:        manifest,

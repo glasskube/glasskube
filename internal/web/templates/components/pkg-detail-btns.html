@@ -28,7 +28,7 @@
 
 {{ define "pkg-detail-btns" }}
 
-  <span id="{{ .ContainerId }}" hx-swap-oob="{{ .Swap }}" hx-swap="none">
+  <span id="{{ .ContainerId }}" hx-swap="none">
     {{ if eq .Status nil }}
       <button
         hx-get="/packages/install/modal"

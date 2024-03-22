@@ -1,5 +1,5 @@
 {{ define "pkg-overview-btn" }}
-  <span id="{{ .ButtonId }}" hx-swap-oob="{{ .Swap }}">
+  <span id="{{ .ButtonId }}">
     {{ if eq .Status nil }}
       <button
         hx-get="/packages/install/modal"
