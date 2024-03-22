@@ -70,6 +70,43 @@ func (c *updater) WithStatusWriter(writer statuswriter.StatusWriter) *updater {
 	return c
 }
 
+func (c updater) UpdateWithVersion(ctx context.Context, packageName string, packageVersion string) (*UpdateTransaction, error) {
+	c.status.Start()
+	defer c.status.Stop()
+	c.status.SetStatus("Collecting installed package")
+	var pkg v1alpha1.Package
+	if err := c.client.Packages().Get(ctx, packageName, &pkg); err != nil {
+		return nil, fmt.Errorf("failed to get package %v: %v", packageName, err)
+	}
+	c.status.SetStatus("Updating the package")
+
+	requirementsSet := make(map[dependency.PackageWithVersion]struct{})
+	var tx UpdateTransaction
+
+	if semver.IsUpgradable(pkg.Spec.PackageInfo.Version, packageVersion) {
+		item := updateTransactionItem{Package: pkg, Version: packageVersion}
+		var manifest v1alpha1.PackageManifest
+		if err := repo.FetchPackageManifest("", pkg.Name, packageVersion, &manifest); err != nil {
+			return nil, err
+		}
+		if result, err := c.dm.Validate(ctx, &manifest); err != nil {
+			return nil, err
+		} else if cf, err := c.dm.IsUpdateAllowed(ctx, &pkg, packageVersion); err != nil {
+			return nil, err
+		} else if len(result.Conflicts) > 0 || len(cf) > 0 {
+			tx.ConflictItems = append(tx.ConflictItems, updateTransactionItemConflict{item, append(result.Conflicts, cf...)})
+		} else {
+			for _, req := range result.Requirements {
+				requirementsSet[req] = struct{}{}
+			}
+			tx.Items = append(tx.Items, item)
+		}
+	}
+
+	return &tx, nil
+}
+
+
 func (c *updater) Prepare(ctx context.Context, packageNames []string) (*UpdateTransaction, error) {
 	c.status.Start()
 	defer c.status.Stop()
