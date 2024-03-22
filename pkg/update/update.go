@@ -70,7 +70,10 @@ func (c *updater) WithStatusWriter(writer statuswriter.StatusWriter) *updater {
 	return c
 }
 
-func (c *updater) VersionUpdate(ctx context.Context, pkgName string, pkgVersion string) (*UpdateTransaction, error) {
+func (c *updater) PrepareForVersion(
+	ctx context.Context,
+	pkgName string,
+	pkgVersion string) (*UpdateTransaction, error) {
 	c.status.Start()
 	defer c.status.Stop()
 	c.status.SetStatus("Collecting installed package")

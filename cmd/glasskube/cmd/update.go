@@ -33,46 +33,23 @@ var updateCmd = &cobra.Command{
 		updater := update.NewUpdater(client).
 			WithStatusWriter(statuswriter.Spinner())
 
+		var tx *update.UpdateTransaction
+		var err error
+
 		if len(args) == 1 && updateCmdOptions.Version != "" {
-			tx, err := updater.VersionUpdate(ctx, args[0], updateCmdOptions.Version)
+			tx, err = updater.PrepareForVersion(ctx, args[0], updateCmdOptions.Version)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error in updating the package version : %v", err)
 				os.Exit(1)
 			}
-
-			printTransaction(*tx)
-
-			if !tx.IsEmpty() {
-				if !cliutils.YesNoPrompt("Do you want to apply these updates?", false) {
-					fmt.Fprintf(os.Stderr, "⛔ Update cancelled. No changes were made.\n")
-					os.Exit(0)
-				}
-				if err := updater.Apply(ctx, tx); err != nil {
-					fmt.Fprintf(os.Stderr, "❌ update failed: %v\n", err)
-					os.Exit(1)
-				}
-			}
 		} else {
-			tx, err := updater.Prepare(ctx, packageNames)
+			tx, err = updater.Prepare(ctx, packageNames)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "❌ update preparation failed: %v\n", err)
 				os.Exit(1)
 			}
-
-			printTransaction(*tx)
-
-			if !tx.IsEmpty() {
-				if !cliutils.YesNoPrompt("Do you want to apply these updates?", false) {
-					fmt.Fprintf(os.Stderr, "⛔ Update cancelled. No changes were made.\n")
-					os.Exit(0)
-				}
-
-				if err := updater.Apply(ctx, tx); err != nil {
-					fmt.Fprintf(os.Stderr, "❌ update failed: %v\n", err)
-					os.Exit(1)
-				}
-			}
 		}
+		printTransaction(*tx)
 
 		fmt.Fprintf(os.Stderr, "✅ all packages up-to-date\n")
 		os.Exit(0)
