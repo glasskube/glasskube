@@ -10,7 +10,7 @@
     </script>
   </head>
 
-  <body hx-ext="ws" ws-connect="/ws" hx-indicator="#indicator">
+  <body hx-ext="ws,response-targets" ws-connect="/ws" hx-indicator="#indicator" hx-target-error="#error-container">
     <nav hx-boost="true" class="navbar navbar-expand-lg navbar-dark bg-secondary">
       <div id="indicator" class="progress-container bg-transparent w-100 position-fixed top-0 start-0">
         <div class="htmx-indicator progress-bar bg-primary h-100 w-100"></div>
@@ -52,27 +52,23 @@
       </div>
     </nav>
 
-    <div id="ws-error-container" class="visually-hidden container-lg mt-2">
-      <div class="alert alert-danger" role="alert" id="ws-error-container-message"></div>
-    </div>
-
-    <div id="error-container" class="container-lg mt-2"></div>
-
     <main id="main">
+      <div id="ws-error-container" class="visually-hidden container-lg mt-2">
+        <div class="alert alert-danger" role="alert" id="ws-error-container-message"></div>
+      </div>
+
+      <div id="error-container" class="container-lg mt-2">
+        {{ if .Error }}
+          {{ template "alert" .Error | ForAlert }}
+        {{ end }}
+      </div>
+
       {{ template "body" . }}
     </main>
 
     <div class="modal" id="modal-container" tabindex="-1" style="display: none" aria-hidden="false">
       <div class="modal-dialog" role="document"></div>
     </div>
-    <script>
-      document.addEventListener('htmx:responseError', function (event) {
-        const xhr = event.detail.xhr;
-        if (xhr && xhr.status === 400 && xhr.responseText) {
-          document.getElementById('error-container').innerHTML = xhr.responseText;
-        }
-      });
-    </script>
     <script>
       (() => {
         const getColorSchemeQuery = () => window.matchMedia('(prefers-color-scheme: dark)');

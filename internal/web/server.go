@@ -205,7 +205,7 @@ func (s *server) install(w http.ResponseWriter, r *http.Request) {
 	if selectedVersion == "" {
 		var packageIndex repo.PackageIndex
 		if err := repo.FetchPackageIndex("", pkgName, &packageIndex); err != nil {
-			fmt.Fprintf(os.Stderr, "❗ Error: Could not fetch package metadata: %v\n", err)
+			s.respondAlertAndLog(w, err, "❗ Error: Could not fetch package metadata")
 			return
 		}
 		selectedVersion = packageIndex.LatestVersion
@@ -214,7 +214,7 @@ func (s *server) install(w http.ResponseWriter, r *http.Request) {
 		WithStatusWriter(statuswriter.Stderr()).
 		Install(r.Context(), pkgName, selectedVersion, strings.ToLower(enableAutoUpdateVal) == "on")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "An error occurred installing %v: \n%v\n", pkgName, err)
+		s.respondAlertAndLog(w, err, "An error occurred installing "+pkgName)
 	}
 }
 
@@ -223,7 +223,7 @@ func (s *server) installModal(w http.ResponseWriter, r *http.Request) {
 	selectedVersion := r.FormValue("selectedVersion")
 	var idx repo.PackageIndex
 	if err := repo.FetchPackageIndex("", pkgName, &idx); err != nil {
-		fmt.Fprintf(os.Stderr, "An error occurred fetching versions of %v: %v\n", pkgName, err)
+		s.respondAlertAndLog(w, err, "An error occurred fetching versions of "+pkgName)
 		return
 	}
 	if selectedVersion == "" {
@@ -231,13 +231,13 @@ func (s *server) installModal(w http.ResponseWriter, r *http.Request) {
 	}
 	var mf v1alpha1.PackageManifest
 	if err := repo.FetchPackageManifest("", pkgName, selectedVersion, &mf); err != nil {
-		fmt.Fprintf(os.Stderr, "An error occurred fetching manifest of %v in version %v: %v\n", pkgName, selectedVersion, err)
+		s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred fetching manifest of %v in version %v", pkgName, selectedVersion))
 		return
 	}
 
 	res, err := s.dependencyMgr.Validate(r.Context(), &mf)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "An error occurred validating dependencies of %v in version %v: %v\n", pkgName, selectedVersion, err)
+		s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred validating dependencies of %v in version %v", pkgName, selectedVersion))
 		return
 	}
 
@@ -262,7 +262,7 @@ func (s *server) updateModal(w http.ResponseWriter, r *http.Request) {
 	updater := update.NewUpdater(s.pkgClient).WithStatusWriter(statuswriter.Stderr())
 	ut, err := updater.Prepare(r.Context(), pkgs)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "An error occurred preparing update of %v: \n%v\n", pkgName, err)
+		s.respondAlertAndLog(w, err, "An error occurred preparing update of "+pkgName)
 		return
 	}
 	for _, u := range ut.Items {
@@ -300,14 +300,14 @@ func (s *server) update(w http.ResponseWriter, r *http.Request) {
 	updater := update.NewUpdater(s.pkgClient).WithStatusWriter(statuswriter.Stderr())
 	ut, err := updater.Prepare(ctx, pkgs)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "An error occurred preparing update of %v: \n%v\n", pkgName, err)
+		s.respondAlertAndLog(w, err, "An error occurred preparing update of"+pkgName)
 		return
 	}
 	// in the future we might want to check here whether the prepared new version is the same as the "toVersion"
 	// which the user agreed to update to in the dialog
 	err = updater.Apply(ctx, ut)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "An error occurred updating %v: \n%v\n", pkgName, err)
+		s.respondAlertAndLog(w, err, "An error occurred updating"+pkgName)
 		return
 	}
 }
@@ -318,12 +318,13 @@ func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
 	var pkg v1alpha1.Package
 	if err := s.pkgClient.Packages().Get(ctx, pkgName, &pkg); err != nil {
 		fmt.Fprintf(os.Stderr, "An error occurred fetching %v during uninstall: \n%v\n", pkgName, err)
+		s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred fetching %v during uninstall", pkgName))
 		return
 	}
 	if err := uninstall.NewUninstaller(s.pkgClient).
 		WithStatusWriter(statuswriter.Stderr()).
 		Uninstall(ctx, &pkg); err != nil {
-		fmt.Fprintf(os.Stderr, "An error occurred uninstalling %v: \n%v\n", pkgName, err)
+		s.respondAlertAndLog(w, err, "An error occurred uninstalling "+pkgName)
 	}
 }
 
@@ -337,15 +338,7 @@ func (s *server) open(w http.ResponseWriter, r *http.Request) {
 
 	result, err := open.NewOpener().Open(r.Context(), pkgName, "")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "could not open %v: %v\n", pkgName, err)
-		w.WriteHeader(http.StatusBadRequest)
-		errorAlert := `<div class="alert alert-danger alert-dismissible" role="alert">` +
-			"<div>" + err.Error() + "</div>" +
-			`<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>` +
-			"</div>"
-		if _, err := w.Write([]byte(errorAlert)); err != nil {
-			fmt.Fprintf(os.Stderr, "Error in write: %v", err)
-		}
+		s.respondAlertAndLog(w, err, "Could not open "+pkgName)
 	} else {
 		s.forwarders[pkgName] = result
 		result.WaitReady()
@@ -357,8 +350,8 @@ func (s *server) open(w http.ResponseWriter, r *http.Request) {
 func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 	packages, err := list.GetPackagesWithStatus(s.pkgClient, r.Context(), list.ListOptions{IncludePackageInfos: true})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "could not load packages: %v\n", err)
-		return
+		err = fmt.Errorf("could not load packages: %w\n", err)
+		fmt.Fprintf(os.Stderr, "%v\n", err)
 	}
 
 	// Call isUpdateAvailable for each installed package.
@@ -370,6 +363,7 @@ func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = pkgsPageTmpl.Execute(w, &map[string]any{
+		"Error":                  err,
 		"CurrentContext":         s.rawConfig.CurrentContext,
 		"Packages":               packages,
 		"PackageUpdateAvailable": packageUpdateAvailable,
@@ -382,17 +376,18 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 	pkgName := mux.Vars(r)["pkgName"]
 	pkg, status, manifest, latestVersion, err := describe.DescribePackage(r.Context(), pkgName)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "An error occurred fetching package details of %v: \n%v\n", pkgName, err)
-		return
-	}
-	if latestVersion == "" {
+		err = fmt.Errorf("An error occurred fetching package details of %v: %w\n", pkgName, err)
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+	} else if latestVersion == "" {
 		// TODO have a look at handling latestVersion as return value from DescribePackage again – seems weird
 		latestVersion, err = repo.GetLatestVersion("", pkgName)
-	}
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "An error occurred fetching latest version of %v: \n%v\n", pkgName, err)
+		if err != nil {
+			err = fmt.Errorf("An error occurred fetching latest version of %v: %w\n", pkgName, err)
+			fmt.Fprintf(os.Stderr, "%v\n", err)
+		}
 	}
 	err = pkgPageTmpl.Execute(w, &map[string]any{
+		"Error":           err,
 		"CurrentContext":  s.rawConfig.CurrentContext,
 		"Package":         pkg,
 		"Status":          status,
@@ -648,6 +643,21 @@ func (s *server) isUpdateAvailable(ctx context.Context, packages ...string) bool
 	} else {
 		return !tx.IsEmpty()
 	}
+}
+
+func (s *server) respondAlertAndLog(w http.ResponseWriter, err error, wrappingMsg string) {
+	if wrappingMsg != "" {
+		err = fmt.Errorf("%v: %w", wrappingMsg, err)
+	}
+	fmt.Fprintf(os.Stderr, "%v\n", err)
+	w.Header().Add("Hx-Reselect", "div.alert") // overwrite any existing hx-select (which was a little intransparent sometimes)
+	w.Header().Add("Hx-Reswap", "afterbegin")
+	w.WriteHeader(http.StatusBadRequest)
+	err = alertTmpl.Execute(w, map[string]any{
+		"Message":     err.Error(),
+		"Dismissible": true,
+	})
+	checkTmplError(err, "alert")
 }
 
 func isPortConflictError(err error) bool {
