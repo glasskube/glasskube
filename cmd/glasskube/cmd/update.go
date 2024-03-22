@@ -49,7 +49,14 @@ var updateCmd = &cobra.Command{
 				os.Exit(1)
 			}
 		}
-		printTransaction(*tx)
+
+		if !tx.IsEmpty() {
+			if !cliutils.YesNoPrompt("Do you want to apply these updates?", false) {
+				fmt.Fprintf(os.Stderr, "⛔ Update cancelled. No changes were made.\n")
+				os.Exit(0)
+			}
+			printTransaction(*tx)
+		}
 
 		fmt.Fprintf(os.Stderr, "✅ all packages up-to-date\n")
 		os.Exit(0)
