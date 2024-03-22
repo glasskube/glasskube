@@ -34,7 +34,7 @@ var updateCmd = &cobra.Command{
 			WithStatusWriter(statuswriter.Spinner())
 
 		if len(args) == 1 && updateCmdOptions.Version != "" {
-			tx, err := updater.UpdateWithVersion(ctx, args[0], updateCmdOptions.Version)
+			tx, err := updater.VersionUpdate(ctx, args[0], updateCmdOptions.Version)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error in updating the package version : %v", err)
 				os.Exit(1)
