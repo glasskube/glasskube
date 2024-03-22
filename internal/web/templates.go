@@ -6,6 +6,8 @@ import (
 	"os"
 	"path"
 
+	"github.com/glasskube/glasskube/internal/web/components/alert"
+
 	"github.com/glasskube/glasskube/api/v1alpha1"
 
 	"github.com/glasskube/glasskube/internal/repo"
@@ -27,6 +29,7 @@ var (
 	pkgInstallModalTmpl *template.Template
 	pkgUpdateModalTmpl  *template.Template
 	pkgUpdateAlertTmpl  *template.Template
+	alertTmpl           *template.Template
 	templatesDir        = "templates"
 	componentsDir       = path.Join(templatesDir, "components")
 	pagesDir            = path.Join(templatesDir, "pages")
@@ -50,6 +53,7 @@ func init() {
 				return url
 			}
 		},
+		"ForAlert": alert.ForAlert,
 	}
 	baseTemplate = template.Must(template.New("base.html").
 		Funcs(templateFuncs).
@@ -64,6 +68,7 @@ func init() {
 	pkgUpdateAlertTmpl = componentTmpl(pkg_update_alert.TemplateId, "pkg-update-alert.html")
 	pkgInstallModalTmpl = componentTmpl("pkg-install-modal", "pkg-install-modal.html")
 	pkgUpdateModalTmpl = componentTmpl("pkg-update-modal", "pkg-update-modal.html")
+	alertTmpl = componentTmpl("alert", "alert.html")
 }
 
 func pageTmpl(fileName string) *template.Template {
