@@ -3,8 +3,10 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
+	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/list"
@@ -82,7 +84,7 @@ func init() {
 }
 
 func printPackageTable(packages []*list.PackageWithStatus) {
-	header := []string{"NAME", "STATUS", "VERSION"}
+	header := []string{"NAME", "STATUS", "VERSION", "AUTO-UPDATE"}
 	if listCmdOptions.ShowLatestVersion {
 		header = append(header, "LATEST VERSION")
 	}
@@ -93,7 +95,7 @@ func printPackageTable(packages []*list.PackageWithStatus) {
 		packages,
 		header,
 		func(pkg *list.PackageWithStatus) []string {
-			row := []string{pkg.Name, statusString(*pkg), versionString(*pkg)}
+			row := []string{pkg.Name, statusString(*pkg), versionString(*pkg), autoUpdateString(pkg.Package, "")}
 			if listCmdOptions.ShowLatestVersion {
 				row = append(row, pkg.LatestVersion)
 			}
@@ -144,4 +146,15 @@ func versionString(pkg list.PackageWithStatus) string {
 	} else {
 		return ""
 	}
+}
+
+func autoUpdateString(pkg *v1alpha1.Package, disabledStr string) string {
+	if pkg != nil && pkg.Labels != nil {
+		autoUpdateValue, ok := pkg.Labels["packages.glasskube.dev/auto-update"]
+		autoUpdateBool, _ := strconv.ParseBool(autoUpdateValue)
+		if ok && autoUpdateBool {
+			return "Enabled"
+		}
+	}
+	return disabledStr
 }
