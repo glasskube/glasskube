@@ -1,0 +1,97 @@
+---
+slug: release-v0.1.0
+title: Glasskube v0.1.0 — Introducing Dependency Management
+description: "Version 0.1.0, launched on March 21st: 10 contributors, 53 commits, introducing Dark Mode and Dependency Management."
+authors: [ jpage ]
+tags: [ glasskube, release, kubernetes ]
+---
+
+import Install from '../../src/partials/_install.mdx';
+
+*Glasskube v0.1.0 was released on March 21st, introducing new features like Dependency Management and Dark Mode as well as many useful features for an improved CLI and GUI experience.*
+
+
+Glasskube is fully open-source. Support us by leaving a star: [⭐ `glasskube/glasskube` ⭐](https://github.com/glasskube/glasskube/)
+
+## 🙏 Special thanks to all our contributors 🥰
+
+Once again, we can't thank our community enough for their valuable input and exciting contributions to Glasskube.
+We are happy you choose to be part of our journey in making Kubernetes package management easier for everyone.
+
+**This release includes:**
+
+- 👥 a total of 10 contributors
+- 🛠️ 53 commits
+- 💥 no breaking changes
+
+Watch our release video to get an overview of what has changed:
+
+<iframe width="100%" height="460" src="https://www.youtube.com/embed/Ea7-LfzRr8E?si=HOci6IDl1R2Tj8kF"
+        title="YouTube video player" frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
+## Most notable changes
+
+### Dependency management 🔗
+
+Building on the package installation features shipped in the previous weeks, we now offer an in-built way of managing 
+and installing the dependencies used by your desired package. Now package maintainers can define the appropriate dependencies, for 
+each Glasskube supported package as well as recommending the range of suitable dependency versions, this way ensuring that packages are always
+compatible to accompanying dependency.
+
+Package dependencies will show on the installation drop down in the GUI. They will also be shown when installing a package via the CLI.
+
+### Dark Mode 🕶️
+
+Great news, we shipped the "must-have" feature any OSS project can't survive without, `Dark Mode`. Glasskube's dark mode is linked to the display mode
+defined on your local system. Access your system preferences menu and try it out! 
+
+![Dark Mode](https://github.com/glasskube/glasskube/assets/38757612/265b5e9c-d30a-4a0e-b382-fe09a1b80f24)
+
+### Further improvements
+
+We also worked hard on improving existing commands and our GUI. Here's a list of further notable changes:
+
+* The `--latest` flag was added to the `glasskube bootstrap` command to ensure the latest version of the package controller is being used.
+* The GUI now reflects the available dependencies for selected packages.
+* We expanded the `describe` command to include the installed dependencies.
+* You will now be greeted by a notification pop-up if "open" fails.
+* Version mismatch detection was added to the package controller.
+
+### BREAKING changes
+
+*This release does not contain any breaking changes*.
+
+## All Release Notes
+
+The release notes can be found here: [v0.1.0 release on GitHub](https://github.com/glasskube/glasskube/releases/tag/v0.1.0)
+
+All changes can be found here: [Comparing v0.0.4 to v0.1.0](https://github.com/glasskube/glasskube/compare/v0.0.4...v0.1.0)
+
+## How to upgrade
+
+Follow the installation instructions below to download the latest version of the Glasskube client.
+After that you need to upgrade the server component ([Package Operator](/docs/components/package-operator/)) by bootstrapping Glasskube again:
+
+```bash
+glasskube bootstrap --latest
+```
+
+## Getting started
+
+Follow our [Getting Started guide](https://glasskube.dev/docs/getting-started/install) if you want to try Glasskube for yourself and install your first package.
+
+<Install/>
+
+
+## Get involved
+
+The easiest way to get involved is to tackle one of our [open issues](https://github.com/glasskube/glasskube/issues).
+You are also welcome to join our [Discord](https://discord.gg/SxH6KUCGH7).
+
+> **If you are a cloud native developer, please [submit your package](https://github.com/glasskube/glasskube/discussions/90)**.
+
+As Glasskube is still in its very early days, your feedback is highly appreciated.
+Let us know what you think, we would love to hear from you or support us by leaving a star on GitHub:
+
+[⭐ `glasskube/glasskube` ⭐](https://github.com/glasskube/glasskube/)
