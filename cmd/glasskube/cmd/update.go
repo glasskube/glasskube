@@ -47,7 +47,6 @@ var updateCmd = &cobra.Command{
 					fmt.Fprintf(os.Stderr, "⛔ Update cancelled. No changes were made.\n")
 					os.Exit(0)
 				}
-
 				if err := updater.Apply(ctx, tx); err != nil {
 					fmt.Fprintf(os.Stderr, "❌ update failed: %v\n", err)
 					os.Exit(1)
