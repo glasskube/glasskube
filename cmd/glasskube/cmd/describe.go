@@ -35,6 +35,9 @@ var describeCmd = &cobra.Command{
 		fmt.Println(bold("Package:"), nameAndDescription(manifest))
 		fmt.Println(bold("Version:"), version(pkg, latestVersion))
 		fmt.Println(bold("Status: "), status(pkgStatus))
+		if pkg != nil {
+			fmt.Println(bold("Auto-Update:"), autoUpdateString(pkg, "Disabled"))
+		}
 
 		if len(manifest.Entrypoints) > 0 {
 			fmt.Println()
