@@ -14,7 +14,6 @@ const TemplateId = "pkg-overview-btn"
 
 type pkgOverviewBtnInput struct {
 	ButtonId        string
-	Swap            string
 	PackageName     string
 	Status          *client.PackageStatus
 	Manifest        *v1alpha1.PackageManifest
@@ -29,7 +28,6 @@ func Render(w io.Writer, tmpl *template.Template, pkg *v1alpha1.Package, status 
 	buttonId := getButtonId(pkg.Name)
 	return tmpl.ExecuteTemplate(w, TemplateId, &pkgOverviewBtnInput{
 		ButtonId:        buttonId,
-		Swap:            fmt.Sprintf("outerHTML:#%s", buttonId),
 		PackageName:     pkg.Name,
 		Status:          status,
 		Manifest:        manifest,
@@ -41,7 +39,6 @@ func ForPkgOverviewBtn(packageWithStatus *list.PackageWithStatus, updateAvailabl
 	buttonId := getButtonId(packageWithStatus.Name)
 	return &pkgOverviewBtnInput{
 		ButtonId:        buttonId,
-		Swap:            "",
 		PackageName:     packageWithStatus.Name,
 		Status:          packageWithStatus.Status,
 		Manifest:        packageWithStatus.InstalledManifest,
