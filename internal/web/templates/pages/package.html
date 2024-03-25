@@ -75,16 +75,14 @@
             {{ .Manifest.LongDescription }}
           {{ end }}
         </span>
-        <br>
+        <br />
         <span>
           <i>
             Latest Verrsion: {{ .LatestVersion }}
           </i>
-          <br>
+          <br />
           {{ if ne .Status nil }}
-            <i>
-                Current Version: {{ .Package.Status.Version }}              
-            </i>
+            <i> Current Version: {{ .Package.Status.Version }} </i>
           {{ end }}
         </span>
       </div>
