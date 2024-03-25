@@ -6,25 +6,28 @@ import (
 	"github.com/Masterminds/semver/v3"
 )
 
-// isUpgradable checks if latest is greater than installed, according to semver.
+// IsUpgradable checks if desired is greater than installed, according to semver.
 // As a fallback if either cannot be parsed as semver, it returns whether they are different.
 // Am important deviation from the semver standard is that this function DOES try to interpret
 // the version metadata as a number when comparing.
-func IsUpgradable(installed, latest string) bool {
-	var parsedInstalled, parsedLatest *semver.Version
+func IsUpgradable(installed, desired string) bool {
+	var parsedInstalled, parsedDesired *semver.Version
 	var err error
 	if parsedInstalled, err = semver.NewVersion(installed); err != nil {
 		parsedInstalled = nil
-	} else if parsedLatest, err = semver.NewVersion(latest); err != nil {
-		parsedLatest = nil
+	} else if parsedDesired, err = semver.NewVersion(desired); err != nil {
+		parsedDesired = nil
 	}
-	if parsedLatest != nil && parsedInstalled != nil {
-		if parsedLatest.GreaterThan(parsedInstalled) {
+	if parsedDesired != nil && parsedInstalled != nil {
+		if parsedDesired.GreaterThan(parsedInstalled) {
 			return true
+		} else if parsedDesired.Equal(parsedInstalled) {
+			return isUpgradableMetadata(parsedInstalled, parsedDesired)
+		} else {
+			return false
 		}
-		return isUpgradableMetadata(parsedInstalled, parsedLatest)
 	} else {
-		return installed != latest
+		return installed != desired
 	}
 }
 

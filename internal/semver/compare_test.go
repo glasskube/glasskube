@@ -11,12 +11,16 @@ var _ = Describe("IsUpgradable", func() {
 	// testCases is a map of installed version to latest version to expected result
 	testCases := map[string]map[string]bool{
 		"v1.0.0": {
+			"v0.9.0":        false,
+			"v0.9.0+1":      false,
 			"v1.0.0":        false,
 			"v1.0.0+1":      true,
 			"v1.0.0+a":      true,
 			"not a version": true,
 		},
 		"v1.0.0+1": {
+			"v0.9.0":        false,
+			"v0.9.0+1":      false,
 			"v1.0.0":        false,
 			"v1.0.0+1":      false,
 			"v1.0.0+2":      true,
@@ -24,6 +28,8 @@ var _ = Describe("IsUpgradable", func() {
 			"not a version": true,
 		},
 		"v1.0.0+a": {
+			"v0.9.0":        false,
+			"v0.9.0+1":      false,
 			"v1.0.0":        false,
 			"v1.0.0+1":      true,
 			"v1.0.0+a":      false,
@@ -31,6 +37,8 @@ var _ = Describe("IsUpgradable", func() {
 			"not a version": true,
 		},
 		"v1.0.0+b": {
+			"v0.9.0":        false,
+			"v0.9.0+1":      false,
 			"v1.0.0":        false,
 			"v1.0.0+1":      true,
 			"v1.0.0+a":      true,
