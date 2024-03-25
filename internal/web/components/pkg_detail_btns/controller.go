@@ -23,13 +23,7 @@ func getId(pkgName string) string {
 	return fmt.Sprintf("%v-%v", TemplateId, pkgName)
 }
 
-func Render(
-	w io.Writer,
-	tmpl *template.Template,
-	pkg *v1alpha1.Package,
-	status *client.PackageStatus,
-	manifest *v1alpha1.PackageManifest,
-	updateAvailable bool) error {
+func Render(w io.Writer, tmpl *template.Template, pkg *v1alpha1.Package, status *client.PackageStatus, manifest *v1alpha1.PackageManifest, updateAvailable bool) error {
 	id := getId(pkg.Name)
 	return tmpl.ExecuteTemplate(w, TemplateId, &pkgDetailBtnsInput{
 		ContainerId:     id,
