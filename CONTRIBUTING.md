@@ -29,7 +29,7 @@ The goal of this document is to define some guidelines to streamline our contrib
 - Assign yourself to the issue, if you are working on it (if you are not a member of the organization, please leave a comment on the issue)
 - Make your changes
 - Keep pull requests small and focused, if you have multiple changes, please open multiple PRs
-- Create a pull request back to the upstream repository and follow follow the [pull request template](.github/pull_request_template.md) guidelines.
+- Create a pull request back to the upstream repository and follow the [pull request template](.github/pull_request_template.md) guidelines.
 - Wait for a review and address any comments
 
 ### Opening PRs
@@ -39,6 +39,8 @@ The goal of this document is to define some guidelines to streamline our contrib
 - Fill out the PR template
 - Mention the issue that your PR is addressing (closes: #<id>)
 - Make sure that your PR passes all checks
+- Make sure to test your changes
+- If you have multiple commits in your PR, that solve the same problem, please squash the commits
 
 ### Reviewing PRs
 
@@ -79,6 +81,8 @@ Please refer to the Conventional Commits specification for more details.
 ## Development Guide
 
 Glasskube is developed using the [Go](https://golang.org/) programming language. The current version of Go being used is [v1.21](https://go.dev/doc/go1.21). It uses go modules for dependency management.
+
+We use [GNU Make](https://www.gnu.org/software/make/) and do not support other make flavors. 
 
 ### Building
 
