@@ -51,3 +51,6 @@ Sometimes it is important to pin down what versions of a dependency should be us
 Often, this will not only be one version, but a range of versions. There is no common specification for semver ranges, 
 but there seem to be some common expectations of to what version range specifications look like.
 We mostly rely on the [Masterminds/semver](https://github.com/Masterminds/semver) package to do version constraint checks, which itself works with version range syntax close to js/npm and Rust/Cargo. 
+
+Please note that we do not allow build numbers to be part of such version ranges. 
+If there is some change in a required package, that would make a dependant package incompatible, this change needs to be reflected in the actual app version anyway. 
