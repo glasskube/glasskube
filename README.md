@@ -13,7 +13,7 @@
   </a>
   <img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=899d5aee-625c-4345-bad0-713d29caf929" />
 
-<h3 align="center">🧊 The missing Package Manager for Kubernetes 📦</h3>
+<h3 align="center">🧊 The next generation Package Manager for Kubernetes 📦</h3>
 
   <p align="center">
     <a href="https://glasskube.dev/docs/getting-started/install?utm_source=github"><strong>Getting started »</strong></a>
@@ -107,7 +107,7 @@ Congratulations, you can now explore and install all our available packages! �
 
 ### Coming Soon
 
-In the next versions you will be able to install more packages like the [Kube-Prometheus-Stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack), [Velero](https://github.com/vmware-tanzu/velero) and the [CloudNativePG](https://github.com/cloudnative-pg/cloudnative-pg). With v0.1.0 you will also be able to install apps like [GitLab](https://gitlab.com/gitlab-org/gitlab), [Keycloak](https://github.com/keycloak/keycloak) or [Hashicorp Vault](https://github.com/hashicorp/vault) with the [Glasskube Apps Operator](https://github.com/glasskube/operator/). You can find the full list and release schedule in our [roadmap](https://glasskube.dev/roadmap/#packages-and-apps-schedule?utm_source=github)
+In the next versions you will be able to install more packages like the [Kube-Prometheus-Stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack), [Velero](https://github.com/vmware-tanzu/velero) and the [CloudNativePG](https://github.com/cloudnative-pg/cloudnative-pg). With v1.0.0 you will also be able to install apps like [GitLab](https://gitlab.com/gitlab-org/gitlab), [Keycloak](https://github.com/keycloak/keycloak) or [Hashicorp Vault](https://github.com/hashicorp/vault) with the [Glasskube Apps Operator](https://github.com/glasskube/operator/). You can find the full list and release schedule in our [roadmap](https://glasskube.dev/roadmap/#packages-and-apps-schedule?utm_source=github)
 
 > Can't find a package or want your app included in the list? We are always adding new supported packages & apps,
 > so just join us on [Discord](https://discord.gg/SxH6KUCGH7) or open up a new issue and let us know what is missing!
@@ -162,6 +162,10 @@ Thanks to everyone, that is supporting this project. We are thankful, for evey c
 <a href="https://github.com/glasskube/glasskube/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=glasskube/glasskube" />
 </a>
+
+## 👾 Activity
+
+![Glasskube Activity](https://repobeats.axiom.co/api/embed/c5aac6f5d22bd6b83a21ae51353dd7bcb43f9517.svg "Glasskube activity image")
 
 ## 📘 License
 
