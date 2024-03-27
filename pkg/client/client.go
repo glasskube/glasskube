@@ -10,7 +10,7 @@ import (
 type PackageV1Alpha1Client interface {
 	Packages() PackageInterface
 	PackageInfos() PackageInfoInterface
-	WithPackageStore(store cache.Store) PackageV1Alpha1Client
+	WithStores(packageStore cache.Store, packageInfoStore cache.Store) PackageV1Alpha1Client
 }
 
 type baseClient struct {
@@ -26,8 +26,8 @@ func (c *baseClient) Packages() PackageInterface {
 func (c *baseClient) PackageInfos() PackageInfoInterface {
 	return &packageInfoClient{restClient: c.restClient}
 }
-func (c *baseClient) WithPackageStore(store cache.Store) PackageV1Alpha1Client {
-	return &packageCacheClient{PackageV1Alpha1Client: c, packageStore: store}
+func (c *baseClient) WithStores(packageStore cache.Store, packageInfoStore cache.Store) PackageV1Alpha1Client {
+	return &packageCacheClient{PackageV1Alpha1Client: c, packageStore: packageStore, packageInfoStore: packageInfoStore}
 }
 
 func New(cfg *rest.Config) (PackageV1Alpha1Client, error) {
