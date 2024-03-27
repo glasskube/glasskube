@@ -81,6 +81,14 @@ You can install Glasskube via [Homebrew](https://brew.sh/):
 brew install glasskube/tap/glasskube
 ```
 
+You can also run Glasskube via [Nix package manager](https://nixos.org/):
+
+```bash
+nix-shell -p glasskube
+```
+
+or install it globally by adding `pkgs.glasskube` to your `environment.systemPackages`.
+
 For other installation options check out our [install guide](https://glasskube.dev/docs/getting-started/install).
 
 Once the CLI is installed, the first step is to install the necessary components in your cluster. To do that, run
