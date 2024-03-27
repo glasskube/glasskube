@@ -143,17 +143,16 @@ func (s *server) Start(ctx context.Context) error {
 		return errors.New("server is already listening")
 	}
 
-	_ = s.initKubeConfig()
-	if err := s.checkBootstrapped(ctx); err == nil {
-		s.startInformer(ctx)
-	}
-
+	parseTemplates()
 	if config.IsDevBuild() {
 		if err := watchTemplates(); err != nil {
 			fmt.Fprintf(os.Stderr, "templates will not be parsed after changes: %v\n", err)
 		}
 	}
-	parseTemplates()
+	_ = s.initKubeConfig()
+	if err := s.checkBootstrapped(ctx); err == nil {
+		s.startInformer(ctx)
+	}
 
 	root, err := fs.Sub(webFs, "root")
 	if err != nil {
