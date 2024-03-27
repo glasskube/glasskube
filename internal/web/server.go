@@ -85,17 +85,19 @@ func NewServer(options ServerOptions) *server {
 type server struct {
 	ServerOptions
 	configLoader
-	listener           net.Listener
-	restConfig         *rest.Config
-	rawConfig          *api.Config
-	pkgClient          client.PackageV1Alpha1Client
-	wsHub              *WsHub
-	informerStore      cache.Store
-	informerCtrl       cache.Controller
-	forwarders         map[string]*open.OpenResult
-	dependencyMgr      *dependency.DependendcyManager
-	updateMutex        sync.Mutex
-	updateTransactions map[int]update.UpdateTransaction
+	listener              net.Listener
+	restConfig            *rest.Config
+	rawConfig             *api.Config
+	pkgClient             client.PackageV1Alpha1Client
+	wsHub                 *WsHub
+	packageStore          cache.Store
+	packageController     cache.Controller
+	packageInfoStore      cache.Store
+	packageInfoController cache.Controller
+	forwarders            map[string]*open.OpenResult
+	dependencyMgr         *dependency.DependendcyManager
+	updateMutex           sync.Mutex
+	updateTransactions    map[int]update.UpdateTransaction
 }
 
 func (s *server) RestConfig() *rest.Config {
@@ -570,10 +572,12 @@ func (server *server) initKubeConfig() ServerConfigError {
 }
 
 func (server *server) startInformer(ctx context.Context) {
-	if server.informerStore == nil && server.informerCtrl == nil {
-		server.informerStore, server.informerCtrl = server.initInformer(ctx)
-		go server.informerCtrl.Run(ctx.Done())
-		server.pkgClient = server.pkgClient.WithPackageStore(server.informerStore)
+	if server.packageStore == nil && server.packageController == nil && server.packageInfoStore == nil {
+		server.packageStore, server.packageController = server.initPackageStoreAndController(ctx)
+		server.packageInfoStore, server.packageInfoController = server.initPackageInfoStoreAndController(ctx)
+		go server.packageController.Run(ctx.Done())
+		go server.packageInfoController.Run(ctx.Done())
+		server.pkgClient = server.pkgClient.WithStores(server.packageStore, server.packageInfoStore)
 	}
 }
 
@@ -627,7 +631,7 @@ func defaultKubeconfigExists() bool {
 	}
 }
 
-func (s *server) initInformer(ctx context.Context) (cache.Store, cache.Controller) {
+func (s *server) initPackageStoreAndController(ctx context.Context) (cache.Store, cache.Controller) {
 	pkgClient := s.pkgClient
 	return cache.NewInformer(
 		&cache.ListWatch{
@@ -665,6 +669,25 @@ func (s *server) initInformer(ctx context.Context) (cache.Store, cache.Controlle
 				}
 			},
 		},
+	)
+}
+
+func (s *server) initPackageInfoStoreAndController(ctx context.Context) (cache.Store, cache.Controller) {
+	pkgClient := s.pkgClient
+	return cache.NewInformer(
+		&cache.ListWatch{
+			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+				var packageInfoList v1alpha1.PackageInfoList
+				err := pkgClient.PackageInfos().GetAll(ctx, &packageInfoList)
+				return &packageInfoList, err
+			},
+			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+				return pkgClient.PackageInfos().Watch(ctx)
+			},
+		},
+		&v1alpha1.PackageInfo{},
+		0,
+		cache.ResourceEventHandlerFuncs{},
 	)
 }
 
