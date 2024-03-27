@@ -1,8 +1,8 @@
 module github.com/glasskube/glasskube
 
-go 1.21
+go 1.22
 
-toolchain go1.21.5
+toolchain go1.22.0
 
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
