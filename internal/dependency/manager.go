@@ -6,7 +6,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/glasskube/glasskube/internal/controller/owners"
 	"github.com/glasskube/glasskube/internal/names"
 	"go.uber.org/multierr"
 
@@ -22,14 +21,12 @@ import (
 type DependendcyManager struct {
 	clientAdapter adapter.ClientAdapter
 	repoAdapter   adapter.RepoAdapter
-	*owners.OwnerManager
 }
 
-func NewDependencyManager(adapter adapter.ClientAdapter, ownerMgr *owners.OwnerManager) *DependendcyManager {
+func NewDependencyManager(adapter adapter.ClientAdapter) *DependendcyManager {
 	return &DependendcyManager{
 		clientAdapter: adapter,
 		repoAdapter:   &defaultRepoAdapter{repo: repo.DefaultClient},
-		OwnerManager:  ownerMgr,
 	}
 }
 

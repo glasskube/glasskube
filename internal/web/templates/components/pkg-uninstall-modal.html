@@ -1,0 +1,45 @@
+{{ define "pkg-uninstall-modal" }}
+  <div class="modal-dialog modal-dialog-centered" id="pkg-uninstall-modal">
+    <div class="modal-content">
+      <form hx-post="/packages/uninstall">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5">Uninstall {{ .PackageName }}</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        {{ if eq .Err nil }}
+          <div class="modal-body" id="pkg-update-modal-body">
+            <div class="alert alert-warning m-0" role="alert">
+              <div>The following packages will be <strong>removed</strong> from your cluster:</div>
+              <ul class="m-0 mt-1">
+                <li>{{ $.PackageName }} (requested by user)</li>
+                {{ range .Pruned }}
+                  <li>{{ . }} (dependency)</li>
+                {{ end }}
+              </ul>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-primary btn-sm" data-bs-dismiss="modal">Cancel</button>
+            <button
+              type="submit"
+              data-bs-dismiss="modal"
+              name="packageName"
+              class="btn btn-danger btn-sm"
+              value="{{ .PackageName }}">
+              Confirm
+            </button>
+          </div>
+        {{ else }}
+          <div class="modal-body" id="pkg-update-modal-body">
+            <div class="alert alert-danger m-0" role="alert">
+              {{ .Err }}
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary btn-sm" data-bs-dismiss="modal">OK</button>
+          </div>
+        {{ end }}
+      </form>
+    </div>
+  </div>
+{{ end }}

@@ -17,22 +17,23 @@ import (
 )
 
 var (
-	baseTemplate        *template.Template
-	pkgsPageTmpl        *template.Template
-	pkgPageTmpl         *template.Template
-	supportPageTmpl     *template.Template
-	bootstrapPageTmpl   *template.Template
-	kubeconfigPageTmpl  *template.Template
-	pkgOverviewBtnTmpl  *template.Template
-	pkgDetailBtnsTmpl   *template.Template
-	pkgInstallModalTmpl *template.Template
-	pkgUpdateModalTmpl  *template.Template
-	pkgUpdateAlertTmpl  *template.Template
-	alertTmpl           *template.Template
-	templatesBaseDir    = "internal/web"
-	templatesDir        = "templates"
-	componentsDir       = path.Join(templatesDir, "components")
-	pagesDir            = path.Join(templatesDir, "pages")
+	baseTemplate          *template.Template
+	pkgsPageTmpl          *template.Template
+	pkgPageTmpl           *template.Template
+	supportPageTmpl       *template.Template
+	bootstrapPageTmpl     *template.Template
+	kubeconfigPageTmpl    *template.Template
+	pkgOverviewBtnTmpl    *template.Template
+	pkgDetailBtnsTmpl     *template.Template
+	pkgInstallModalTmpl   *template.Template
+	pkgUpdateModalTmpl    *template.Template
+	pkgUpdateAlertTmpl    *template.Template
+	pkgUninstallModalTmpl *template.Template
+	alertTmpl             *template.Template
+	templatesBaseDir      = "internal/web"
+	templatesDir          = "templates"
+	componentsDir         = path.Join(templatesDir, "components")
+	pagesDir              = path.Join(templatesDir, "pages")
 )
 
 func watchTemplates() error {
@@ -86,6 +87,7 @@ func parseTemplates() {
 	pkgUpdateAlertTmpl = componentTmpl(pkg_update_alert.TemplateId, "pkg-update-alert.html")
 	pkgInstallModalTmpl = componentTmpl("pkg-install-modal", "pkg-install-modal.html")
 	pkgUpdateModalTmpl = componentTmpl("pkg-update-modal", "pkg-update-modal.html")
+	pkgUninstallModalTmpl = componentTmpl("pkg-uninstall-modal", "pkg-uninstall-modal.html")
 	alertTmpl = componentTmpl("alert", "alert.html")
 }
 

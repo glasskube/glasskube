@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
-	"github.com/glasskube/glasskube/internal/controller/owners"
 	"github.com/glasskube/glasskube/internal/dependency"
 	clientadapter "github.com/glasskube/glasskube/internal/dependency/adapter/goclient"
 	"github.com/glasskube/glasskube/internal/repo"
@@ -16,7 +15,6 @@ import (
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/scheme"
 )
 
 type UpdateTransaction struct {
@@ -58,10 +56,7 @@ func NewUpdater(client client.PackageV1Alpha1Client) *updater {
 	return &updater{
 		client: client,
 		status: statuswriter.Noop(),
-		dm: dependency.NewDependencyManager(
-			clientadapter.NewGoClientAdapter(client),
-			owners.NewOwnerManager(scheme.Scheme),
-		),
+		dm:     dependency.NewDependencyManager(clientadapter.NewGoClientAdapter(client)),
 	}
 }
 

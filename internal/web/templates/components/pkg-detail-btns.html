@@ -1,10 +1,14 @@
 {{ define "pkg-detail-uninstall" }}
   <button
-    hx-post="/packages/uninstall"
-    class="btn btn-danger btn-sm"
+    hx-post="/packages/uninstall/modal"
+    hx-target="#modal-container"
+    hx-swap="innerHTML"
+    hx-select="#pkg-uninstall-modal"
     name="packageName"
     value="{{ .PackageName }}"
-    hx-confirm="You are going to uninstall {{ .PackageName }}. Are you sure?">
+    class="btn btn-danger btn-sm"
+    data-bs-toggle="modal"
+    data-bs-target="#modal-container">
     <i class="bi bi-trash"></i>
   </button>
 {{ end }}

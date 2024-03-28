@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/fatih/color"
 	"github.com/glasskube/glasskube/internal/cliutils"
+	"github.com/glasskube/glasskube/internal/dependency"
+	clientadapter "github.com/glasskube/glasskube/internal/dependency/adapter/goclient"
 	pkgClient "github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/glasskube/glasskube/pkg/uninstall"
@@ -24,43 +26,58 @@ var uninstallCmd = &cobra.Command{
 	Args:   cobra.ExactArgs(1),
 	PreRun: cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
 	Run: func(cmd *cobra.Command, args []string) {
-		client := pkgClient.FromContext(cmd.Context())
 		pkgName := args[0]
-		var pkg v1alpha1.Package
-		if err := client.Packages().Get(cmd.Context(), pkgName, &pkg); err != nil {
-			fmt.Fprintf(os.Stderr, "Could not get installed package %v:\n%v\n", pkgName, err)
+		ctx := cmd.Context()
+		currentContext := pkgClient.RawConfigFromContext(cmd.Context()).CurrentContext
+		client := pkgClient.FromContext(cmd.Context())
+		dm := dependency.NewDependencyManager(clientadapter.NewGoClientAdapter(client))
+
+		if g, err := dm.NewGraph(ctx); err != nil {
+			fmt.Fprintf(os.Stderr, "❌ Error validating uninstall: %v\n", err)
 			os.Exit(1)
-			return
+		} else {
+			g.Delete(pkgName)
+			pruned := g.Prune()
+			if err := g.Validate(); err != nil {
+				fmt.Fprintf(os.Stderr, "❌ %v can not be uninstalled for the following reason: %v\n", pkgName, err)
+				os.Exit(1)
+			} else {
+				showUninstallDetails(currentContext, pkgName, pruned)
+				if !uninstallCmdOptions.ForceUninstall && !cliutils.YesNoPrompt("Do you want to continue?", false) {
+					fmt.Println("❌ Uninstallation cancelled.")
+					os.Exit(0)
+				}
+			}
 		}
-		proceed := uninstallCmdOptions.ForceUninstall || cliutils.YesNoPrompt(
-			fmt.Sprintf(
-				"%v will be removed from your cluster (%v). Are you sure?",
-				pkgName,
-				pkgClient.RawConfigFromContext(cmd.Context()).CurrentContext,
-			),
-			false,
-		)
 
 		uninstaller := uninstall.NewUninstaller(client).WithStatusWriter(statuswriter.Spinner())
-		if proceed {
-			if uninstallCmdOptions.NoWait {
-				if err := uninstaller.Uninstall(cmd.Context(), &pkg); err != nil {
-					fmt.Fprintf(os.Stderr, "An error occurred during uninstallation:\n\n%v\n", err)
-					os.Exit(1)
-				}
-				fmt.Fprintln(os.Stderr, "Uninstallation started in background")
-			} else {
-				if err := uninstaller.UninstallBlocking(cmd.Context(), &pkg); err != nil {
-					fmt.Fprintf(os.Stderr, "An error occurred during uninstallation:\n\n%v\n", err)
-					os.Exit(1)
-					return
-				}
-				fmt.Fprintf(os.Stderr, "🗑️ %v uninstalled successfully.\n", pkgName)
+		pkg := pkgClient.NewPackage(pkgName, "")
+		if uninstallCmdOptions.NoWait {
+			if err := uninstaller.Uninstall(ctx, pkg); err != nil {
+				fmt.Fprintf(os.Stderr, "\n❌ An error occurred during uninstallation:\n\n%v\n", err)
+				os.Exit(1)
 			}
+			fmt.Fprintln(os.Stderr, "Uninstallation started in background")
 		} else {
-			fmt.Println("❌ Uninstallation cancelled.")
+			if err := uninstaller.UninstallBlocking(ctx, pkg); err != nil {
+				fmt.Fprintf(os.Stderr, "\n❌ An error occurred during uninstallation:\n\n%v\n", err)
+				os.Exit(1)
+				return
+			}
+			fmt.Fprintf(os.Stderr, "🗑️  %v uninstalled successfully.\n", pkgName)
 		}
 	},
+}
+
+func showUninstallDetails(context, name string, pruned []string) {
+	fmt.Fprintf(os.Stderr,
+		"The following packages will be %v from your cluster (%v):\n",
+		color.New(color.Bold).Sprint("removed"),
+		context)
+	fmt.Fprintf(os.Stderr, " * %v (requested by user)\n", name)
+	for _, dep := range pruned {
+		fmt.Fprintf(os.Stderr, " * %v (dependency)\n", dep)
+	}
 }
 
 func init() {

@@ -9,7 +9,6 @@ import (
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 )
 
@@ -34,38 +33,33 @@ func (obj *uninstaller) WithStatusWriter(sw statuswriter.StatusWriter) *uninstal
 func (obj *uninstaller) UninstallBlocking(ctx context.Context, pkg *v1alpha1.Package) error {
 	obj.status.Start()
 	defer obj.status.Stop()
-	pkgUID, err := obj.delete(ctx, pkg)
+	err := obj.delete(ctx, pkg)
 	if err != nil {
 		return err
 	}
-	return obj.awaitDeletion(ctx, pkgUID)
+	return obj.awaitDeletion(ctx, pkg.Name)
 }
 
 // Uninstall deletes the v1alpha1.Package custom resource from the cluster.
 func (obj *uninstaller) Uninstall(ctx context.Context, pkg *v1alpha1.Package) error {
 	obj.status.Start()
 	defer obj.status.Stop()
-	_, err := obj.delete(ctx, pkg)
-	return err
+	return obj.delete(ctx, pkg)
 }
 
-func (obj *uninstaller) delete(ctx context.Context, pkg *v1alpha1.Package) (types.UID, error) {
+func (obj *uninstaller) delete(ctx context.Context, pkg *v1alpha1.Package) error {
 	obj.status.SetStatus(fmt.Sprintf("Uninstalling %v...", pkg.Name))
-	err := obj.client.Packages().Delete(ctx, pkg, metav1.DeleteOptions{PropagationPolicy: &deletePropagationForeground})
-	if err != nil {
-		return "", err
-	}
-	return pkg.GetUID(), nil
+	return obj.client.Packages().Delete(ctx, pkg, metav1.DeleteOptions{PropagationPolicy: &deletePropagationForeground})
 }
 
-func (obj *uninstaller) awaitDeletion(ctx context.Context, pkgUID types.UID) error {
+func (obj *uninstaller) awaitDeletion(ctx context.Context, name string) error {
 	watcher, err := obj.client.Packages().Watch(ctx)
 	if err != nil {
 		return err
 	}
 	defer watcher.Stop()
 	for event := range watcher.ResultChan() {
-		if obj, ok := event.Object.(*v1alpha1.Package); ok && obj.GetUID() == pkgUID {
+		if pkg, ok := event.Object.(*v1alpha1.Package); ok && pkg.Name == name {
 			if event.Type == watch.Deleted {
 				return nil // Package deletion confirmed
 			}

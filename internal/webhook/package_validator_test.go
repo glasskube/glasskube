@@ -29,10 +29,8 @@ func newPackageValidatingWebhook(objects ...client.Object) *PackageValidatingWeb
 	return &PackageValidatingWebhook{
 		Client:       fakeClient,
 		OwnerManager: ownerManager,
-		DependendcyManager: dependency.NewDependencyManager(
-			ctrladapter.NewControllerRuntimeAdapter(fakeClient),
-			ownerManager,
-		).WithRepo(&fakeRepo),
+		DependendcyManager: dependency.NewDependencyManager(ctrladapter.NewControllerRuntimeAdapter(fakeClient)).
+			WithRepo(&fakeRepo),
 		repo: &fakeRepo,
 	}
 }
