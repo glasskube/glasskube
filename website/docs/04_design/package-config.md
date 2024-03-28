@@ -73,7 +73,7 @@ The key in this map is referred to as that values **name**
   For example a "text" value with constraints.max = 3 is the same as a "text" value with no constraints.
 - **`Targets`**:
   Where to apply this value.
-  Either the path of a helm value, or a resource identifier (`ApiVersion`, `Kind`, `Name`, `Namespace`) combined with patch information.
+  Either the path of a helm value, or a `TypedObjectReference` combined with patch information.
   Initially, the idea is to use RFC 6902 JSON patches but this is still TBD.
   We use Unstructured for plain resources, which already supports setting values via a kind of JSON path,
   but it does not support setting values in lists.
@@ -117,19 +117,21 @@ values:
     constraints:
       required: true
     targets:
-      - kind: 'Ingress'
-        apiVersion: 'networking.k8s.io/v1'
-        name: 'foo'
-        namespace: 'foo'
+      - resource:
+          kind: 'Ingress'
+          apiVersion: 'networking.k8s.io/v1'
+          name: 'foo'
+          namespace: 'foo'
         patch:
           - op: 'add'
             path: '/spec/rules/0/host'
           - op: 'add'
             path: '/spec/tls/0/hosts/-'
-      - kind: 'Deployment'
-        apiVersion: 'apps/v1'
-        name: 'foo'
-        namespace: 'foo'
+      - resource:
+          apiVersion: 'apps/v1'
+          kind: 'Deployment'
+          name: 'foo'
+          namespace: 'foo'
         patch:
           - op: 'add'
             path: '/spec/template/spec/containers/0/env/-'
