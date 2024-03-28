@@ -41,7 +41,7 @@ The key in this map is referred to as that values **name**
 
 - **`Type`** (`string` enum):
   Every value must have a type, so that we know what kind of input field to show for this value.
-  Initially, this can be one of `check`, `options`, `text`, `number` but it is possible to add more types in future releases.
+  Initially, this can be one of `boolean`, `options`, `text`, `number` but it is possible to add more types in future releases.
 - **`Label`** (`string`):
   The label is used to denote an input field related to this value in a UI.
   Specifying a label is optional, by default the name of the value should be used.
