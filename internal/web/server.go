@@ -181,6 +181,7 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle("/packages/update", s.requireReady(s.update))
 	router.Handle("/packages/update/modal", s.requireReady(s.updateModal))
 	router.Handle("/packages/uninstall", s.requireReady(s.uninstall))
+	router.Handle("/packages/uninstall/modal", s.requireReady(s.uninstallModal))
 	router.Handle("/packages/open", s.requireReady(s.open))
 	router.Handle("/packages/{pkgName}", s.requireReady(s.packageDetail))
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/packages", http.StatusFound) })
@@ -341,6 +342,27 @@ func (s *server) update(w http.ResponseWriter, r *http.Request) {
 		delete(s.updateTransactions, utId)
 		addHxTrigger(w, TriggerRefreshPackageDetail)
 	}
+}
+
+func (s *server) uninstallModal(w http.ResponseWriter, r *http.Request) {
+	pkgName := r.FormValue("packageName")
+	var pruned []string
+	var err error
+	if g, err1 := s.dependencyMgr.NewGraph(r.Context()); err1 != nil {
+		err = fmt.Errorf("error validating uninstall: %w", err1)
+	} else {
+		g.Delete(pkgName)
+		pruned = g.Prune()
+		if err1 := g.Validate(); err1 != nil {
+			err = fmt.Errorf("%v cannot be uninstalled: %w", pkgName, err1)
+		}
+	}
+	err = pkgUninstallModalTmpl.Execute(w, map[string]any{
+		"PackageName": pkgName,
+		"Pruned":      pruned,
+		"Err":         err,
+	})
+	checkTmplError(err, "pkgUninstallModalTmpl")
 }
 
 func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
@@ -691,7 +713,7 @@ func (s *server) initPackageInfoStoreAndController(ctx context.Context) (cache.S
 
 func (s *server) isUpdateAvailable(ctx context.Context, packages ...string) bool {
 	if tx, err := update.NewUpdater(s.pkgClient).Prepare(ctx, packages); err != nil {
-		fmt.Fprintf(os.Stderr, "Error checking for updates: %v", err)
+		fmt.Fprintf(os.Stderr, "Error checking for updates: %v\n", err)
 		return false
 	} else {
 		return !tx.IsEmpty()
