@@ -45,7 +45,7 @@ func (a *testClientAdapter) ListPackages(ctx context.Context) (*v1alpha1.Package
 }
 
 func createDependencyManager() *DependendcyManager {
-	return NewDependencyManager(&testClientAdapter{}, nil).WithRepo(fakeRepo)
+	return NewDependencyManager(&testClientAdapter{}).WithRepo(fakeRepo)
 }
 
 var dm *DependendcyManager

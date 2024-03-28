@@ -32,7 +32,7 @@ var _ webhook.CustomValidator = &PackageValidatingWebhook{}
 
 func (p *PackageValidatingWebhook) SetupWithManager(mgr ctrl.Manager) error {
 	p.OwnerManager = owners.NewOwnerManager(p.Scheme())
-	p.DependendcyManager = dependency.NewDependencyManager(ctrladapter.NewControllerRuntimeAdapter(p.Client), p.OwnerManager)
+	p.DependendcyManager = dependency.NewDependencyManager(ctrladapter.NewControllerRuntimeAdapter(p.Client))
 	p.repo = repo.DefaultClient
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&v1alpha1.Package{}).
