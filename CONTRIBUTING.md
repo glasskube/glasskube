@@ -60,7 +60,7 @@ git checkout -b github_userName/XXXX
 5. Once your changes are ready, you may then commit and push the changes from your working branch:
 ```shell
 git commit -m "fix(xxxx-name_of_bug): nice commit description"
-git push origin feature/add-new-package
+git push origin github_userName/XXXX
 ```
 
 ### Convential commit scopes (xxxx-name_of_bug) that are currently supported are:
@@ -112,13 +112,13 @@ git remote add upstream https://github.com/glasskube/glasskube.git
 git fetch upstream
 ```
 
-3. Checkout to the **\`feature/add-new-package\`** branch and merge the upstream:
+3. Checkout to the **\`github_userName/XXXX\`** branch and merge the upstream:
 ```shell
-git checkout feature/add-new-package
+git checkout github_userName/XXXX
 git rebase upstream/main
 ```
 
-**Now, your local 'feature/add-new-package' branch is up-to-date with everything modified upstream!**
+**Now, your local 'github_userName/XXXX' branch is up-to-date with everything modified upstream!**
 
 - Now it's time to create a pull request back to the upstream repository and follow the [pull request template](.github/pull_request_template.md) guidelines.
 - Wait for a review and address any comments.
