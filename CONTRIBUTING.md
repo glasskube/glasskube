@@ -1,60 +1,79 @@
-# Contributing guide for Glasskube
+# Contributing guide for Glasskube 🧊
 
 Welcome, and thank you for deciding to invest some of your time in contributing to the Glasskube project!
 The goal of this document is to define some guidelines to streamline our contribution workflow.
 
-## Getting started
+## Before you get started ✋
+---
+There are many types of issues you can take on when contributing to the Glasskube project. We try our best to provide a wide array of open issues that vary in levels of complexity. From beginners to seasoned developers, everyone should be able to find something to work on.
 
-### Where should I start?
+### Let's find the perfect open issue for you!
 
 - If you are new to the project, please check out the [good first issue](https://github.com/glasskube/glasskube/labels/good%20first%20issue) label.
-- If you are looking for something to work on, check out our [open issues](hhttps://github.com/glasskube/glasskube/issues).
+- If you are ready to make a big impact on the project, check out the [current milestone](https://github.com/glasskube/glasskube/milestones) that is being worked on and filter the issues by `"help-wanted"`, these issues are the ones that will make it into the next official release. 
+- If you are looking for something specific to work on, check out our [open issues](https://github.com/glasskube/glasskube/issues?q=is%3Aissue+is%3Aopen+no%3Aassignee+-label%3Aneeds-triage) and filter against the available tags such as `component: cli`, `component: ui` `component: repo`, `documentation`.
 - If you have an idea for a new feature, please open an issue, and we can discuss it.
 - We are also happy to help you find something to work on. Just reach out to us.
 
-### Getting in touch with the community
+### Get in touch with the community
 
-- Join our [Glasskube Discord Channel](https://discord.gg/SxH6KUCGH7)
-- Introduce yourself on the intros channel or open an issue to let us know that you are interested in contributing
+- Join our [Glasskube Discord Server](https://discord.gg/SxH6KUCGH7).
+- Introduce yourself in the [`🎤|Intros`](https://discord.com/channels/1176558649250951330/1184508688757694634) channel or open an issue to let us know that you are interested in contributing.
 
 ### Discuss issues
 
-- Before you start working on something, propose and discuss your solution on the issue
-- If you are unsure about something, ask the community
+- If you have a way of approaching an issue that is outside of the scope of the issues description, propose and discuss your solution in the issue itself.
+- If you are unsure about something, don't hesitate to ask the community.
 
-### How do I contribute?
+## 🚨 Contributing best practices
+>  - Please `only work on one` issue at a time.
+>  - If you're unable to continue with an assigned task, inform us promptly. 
+>  - Ensure to `TEST` your feature contributions locally before requesting reviews. 
+>  - Need assistance? Utilize the issue or `help-forum` on [Discord](https://discord.gg/SxH6KUCGH7)
+>  - While Generative AI can be useful, minimize its use for `direct team communication`. We value concise, genuine exchanges over scripted messages.
 
-- Fork the repository and clone it locally
-- Create a new branch and follow [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) guidelines for work undertaken
-- Assign yourself to the issue, if you are working on it (if you are not a member of the organization, please leave a comment on the issue)
-- Make your changes
-- Keep pull requests small and focused, if you have multiple changes, please open multiple PRs
-- Create a pull request back to the upstream repository and follow the [pull request template](.github/pull_request_template.md) guidelines.
-- Wait for a review and address any comments
 
-### Opening PRs
+## How to contribute? 🤷
+---
 
-- As long as you are working on your PR, please mark it as a draft
-- Please make sure that your PR is up-to-date with the latest changes in `main`
-- Fill out the PR template
-- Mention the issue that your PR is addressing (closes: #<id>)
-- Make sure that your PR passes all checks
-- Make sure to test your changes
-- If you have multiple commits in your PR, that solve the same problem, please squash the commits
+Following these steps will ensure that your contributions are well-received, reviewed, and integrated effectively into Komiser's codebase.
 
-### Reviewing PRs
+### Issue assigning 
+1. Assign yourself to the issue, if you are working on it (if you are not a member of the organization, please leave a comment on the issue and we will assign you to it.)
 
-- Be respectful and constructive
-- Assign yourself to the PR
-- Check if all checks are passing
-- Suggest changes instead of simply commenting on found issues
-- If you are unsure about something, ask the author
-- If you are not sure if the changes work, try them out
-- Reach out to other reviewers if you are unsure about something
-- If you are happy with the changes, approve the PR
-- Merge the PR once it has all approvals and the checks are passing
+### Fork and Pull Request Flow 🪜
 
-## Commit Message Format
+1. Head over to the [Glasskube GitHub repo](https://github.com/glasskube/glasskube) and "fork it" into your own GitHub account.
+2. Clone your fork to your local machine, using the following command:
+```shell
+git clone git@github.com:USERNAME/FORKED-PROJECT.git
+```
+
+3. Create a new branch based-off **\`main\`** branch:
+```shell
+git checkout main
+git checkout -b github_userName/XXXX
+```
+
+4. Implement the changes or additions you intend to contribute. Whether it's **bug fixes**, **new features**, or **enhancements**, this is where you put your coding skills to use.
+
+5. Once your changes are ready, you may then commit and push the changes from your working branch:
+```shell
+git commit -m "fix(xxxx-name_of_bug): nice commit description"
+git push origin github_userName/XXXX
+```
+
+### Convential commit scopes (xxxx-name_of_bug) that are currently supported are:
+
+- website
+- cli
+- ui
+- package-operator
+
+> - If a commit spans across multiple scopes you could also concatenate them e.g. fix(ui,cli): nice commit message
+> - The commit message must start with a `lower case` letter
+
+## Commit Message Format 💬
 
 We require all commits in this repository to adhere to the following commit message format.
 
@@ -78,7 +97,57 @@ The following `<type>`s are available:
 This format is based on [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 Please refer to the Conventional Commits specification for more details.
 
-## Development Guide
+## Keeping your Fork Up-to-Date 🆕
+If you plan on doing anything more than just a tiny quick fix, you’ll want to **make sure you keep your fork up to date** by tracking the original ["upstream" repo](https://github.com/glasskube/glasskube) that you forked.
+
+Follow the steps given below to do so:
+
+1. Add the 'upstream' repo to list of remotes:
+```shell
+git remote add upstream https://github.com/glasskube/glasskube.git
+```
+
+2. Fetch upstream repo’s branches and latest commits:
+```shell
+git fetch upstream
+```
+
+3. Checkout to the **\`github_userName/XXXX\`** branch and merge the upstream:
+```shell
+git checkout github_userName/XXXX
+git rebase upstream/main
+```
+
+**Now, your local 'github_userName/XXXX' branch is up-to-date with everything modified upstream!**
+
+- Now it's time to create a pull request back to the upstream repository and follow the [pull request template](.github/pull_request_template.md) guidelines.
+- Wait for a review and address any comments.
+
+## Opening PRs 📩
+
+- As long as you are working on your PR, please mark it as a draft
+- Please make sure that your PR is up-to-date with the latest changes in `main`
+- Fill out the PR template
+- Mention the issue that your PR is addressing (closes: #<id>)
+- Make sure that your PR passes all checks
+- Keep pull requests small and focused, if you have multiple changes, please open multiple PRs
+- Make sure to test your changes
+- If you have multiple commits in your PR, that solve the same problem, please squash the commits
+
+## Reviewing PRs 🕵️
+
+- Be respectful and constructive
+- Assign yourself to the PR
+- Check if all checks are passing
+- Suggest changes instead of simply commenting on found issues
+- If you are unsure about something, ask the author
+- If you are not sure if the changes work, try them out
+- Reach out to other reviewers if you are unsure about something
+- If you are happy with the changes, approve the PR
+- Merge the PR once it has all approvals and the checks are passing
+
+
+## Development Guide 👨‍💻
 
 Glasskube is developed using the [Go](https://golang.org/) programming language. The current version of Go being used is [v1.21](https://go.dev/doc/go1.21). It uses go modules for dependency management.
 
@@ -171,7 +240,21 @@ Also note that some of the information in the repository is redundant by design,
 For example, the `index.yaml` contains a `latestVersion` for each package, but the `latestVersion` is also defined in each package index file. 
 Please make sure to have consistent and valid state in your local repo. 
 
-### Testing
+## Testing
+
+> It's crucial to acknowledge the significance of various types of testing. Alongside conducting unit tests for your contributed code, it's imperative to locally build Glasskube and `test it within a Kubernetes cluster`.  ☸️
+
+### Set up a local Minikube cluster for testing locally
+In case you don't have access to a remote Kubernetes cluster, set up a local testing environment using Minikube. [This guide](https://minikube.sigs.k8s.io/docs/tutorials/kubernetes_101/module1/) will help you set up a single node cluster in no time, which will be more than enough for you Glasskube testing needs. 
+
+### Test locally
+Install dependencies and build 
+``` shell
+npm ci
+make all
+```
+
+### Unit tests
 
 Unit tests for the project can be executed by running:
 

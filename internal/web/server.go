@@ -8,10 +8,13 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"math/rand"
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/glasskube/glasskube/internal/config"
@@ -71,9 +74,10 @@ type ServerOptions struct {
 
 func NewServer(options ServerOptions) *server {
 	server := server{
-		ServerOptions: options,
-		configLoader:  &defaultConfigLoader{options.Kubeconfig},
-		forwarders:    make(map[string]*open.OpenResult),
+		ServerOptions:      options,
+		configLoader:       &defaultConfigLoader{options.Kubeconfig},
+		forwarders:         make(map[string]*open.OpenResult),
+		updateTransactions: make(map[int]update.UpdateTransaction),
 	}
 	return &server
 }
@@ -81,15 +85,19 @@ func NewServer(options ServerOptions) *server {
 type server struct {
 	ServerOptions
 	configLoader
-	listener      net.Listener
-	restConfig    *rest.Config
-	rawConfig     *api.Config
-	pkgClient     client.PackageV1Alpha1Client
-	wsHub         *WsHub
-	informerStore cache.Store
-	informerCtrl  cache.Controller
-	forwarders    map[string]*open.OpenResult
-	dependencyMgr *dependency.DependendcyManager
+	listener              net.Listener
+	restConfig            *rest.Config
+	rawConfig             *api.Config
+	pkgClient             client.PackageV1Alpha1Client
+	wsHub                 *WsHub
+	packageStore          cache.Store
+	packageController     cache.Controller
+	packageInfoStore      cache.Store
+	packageInfoController cache.Controller
+	forwarders            map[string]*open.OpenResult
+	dependencyMgr         *dependency.DependendcyManager
+	updateMutex           sync.Mutex
+	updateTransactions    map[int]update.UpdateTransaction
 }
 
 func (s *server) RestConfig() *rest.Config {
@@ -278,16 +286,21 @@ func (s *server) updateModal(w http.ResponseWriter, r *http.Request) {
 		pkgs = append(pkgs, pkgName)
 	}
 
-	updates := make([]*map[string]any, 0)
+	updates := make([]map[string]any, 0)
 	updater := update.NewUpdater(s.pkgClient).WithStatusWriter(statuswriter.Stderr())
 	ut, err := updater.Prepare(r.Context(), pkgs)
 	if err != nil {
 		s.respondAlertAndLog(w, err, "An error occurred preparing update of "+pkgName)
 		return
 	}
+	utId := rand.Int()
+	s.updateMutex.Lock()
+	s.updateTransactions[utId] = *ut
+	s.updateMutex.Unlock()
+
 	for _, u := range ut.Items {
 		if u.UpdateRequired() {
-			updates = append(updates, &map[string]any{
+			updates = append(updates, map[string]any{
 				"Name":           u.Package.Name,
 				"CurrentVersion": u.Package.Spec.PackageInfo.Version,
 				"LatestVersion":  u.Version,
@@ -295,42 +308,41 @@ func (s *server) updateModal(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	for _, req := range ut.Requirements {
-		updates = append(updates, &map[string]any{
+		updates = append(updates, map[string]any{
 			"Name":           req.Name,
 			"CurrentVersion": "-",
 			"LatestVersion":  req.Version,
 		})
 	}
 
-	err = pkgUpdateModalTmpl.Execute(w, &map[string]any{
-		"Updates":     updates,
-		"PackageName": pkgName,
+	err = pkgUpdateModalTmpl.Execute(w, map[string]any{
+		"UpdateTransactionId": utId,
+		"Updates":             updates,
+		"PackageName":         pkgName,
 	})
 	checkTmplError(err, "pkgUpdateModalTmpl")
 }
 
 func (s *server) update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	pkgName := r.FormValue("packageName")
-	pkgs := make([]string, 0, 1)
-	if pkgName != "" {
-		pkgs = append(pkgs, pkgName)
-	}
-
 	updater := update.NewUpdater(s.pkgClient).WithStatusWriter(statuswriter.Stderr())
-	ut, err := updater.Prepare(ctx, pkgs)
-	if err != nil {
-		s.respondAlertAndLog(w, err, "An error occurred preparing update of"+pkgName)
+	s.updateMutex.Lock()
+	defer s.updateMutex.Unlock()
+	utIdStr := r.FormValue("updateTransactionId")
+	if utId, err := strconv.Atoi(utIdStr); err != nil {
+		s.respondAlertAndLog(w, err, "Failed to parse updateTransactionId")
 		return
-	}
-	// in the future we might want to check here whether the prepared new version is the same as the "toVersion"
-	// which the user agreed to update to in the dialog
-	err = updater.Apply(ctx, ut)
-	if err != nil {
-		s.respondAlertAndLog(w, err, "An error occurred updating"+pkgName)
+	} else if ut, ok := s.updateTransactions[utId]; !ok {
+		s.respondAlert(w, fmt.Sprintf("Failed to find UpdateTransaction with ID %d", utId))
 		return
+	} else if err = updater.Apply(ctx, &ut); err != nil {
+		delete(s.updateTransactions, utId)
+		s.respondAlertAndLog(w, err, "An error occurred during the update")
+		return
+	} else {
+		delete(s.updateTransactions, utId)
+		addHxTrigger(w, TriggerRefreshPackageDetail)
 	}
-	addHxTrigger(w, TriggerRefreshPackageDetail)
 }
 
 func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
@@ -560,10 +572,12 @@ func (server *server) initKubeConfig() ServerConfigError {
 }
 
 func (server *server) startInformer(ctx context.Context) {
-	if server.informerStore == nil && server.informerCtrl == nil {
-		server.informerStore, server.informerCtrl = server.initInformer(ctx)
-		go server.informerCtrl.Run(ctx.Done())
-		server.pkgClient = server.pkgClient.WithPackageStore(server.informerStore)
+	if server.packageStore == nil && server.packageController == nil && server.packageInfoStore == nil {
+		server.packageStore, server.packageController = server.initPackageStoreAndController(ctx)
+		server.packageInfoStore, server.packageInfoController = server.initPackageInfoStoreAndController(ctx)
+		go server.packageController.Run(ctx.Done())
+		go server.packageInfoController.Run(ctx.Done())
+		server.pkgClient = server.pkgClient.WithStores(server.packageStore, server.packageInfoStore)
 	}
 }
 
@@ -617,7 +631,7 @@ func defaultKubeconfigExists() bool {
 	}
 }
 
-func (s *server) initInformer(ctx context.Context) (cache.Store, cache.Controller) {
+func (s *server) initPackageStoreAndController(ctx context.Context) (cache.Store, cache.Controller) {
 	pkgClient := s.pkgClient
 	return cache.NewInformer(
 		&cache.ListWatch{
@@ -658,6 +672,25 @@ func (s *server) initInformer(ctx context.Context) (cache.Store, cache.Controlle
 	)
 }
 
+func (s *server) initPackageInfoStoreAndController(ctx context.Context) (cache.Store, cache.Controller) {
+	pkgClient := s.pkgClient
+	return cache.NewInformer(
+		&cache.ListWatch{
+			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+				var packageInfoList v1alpha1.PackageInfoList
+				err := pkgClient.PackageInfos().GetAll(ctx, &packageInfoList)
+				return &packageInfoList, err
+			},
+			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+				return pkgClient.PackageInfos().Watch(ctx)
+			},
+		},
+		&v1alpha1.PackageInfo{},
+		0,
+		cache.ResourceEventHandlerFuncs{},
+	)
+}
+
 func (s *server) isUpdateAvailable(ctx context.Context, packages ...string) bool {
 	if tx, err := update.NewUpdater(s.pkgClient).Prepare(ctx, packages); err != nil {
 		fmt.Fprintf(os.Stderr, "Error checking for updates: %v", err)
@@ -676,11 +709,15 @@ func (s *server) respondAlertAndLog(w http.ResponseWriter, err error, wrappingMs
 		err = fmt.Errorf("%v: %w", wrappingMsg, err)
 	}
 	fmt.Fprintf(os.Stderr, "%v\n", err)
+	s.respondAlert(w, err.Error())
+}
+
+func (s *server) respondAlert(w http.ResponseWriter, message string) {
 	w.Header().Add("Hx-Reselect", "div.alert") // overwrite any existing hx-select (which was a little intransparent sometimes)
 	w.Header().Add("Hx-Reswap", "afterbegin")
 	w.WriteHeader(http.StatusBadRequest)
-	err = alertTmpl.Execute(w, map[string]any{
-		"Message":     err.Error(),
+	err := alertTmpl.Execute(w, map[string]any{
+		"Message":     message,
 		"Dismissible": true,
 	})
 	checkTmplError(err, "alert")
