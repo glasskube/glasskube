@@ -42,21 +42,23 @@ The key in this map is referred to as that values **name**
 - **`Type`** (`string` enum):
   Every value must have a type, so that we know what kind of input field to show for this value.
   Initially, this can be one of `boolean`, `options`, `text`, `number` but it is possible to add more types in future releases.
-- **`Label`** (`string`):
-  The label is used to denote an input field related to this value in a UI.
-  Specifying a label is optional, by default the name of the value should be used.
-- **`Description`** (`string`):
-  The description can be used to give more context to a value. Also optional.
+- **`Metadata`**:
+  A colletion of (mostly) UI-related metadata with the following (optional) properties:
+  - **`Label`** (`string`):
+    The label is used to denote an input field related to this value in a UI.
+    By default the name of the value should be used.
+  - **`Description`** (`string`):
+    The description can be used to give more context to a value.
+  - **`Hints`** (`string` enum):
+    Hints offer package maintainers the ability to make some elements of the UI more prominent.
+    For example, every value can be set to reference the value of a secret key, but if a value has the
+    "SuggestSecretRef" hint, this option can be highlighted by the UI or enabled by default.
+    _Available hints and whether they will be included in the initial release is TBD_
 - **`DefaultValue`** (`string`):
   The default value is pre-selected/pre-filled in the form field of this value for new packages.
 - **`Options`** (`[]string`):
   Available choices for values of type options.
   Should be ignored for other types.
-- **`Hints`** (`string` enum):
-  Hints offer package maintainers the ability to make some elements of the UI more prominent.
-  For example, every value can be set to reference the value of a secret key, but if a value has the
-  "SuggestSecretRef" hint, this option can be highlighted by the UI or enabled by default.
-  _Available hints and whether they will be included in the initial release is TBD_
 - **`Constraints`**:
   Specifying a number of constraints is possible.
   Available constraints are
