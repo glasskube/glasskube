@@ -75,7 +75,9 @@
           </span>
           <br />
           <span>
-            <i> Latest Version: {{ .LatestVersion }} </i>
+            {{ if IsUpgradable .Package.Status.Version .LatestVersion }}
+              <i> Latest Version: {{ .LatestVersion }} </i>
+            {{ end }}
             <br />
             {{ if ne .Status nil }}
               <i> Current Version: {{ .Package.Status.Version }} </i>
