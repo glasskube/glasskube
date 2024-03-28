@@ -73,6 +73,16 @@
               {{ .Manifest.LongDescription }}
             {{ end }}
           </span>
+          <br>
+          <span>
+            {{ if IsUpgradable .Package.Status.Version .LatestVersion }}
+              <i> Latest Version: {{ .LatestVersion }} </i>
+            {{ end }}
+            <br />
+            {{ if ne .Status nil }}
+              <i> Current Version: {{ .Package.Status.Version }} </i>
+            {{ end }}
+          </span>
         </div>
 
         {{ if ne .Manifest.Dependencies nil }}
