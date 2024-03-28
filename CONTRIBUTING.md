@@ -11,14 +11,14 @@ There are many types of issues you can take on when contributing to the Glasskub
 
 - If you are new to the project, please check out the [good first issue](https://github.com/glasskube/glasskube/labels/good%20first%20issue) label.
 - If you are ready to make a big impact on the project, check out the [current milestone](https://github.com/glasskube/glasskube/milestones) that is being worked on and filter the issues by `"help-wanted"`, these issues are the ones that will make it into the next official release. 
-- If you are looking for something specific to work on, check out our [open issues](hhttps://github.com/glasskube/glasskube/issues) and filter against the available tags such as `component: cli`, `component: ui` `component: repo`, `documentation`.
+- If you are looking for something specific to work on, check out our [open issues](https://github.com/glasskube/glasskube/issues?q=is%3Aissue+is%3Aopen+no%3Aassignee+-label%3Aneeds-triage) and filter against the available tags such as `component: cli`, `component: ui` `component: repo`, `documentation`.
 - If you have an idea for a new feature, please open an issue, and we can discuss it.
 - We are also happy to help you find something to work on. Just reach out to us.
 
-### Getting in touch with the community
+### Get in touch with the community
 
 - Join our [Glasskube Discord Server](https://discord.gg/SxH6KUCGH7).
-- Introduce yourself in the `🎤|Intros` channel or open an issue to let us know that you are interested in contributing.
+- Introduce yourself in the [`🎤|Intros`](https://discord.com/channels/1176558649250951330/1184508688757694634) channel or open an issue to let us know that you are interested in contributing.
 
 ### Discuss issues
 
@@ -45,23 +45,33 @@ Following these steps will ensure that your contributions are well-received, rev
 
 1. Head over to the [Glasskube GitHub repo](https://github.com/glasskube/glasskube) and "fork it" into your own GitHub account.
 2. Clone your fork to your local machine, using the following command:
-```bash
+```shell
 git clone git@github.com:USERNAME/FORKED-PROJECT.git
 ```
 
 3. Create a new branch based-off **\`main\`** branch:
-```bash
+```shell
 git checkout main
-git checkout -b fix/XXX-something
+git checkout -b github_userName/XXXX
 ```
 
 4. Implement the changes or additions you intend to contribute. Whether it's **bug fixes**, **new features**, or **enhancements**, this is where you put your coding skills to use.
 
 5. Once your changes are ready, you may then commit and push the changes from your working branch:
-```bash
+```shell
 git commit -m "fix(xxxx-name_of_bug): nice commit description"
 git push origin feature/add-new-package
 ```
+
+### Convential commit scopes (xxxx-name_of_bug) that are currently supported are:
+
+- website
+- cli
+- ui
+- package-operator
+
+> - If a commit spans across multiple scopes you could also concatenate them e.g. fix(ui,cli): nice commit message
+> - The commit message must start with a `lower case` letter
 
 ## Commit Message Format 💬
 
@@ -88,24 +98,24 @@ This format is based on [Conventional Commits](https://www.conventionalcommits.o
 Please refer to the Conventional Commits specification for more details.
 
 ## Keeping your Fork Up-to-Date 🆕
-If you plan on doing anything more than just a tiny quick fix, you’ll want to **make sure you keep your fork up to date** by tracking the original [“upstream” repo](https://github.com/glasskube/glasskube) that you forked.
+If you plan on doing anything more than just a tiny quick fix, you’ll want to **make sure you keep your fork up to date** by tracking the original ["upstream" repo](https://github.com/glasskube/glasskube) that you forked.
 
 Follow the steps given below to do so:
 
 1. Add the 'upstream' repo to list of remotes:
-```bash
+```shell
 git remote add upstream https://github.com/glasskube/glasskube.git
 ```
 
 2. Fetch upstream repo’s branches and latest commits:
-```bash
+```shell
 git fetch upstream
 ```
 
 3. Checkout to the **\`feature/add-new-package\`** branch and merge the upstream:
-```bash
+```shell
 git checkout feature/add-new-package
-git merge upstream/feature/add-new-package
+git rebase upstream/main
 ```
 
 **Now, your local 'feature/add-new-package' branch is up-to-date with everything modified upstream!**
@@ -230,7 +240,21 @@ Also note that some of the information in the repository is redundant by design,
 For example, the `index.yaml` contains a `latestVersion` for each package, but the `latestVersion` is also defined in each package index file. 
 Please make sure to have consistent and valid state in your local repo. 
 
-### Testing
+## Testing
+
+> It's crucial to acknowledge the significance of various types of testing. Alongside conducting unit tests for your contributed code, it's imperative to locally build Glasskube and `test it within a Kubernetes cluster`.  ☸️
+
+### Set up a local Minikube cluster for testing locally
+In case you don't have access to a remote Kubernetes cluster, set up a local testing environment using Minikube. [This guide](https://minikube.sigs.k8s.io/docs/tutorials/kubernetes_101/module1/) will help you set up a single node cluster in no time, which will be more than enough for you Glasskube testing needs. 
+
+### Test locally
+Install dependencies and build 
+``` shell
+npm ci
+make all
+```
+
+### Unit tests
 
 Unit tests for the project can be executed by running:
 
