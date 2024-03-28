@@ -12,11 +12,25 @@ import (
 
 type packageCacheClient struct {
 	PackageV1Alpha1Client
-	packageStore cache.Store
+	packageStore     cache.Store
+	packageInfoStore cache.Store
 }
 
 func (c *packageCacheClient) Packages() PackageInterface {
+	if c.packageStore == nil {
+		return c.PackageV1Alpha1Client.Packages()
+	}
 	return &chachedPackageClient{PackageInterface: c.PackageV1Alpha1Client.Packages(), store: c.packageStore}
+}
+
+func (c *packageCacheClient) PackageInfos() PackageInfoInterface {
+	if c.packageInfoStore == nil {
+		return c.PackageV1Alpha1Client.PackageInfos()
+	}
+	return &cachedPackageInfoClient{
+		PackageInfoInterface: c.PackageV1Alpha1Client.PackageInfos(),
+		store:                c.packageInfoStore,
+	}
 }
 
 type chachedPackageClient struct {
