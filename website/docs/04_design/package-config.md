@@ -33,6 +33,11 @@ Literal values represent a simple value (e.g. a string entered via a text field)
 Reference values represent references to values in other resources in the same Kubernetes cluster.
 Such references can be secrets, configmaps or other packages.
 
+Values are non-mandatory by default, however, a package author may opt to make any of their packages values required by
+specifying a constraint on that value.
+If a package has no value configuration for a value and that value is non-mandatory, that values targets will not be
+applied and it is the package authors responsibility to ensure that their package also works in this case.
+
 ## Design proposal
 
 The `PackageManifest` has a property `Values` of type `map[string]ValueSpecification`.
