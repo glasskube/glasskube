@@ -105,7 +105,7 @@ func (r *PackageReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		r.OwnerManager = owners.NewOwnerManager(r.Scheme)
 	}
 	if r.dependencyMgr == nil {
-		r.dependencyMgr = dependency.NewDependencyManager(controllerruntime.NewControllerRuntimeAdapter(r.Client), r.OwnerManager)
+		r.dependencyMgr = dependency.NewDependencyManager(controllerruntime.NewControllerRuntimeAdapter(r.Client))
 	}
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&packagesv1alpha1.Package{})
 	for _, adapter := range []manifest.ManifestAdapter{r.HelmAdapter, r.KustomizeAdapter, r.ManifestAdapter} {
