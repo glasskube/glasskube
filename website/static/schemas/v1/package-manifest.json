@@ -90,6 +90,22 @@
         "url"
       ]
     },
+    "PartialJsonPatch": {
+      "properties": {
+        "op": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "op",
+        "path"
+      ]
+    },
     "PlainManifest": {
       "properties": {
         "url": {
@@ -103,6 +119,146 @@
       "type": "object",
       "required": [
         "url"
+      ]
+    },
+    "TypedObjectReference": {
+      "properties": {
+        "apiGroup": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "apiGroup",
+        "kind",
+        "name"
+      ]
+    },
+    "ValueDefinition": {
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/ValueType"
+        },
+        "metadata": {
+          "$ref": "#/$defs/ValueDefinitionMetadata"
+        },
+        "defaultValue": {
+          "type": "string"
+        },
+        "options": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "constraints": {
+          "$ref": "#/$defs/ValueDefinitionConstraints"
+        },
+        "targets": {
+          "items": {
+            "$ref": "#/$defs/ValueDefinitionTarget"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "type",
+        "targets"
+      ]
+    },
+    "ValueDefinitionConstraints": {
+      "properties": {
+        "required": {
+          "type": "boolean"
+        },
+        "min": {
+          "type": "integer"
+        },
+        "max": {
+          "type": "integer"
+        },
+        "minLength": {
+          "type": "integer"
+        },
+        "maxLength": {
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "ValueDefinitionMetadata": {
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "hints": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "ValueDefinitionTarget": {
+      "oneOf": [
+        {
+          "required": [
+            "resource"
+          ],
+          "title": "WithResource"
+        },
+        {
+          "required": [
+            "chartName"
+          ],
+          "title": "WithChartName"
+        }
+      ],
+      "properties": {
+        "resource": {
+          "$ref": "#/$defs/TypedObjectReference"
+        },
+        "chartName": {
+          "type": "string"
+        },
+        "patch": {
+          "$ref": "#/$defs/PartialJsonPatch"
+        },
+        "valueTemplate": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "patch"
+      ]
+    },
+    "ValueType": {
+      "type": "string",
+      "enum": [
+        "boolean",
+        "text",
+        "number",
+        "options"
       ]
     }
   },
@@ -137,6 +293,12 @@
         "$ref": "#/$defs/PlainManifest"
       },
       "type": "array"
+    },
+    "valueDefinitions": {
+      "additionalProperties": {
+        "$ref": "#/$defs/ValueDefinition"
+      },
+      "type": "object"
     },
     "defaultNamespace": {
       "type": "string"

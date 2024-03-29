@@ -243,6 +243,102 @@ spec:
                     type: array
                   shortDescription:
                     type: string
+                  valueDefinitions:
+                    additionalProperties:
+                      properties:
+                        constraints:
+                          properties:
+                            max:
+                              type: integer
+                            maxLength:
+                              type: integer
+                            min:
+                              type: integer
+                            minLength:
+                              type: integer
+                            required:
+                              type: boolean
+                          type: object
+                        defaultValue:
+                          type: string
+                        metadata:
+                          properties:
+                            description:
+                              type: string
+                            hints:
+                              items:
+                                type: string
+                              type: array
+                            label:
+                              type: string
+                          type: object
+                        options:
+                          items:
+                            type: string
+                          type: array
+                        targets:
+                          items:
+                            properties:
+                              chartName:
+                                type: string
+                              patch:
+                                properties:
+                                  op:
+                                    type: string
+                                  path:
+                                    type: string
+                                required:
+                                - op
+                                - path
+                                type: object
+                              resource:
+                                properties:
+                                  apiGroup:
+                                    description: |-
+                                      APIGroup is the group for the resource being referenced.
+                                      If APIGroup is not specified, the specified Kind must be in the core API group.
+                                      For any other third-party types, APIGroup is required.
+                                    type: string
+                                  kind:
+                                    description: Kind is the type of resource being
+                                      referenced
+                                    type: string
+                                  name:
+                                    description: Name is the name of resource being
+                                      referenced
+                                    type: string
+                                  namespace:
+                                    description: |-
+                                      Namespace is the namespace of resource being referenced
+                                      Note that when a namespace is specified, a gateway.networking.k8s.io/ReferenceGrant object is required in the referent namespace to allow that namespace's owner to accept the reference. See the ReferenceGrant documentation for details.
+                                      (Alpha) This field requires the CrossNamespaceVolumeDataSource feature gate to be enabled.
+                                    type: string
+                                required:
+                                - kind
+                                - name
+                                type: object
+                              valueTemplate:
+                                type: string
+                            required:
+                            - patch
+                            type: object
+                            x-kubernetes-validations:
+                            - message: ValueDefinitionTarget must have either resource
+                                or chartName but not both
+                              rule: has(self.resource) != has(self.chartName)
+                          type: array
+                        type:
+                          enum:
+                          - boolean
+                          - text
+                          - number
+                          - options
+                          type: string
+                      required:
+                      - targets
+                      - type
+                      type: object
+                    type: object
                 required:
                 - name
                 type: object

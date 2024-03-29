@@ -64,6 +64,54 @@ spec:
                 - name
                 - version
                 type: object
+              values:
+                additionalProperties:
+                  maxProperties: 1
+                  minProperties: 1
+                  properties:
+                    value:
+                      type: string
+                    valueFrom:
+                      maxProperties: 1
+                      minProperties: 1
+                      properties:
+                        configMapRef:
+                          properties:
+                            key:
+                              type: string
+                            name:
+                              type: string
+                            namespace:
+                              type: string
+                          required:
+                          - key
+                          - name
+                          type: object
+                        packageRef:
+                          properties:
+                            name:
+                              type: string
+                            value:
+                              type: string
+                          required:
+                          - name
+                          - value
+                          type: object
+                        secretRef:
+                          properties:
+                            key:
+                              type: string
+                            name:
+                              type: string
+                            namespace:
+                              type: string
+                          required:
+                          - key
+                          - name
+                          type: object
+                      type: object
+                  type: object
+                type: object
             required:
             - packageInfo
             type: object
