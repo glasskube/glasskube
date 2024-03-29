@@ -12,14 +12,14 @@ This can be thought of as three sub-problems:
 
 ### What values are available for a given package
 
-The author of a package may include a declaration of the possible configuration items in the package manifest, where each package may have multiple **value specifications**.
-A value specification contains information to help clients display an appropriate form item for data entry and constraints to be validated by the client as well as the package operator.
+The author of a package may include a declaration of the possible configuration items in the package manifest, where each package may have multiple **value definitions**.
+A value definition contains information to help clients display an appropriate form item for data entry and constraints to be validated by the client as well as the package operator.
 
 ### How does a value affect the deployed package resources
 
-Additionally, a value specification describes some alterations to the deployed package.
+Additionally, a value definition describes some alterations to the deployed package.
 We call those alterations **targets**.
-Each value specification may contain a number of targets.
+Each value definition may contain a number of targets.
 A target can be one of two things:
 
 1. A change to the default values of a helm release contained in the package
@@ -27,22 +27,22 @@ A target can be one of two things:
 
 ### How does a value affect the deployed package resources
 
-A user, when installing a package using Glasskube, may declare a **value** for each value specification of that package.
-A value can be either a **literal value** or a **reference value**.
+A user, when installing a package using Glasskube, may declare a **value configuration** for each value definition of that package.
+A value configuration can hold either a **literal value** or a **reference value**.
 Literal values represent a simple value (e.g. a string entered via a text field).
 Reference values represent references to values in other resources in the same Kubernetes cluster.
 Such references can be secrets, configmaps or other packages.
 
 Values are non-mandatory by default, however, a package author may opt to make any of their packages values required by
-specifying a constraint on that value.
-If a package has no value configuration for a value and that value is non-mandatory, that values targets will not be
+specifying a constraint on that value definition.
+If a package has no value configuration for a given value definition that is non-mandatory, that values targets will not be
 applied and it is the package authors responsibility to ensure that their package also works in this case.
 
 ## Design proposal
 
-The `PackageManifest` has a property `Values` of type `map[string]ValueSpecification`.
+The `PackageManifest` has a property `Values` of type `map[string]ValueDefinition`.
 The key in this map is referred to as that values **name**
-`ValueSpecification` is a struct with the following properties:
+`ValueDefinition` is a struct with the following properties:
 
 - **`Type`** (`string` enum):
   Every value must have a type, so that we know what kind of input field to show for this value.
@@ -81,7 +81,7 @@ The key in this map is referred to as that values **name**
   Maybe [evanphx/json-patch](https://github.com/evanphx/json-patch) can be a useful alternative, but it only works on byte slices.
 
 The `PackageSpec` has a property `Values` of type `map[string]ValueConfiguration`.
-The key in this map used to identify the corresponding `ValueSpecification` with the same name in the `PackageManifest`s `Values` map.
+The key in this map used to identify the corresponding `ValueDefinition` with the same name in the `PackageManifest`s `Values` map.
 A `ValueConfiguration` must have exactly one of the following properties:
 
 - **`Value`**:
@@ -99,9 +99,9 @@ A `ValueConfiguration` must have exactly one of the following properties:
 
 ```yaml title="PackageManifest with a simple value specification"
 name: foo
-values:
+valueDefinitions:
   ingress:
-    type: 'check'
+    type: 'boolean'
     label: 'Enable Ingress'
     description: 'Whether an ingress resource should be created for this Package'
     defaultValue: 'true'
@@ -111,7 +111,7 @@ values:
 
 ```yaml title="PackageManifest with a value specification that has multiple targets"
 name: foo
-values:
+valueDefinitions:
   host:
     type: 'text'
     constraints:
