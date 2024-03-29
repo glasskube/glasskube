@@ -10,6 +10,35 @@ helm:
   chartVersion: v1.0.0
   values:
     foo: bar
+manifests:
+  - url: https://pkg.example.com/manifests/example/v1.0.0/mainfest.yaml
+dependencies:
+  - name: bar
+    version: ">= 1.0.0"
+valueDefinitions:
+  test:
+    type: text
+    metadata:
+      label: Test value definition
+      description: For testing only
+      hints:
+        - TestHint
+    constraints:
+      required: true
+      minLength: 3
+      maxLength: 7
+    targets:
+      - chartName: example
+        patch:
+          op: add
+          path: /foo/bar
+      - resource:
+          apiGroup: apps/v1
+          kind: Deployment
+          name: example
+        patch:
+          op: add
+          path: /spec/template/spec/containers/0/image
 entrypoints:
   - serviceName: example
     port: 8080

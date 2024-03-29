@@ -25,7 +25,6 @@ import (
 
 type PackageInfoTemplate struct {
 	// Name of the package to install
-	// +kubebuilder:validation:Required
 	Name string `json:"name"`
 	// Version of the package to install
 	Version string `json:"version"`
@@ -33,10 +32,36 @@ type PackageInfoTemplate struct {
 	RepositoryUrl string `json:"repositoryUrl,omitempty"`
 }
 
+type ObjectKeyValueSource struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace,omitempty"`
+	Key       string `json:"key"`
+}
+
+type PackageValueSource struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+// +kubebuilder:validation:MinProperties:=1
+// +kubebuilder:validation:MaxProperties:=1
+type ValueReference struct {
+	ConfigMapRef *ObjectKeyValueSource `json:"configMapRef,omitempty"`
+	SecretRef    *ObjectKeyValueSource `json:"secretRef,omitempty"`
+	PackageRef   *PackageValueSource   `json:"packageRef,omitempty"`
+}
+
+// +kubebuilder:validation:MinProperties:=1
+// +kubebuilder:validation:MaxProperties:=1
+type ValueConfiguration struct {
+	Value     *string         `json:"value,omitempty"`
+	ValueFrom *ValueReference `json:"valueFrom,omitempty"`
+}
+
 // PackageSpec defines the desired state of Package
 type PackageSpec struct {
-	// +kubebuilder:validation:Required
-	PackageInfo PackageInfoTemplate `json:"packageInfo"`
+	PackageInfo PackageInfoTemplate           `json:"packageInfo"`
+	Values      map[string]ValueConfiguration `json:"values,omitempty"`
 }
 
 // PackageStatus defines the observed state of Package
