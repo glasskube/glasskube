@@ -9,6 +9,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/repo"
+	"github.com/glasskube/glasskube/internal/semver"
 	"github.com/glasskube/glasskube/internal/web/components/alert"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_detail_btns"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_overview_btn"
@@ -72,7 +73,8 @@ func parseTemplates() {
 				return url
 			}
 		},
-		"ForAlert": alert.ForAlert,
+		"ForAlert":     alert.ForAlert,
+		"IsUpgradable": semver.IsUpgradable,
 	}
 	baseTemplate = template.Must(template.New("base.html").
 		Funcs(templateFuncs).
