@@ -83,11 +83,10 @@
               <i>Current Version: {{ .Package.Status.Version }}</i>
             </div>
           {{ end }}
-          </div>
+        </div>
         {{ if ne .Manifest.Dependencies nil }}
           <div class="mt-3">
             <h2 class="text-reset">Package Dependencies</h2>
-
             <ul>
               {{ range .Manifest.Dependencies }}
                 <li>
