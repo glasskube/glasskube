@@ -5,9 +5,9 @@ import (
 	"os"
 
 	"github.com/fatih/color"
+	clientadapter "github.com/glasskube/glasskube/internal/adapter/goclient"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/dependency"
-	clientadapter "github.com/glasskube/glasskube/internal/dependency/adapter/goclient"
 	pkgClient "github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/glasskube/glasskube/pkg/uninstall"

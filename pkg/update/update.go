@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
+	clientadapter "github.com/glasskube/glasskube/internal/adapter/goclient"
 	"github.com/glasskube/glasskube/internal/dependency"
-	clientadapter "github.com/glasskube/glasskube/internal/dependency/adapter/goclient"
 	"github.com/glasskube/glasskube/internal/repo"
 	"github.com/glasskube/glasskube/internal/semver"
 	"github.com/glasskube/glasskube/pkg/client"
