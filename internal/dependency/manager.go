@@ -9,7 +9,7 @@ import (
 	"github.com/glasskube/glasskube/internal/names"
 	"go.uber.org/multierr"
 
-	"github.com/glasskube/glasskube/internal/dependency/adapter"
+	"github.com/glasskube/glasskube/internal/adapter"
 	"github.com/glasskube/glasskube/internal/dependency/graph"
 
 	"github.com/Masterminds/semver/v3"

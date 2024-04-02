@@ -5,9 +5,9 @@ import (
 	"errors"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
+	ctrladapter "github.com/glasskube/glasskube/internal/adapter/controllerruntime"
 	"github.com/glasskube/glasskube/internal/controller/owners"
 	"github.com/glasskube/glasskube/internal/dependency"
-	ctrladapter "github.com/glasskube/glasskube/internal/dependency/adapter/controllerruntime"
 	"github.com/glasskube/glasskube/internal/dependency/graph"
 	"github.com/glasskube/glasskube/internal/repo"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"

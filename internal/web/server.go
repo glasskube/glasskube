@@ -17,9 +17,9 @@ import (
 	"sync"
 	"syscall"
 
+	clientadapter "github.com/glasskube/glasskube/internal/adapter/goclient"
 	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/dependency"
-	"github.com/glasskube/glasskube/internal/dependency/adapter/goclient"
 
 	"github.com/glasskube/glasskube/pkg/update"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -587,7 +587,7 @@ func (server *server) initKubeConfig() ServerConfigError {
 	server.restConfig = restConfig
 	server.rawConfig = rawConfig
 	server.pkgClient = client
-	server.dependencyMgr = dependency.NewDependencyManager(goclient.NewGoClientAdapter(server.pkgClient))
+	server.dependencyMgr = dependency.NewDependencyManager(clientadapter.NewGoClientAdapter(server.pkgClient))
 	return nil
 }
 

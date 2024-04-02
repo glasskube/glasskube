@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/glasskube/glasskube/internal/dependency/adapter/controllerruntime"
+	ctrladapter "github.com/glasskube/glasskube/internal/adapter/controllerruntime"
 	"github.com/glasskube/glasskube/internal/names"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -105,7 +105,7 @@ func (r *PackageReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		r.OwnerManager = owners.NewOwnerManager(r.Scheme)
 	}
 	if r.dependencyMgr == nil {
-		r.dependencyMgr = dependency.NewDependencyManager(controllerruntime.NewControllerRuntimeAdapter(r.Client))
+		r.dependencyMgr = dependency.NewDependencyManager(ctrladapter.NewControllerRuntimeAdapter(r.Client))
 	}
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&packagesv1alpha1.Package{})
 	for _, adapter := range []manifest.ManifestAdapter{r.HelmAdapter, r.KustomizeAdapter, r.ManifestAdapter} {
