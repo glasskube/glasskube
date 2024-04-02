@@ -280,4 +280,4 @@ make lint-fix
 
 ## Contributor Guidelines Video
 
-[![Contributor Guidelines Video]()](https://www.youtube.com/watch?v=1V5fBjSU7EI)
+[![Contributor Guidelines Video](https://github.com/glasskube/glasskube/assets/38757612/3c5141e8-f541-4064-8a29-fcfe674da5a3)](https://www.youtube.com/watch?v=1V5fBjSU7EI)
