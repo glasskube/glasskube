@@ -194,6 +194,9 @@
         },
         "maxLength": {
           "type": "integer"
+        },
+        "pattern": {
+          "type": "string"
         }
       },
       "additionalProperties": false,

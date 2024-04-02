@@ -256,6 +256,8 @@ spec:
                               type: integer
                             minLength:
                               type: integer
+                            pattern:
+                              type: string
                             required:
                               type: boolean
                           type: object
