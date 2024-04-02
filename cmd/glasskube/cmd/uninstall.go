@@ -30,7 +30,7 @@ var uninstallCmd = &cobra.Command{
 		ctx := cmd.Context()
 		currentContext := pkgClient.RawConfigFromContext(cmd.Context()).CurrentContext
 		client := pkgClient.FromContext(cmd.Context())
-		dm := dependency.NewDependencyManager(clientadapter.NewGoClientAdapter(client))
+		dm := dependency.NewDependencyManager(clientadapter.NewPackageClientAdapter(client))
 
 		if g, err := dm.NewGraph(ctx); err != nil {
 			fmt.Fprintf(os.Stderr, "❌ Error validating uninstall: %v\n", err)

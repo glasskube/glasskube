@@ -56,7 +56,7 @@ func NewUpdater(client client.PackageV1Alpha1Client) *updater {
 	return &updater{
 		client: client,
 		status: statuswriter.Noop(),
-		dm:     dependency.NewDependencyManager(clientadapter.NewGoClientAdapter(client)),
+		dm:     dependency.NewDependencyManager(clientadapter.NewPackageClientAdapter(client)),
 	}
 }
 

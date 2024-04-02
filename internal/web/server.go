@@ -587,7 +587,7 @@ func (server *server) initKubeConfig() ServerConfigError {
 	server.restConfig = restConfig
 	server.rawConfig = rawConfig
 	server.pkgClient = client
-	server.dependencyMgr = dependency.NewDependencyManager(clientadapter.NewGoClientAdapter(server.pkgClient))
+	server.dependencyMgr = dependency.NewDependencyManager(clientadapter.NewPackageClientAdapter(server.pkgClient))
 	return nil
 }
 
