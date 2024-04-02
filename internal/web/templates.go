@@ -6,6 +6,8 @@ import (
 	"os"
 	"path"
 
+	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
+
 	"github.com/fsnotify/fsnotify"
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/repo"
@@ -18,6 +20,7 @@ import (
 )
 
 var (
+	templateFuncs         template.FuncMap
 	baseTemplate          *template.Template
 	pkgsPageTmpl          *template.Template
 	pkgPageTmpl           *template.Template
@@ -26,9 +29,9 @@ var (
 	kubeconfigPageTmpl    *template.Template
 	pkgOverviewBtnTmpl    *template.Template
 	pkgDetailBtnsTmpl     *template.Template
-	pkgInstallModalTmpl   *template.Template
 	pkgUpdateModalTmpl    *template.Template
 	pkgUpdateAlertTmpl    *template.Template
+	pkgConfigInput        *template.Template
 	pkgUninstallModalTmpl *template.Template
 	alertTmpl             *template.Template
 	templatesBaseDir      = "internal/web"
@@ -56,7 +59,7 @@ func watchTemplates() error {
 }
 
 func parseTemplates() {
-	templateFuncs := template.FuncMap{
+	templateFuncs = template.FuncMap{
 		"ForPkgOverviewBtn": pkg_overview_btn.ForPkgOverviewBtn,
 		"ForPkgDetailBtns":  pkg_detail_btns.ForPkgDetailBtns,
 		"ForPkgUpdateAlert": pkg_update_alert.ForPkgUpdateAlert,
@@ -73,9 +76,11 @@ func parseTemplates() {
 				return url
 			}
 		},
-		"ForAlert":     alert.ForAlert,
-		"IsUpgradable": semver.IsUpgradable,
+		"ForAlert":          alert.ForAlert,
+		"ForPkgConfigInput": pkg_config_input.ForPkgConfigInput,
+		"IsUpgradable":      semver.IsUpgradable,
 	}
+
 	baseTemplate = template.Must(template.New("base.html").
 		Funcs(templateFuncs).
 		ParseFS(webFs, path.Join(templatesDir, "layout", "base.html")))
@@ -87,8 +92,8 @@ func parseTemplates() {
 	pkgOverviewBtnTmpl = componentTmpl(pkg_overview_btn.TemplateId, "pkg-overview-btn.html")
 	pkgDetailBtnsTmpl = componentTmpl(pkg_detail_btns.TemplateId, "pkg-detail-btns.html")
 	pkgUpdateAlertTmpl = componentTmpl(pkg_update_alert.TemplateId, "pkg-update-alert.html")
-	pkgInstallModalTmpl = componentTmpl("pkg-install-modal", "pkg-install-modal.html")
 	pkgUpdateModalTmpl = componentTmpl("pkg-update-modal", "pkg-update-modal.html")
+	pkgConfigInput = componentTmpl("pkg-config-input", "pkg-config-input.html")
 	pkgUninstallModalTmpl = componentTmpl("pkg-uninstall-modal", "pkg-uninstall-modal.html")
 	alertTmpl = componentTmpl("alert", "alert.html")
 	componentTmpl("version-mismatch-warning", "version-mismatch-warning.html")
@@ -104,7 +109,7 @@ func pageTmpl(fileName string) *template.Template {
 
 func componentTmpl(id string, fileName string) *template.Template {
 	return template.Must(
-		template.New(id).ParseFS(
+		template.New(id).Funcs(templateFuncs).ParseFS(
 			webFs,
 			path.Join(componentsDir, fileName)))
 }

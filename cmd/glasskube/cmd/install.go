@@ -96,7 +96,7 @@ var installCmd = &cobra.Command{
 
 		if installCmdOptions.NoWait {
 			if err := installer.Install(
-				ctx, packageName, installCmdOptions.Version, installCmdOptions.EnableAutoUpdates); err != nil {
+				ctx, packageName, installCmdOptions.Version, nil, installCmdOptions.EnableAutoUpdates); err != nil {
 				fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
 				os.Exit(1)
 			}
@@ -105,7 +105,7 @@ var installCmd = &cobra.Command{
 					"💡 Run \"glasskube describe %v\" to get the current status",
 				packageName, packageName)
 		} else {
-			status, err := installer.InstallBlocking(ctx, packageName, installCmdOptions.Version,
+			status, err := installer.InstallBlocking(ctx, packageName, installCmdOptions.Version, nil,
 				installCmdOptions.EnableAutoUpdates)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)

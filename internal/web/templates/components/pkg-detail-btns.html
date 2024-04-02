@@ -31,47 +31,35 @@
 {{ end }}
 
 {{ define "pkg-detail-btns" }}
-
   <span id="{{ .ContainerId }}" hx-swap="none">
-    {{ if eq .Status nil }}
-      <button
-        hx-get="/packages/install/modal"
-        hx-target="#modal-container"
-        hx-swap="innerHTML"
-        hx-select="#pkg-install-modal"
-        name="packageName"
-        value="{{ .PackageName }}"
-        class="btn btn-primary btn-sm"
-        data-bs-toggle="modal"
-        data-bs-target="#modal-container">
-        Install
-      </button>
-    {{ else if eq .Status.Status "Pending" }}
-      <button type="button" class="btn btn-primary btn-sm fw-medium" disabled>Pending</button>
-    {{ else if eq .Status.Status "Failed" }}
-      <a class="btn btn-danger btn-sm pe-none">
-        <span>Installation Failed</span>
-      </a>
-      {{ template "pkg-detail-uninstall" . }}
-    {{ else if and .Manifest .Manifest.Entrypoints }}
-      <button
-        class="btn btn-success btn-sm"
-        hx-post="/packages/open"
-        hx-swap="none"
-        name="packageName"
-        value="{{ .PackageName }}">
-        <i class="bi bi-box-arrow-up-right"></i>
-        <span>Open</span>
-      </button>
-      {{ template "pkg-detail-update" . }}
-      {{ template "pkg-detail-uninstall" . }}
-    {{ else }}
-      <a class="btn btn-success btn-sm pe-none">
-        <i class="bi bi-check-lg"></i>
-        <span>Installed</span>
-      </a>
-      {{ template "pkg-detail-update" . }}
-      {{ template "pkg-detail-uninstall" . }}
+    {{ if ne .Status nil }}
+      {{ if eq .Status.Status "Pending" }}
+        <button type="button" class="btn btn-primary btn-sm fw-medium" disabled>Pending</button>
+      {{ else if eq .Status.Status "Failed" }}
+        <a class="btn btn-danger btn-sm pe-none">
+          <span>Installation Failed</span>
+        </a>
+        {{ template "pkg-detail-uninstall" . }}
+      {{ else if and .Manifest .Manifest.Entrypoints }}
+        <button
+          class="btn btn-success btn-sm"
+          hx-post="/packages/open"
+          hx-swap="none"
+          name="packageName"
+          value="{{ .PackageName }}">
+          <i class="bi bi-box-arrow-up-right"></i>
+          <span>Open</span>
+        </button>
+        {{ template "pkg-detail-update" . }}
+        {{ template "pkg-detail-uninstall" . }}
+      {{ else }}
+        <a class="btn btn-success btn-sm pe-none">
+          <i class="bi bi-check-lg"></i>
+          <span>Installed</span>
+        </a>
+        {{ template "pkg-detail-update" . }}
+        {{ template "pkg-detail-uninstall" . }}
+      {{ end }}
     {{ end }}
   </span>
 {{ end }}
