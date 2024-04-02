@@ -277,3 +277,7 @@ Some linting errors can be automatically fixed by running:
 ```
 make lint-fix
 ```
+
+## Contributor Guidelines Video
+
+[![Contributor Guidelines Video]()](https://www.youtube.com/watch?v=1V5fBjSU7EI)
