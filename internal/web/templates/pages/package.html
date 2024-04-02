@@ -74,13 +74,13 @@
             {{ end }}
           </span>
           {{ if or (eq .Package nil) (IsUpgradable .Package.Status.Version .LatestVersion) }}
-            <div>
-              <i>Latest Version: {{ .LatestVersion }}</i>
+            <div class="my-1">
+              <i>Latest version: {{ .LatestVersion }}</i>
             </div>
           {{ end }}
           {{ if ne .Status nil }}
-            <div>
-              <i>Current Version: {{ .Package.Status.Version }}</i>
+            <div class="my-1">
+              <i>Installed version: {{ .Package.Status.Version }}</i>
             </div>
           {{ end }}
         </div>
