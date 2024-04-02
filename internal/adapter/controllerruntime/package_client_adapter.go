@@ -1,0 +1,46 @@
+package controllerruntime
+
+import (
+	"context"
+
+	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/adapter"
+	"k8s.io/apimachinery/pkg/types"
+	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+type ControllerRuntimeAdapter struct {
+	client ctrlclient.Client
+}
+
+func NewPackageClientAdapter(client ctrlclient.Client) adapter.PackageClientAdapter {
+	return &ControllerRuntimeAdapter{client: client}
+}
+
+func (a *ControllerRuntimeAdapter) GetPackageInfo(ctx context.Context, pkgInfoName string) (
+	*v1alpha1.PackageInfo,
+	error,
+) {
+	var pkgInfo v1alpha1.PackageInfo
+	if err := a.client.Get(ctx, types.NamespacedName{
+		Name: pkgInfoName,
+	}, &pkgInfo); err != nil {
+		return nil, err
+	} else {
+		return &pkgInfo, nil
+	}
+}
+
+func (a *ControllerRuntimeAdapter) ListPackages(ctx context.Context) (*v1alpha1.PackageList, error) {
+	var pkgList v1alpha1.PackageList
+	if err := a.client.List(ctx, &pkgList, &ctrlclient.ListOptions{}); err != nil {
+		return nil, err
+	}
+	return &pkgList, nil
+}
+
+// GetPackage implements adapter.PackageClientAdapter.
+func (a *ControllerRuntimeAdapter) GetPackage(ctx context.Context, name string) (*v1alpha1.Package, error) {
+	var pkg v1alpha1.Package
+	return &pkg, a.client.Get(ctx, ctrlclient.ObjectKey{Name: name}, &pkg)
+}

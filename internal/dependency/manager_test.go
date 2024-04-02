@@ -44,6 +44,11 @@ func (a *testClientAdapter) ListPackages(ctx context.Context) (*v1alpha1.Package
 	}, nil
 }
 
+// GetPackage implements adapter.PackageClientAdapter.
+func (a *testClientAdapter) GetPackage(ctx context.Context, name string) (*v1alpha1.Package, error) {
+	panic("unimplemented")
+}
+
 func createDependencyManager() *DependendcyManager {
 	return NewDependencyManager(&testClientAdapter{}).WithRepo(fakeRepo)
 }

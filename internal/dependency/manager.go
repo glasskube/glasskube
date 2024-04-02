@@ -19,11 +19,11 @@ import (
 )
 
 type DependendcyManager struct {
-	clientAdapter adapter.ClientAdapter
+	clientAdapter adapter.PackageClientAdapter
 	repoAdapter   adapter.RepoAdapter
 }
 
-func NewDependencyManager(adapter adapter.ClientAdapter) *DependendcyManager {
+func NewDependencyManager(adapter adapter.PackageClientAdapter) *DependendcyManager {
 	return &DependendcyManager{
 		clientAdapter: adapter,
 		repoAdapter:   &defaultRepoAdapter{repo: repo.DefaultClient},
