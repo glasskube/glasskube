@@ -1,0 +1,266 @@
+<!-- dropdown button used for the menu to display the reference options -->
+{{ define "pkg-config-input-reference-dropdown" }}
+  <div class="btn-group btn-group-sm dropstart" role="group">
+    <button type="button" class="btn btn-sm border" data-bs-toggle="dropdown" aria-expanded="false">
+      <i class="bi bi-link-45deg"></i>
+    </button>
+    <ul class="dropdown-menu p-0">
+      <li>
+        <button
+          class="dropdown-item btn btn-sm"
+          hx-get="/packages/{{ .PkgName }}/configuration/{{ .ValueName }}?refKind=Secret"
+          hx-target="#{{ .ContainerId }}"
+          hx-select="#{{ .ContainerId }}"
+          hx-swap="outerHTML">
+          Value from Secret
+        </button>
+      </li>
+      <li>
+        <button
+          class="dropdown-item btn btn-sm"
+          hx-get="/packages/{{ .PkgName }}/configuration/{{ .ValueName }}?refKind=ConfigMap"
+          hx-target="#{{ .ContainerId }}"
+          hx-select="#{{ .ContainerId }}"
+          hx-swap="outerHTML">
+          Value from ConfigMap
+        </button>
+      </li>
+      <li>
+        <button
+          class="dropdown-item btn btn-sm"
+          hx-get="/packages/{{ .PkgName }}/configuration/{{ .ValueName }}?refKind=Package"
+          hx-target="#{{ .ContainerId }}"
+          hx-select="#{{ .ContainerId }}"
+          hx-swap="outerHTML">
+          Value from Package Configuration
+        </button>
+      </li>
+      {{ if ne .ValueReferenceKind "" }}
+        <li><hr class="dropdown-divider m-0" /></li>
+        <li>
+          <button
+            class="dropdown-item btn btn-sm"
+            hx-get="/packages/{{ .PkgName }}/configuration/{{ .ValueName }}"
+            hx-target="#{{ .ContainerId }}"
+            hx-select="#{{ .ContainerId }}"
+            hx-swap="outerHTML">
+            Remove Reference
+          </button>
+        </li>
+      {{ end }}
+    </ul>
+  </div>
+{{ end }}
+
+
+<!-- template used to display and input reference information -->
+{{ define "pkg-config-input-reference" }}
+  <span class="input-group-text bg-transparent">Value from {{ .ValueReferenceKind }}</span>
+  <input type="hidden" name="{{ .ValueName }}[refKind]" value="{{ .ValueReferenceKind }}" />
+  {{ if eq .ValueReferenceKind "ConfigMap" }}
+    <input
+      type="text"
+      autocomplete="off"
+      {{ if .Autofocus }}autofocus{{ end }}
+      id="input-{{ .ValueName }}-namespace"
+      name="{{ .ValueName }}[namespace]"
+      {{ if ne .ValueReference.ConfigMapRef nil }}
+        value="{{ .ValueReference.ConfigMapRef.Namespace }}"
+      {{ end }}
+      class="form-control"
+      placeholder="Namespace"
+      aria-label="Namespace" />
+    <input
+      type="text"
+      autocomplete="off"
+      name="{{ .ValueName }}[name]"
+      {{ if ne .ValueReference.ConfigMapRef nil }}value="{{ .ValueReference.ConfigMapRef.Name }}"{{ end }}
+      class="form-control"
+      placeholder="Name"
+      aria-label="Name" />
+    <input
+      type="text"
+      autocomplete="off"
+      name="{{ .ValueName }}[key]"
+      {{ if ne .ValueReference.ConfigMapRef nil }}value="{{ .ValueReference.ConfigMapRef.Key }}"{{ end }}
+      class="form-control"
+      placeholder="Key"
+      aria-label="Key" />
+  {{ else if eq .ValueReferenceKind "Secret" }}
+    <input
+      type="text"
+      autocomplete="off"
+      {{ if .Autofocus }}autofocus{{ end }}
+      name="{{ .ValueName }}[namespace]"
+      {{ if ne .ValueReference.SecretRef nil }}
+        value="{{ .ValueReference.SecretRef.Namespace }}"
+      {{ end }}
+      class="form-control"
+      placeholder="Namespace"
+      aria-label="Namespace" />
+    <input
+      type="text"
+      autocomplete="off"
+      name="{{ .ValueName }}[name]"
+      {{ if ne .ValueReference.SecretRef nil }}value="{{ .ValueReference.SecretRef.Name }}"{{ end }}
+      class="form-control"
+      placeholder="Name"
+      aria-label="Name" />
+    <input
+      type="text"
+      autocomplete="off"
+      name="{{ .ValueName }}[key]"
+      {{ if ne .ValueReference.SecretRef nil }}value="{{ .ValueReference.SecretRef.Key }}"{{ end }}
+      class="form-control"
+      placeholder="Key"
+      aria-label="Key" />
+  {{ else if eq .ValueReferenceKind "Package" }}
+    <input
+      type="text"
+      autocomplete="off"
+      {{ if .Autofocus }}autofocus{{ end }}
+      name="{{ .ValueName }}[package]"
+      {{ if ne .ValueReference.PackageRef nil }}value="{{ .ValueReference.PackageRef.Name }}"{{ end }}
+      class="form-control"
+      placeholder="Package"
+      aria-label="Package" />
+    <input
+      type="text"
+      autocomplete="off"
+      name="{{ .ValueName }}[value]"
+      {{ if ne .ValueReference.PackageRef nil }}value="{{ .ValueReference.PackageRef.Value }}"{{ end }}
+      class="form-control"
+      placeholder="Value"
+      aria-label="Value" />
+  {{ end }}
+{{ end }}
+
+{{ define "pkg-config-input-text" }}
+  <input
+    type="text"
+    autocomplete="off"
+    {{ if .Autofocus }}autofocus{{ end }}
+    name="{{ .ValueName }}"
+    value="{{ .StringValue }}"
+    class="form-control"
+    id="{{ .FormId }}"
+    {{ if ne .ValueDefinition.Constraints.MinLength nil }}
+      minlength="{{ .ValueDefinition.Constraints.MinLength }}"
+    {{ end }}
+    {{ if ne .ValueDefinition.Constraints.MaxLength nil }}
+      maxlength="{{ .ValueDefinition.Constraints.MaxLength }}"
+    {{ end }}
+    {{ if ne .ValueDefinition.Constraints.Pattern nil }}
+      pattern="{{ .ValueDefinition.Constraints.Pattern }}"
+    {{ end }}
+    aria-describedby="input-help-{{ .ValueName }}" />
+{{ end }}
+
+{{ define "pkg-config-input-number" }}
+  <input
+    type="number"
+    autocomplete="off"
+    {{ if .Autofocus }}autofocus{{ end }}
+    {{ if ne .ValueDefinition.Constraints.Min nil }}min="{{ .ValueDefinition.Constraints.Min }}"{{ end }}
+    {{ if ne .ValueDefinition.Constraints.Max nil }}max="{{ .ValueDefinition.Constraints.Max }}"{{ end }}
+    name="{{ .ValueName }}"
+    value="{{ .StringValue }}"
+    class="form-control"
+    id="{{ .FormId }}"
+    aria-describedby="input-help-{{ .ValueName }}" />
+{{ end }}
+
+{{ define "pkg-config-input-options" }}
+  <select
+    class="form-select"
+    {{ if .Autofocus }}autofocus{{ end }}
+    id="{{ .FormId }}"
+    name="{{ .ValueName }}"
+    {{ if .ValueDefinition.Constraints.Required }}required{{ end }}>
+    <option value="" {{ if eq "" .StringValue }}selected{{ end }}></option>
+    {{ range .ValueDefinition.Options }}
+      <option value="{{ . }}" {{ if eq . $.StringValue }}selected{{ end }}>{{ . }}</option>
+    {{ end }}
+  </select>
+{{ end }}
+
+{{ define "pkg-config-input-boolean" }}
+  <div class="form-check my-auto ms-2">
+    <input
+      class="form-check-input"
+      {{ if .Autofocus }}autofocus{{ end }}
+      type="checkbox"
+      name="{{ .ValueName }}"
+      id="{{ .FormId }}"
+      {{ if .BoolValue }}checked{{ end }} />
+    <label class="form-check-label" for="{{ .FormId }}">{{ .FormLabel }}</label>
+  </div>
+{{ end }}
+
+{{ define "pkg-config-input-help" }}
+  <div id="input-help-{{ .ValueName }}" class="form-text">
+    {{ .ValueDefinition.Metadata.Description }}
+  </div>
+{{ end }}
+
+
+<!-- this is the entry point for rendering the the input group for one value definition -->
+{{ define "pkg-config-input" }}
+  <div id="{{ .ContainerId }}" class="mb-2">
+    {{ if eq .ValueDefinition.Type "text" }}
+      <div>
+        <label for="{{ .FormId }}" class="form-label">{{ .FormLabel }}</label>
+        <div class="input-group input-group-sm">
+          {{ template "pkg-config-input-reference-dropdown" . }}
+          {{ if eq .ValueReferenceKind "" }}
+            {{ template "pkg-config-input-text" . }}
+          {{ else }}
+            {{ template "pkg-config-input-reference" . }}
+          {{ end }}
+        </div>
+        {{ template "pkg-config-input-help" . }}
+      </div>
+    {{ else if eq .ValueDefinition.Type "number" }}
+      <div>
+        <label for="{{ .FormId }}" class="form-label">{{ .FormLabel }}</label>
+        <div class="input-group input-group-sm">
+          {{ template "pkg-config-input-reference-dropdown" . }}
+          {{ if eq .ValueReferenceKind "" }}
+            {{ template "pkg-config-input-number" . }}
+          {{ else }}
+            {{ template "pkg-config-input-reference" . }}
+          {{ end }}
+        </div>
+        {{ template "pkg-config-input-help" . }}
+      </div>
+    {{ else if eq .ValueDefinition.Type "boolean" }}
+      <div>
+        {{ if ne .ValueReferenceKind "" }}
+          <label for="{{ .FormId }}" class="form-label">{{ .FormLabel }}</label>
+        {{ end }}
+        <div class="input-group input-group-sm">
+          {{ template "pkg-config-input-reference-dropdown" . }}
+          {{ if eq .ValueReferenceKind "" }}
+            {{ template "pkg-config-input-boolean" . }}
+          {{ else }}
+            {{ template "pkg-config-input-reference" . }}
+          {{ end }}
+        </div>
+        {{ template "pkg-config-input-help" . }}
+      </div>
+    {{ else if eq .ValueDefinition.Type "options" }}
+      <div>
+        <label for="{{ .FormId }}" class="form-label">{{ .FormLabel }}</label>
+        <div class="input-group input-group-sm">
+          {{ template "pkg-config-input-reference-dropdown" . }}
+          {{ if eq .ValueReferenceKind "" }}
+            {{ template "pkg-config-input-options" . }}
+          {{ else }}
+            {{ template "pkg-config-input-reference" . }}
+          {{ end }}
+        </div>
+        {{ template "pkg-config-input-help" . }}
+      </div>
+    {{ end }}
+  </div>
+{{ end }}

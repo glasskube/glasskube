@@ -59,7 +59,7 @@
 
       <div id="error-container" class="container-lg mt-2">
         {{ if .Error }}
-          {{ template "alert" .Error | ForAlert }}
+          {{ template "alert" .Error "danger" | ForAlert }}
         {{ end }}
         {{ if .VersionMismatchWarning }}
           {{ template "version-mismatch-warning" .VersionMismatchWarning }}

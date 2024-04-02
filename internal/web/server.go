@@ -17,7 +17,12 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/glasskube/glasskube/internal/manifestvalues"
+	"k8s.io/client-go/kubernetes"
+
 	"github.com/Masterminds/semver/v3"
+
+	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
 
 	clientadapter "github.com/glasskube/glasskube/internal/adapter/goclient"
 	"github.com/glasskube/glasskube/internal/clientutils"
@@ -99,6 +104,7 @@ type server struct {
 	dependencyMgr         *dependency.DependendcyManager
 	updateMutex           sync.Mutex
 	updateTransactions    map[int]update.UpdateTransaction
+	valueResolver         *manifestvalues.Resolver
 }
 
 func (s *server) RestConfig() *rest.Config {
@@ -180,14 +186,14 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle("/bootstrap", s.requireKubeconfig(s.bootstrapPage))
 	router.Handle("/kubeconfig/persist", s.requireKubeconfig(s.persistKubeconfig))
 	router.Handle("/packages", s.requireReady(s.packages))
-	router.Handle("/packages/install", s.requireReady(s.install))
-	router.Handle("/packages/install/modal", s.requireReady(s.installModal))
 	router.Handle("/packages/update", s.requireReady(s.update))
 	router.Handle("/packages/update/modal", s.requireReady(s.updateModal))
 	router.Handle("/packages/uninstall", s.requireReady(s.uninstall))
 	router.Handle("/packages/uninstall/modal", s.requireReady(s.uninstallModal))
 	router.Handle("/packages/open", s.requireReady(s.open))
 	router.Handle("/packages/{pkgName}", s.requireReady(s.packageDetail))
+	router.Handle("/packages/{pkgName}/configure", s.requireReady(s.installOrConfigurePackage))
+	router.Handle("/packages/{pkgName}/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/packages", http.StatusFound) })
 	http.Handle("/", s.enrichContext(router))
 
@@ -227,61 +233,6 @@ func (s *server) Start(ctx context.Context) error {
 	return nil
 }
 
-func (s *server) install(w http.ResponseWriter, r *http.Request) {
-	pkgName := r.FormValue("packageName")
-	selectedVersion := r.FormValue("selectedVersion")
-	enableAutoUpdateVal := r.FormValue("enableAutoUpdate")
-	if selectedVersion == "" {
-		var packageIndex repo.PackageIndex
-		if err := repo.FetchPackageIndex("", pkgName, &packageIndex); err != nil {
-			s.respondAlertAndLog(w, err, "❗ Error: Could not fetch package metadata")
-			return
-		}
-		selectedVersion = packageIndex.LatestVersion
-	}
-	err := install.NewInstaller(s.pkgClient).
-		WithStatusWriter(statuswriter.Stderr()).
-		Install(r.Context(), pkgName, selectedVersion, strings.ToLower(enableAutoUpdateVal) == "on")
-	if err != nil {
-		s.respondAlertAndLog(w, err, "An error occurred installing "+pkgName)
-		return
-	}
-	addHxTrigger(w, TriggerRefreshPackageDetail)
-}
-
-func (s *server) installModal(w http.ResponseWriter, r *http.Request) {
-	pkgName := r.FormValue("packageName")
-	selectedVersion := r.FormValue("selectedVersion")
-	var idx repo.PackageIndex
-	if err := repo.FetchPackageIndex("", pkgName, &idx); err != nil {
-		s.respondAlertAndLog(w, err, "An error occurred fetching versions of "+pkgName)
-		return
-	}
-	if selectedVersion == "" {
-		selectedVersion = idx.LatestVersion
-	}
-	var mf v1alpha1.PackageManifest
-	if err := repo.FetchPackageManifest("", pkgName, selectedVersion, &mf); err != nil {
-		s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred fetching manifest of %v in version %v", pkgName, selectedVersion))
-		return
-	}
-
-	res, err := s.dependencyMgr.Validate(r.Context(), &mf, selectedVersion)
-	if err != nil {
-		s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred validating dependencies of %v in version %v", pkgName, selectedVersion))
-		return
-	}
-
-	err = pkgInstallModalTmpl.Execute(w, &map[string]any{
-		"PackageName":      pkgName,
-		"PackageIndex":     &idx,
-		"SelectedVersion":  selectedVersion,
-		"ShowConflicts":    res.Status == dependency.ValidationResultStatusConflict,
-		"ValidationResult": res,
-	})
-	checkTmplError(err, "pkgInstallModalTmpl")
-}
-
 func (s *server) updateModal(w http.ResponseWriter, r *http.Request) {
 	pkgName := r.FormValue("packageName")
 	pkgs := make([]string, 0, 1)
@@ -293,7 +244,7 @@ func (s *server) updateModal(w http.ResponseWriter, r *http.Request) {
 	updater := update.NewUpdater(s.pkgClient).WithStatusWriter(statuswriter.Stderr())
 	ut, err := updater.Prepare(r.Context(), pkgs)
 	if err != nil {
-		s.respondAlertAndLog(w, err, "An error occurred preparing update of "+pkgName)
+		s.respondAlertAndLog(w, err, "An error occurred preparing update of "+pkgName, "danger")
 		return
 	}
 	utId := rand.Int()
@@ -333,14 +284,14 @@ func (s *server) update(w http.ResponseWriter, r *http.Request) {
 	defer s.updateMutex.Unlock()
 	utIdStr := r.FormValue("updateTransactionId")
 	if utId, err := strconv.Atoi(utIdStr); err != nil {
-		s.respondAlertAndLog(w, err, "Failed to parse updateTransactionId")
+		s.respondAlertAndLog(w, err, "Failed to parse updateTransactionId", "danger")
 		return
 	} else if ut, ok := s.updateTransactions[utId]; !ok {
-		s.respondAlert(w, fmt.Sprintf("Failed to find UpdateTransaction with ID %d", utId))
+		s.respondAlert(w, fmt.Sprintf("Failed to find UpdateTransaction with ID %d", utId), "danger")
 		return
 	} else if err = updater.Apply(ctx, &ut); err != nil {
 		delete(s.updateTransactions, utId)
-		s.respondAlertAndLog(w, err, "An error occurred during the update")
+		s.respondAlertAndLog(w, err, "An error occurred during the update", "danger")
 		return
 	} else {
 		delete(s.updateTransactions, utId)
@@ -374,13 +325,13 @@ func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
 	pkgName := r.FormValue("packageName")
 	var pkg v1alpha1.Package
 	if err := s.pkgClient.Packages().Get(ctx, pkgName, &pkg); err != nil {
-		s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred fetching %v during uninstall", pkgName))
+		s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred fetching %v during uninstall", pkgName), "danger")
 		return
 	}
 	if err := uninstall.NewUninstaller(s.pkgClient).
 		WithStatusWriter(statuswriter.Stderr()).
 		Uninstall(ctx, &pkg); err != nil {
-		s.respondAlertAndLog(w, err, "An error occurred uninstalling "+pkgName)
+		s.respondAlertAndLog(w, err, "An error occurred uninstalling "+pkgName, "danger")
 		return
 	}
 	addHxTrigger(w, TriggerRefreshPackageDetail)
@@ -396,7 +347,7 @@ func (s *server) open(w http.ResponseWriter, r *http.Request) {
 
 	result, err := open.NewOpener().Open(r.Context(), pkgName, "")
 	if err != nil {
-		s.respondAlertAndLog(w, err, "Could not open "+pkgName)
+		s.respondAlertAndLog(w, err, "Could not open "+pkgName, "danger")
 	} else {
 		s.forwarders[pkgName] = result
 		result.WaitReady()
@@ -430,28 +381,132 @@ func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 	pkgName := mux.Vars(r)["pkgName"]
-	pkg, status, manifest, latestVersion, err := describe.DescribePackage(r.Context(), pkgName)
+	selectedVersion := r.FormValue("selectedVersion")
+	pkg, status, manifest, _, err := describe.DescribePackage(r.Context(), pkgName)
 	autoUpdate := clientutils.AutoUpdateString(pkg, "Disabled")
 	if err != nil {
 		err = fmt.Errorf("An error occurred fetching package details of %v: %w\n", pkgName, err)
 		fmt.Fprintf(os.Stderr, "%v\n", err)
-	} else if latestVersion == "" {
-		// TODO have a look at handling latestVersion as return value from DescribePackage again – seems weird
-		latestVersion, err = repo.GetLatestVersion("", pkgName)
-		if err != nil {
-			err = fmt.Errorf("An error occurred fetching latest version of %v: %w\n", pkgName, err)
-			fmt.Fprintf(os.Stderr, "%v\n", err)
+	}
+
+	var idx repo.PackageIndex
+	if err := repo.FetchPackageIndex("", pkgName, &idx); err != nil {
+		s.respondAlertAndLog(w, err, "An error occurred fetching versions of "+pkgName, "danger")
+		return
+	}
+	if selectedVersion == "" {
+		selectedVersion = idx.LatestVersion
+	}
+	if selectedVersion != idx.LatestVersion {
+		var mf v1alpha1.PackageManifest
+		if err := repo.FetchPackageManifest("", pkgName, selectedVersion, &mf); err != nil {
+			s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred fetching manifest of %v in version %v", pkgName, selectedVersion), "danger")
+			return
 		}
+		manifest = &mf
+	}
+
+	res, err := s.dependencyMgr.Validate(r.Context(), manifest, selectedVersion)
+	if err != nil {
+		s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred validating dependencies of %v in version %v", pkgName, selectedVersion), "danger")
+		return
 	}
 	err = pkgPageTmpl.Execute(w, s.enrichWithErrorAndWarnings(r.Context(), map[string]any{
-		"Package":         pkg,
-		"Status":          status,
-		"Manifest":        manifest,
-		"LatestVersion":   latestVersion,
-		"UpdateAvailable": pkg != nil && s.isUpdateAvailable(r.Context(), pkgName),
-		"AutoUpdate":      autoUpdate,
+		"Package":           pkg,
+		"Status":            status,
+		"Manifest":          manifest,
+		"LatestVersion":     idx.LatestVersion,
+		"UpdateAvailable":   pkg != nil && s.isUpdateAvailable(r.Context(), pkgName),
+		"AutoUpdate":        autoUpdate,
+		"ValidationResult":  res,
+		"ShowConflicts":     res.Status == dependency.ValidationResultStatusConflict,
+		"SelectedVersion":   selectedVersion,
+		"PackageIndex":      &idx,
+		"ShowConfiguration": (pkg != nil && len(manifest.ValueDefinitions) > 0 && pkg.DeletionTimestamp.IsZero()) || pkg == nil,
 	}, err))
 	checkTmplError(err, fmt.Sprintf("package-detail (%s)", pkgName))
+}
+
+// installOrConfigurePackage is an endpoint which takes POST requests, containing all necessary parameters to either
+// install a new package if it does not exist yet, or update the configuration of an existing package.
+// The name of the concerned package is given in the pkgName query parameter.
+// In case the given package is not installed yet in the cluster, there must be a form parameter selectedVersion
+// containing which version should be installed.
+// In either case, the parameters from the form are parsed and converted into ValueConfiguration objects, which are
+// being set in the packages spec.
+func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Request) {
+	pkgName := mux.Vars(r)["pkgName"]
+	selectedVersion := r.FormValue("selectedVersion")
+	enableAutoUpdate := r.FormValue("enableAutoUpdate")
+	pkg, _, manifest, _, err := describe.DescribePackage(r.Context(), pkgName)
+	if err != nil {
+		s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred fetching package details of %v", pkgName), "danger")
+		return
+	} else if pkg == nil {
+		var mf v1alpha1.PackageManifest
+		if err := repo.FetchPackageManifest("", pkgName, selectedVersion, &mf); err != nil {
+			s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred fetching manifest of %v in version %v", pkgName, selectedVersion), "danger")
+			return
+		}
+		manifest = &mf
+	}
+
+	if values, err := extractValues(r, manifest); err != nil {
+		s.respondAlertAndLog(w, err, "An error occurred parsing the form", "danger")
+		return
+	} else if pkg == nil {
+		err := install.NewInstaller(s.pkgClient).
+			WithStatusWriter(statuswriter.Stderr()).
+			Install(r.Context(), pkgName, selectedVersion, values, strings.ToLower(enableAutoUpdate) == "on")
+		if err != nil {
+			s.respondAlertAndLog(w, err, "An error occurred installing "+pkgName, "danger")
+			return
+		}
+		addHxTrigger(w, TriggerRefreshPackageDetail)
+	} else {
+		pkg.Spec.Values = values
+		if err := s.pkgClient.Packages().Update(r.Context(), pkg); err != nil {
+			s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred updating package %v", pkgName), "danger")
+			return
+		}
+		if _, err := s.valueResolver.Resolve(r.Context(), values); err != nil {
+			s.respondAlertAndLog(w, err, "Some values could not be resolved: ", "warning")
+		} else {
+			err := alertTmpl.Execute(w, map[string]any{
+				"Message":     "Configuration updated successfully",
+				"Dismissible": true,
+				"Type":        "success",
+			})
+			checkTmplError(err, "success")
+		}
+	}
+}
+
+// packageConfigurationInput is a GET endpoint, which returns an html snippet containing an input container.
+// The endpoint requires the pkgName query parameter to be set, as well as the valueName query parameter (which holds
+// the name of the desired value according to the package value definitions).
+// An optional query parameter refKind can be passed to request the snippet in a certain variant, where the accepted
+// refKind values are: ConfigMap, Secret, Package. If no refKind is given, the "regular" input is returned.
+// In any case, the input container consists of a button where the user can change the type of reference or remove the
+// reference, and the actual input field(s).
+func (s *server) packageConfigurationInput(w http.ResponseWriter, r *http.Request) {
+	pkgName := mux.Vars(r)["pkgName"]
+	pkg, _, manifest, _, err := describe.DescribePackage(r.Context(), pkgName)
+	if err != nil {
+		err = fmt.Errorf("An error occurred fetching package details of %v: %w\n", pkgName, err)
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		return
+	}
+	valueName := mux.Vars(r)["valueName"]
+	refKind := r.URL.Query().Get("refKind")
+	if valueDefinition, ok := manifest.ValueDefinitions[valueName]; ok {
+		input := pkg_config_input.ForPkgConfigInput(pkg, pkgName, valueName, valueDefinition, &pkg_config_input.PkgConfigInputRenderOptions{
+			Autofocus:      true,
+			DesiredRefKind: &refKind,
+		})
+		err = pkgConfigInput.Execute(w, input)
+		checkTmplError(err, fmt.Sprintf("package config input (%s, %s)", pkgName, valueName))
+	}
 }
 
 func (s *server) supportPage(w http.ResponseWriter, r *http.Request) {
@@ -619,10 +674,18 @@ func (server *server) initKubeConfig() ServerConfigError {
 	if err != nil {
 		return newKubeconfigErr(err)
 	}
+	k8sclient, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		return newKubeconfigErr(err)
+	}
 	server.restConfig = restConfig
 	server.rawConfig = rawConfig
 	server.pkgClient = client
 	server.dependencyMgr = dependency.NewDependencyManager(clientadapter.NewPackageClientAdapter(server.pkgClient))
+	server.valueResolver = manifestvalues.NewResolver(
+		clientadapter.NewPackageClientAdapter(server.pkgClient),
+		clientadapter.NewKubernetesClientAdapter(*k8sclient),
+	)
 	return nil
 }
 
@@ -759,21 +822,22 @@ func addHxTrigger(w http.ResponseWriter, trigger string) {
 	w.Header().Add("HX-Trigger", trigger)
 }
 
-func (s *server) respondAlertAndLog(w http.ResponseWriter, err error, wrappingMsg string) {
+func (s *server) respondAlertAndLog(w http.ResponseWriter, err error, wrappingMsg string, alertType string) {
 	if wrappingMsg != "" {
 		err = fmt.Errorf("%v: %w", wrappingMsg, err)
 	}
 	fmt.Fprintf(os.Stderr, "%v\n", err)
-	s.respondAlert(w, err.Error())
+	s.respondAlert(w, err.Error(), alertType)
 }
 
-func (s *server) respondAlert(w http.ResponseWriter, message string) {
+func (s *server) respondAlert(w http.ResponseWriter, message string, alertType string) {
 	w.Header().Add("Hx-Reselect", "div.alert") // overwrite any existing hx-select (which was a little intransparent sometimes)
 	w.Header().Add("Hx-Reswap", "afterbegin")
 	w.WriteHeader(http.StatusBadRequest)
 	err := alertTmpl.Execute(w, map[string]any{
 		"Message":     message,
 		"Dismissible": true,
+		"Type":        alertType,
 	})
 	checkTmplError(err, "alert")
 }

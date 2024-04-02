@@ -73,14 +73,14 @@
               {{ .Manifest.LongDescription }}
             {{ end }}
           </span>
-          {{ if or (eq .Package nil) (IsUpgradable .Package.Status.Version .LatestVersion) }}
+          {{ if or (eq .Package nil) (IsUpgradable .Package.Spec.PackageInfo.Version .LatestVersion) }}
             <div class="my-1">
               <i>Latest version: {{ .LatestVersion }}</i>
             </div>
           {{ end }}
           {{ if ne .Status nil }}
             <div class="my-1">
-              <i>Installed version: {{ .Package.Status.Version }}</i>
+              <i>Installed version: {{ .Package.Spec.PackageInfo.Version }}</i>
             </div>
           {{ end }}
           {{ if .AutoUpdate }}
@@ -100,6 +100,95 @@
                 </li>
               {{ end }}
             </ul>
+          </div>
+        {{ end }}
+
+        {{ if .ShowConfiguration }}
+          <div class="mt-3" id="configuration">
+            <h2 class="text-reset">
+              {{ if eq .Status nil }}
+                Install
+                {{ .Manifest.Name }}
+              {{ else if ne .Manifest.ValueDefinitions nil }}
+                Configuration
+              {{ end }}
+            </h2>
+
+            <div id="config-feedback-container" class="container-lg mt-2"></div>
+
+            <form
+              hx-post="/packages/{{ .Manifest.Name }}/configure"
+              hx-target="#config-feedback-container"
+              hx-target-error="#config-feedback-container"
+              hx-select="div.alert"
+              hx-swap="innerHTML">
+              {{ if eq .Status nil }}
+                <label class="form-label" for="pkg-install-version">Version</label>
+                <div class="input-group mb-2">
+                  <select
+                    class="form-select"
+                    id="pkg-install-version"
+                    name="selectedVersion"
+                    required
+                    hx-select="main"
+                    hx-swap="main"
+                    hx-target="main"
+                    hx-get="/packages/{{ .Manifest.Name }}">
+                    {{ with $idx := .PackageIndex }}
+                      {{ range $idx.Versions }}
+                        <option value="{{ .Version }}" {{ if eq .Version $.SelectedVersion }}selected{{ end }}>
+                          {{ .Version }}
+                          {{ if eq .Version $idx.LatestVersion }}(latest){{ end }}
+                        </option>
+                      {{ end }}
+                    {{ end }}
+                  </select>
+                </div>
+                <div class="form-check mt-1 mb-3">
+                  <input class="form-check-input" type="checkbox" name="enableAutoUpdate" id="enable-auto-update" />
+                  <label class="form-check-label ms-1" for="enable-auto-update">Auto Updates</label>
+                </div>
+              {{ end }}
+
+              {{ if ne (len .Manifest.ValueDefinitions) 0 }}
+                {{ if eq .Status nil }}
+                  <h4 class="text-reset">Configuration</h4>
+                {{ end }}
+                {{ range $valName, $valDef := .Manifest.ValueDefinitions }}
+                  {{ template "pkg-config-input" ForPkgConfigInput $.Package $.Manifest.Name $valName $valDef nil }}
+                {{ end }}
+              {{ end }}
+              {{ if $.ShowConflicts }}
+                <div class="alert alert-danger m-0 mb-2" role="alert">
+                  <span>Cannot install due to dependency conflicts:</span>
+                  <ul class="mb-0 mt-1">
+                    {{ range .ValidationResult.Conflicts }}
+                      <li>{{ .Actual.Name }} (required: {{ .Required.Version }}, actual: {{ .Actual.Version }})</li>
+                    {{ end }}
+                  </ul>
+                </div>
+              {{ else if eq .Status nil }}
+                <div class="alert alert-success m-0 mb-2" role="alert">
+                  <span>The following packages will be installed:</span>
+                  <ul class="mb-0 mt-1">
+                    <li>{{ $.Manifest.Name }} ({{ $.SelectedVersion }})</li>
+                    {{ range .ValidationResult.Requirements }}
+                      <li>{{ .Name }} ({{ .Version }})</li>
+                    {{ end }}
+                  </ul>
+                </div>
+              {{ end }}
+              <button
+                type="submit"
+                class="btn btn-primary float-end {{ if .ShowConflicts }}disabled{{ end }}"
+                {{ if .ShowConflicts }}disabled{{ end }}>
+                {{ if eq .Status nil }}
+                  Install
+                {{ else }}
+                  Save Configuration
+                {{ end }}
+              </button>
+            </form>
           </div>
         {{ end }}
       </div>
