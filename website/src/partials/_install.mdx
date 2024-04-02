@@ -51,6 +51,14 @@ import TabItem from '@theme/TabItem';
     latest [Release](https://github.com/glasskube/glasskube/releases/latest) and unpack it using Windows Explorer.
     {/* x-release-please-end */}
   </TabItem>
+
+  <TabItem value="nixos" label="NixOS/Nixpgks">
+    You can either use the package temporarily in a <b>nix-shell</b>:
+    ```
+    nix-shell -p glasskube
+    ```
+    Or install it globally by adding `pkgs.glasskube` to your `environment.systemPackages`.
+  </TabItem>
 </Tabs>
 
 <br/>
