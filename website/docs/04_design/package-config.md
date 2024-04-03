@@ -73,7 +73,7 @@ The key in this map is referred to as that values **name**
   For example a "text" value with constraints.max = 3 is the same as a "text" value with no constraints.
 - **`Targets`**:
   Where to apply this value.
-  Either the path of a helm value, or a `TypedObjectReference` combined with patch information.
+  Either the name of a helm chart, or a `TypedObjectReference` combined with patch information.
   Initially, the idea is to use RFC 6902 JSON patches but this is still TBD.
   We use Unstructured for plain resources, which already supports setting values via a kind of JSON path,
   but it does not support setting values in lists.
@@ -99,6 +99,11 @@ A `ValueConfiguration` must have exactly one of the following properties:
 
 ```yaml title="PackageManifest with a simple value specification"
 name: foo
+helm:
+  repositoryUrl: 'https://charts.example.com'
+  chartName: 'foo'
+  chartVersion: 'v1.0.0'
+  values: {}
 valueDefinitions:
   ingress:
     type: 'boolean'
@@ -106,7 +111,10 @@ valueDefinitions:
     description: 'Whether an ingress resource should be created for this Package'
     defaultValue: 'true'
     targets:
-      - helmValue: '.ingress.enabled'
+      - chartName: 'foo'
+        patch:
+          - op: 'add'
+            path: 'ingress/enabled'
 ```
 
 ```yaml title="PackageManifest with a value specification that has multiple targets"
