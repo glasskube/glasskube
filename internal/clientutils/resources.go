@@ -9,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
-func FetchResources(url string) (*[]unstructured.Unstructured, error) {
+func FetchResources(url string) ([]unstructured.Unstructured, error) {
 	response, err := http.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("could not download manifest %v: %w", url, err)
@@ -29,5 +29,5 @@ func FetchResources(url string) (*[]unstructured.Unstructured, error) {
 		}
 		resources = append(resources, object)
 	}
-	return &resources, nil
+	return resources, nil
 }

@@ -77,9 +77,9 @@ func (r *Adapter) reconcilePlainManifest(
 		return nil, err
 	} else {
 		// Unstructured implements client.Object but we need it as a reference so the interface is fulfilled.
-		objectsToApply = make([]client.Object, len(*unstructured))
-		for i := range *unstructured {
-			objectsToApply[i] = &(*unstructured)[i]
+		objectsToApply = make([]client.Object, len(unstructured))
+		for i := range unstructured {
+			objectsToApply[i] = &unstructured[i]
 		}
 	}
 
