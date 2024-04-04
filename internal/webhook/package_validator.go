@@ -9,6 +9,7 @@ import (
 	"github.com/glasskube/glasskube/internal/controller/owners"
 	"github.com/glasskube/glasskube/internal/dependency"
 	"github.com/glasskube/glasskube/internal/dependency/graph"
+	"github.com/glasskube/glasskube/internal/manifestvalues"
 	"github.com/glasskube/glasskube/internal/repo"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	"go.uber.org/multierr"
@@ -101,6 +102,10 @@ func (p *PackageValidatingWebhook) validateCreateOrUpdate(ctx context.Context, p
 	var manifest v1alpha1.PackageManifest
 	err := p.repo.FetchPackageManifest("", pkg.Spec.PackageInfo.Name, pkg.Spec.PackageInfo.Version, &manifest)
 	if err != nil {
+		return err
+	}
+
+	if err := manifestvalues.ValidatePackage(manifest, pkg); err != nil {
 		return err
 	}
 
