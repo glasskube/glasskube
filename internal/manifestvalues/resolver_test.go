@@ -15,7 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-func newTestResolver(initObjs ...runtime.Object) *resolver {
+func newTestResolver(initObjs ...runtime.Object) *Resolver {
 	scheme := runtime.NewScheme()
 	Expect(clientscheme.AddToScheme(scheme)).NotTo(HaveOccurred())
 	Expect(v1alpha1.AddToScheme(scheme)).NotTo(HaveOccurred())

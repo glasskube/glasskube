@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	ctrladapter "github.com/glasskube/glasskube/internal/adapter/controllerruntime"
+	"github.com/glasskube/glasskube/internal/manifestvalues"
 	"github.com/glasskube/glasskube/internal/names"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -55,6 +56,7 @@ type PackageReconciler struct {
 	client.Client
 	record.EventRecorder
 	*owners.OwnerManager
+	ValueResolver    *manifestvalues.Resolver
 	Scheme           *runtime.Scheme
 	ManifestAdapter  manifest.ManifestAdapter
 	HelmAdapter      manifest.ManifestAdapter
@@ -106,6 +108,12 @@ func (r *PackageReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 	if r.dependencyMgr == nil {
 		r.dependencyMgr = dependency.NewDependencyManager(ctrladapter.NewPackageClientAdapter(r.Client))
+	}
+	if r.ValueResolver == nil {
+		r.ValueResolver = manifestvalues.NewResolver(
+			ctrladapter.NewPackageClientAdapter(r.Client),
+			ctrladapter.NewKubernetesClientAdapter(r.Client),
+		)
 	}
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&packagesv1alpha1.Package{})
 	for _, adapter := range []manifest.ManifestAdapter{r.HelmAdapter, r.KustomizeAdapter, r.ManifestAdapter} {
@@ -170,6 +178,26 @@ func (r *PackageReconcilationContext) reconcilePackageInfoReady(ctx context.Cont
 		return r.finalize(ctx)
 	}
 
+	var patches []manifestvalues.TargetPatch
+	if resolvedValues, err := r.ValueResolver.Resolve(ctx, r.pkg.Spec.Values); err != nil {
+		r.setShouldUpdate(
+			conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.Status.Conditions,
+				condition.ValueConfigurationInvalid, err.Error()))
+		return r.finalizeWithError(ctx, err)
+	} else if err := manifestvalues.ValidateResolvedValues(*piManifest, resolvedValues); err != nil {
+		r.setShouldUpdate(
+			conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.Status.Conditions,
+				condition.ValueConfigurationInvalid, err.Error()))
+		return r.finalizeWithError(ctx, err)
+	} else if p, err := manifestvalues.GeneratePatches(*piManifest, resolvedValues); err != nil {
+		r.setShouldUpdate(
+			conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.Status.Conditions,
+				condition.InstallationFailed, err.Error()))
+		return r.finalizeWithError(ctx, err)
+	} else {
+		patches = p
+	}
+
 	// First, collect the adapters for all included manifests and ensure that they are supported.
 	// If one manifest type is not supported, no action must be performed!
 
@@ -205,7 +233,7 @@ func (r *PackageReconcilationContext) reconcilePackageInfoReady(ctx context.Cont
 	results := make([]result.ReconcileResult, 0, len(adaptersToRun))
 	var errs error
 	for _, adapter := range adaptersToRun {
-		if result, err := adapter.Reconcile(ctx, r.pkg, piManifest); err != nil {
+		if result, err := adapter.Reconcile(ctx, r.pkg, piManifest, patches); err != nil {
 			errs = multierr.Append(errs, err)
 		} else {
 			results = append(results, *result)

@@ -13,6 +13,7 @@ import (
 	"github.com/glasskube/glasskube/internal/controller/owners/utils"
 	"github.com/glasskube/glasskube/internal/manifest"
 	"github.com/glasskube/glasskube/internal/manifest/result"
+	"github.com/glasskube/glasskube/internal/manifestvalues"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -54,6 +55,7 @@ func (a *FluxHelmAdapter) Reconcile(
 	ctx context.Context,
 	pkg *packagesv1alpha1.Package,
 	manifest *packagesv1alpha1.PackageManifest,
+	patches manifestvalues.TargetPatches,
 ) (*result.ReconcileResult, error) {
 	log := ctrl.LoggerFrom(ctx)
 	var ownedResources []packagesv1alpha1.OwnedResourceRef
@@ -74,7 +76,7 @@ func (a *FluxHelmAdapter) Reconcile(
 			log.Error(err, "could not add HelmRepository to ownedResources")
 		}
 	}
-	if helmRelease, err := a.ensureHelmRelease(ctx, pkg, manifest); err != nil {
+	if helmRelease, err := a.ensureHelmRelease(ctx, pkg, manifest, patches); err != nil {
 		return nil, err
 	} else {
 		if _, err := utils.AddOwnedResourceRef(a.Scheme(), &ownedResources, helmRelease); err != nil {
@@ -139,6 +141,7 @@ func (a *FluxHelmAdapter) ensureHelmRelease(
 	ctx context.Context,
 	pkg *packagesv1alpha1.Package,
 	manifest *packagesv1alpha1.PackageManifest,
+	patches manifestvalues.TargetPatches,
 ) (*helmv1beta2.HelmRelease, error) {
 	helmRelease := helmv1beta2.HelmRelease{
 		ObjectMeta: metav1.ObjectMeta{
@@ -156,6 +159,9 @@ func (a *FluxHelmAdapter) ensureHelmRelease(
 			helmRelease.Spec.Values = &apiextensionsv1.JSON{Raw: manifest.Helm.Values.Raw[:]}
 		} else {
 			helmRelease.Spec.Values = nil
+		}
+		if err := patches.ApplyToHelmRelease(&helmRelease); err != nil {
+			return err
 		}
 		helmRelease.Spec.Interval = metav1.Duration{Duration: 5 * time.Minute}
 		return a.SetOwner(pkg, &helmRelease, owners.BlockOwnerDeletion)
