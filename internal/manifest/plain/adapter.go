@@ -10,6 +10,7 @@ import (
 	ownerutils "github.com/glasskube/glasskube/internal/controller/owners/utils"
 	"github.com/glasskube/glasskube/internal/manifest"
 	"github.com/glasskube/glasskube/internal/manifest/result"
+	"github.com/glasskube/glasskube/internal/manifestvalues"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -50,10 +51,11 @@ func (a *Adapter) Reconcile(
 	ctx context.Context,
 	pkg *packagesv1alpha1.Package,
 	manifest *packagesv1alpha1.PackageManifest,
+	patches manifestvalues.TargetPatches,
 ) (*result.ReconcileResult, error) {
 	var allOwned []packagesv1alpha1.OwnedResourceRef
 	for _, m := range manifest.Manifests {
-		if owned, err := a.reconcilePlainManifest(ctx, *pkg, *manifest, m); err != nil {
+		if owned, err := a.reconcilePlainManifest(ctx, *pkg, *manifest, m, patches); err != nil {
 			return nil, err
 		} else {
 			allOwned = append(allOwned, owned...)
@@ -67,6 +69,7 @@ func (r *Adapter) reconcilePlainManifest(
 	pkg packagesv1alpha1.Package,
 	pkgManifest packagesv1alpha1.PackageManifest,
 	manifest packagesv1alpha1.PlainManifest,
+	patches manifestvalues.TargetPatches,
 ) ([]packagesv1alpha1.OwnedResourceRef, error) {
 	log := ctrl.LoggerFrom(ctx)
 	var objectsToApply []client.Object
@@ -128,6 +131,13 @@ func (r *Adapter) reconcilePlainManifest(
 	}
 
 	// TODO: check if namespace is terminating before applying
+
+	// Apply all patches before changing anything on the cluster
+	for _, obj := range objectsToApply {
+		if err := patches.ApplyToResource(obj); err != nil {
+			return nil, err
+		}
+	}
 
 	ownedResources := make([]packagesv1alpha1.OwnedResourceRef, 0, len(objectsToApply))
 	for _, obj := range objectsToApply {

@@ -10,16 +10,16 @@ import (
 	"github.com/glasskube/glasskube/internal/adapter"
 )
 
-type resolver struct {
+type Resolver struct {
 	pkg    adapter.PackageClientAdapter
 	client adapter.KubernetesClientAdapter
 }
 
-func NewResolver(pkg adapter.PackageClientAdapter, client adapter.KubernetesClientAdapter) *resolver {
-	return &resolver{pkg: pkg, client: client}
+func NewResolver(pkg adapter.PackageClientAdapter, client adapter.KubernetesClientAdapter) *Resolver {
+	return &Resolver{pkg: pkg, client: client}
 }
 
-func (r *resolver) Resolve(ctx context.Context, values map[string]v1alpha1.ValueConfiguration) (
+func (r *Resolver) Resolve(ctx context.Context, values map[string]v1alpha1.ValueConfiguration) (
 	map[string]string,
 	error,
 ) {
@@ -34,7 +34,7 @@ func (r *resolver) Resolve(ctx context.Context, values map[string]v1alpha1.Value
 	return resolvedValues, nil
 }
 
-func (r *resolver) ResolveValue(ctx context.Context, value v1alpha1.ValueConfiguration) (string, error) {
+func (r *Resolver) ResolveValue(ctx context.Context, value v1alpha1.ValueConfiguration) (string, error) {
 	if value.Value != nil {
 		return *value.Value, nil
 	} else if value.ValueFrom != nil {
@@ -48,7 +48,7 @@ func (r *resolver) ResolveValue(ctx context.Context, value v1alpha1.ValueConfigu
 	}
 }
 
-func (r *resolver) resolveReference(ctx context.Context, ref v1alpha1.ValueReference) (string, error) {
+func (r *Resolver) resolveReference(ctx context.Context, ref v1alpha1.ValueReference) (string, error) {
 	if ref.ConfigMapRef != nil {
 		return r.resolveConfigMapRef(ctx, *ref.ConfigMapRef)
 	} else if ref.SecretRef != nil {
@@ -60,7 +60,7 @@ func (r *resolver) resolveReference(ctx context.Context, ref v1alpha1.ValueRefer
 	}
 }
 
-func (r *resolver) resolveConfigMapRef(ctx context.Context, ref v1alpha1.ObjectKeyValueSource) (string, error) {
+func (r *Resolver) resolveConfigMapRef(ctx context.Context, ref v1alpha1.ObjectKeyValueSource) (string, error) {
 	if c, err := r.client.GetConfigMap(ctx, ref.Name, ref.Namespace); err != nil {
 		return "", NewConfigMapRefError(ref, err)
 	} else if v, ok := c.Data[ref.Key]; !ok {
@@ -70,7 +70,7 @@ func (r *resolver) resolveConfigMapRef(ctx context.Context, ref v1alpha1.ObjectK
 	}
 }
 
-func (r *resolver) resolveSecretRef(ctx context.Context, ref v1alpha1.ObjectKeyValueSource) (string, error) {
+func (r *Resolver) resolveSecretRef(ctx context.Context, ref v1alpha1.ObjectKeyValueSource) (string, error) {
 	if c, err := r.client.GetSecret(ctx, ref.Name, ref.Namespace); err != nil {
 		return "", NewSecretRefError(ref, err)
 	} else if v, ok := c.Data[ref.Key]; !ok {
@@ -82,7 +82,7 @@ func (r *resolver) resolveSecretRef(ctx context.Context, ref v1alpha1.ObjectKeyV
 	}
 }
 
-func (r *resolver) resolvePackageRef(ctx context.Context, ref v1alpha1.PackageValueSource) (string, error) {
+func (r *Resolver) resolvePackageRef(ctx context.Context, ref v1alpha1.PackageValueSource) (string, error) {
 	if pkg, err := r.pkg.GetPackage(ctx, ref.Name); err != nil {
 		return "", NewPackageRefError(ref, err)
 	} else if value, ok := pkg.Spec.Values[ref.Value]; !ok {
