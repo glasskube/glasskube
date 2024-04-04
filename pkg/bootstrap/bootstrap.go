@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/fatih/color"
+	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/constants"
 	"github.com/glasskube/glasskube/internal/releaseinfo"
-
-	"github.com/fatih/color"
-	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/schollz/progressbar/v3"
 	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -48,6 +48,8 @@ func NewBootstrapClient(config *rest.Config) *BootstrapClient {
 func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOptions) error {
 	fmt.Println(installMessage)
 
+	start := time.Now()
+
 	if options.Url == "" {
 		version := config.Version
 		if options.Latest {
@@ -70,40 +72,37 @@ func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOption
 	statusMessage("Successfully fetched Glasskube manifests", true)
 
 	statusMessage("Applying Glasskube manifests", true)
-	err = c.applyManifests(ctx, manifests)
-	if err != nil {
+	if err = c.applyManifests(ctx, manifests); err != nil {
 		statusMessage(fmt.Sprintf("Couldn't apply manifests: %v", err), false)
 	}
-	statusMessage("Glasskube is successfully installed.", true)
+
+	elapsed := time.Since(start).Round(time.Second)
+	statusMessage(fmt.Sprintf("Glasskube successfully installed! (took %v)", elapsed), true)
 	return nil
 }
 
-func (c *BootstrapClient) applyManifests(ctx context.Context, objs *[]unstructured.Unstructured) error {
+func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructured.Unstructured) error {
 	dynamicClient, err := dynamic.NewForConfig(c.clientConfig)
 	if err != nil {
 		return err
 	}
 
-	discoveryClient, err := discovery.NewDiscoveryClientForConfig(c.clientConfig)
-	if err != nil {
+	var mapper meta.RESTMapper
+	if discoveryClient, err := discovery.NewDiscoveryClientForConfig(c.clientConfig); err != nil {
 		return err
+	} else if groupResources, err := restmapper.GetAPIGroupResources(discoveryClient); err != nil {
+		return err
+	} else {
+		mapper = restmapper.NewDiscoveryRESTMapper(groupResources)
 	}
 
-	groupResources, err := restmapper.GetAPIGroupResources(discoveryClient)
-	if err != nil {
-		return err
-	}
-
-	mapper := restmapper.NewDiscoveryRESTMapper(groupResources)
-
-	bar := progressbar.Default(int64(len(*objs)), "Applying manifests")
+	bar := progressbar.Default(int64(len(objs)), "Applying manifests")
 	progressbar.OptionClearOnFinish()(bar)
 	progressbar.OptionOnCompletion(nil)(bar)
-	defer func(bar *progressbar.ProgressBar) {
-		_ = bar.Exit()
-	}(bar)
+	defer func(bar *progressbar.ProgressBar) { _ = bar.Exit() }(bar)
 
-	for _, obj := range *objs {
+	var checkWorkloads []*unstructured.Unstructured
+	for i, obj := range objs {
 		gvk := obj.GroupVersionKind()
 		mapping, err := mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 		if err != nil {
@@ -111,23 +110,28 @@ func (c *BootstrapClient) applyManifests(ctx context.Context, objs *[]unstructur
 		}
 
 		bar.Describe(fmt.Sprintf("Applying %v (%v)", obj.GetName(), obj.GetKind()))
-		err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		if err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
 			_, err = dynamicClient.Resource(mapping.Resource).Namespace(obj.GetNamespace()).
 				Apply(ctx, obj.GetName(), &obj, metav1.ApplyOptions{Force: true, FieldManager: "glasskube"})
 			return err
-		})
-
-		if obj.GetKind() == constants.Deployment {
-			bar.Describe(fmt.Sprintf("Checking Status of %v (%v)", obj.GetName(), obj.GetKind()))
-			err = c.checkWorkloadReady(obj.GetNamespace(), obj.GetName(), obj.GetKind(), 5*time.Minute)
-			if err != nil {
-				return err
-			}
-		}
-		err = bar.Add(1)
-		if err != nil {
+		}); err != nil {
 			return err
 		}
+
+		if obj.GetKind() == constants.Deployment {
+			checkWorkloads = append(checkWorkloads, &objs[i])
+			bar.ChangeMax(bar.GetMax() + 1)
+		}
+
+		_ = bar.Add(1)
+	}
+
+	for _, obj := range checkWorkloads {
+		bar.Describe(fmt.Sprintf("Checking Status of %v (%v)", obj.GetName(), obj.GetKind()))
+		if err = c.checkWorkloadReady(obj.GetNamespace(), obj.GetName(), obj.GetKind(), 5*time.Minute); err != nil {
+			return err
+		}
+		_ = bar.Add(1)
 	}
 
 	return nil
@@ -173,15 +177,15 @@ func (c *BootstrapClient) checkWorkloadReady(
 		case constants.Deployment:
 			availableReplicas := status["availableReplicas"]
 			replicas := status["replicas"]
-			ready = availableReplicas == replicas
+			ready = availableReplicas != nil && availableReplicas == replicas
 		case constants.DaemonSet:
 			numberReady := status["numberReady"]
 			desiredNumberScheduled := status["desiredNumberScheduled"]
-			ready = numberReady == desiredNumberScheduled
+			ready = numberReady != nil && numberReady == desiredNumberScheduled
 		case constants.StatefulSet:
 			readyReplicas := status["readyReplicas"]
 			replicas := status["replicas"]
-			ready = readyReplicas == replicas
+			ready = readyReplicas != nil && readyReplicas == replicas
 		}
 
 		return ready, nil
@@ -194,7 +198,7 @@ func (c *BootstrapClient) checkWorkloadReady(
 	}
 
 	timeoutCh := time.After(timeout)
-	tick := time.NewTimer(5 * time.Second)
+	tick := time.NewTicker(2 * time.Second)
 	tickC := tick.C
 	defer tick.Stop()
 
