@@ -16,26 +16,29 @@ var _ = Describe("ValidateResolvedValues", func() {
 		ValueDefinitions: map[string]v1alpha1.ValueDefinition{
 			"test": {Type: v1alpha1.ValueTypeText, Constraints: v1alpha1.ValueDefinitionConstraints{Required: true}}},
 	}
+	five := 5
+	ten := 10
+	pattern := "a{2,3}b+"
 	manifestWithConstraints := v1alpha1.PackageManifest{
 		ValueDefinitions: map[string]v1alpha1.ValueDefinition{
 			"minmaxstr": {
 				Type: v1alpha1.ValueTypeText,
 				Constraints: v1alpha1.ValueDefinitionConstraints{
-					MinLength: 5,
-					MaxLength: 10,
+					MinLength: &five,
+					MaxLength: &ten,
 				},
 			},
 			"minmax": {
 				Type: v1alpha1.ValueTypeNumber,
 				Constraints: v1alpha1.ValueDefinitionConstraints{
-					Min: 5,
-					Max: 10,
+					Min: &five,
+					Max: &ten,
 				},
 			},
 			"pattern": {
 				Type: v1alpha1.ValueTypeText,
 				Constraints: v1alpha1.ValueDefinitionConstraints{
-					Pattern: "a{2,3}b+",
+					Pattern: &pattern,
 				},
 			},
 			"options": {

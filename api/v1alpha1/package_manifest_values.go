@@ -55,12 +55,12 @@ type ValueDefinitionMetadata struct {
 }
 
 type ValueDefinitionConstraints struct {
-	Required  bool   `json:"required,omitempty"`
-	Min       int    `json:"min,omitempty"`
-	Max       int    `json:"max,omitempty"`
-	MinLength int    `json:"minLength,omitempty"`
-	MaxLength int    `json:"maxLength,omitempty"`
-	Pattern   string `json:"pattern,omitempty"`
+	Required  bool    `json:"required,omitempty"`
+	Min       *int    `json:"min,omitempty"`
+	Max       *int    `json:"max,omitempty"`
+	MinLength *int    `json:"minLength,omitempty"`
+	MaxLength *int    `json:"maxLength,omitempty"`
+	Pattern   *string `json:"pattern,omitempty"`
 }
 
 type PartialJsonPatch struct {

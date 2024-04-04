@@ -12,14 +12,14 @@ type validateFn func(def v1alpha1.ValueDefinition, value string) error
 
 var (
 	validateMinLength validateFn = func(def v1alpha1.ValueDefinition, value string) error {
-		if def.Constraints.MinLength > 0 && len(value) < def.Constraints.MinLength {
+		if def.Constraints.MinLength != nil && len(value) < *def.Constraints.MinLength {
 			return ErrConstraintMinLength
 		}
 		return nil
 	}
 
 	validateMaxLength validateFn = func(def v1alpha1.ValueDefinition, value string) error {
-		if def.Constraints.MaxLength > 0 && len(value) > def.Constraints.MaxLength {
+		if def.Constraints.MaxLength != nil && len(value) > *def.Constraints.MaxLength {
 			return ErrConstraintMaxLength
 		}
 		return nil
@@ -40,10 +40,10 @@ var (
 	}
 
 	validateMin validateFn = func(def v1alpha1.ValueDefinition, value string) error {
-		if def.Constraints.Min > 0 {
+		if def.Constraints.Min != nil {
 			if i, err := strconv.Atoi(value); err != nil {
 				return err
-			} else if i < def.Constraints.Min {
+			} else if i < *def.Constraints.Min {
 				return ErrConstraintMin
 			}
 		}
@@ -51,10 +51,10 @@ var (
 	}
 
 	validateMax validateFn = func(def v1alpha1.ValueDefinition, value string) error {
-		if def.Constraints.Max > 0 {
+		if def.Constraints.Max != nil {
 			if i, err := strconv.Atoi(value); err != nil {
 				return err
-			} else if i > def.Constraints.Max {
+			} else if i > *def.Constraints.Max {
 				return ErrConstraintMax
 			}
 		}
@@ -71,11 +71,11 @@ var (
 	}
 
 	validatePattern validateFn = func(def v1alpha1.ValueDefinition, value string) error {
-		if len(def.Constraints.Pattern) > 0 {
-			if re, err := regexp.Compile(def.Constraints.Pattern); err != nil {
+		if def.Constraints.Pattern != nil {
+			if re, err := regexp.Compile(*def.Constraints.Pattern); err != nil {
 				return err
 			} else if !re.MatchString(value) {
-				return NewPatternError(def.Constraints.Pattern)
+				return NewPatternError(*def.Constraints.Pattern)
 			}
 		}
 		return nil
