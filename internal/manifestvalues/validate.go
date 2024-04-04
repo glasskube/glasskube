@@ -98,14 +98,14 @@ var validatorsForType = map[v1alpha1.ValueType]validateFns{
 	v1alpha1.ValueTypeBoolean: {validateFormatBoolean},
 }
 
-func ValidateResolvedValues(manifest v1alpha1.PackageManifest, values map[string]string) (err error) {
+func validate(manifest v1alpha1.PackageManifest, values map[string]validationTarget) (err error) {
 	namesFromDef := make(map[string]struct{})
 	for name, def := range manifest.ValueDefinitions {
 		namesFromDef[name] = struct{}{}
 		if validators, ok := validatorsForType[def.Type]; !ok {
 			multierr.AppendInto(&err, NewValidationError(name, NewValueTypeError(def.Type)))
-		} else if value, ok := values[name]; ok {
-			multierr.AppendInto(&err, NewValidationError(name, validators.Validate(def, value)))
+		} else if value, ok := values[name]; ok && !value.Skip() {
+			multierr.AppendInto(&err, NewValidationError(name, validators.Validate(def, value.Get())))
 		} else if def.Constraints.Required {
 			multierr.AppendInto(&err, NewValidationError(name, ErrConstraintRequired))
 		}
@@ -117,4 +117,62 @@ func ValidateResolvedValues(manifest v1alpha1.PackageManifest, values map[string
 		}
 	}
 	return
+}
+
+type validationTarget interface {
+	Get() string
+	Skip() bool
+}
+
+type acutalValue string
+
+func (v acutalValue) Get() string {
+	return string(v)
+}
+
+func (v acutalValue) Skip() bool {
+	return false
+}
+
+type noopValue struct{}
+
+func (noopValue) Get() string {
+	return ""
+}
+
+func (noopValue) Skip() bool {
+	return true
+}
+
+func targetsForResolvedValues(values map[string]string) map[string]validationTarget {
+	result := make(map[string]validationTarget)
+	for name, value := range values {
+		result[name] = acutalValue(value)
+	}
+	return result
+}
+
+func targetsForPackage(pkg *v1alpha1.Package) map[string]validationTarget {
+	result := make(map[string]validationTarget)
+	for name, value := range pkg.Spec.Values {
+		if value.Value != nil {
+			result[name] = acutalValue(*value.Value)
+		} else {
+			// reference values should be skipped
+			result[name] = noopValue{}
+		}
+	}
+	return result
+}
+
+func ValidateResolvedValues(manifest v1alpha1.PackageManifest, values map[string]string) error {
+	return validate(manifest, targetsForResolvedValues(values))
+}
+
+// ValidatePackage performs a partial validation of a packages value configurations.
+// Reference values are **not resolved**, so constraint validation is skipped for
+// these values. If instead you want to validate **all** values, please resolve all
+// references first, using a Resolver instance, and then use ValidateResolvedValues.
+func ValidatePackage(manifest v1alpha1.PackageManifest, pkg *v1alpha1.Package) error {
+	return validate(manifest, targetsForPackage(pkg))
 }
