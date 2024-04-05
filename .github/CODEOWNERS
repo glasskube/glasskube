@@ -2,3 +2,10 @@
 
 website/ @pmig
 *.md @pmig
+
+# no codeowners to allow auto merging dependency updates
+**/package.json
+**/package-lock.json
+**/go.mod
+**/go.sum
+.github/workflows/*.yaml
