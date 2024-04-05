@@ -10,12 +10,15 @@ import (
 	clientadapter "github.com/glasskube/glasskube/internal/adapter/goclient"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/dependency"
+	"github.com/glasskube/glasskube/internal/manifestvalues"
+	"github.com/glasskube/glasskube/internal/manifestvalues/cli"
 	"github.com/glasskube/glasskube/internal/repo"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/condition"
 	"github.com/glasskube/glasskube/pkg/install"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/spf13/cobra"
+	"k8s.io/client-go/kubernetes"
 )
 
 var installCmdOptions = struct {
@@ -36,10 +39,16 @@ var installCmd = &cobra.Command{
 		ctx := cmd.Context()
 		config := client.RawConfigFromContext(ctx)
 		pkgClient := client.FromContext(ctx)
+		k8sClient := kubernetes.NewForConfigOrDie(client.ConfigFromContext(ctx))
 		dm := dependency.NewDependencyManager(clientadapter.NewPackageClientAdapter(pkgClient))
+		valueResolver := manifestvalues.NewResolver(
+			clientadapter.NewPackageClientAdapter(pkgClient),
+			clientadapter.NewKubernetesClientAdapter(*k8sClient),
+		)
 		installer := install.NewInstaller(pkgClient).WithStatusWriter(statuswriter.Spinner())
 		bold := color.New(color.Bold).SprintFunc()
 		packageName := args[0]
+		pkgBuilder := client.PackageBuilder(packageName)
 
 		if installCmdOptions.Version == "" {
 			var packageIndex repo.PackageIndex
@@ -51,6 +60,8 @@ var installCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "Version not specified. The latest version %v of %v will be installed.\n",
 				installCmdOptions.Version, packageName)
 		}
+
+		pkgBuilder.WithVersion(installCmdOptions.Version)
 
 		installationPlan := []dependency.Requirement{
 			{PackageWithVersion: dependency.PackageWithVersion{Name: packageName, Version: installCmdOptions.Version}},
@@ -70,6 +81,17 @@ var installCmd = &cobra.Command{
 			os.Exit(1)
 		} else if len(validationResult.Requirements) > 0 {
 			installationPlan = append(installationPlan, validationResult.Requirements...)
+		} else if values, err := cli.Configure(manifest, nil); err != nil {
+			cancel()
+		} else {
+			if len(values) > 0 {
+				fmt.Fprintln(os.Stderr, bold("Configuration:"))
+				printValueConfigurations(os.Stderr, values)
+				if _, err := valueResolver.Resolve(ctx, values); err != nil {
+					fmt.Fprintf(os.Stderr, "⚠️  Some values can not be resolved: %v\n", err)
+				}
+			}
+			pkgBuilder.WithValues(values)
 		}
 
 		if !installCmdOptions.EnableAutoUpdates && !installCmdOptions.Yes {
@@ -78,6 +100,8 @@ var installCmd = &cobra.Command{
 			}
 		}
 
+		pkgBuilder.WithAutoUpdates(installCmdOptions.EnableAutoUpdates)
+
 		fmt.Fprintln(os.Stderr, bold("Summary:"))
 		fmt.Fprintf(os.Stderr, " * The following packages will be installed in your cluster (%v):\n", config.CurrentContext)
 		for i, p := range installationPlan {
@@ -85,7 +109,6 @@ var installCmd = &cobra.Command{
 		}
 		if installCmdOptions.EnableAutoUpdates {
 			fmt.Fprintln(os.Stderr, " * Automatic updates will be", bold("enabled"))
-
 		} else {
 			fmt.Fprintln(os.Stderr, " * Automatic updates will be", bold("not enabled"))
 		}
@@ -95,8 +118,7 @@ var installCmd = &cobra.Command{
 		}
 
 		if installCmdOptions.NoWait {
-			if err := installer.Install(
-				ctx, packageName, installCmdOptions.Version, nil, installCmdOptions.EnableAutoUpdates); err != nil {
+			if err := installer.Install(ctx, pkgBuilder.Build()); err != nil {
 				fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
 				os.Exit(1)
 			}
@@ -105,8 +127,7 @@ var installCmd = &cobra.Command{
 					"💡 Run \"glasskube describe %v\" to get the current status",
 				packageName, packageName)
 		} else {
-			status, err := installer.InstallBlocking(ctx, packageName, installCmdOptions.Version, nil,
-				installCmdOptions.EnableAutoUpdates)
+			status, err := installer.InstallBlocking(ctx, pkgBuilder.Build())
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
 				os.Exit(1)
@@ -128,7 +149,7 @@ var installCmd = &cobra.Command{
 }
 
 func cancel() {
-	fmt.Fprintln(os.Stderr, "❌ Installation cancelled.")
+	fmt.Fprintln(os.Stderr, "❌ Operation cancelled.")
 	os.Exit(1)
 }
 

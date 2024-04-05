@@ -455,9 +455,13 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 		s.respondAlertAndLog(w, err, "An error occurred parsing the form", "danger")
 		return
 	} else if pkg == nil {
+		pkg = client.PackageBuilder(pkgName).
+			WithVersion(selectedVersion).
+			WithAutoUpdates(strings.ToLower(enableAutoUpdate) == "on").
+			Build()
 		err := install.NewInstaller(s.pkgClient).
 			WithStatusWriter(statuswriter.Stderr()).
-			Install(r.Context(), pkgName, selectedVersion, values, strings.ToLower(enableAutoUpdate) == "on")
+			Install(r.Context(), pkg)
 		if err != nil {
 			s.respondAlertAndLog(w, err, "An error occurred installing "+pkgName, "danger")
 			return
