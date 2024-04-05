@@ -2,12 +2,14 @@ package cmd
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
 	"github.com/fatih/color"
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clientutils"
+	"github.com/glasskube/glasskube/internal/manifestvalues"
 	"github.com/glasskube/glasskube/internal/repo"
 
 	"github.com/glasskube/glasskube/internal/cliutils"
@@ -62,6 +64,12 @@ var describeCmd = &cobra.Command{
 			fmt.Println(bold("Long Description:"))
 			fmt.Println(trimmedDescription)
 		}
+
+		if pkg != nil && len(pkg.Spec.Values) > 0 {
+			fmt.Println()
+			fmt.Println(bold("Configuration:"))
+			printValueConfigurations(os.Stdout, pkg.Spec.Values)
+		}
 	},
 }
 
@@ -114,6 +122,12 @@ func printReferences(pkg *v1alpha1.Package, manifest *v1alpha1.PackageManifest, 
 	}
 	for _, ref := range manifest.References {
 		fmt.Printf(" * %v: %v\n", ref.Label, ref.Url)
+	}
+}
+
+func printValueConfigurations(w io.Writer, values map[string]v1alpha1.ValueConfiguration) {
+	for name, value := range values {
+		fmt.Fprintf(w, " * %v: %v\n", name, manifestvalues.ValueAsString(value))
 	}
 }
 

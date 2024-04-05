@@ -84,7 +84,7 @@ var (
 
 type validateFns []validateFn
 
-func (v *validateFns) Validate(def v1alpha1.ValueDefinition, value string) (err error) {
+func (v *validateFns) validate(def v1alpha1.ValueDefinition, value string) (err error) {
 	for _, fn := range *v {
 		multierr.AppendInto(&err, fn(def, value))
 	}
@@ -102,11 +102,9 @@ func validate(manifest v1alpha1.PackageManifest, values map[string]validationTar
 	namesFromDef := make(map[string]struct{})
 	for name, def := range manifest.ValueDefinitions {
 		namesFromDef[name] = struct{}{}
-		if validators, ok := validatorsForType[def.Type]; !ok {
-			multierr.AppendInto(&err, NewValidationError(name, NewValueTypeError(def.Type)))
-		} else if value, ok := values[name]; ok {
+		if value, ok := values[name]; ok {
 			if !value.Skip() {
-				multierr.AppendInto(&err, NewValidationError(name, validators.Validate(def, value.Get())))
+				multierr.AppendInto(&err, ValidateSingle(name, def, value.Get()))
 			}
 		} else if def.Constraints.Required {
 			multierr.AppendInto(&err, NewValidationError(name, ErrConstraintRequired))
@@ -117,6 +115,15 @@ func validate(manifest v1alpha1.PackageManifest, values map[string]validationTar
 		if _, ok := namesFromDef[name]; !ok {
 			multierr.AppendInto(&err, NewValidationError(name, ErrNoDef))
 		}
+	}
+	return
+}
+
+func ValidateSingle(name string, def v1alpha1.ValueDefinition, value string) (err error) {
+	if validators, ok := validatorsForType[def.Type]; !ok {
+		multierr.AppendInto(&err, NewValidationError(name, NewValueTypeError(def.Type)))
+	} else {
+		multierr.AppendInto(&err, NewValidationError(name, validators.validate(def, value)))
 	}
 	return
 }

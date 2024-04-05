@@ -28,16 +28,10 @@ func (obj *installer) WithStatusWriter(sw statuswriter.StatusWriter) *installer 
 
 // InstallBlocking creates a new v1alpha1.Package custom resource in the cluster and waits until
 // the package has either status Ready or Failed.
-func (obj *installer) InstallBlocking(
-	ctx context.Context,
-	packageName,
-	version string,
-	values map[string]v1alpha1.ValueConfiguration,
-	autoUpdates bool,
-) (*client.PackageStatus, error) {
+func (obj *installer) InstallBlocking(ctx context.Context, pkg *v1alpha1.Package) (*client.PackageStatus, error) {
 	obj.status.Start()
 	defer obj.status.Stop()
-	pkg, err := obj.install(ctx, packageName, version, values, autoUpdates)
+	pkg, err := obj.install(ctx, pkg)
 	if err != nil {
 		return nil, err
 	}
@@ -45,34 +39,18 @@ func (obj *installer) InstallBlocking(
 }
 
 // Install creates a new v1alpha1.Package custom resource in the cluster.
-func (obj *installer) Install(
-	ctx context.Context,
-	packageName,
-	version string,
-	values map[string]v1alpha1.ValueConfiguration,
-	autoUpdates bool,
-) error {
+func (obj *installer) Install(ctx context.Context, pkg *v1alpha1.Package) error {
 	obj.status.Start()
 	defer obj.status.Stop()
-	_, err := obj.install(ctx, packageName, version, values, autoUpdates)
+	_, err := obj.install(ctx, pkg)
 	return err
 }
 
 func (obj *installer) install(
 	ctx context.Context,
-	packageName,
-	version string,
-	values map[string]v1alpha1.ValueConfiguration,
-	autoUpdates bool,
+	pkg *v1alpha1.Package,
 ) (*v1alpha1.Package, error) {
-	obj.status.SetStatus(fmt.Sprintf("Installing %v...", packageName))
-	pkg := client.NewPackage(packageName, version)
-	pkg.Spec.Values = values
-	if autoUpdates {
-		pkg.SetLabels(map[string]string{
-			"packages.glasskube.dev/auto-update": "true",
-		})
-	}
+	obj.status.SetStatus(fmt.Sprintf("Installing %v...", pkg.Name))
 	err := obj.client.Packages().Create(ctx, pkg)
 	if err != nil {
 		return nil, err

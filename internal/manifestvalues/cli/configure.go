@@ -1,0 +1,231 @@
+package cli
+
+import (
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+
+	"github.com/fatih/color"
+	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/cliutils"
+	"github.com/glasskube/glasskube/internal/manifestvalues"
+	"github.com/glasskube/glasskube/internal/maputils"
+)
+
+var (
+	referenceValueStr   = "Reference value"
+	literalValueStr     = "Literal value"
+	valueKinds          = []string{referenceValueStr, literalValueStr}
+	configMapStr        = "ConfigMap"
+	secretStr           = "Secret"
+	packageStr          = "Package"
+	referenceValueKinds = []string{configMapStr, secretStr, packageStr}
+)
+
+var (
+	bold  = color.New(color.Bold).SprintfFunc()
+	faint = color.New(color.Faint).SprintfFunc()
+	green = color.GreenString
+	red   = color.RedString
+)
+
+func Configure(
+	manifest v1alpha1.PackageManifest,
+	oldValues map[string]v1alpha1.ValueConfiguration,
+) (map[string]v1alpha1.ValueConfiguration, error) {
+	newValues := make(map[string]v1alpha1.ValueConfiguration, len(manifest.ValueDefinitions))
+	if len(manifest.ValueDefinitions) > 0 {
+		fmt.Fprintf(os.Stderr, "\n%v has %v values for configuration.\n\n",
+			manifest.Name, len(manifest.ValueDefinitions))
+	}
+
+	// TODO: Preserve the order of value definitions set by the author.
+	//  This is currently not possible because the kubernetes-sigs/yaml package
+	//  converts everything to an interface{} before converting to the target type,
+	//  so even if we would use an alternative map implementation that preserves the
+	//  order of keys, they would still be different from the original.
+	//  Related issue: https://github.com/kubernetes-sigs/yaml/issues/88
+	for i, name := range maputils.KeysSorted(manifest.ValueDefinitions) {
+		def := manifest.ValueDefinitions[name]
+		var oldValuePtr *v1alpha1.ValueConfiguration
+		if oldValue, ok := oldValues[name]; ok {
+			oldValuePtr = &oldValue
+		}
+		if newValue, err := ConfigureSingle(name, def, oldValuePtr); err != nil {
+			return nil, err
+		} else if newValue != nil {
+			newValues[name] = *newValue
+		}
+		fmt.Fprintf(os.Stderr, "\nProgress: %v%v\n\n",
+			green(strings.Repeat("✔", i+1)),
+			faint(strings.Repeat("·", len(manifest.ValueDefinitions)-(i+1))),
+		)
+	}
+	return newValues, nil
+}
+
+func ConfigureSingle(
+	name string,
+	def v1alpha1.ValueDefinition,
+	oldValue *v1alpha1.ValueConfiguration,
+) (*v1alpha1.ValueConfiguration, error) {
+	for {
+		printHeader(name, def)
+
+		if oldValue != nil {
+			fmt.Fprintln(os.Stderr, "Old value:", manifestvalues.ValueAsString(*oldValue))
+			if cliutils.YesNoPrompt("Keep?", true) {
+				return oldValue, nil
+			}
+		}
+
+		var newValue v1alpha1.ValueConfiguration
+		var err error
+
+		useDefault := len(def.DefaultValue) > 0
+		if useDefault {
+			fmt.Fprintln(os.Stderr, "Default:", def.DefaultValue)
+			useDefault = cliutils.YesNoPrompt("Use default?", true)
+		}
+
+		if useDefault {
+			newValue.Value = &def.DefaultValue
+		} else {
+			fmt.Fprintln(os.Stderr, "Would you like to specify a reference value (ConfigMap, Secret, Package) or literal value?")
+			var opt string
+			if opt, err = getOptionWithDefault(valueKinds, &literalValueStr); err == nil {
+				switch opt {
+				case referenceValueStr:
+					newValue.ValueFrom, err = getReferenceValue()
+				case literalValueStr:
+					newValue.Value, err = getLiteralValue(name, def)
+				default:
+					err = fmt.Errorf("invalid option: %v", opt)
+				}
+			}
+		}
+
+		// Skip validation if we have a reference value.
+		// They should be resolved all at once at a later time.
+		if err == nil && newValue.Value != nil {
+			err = manifestvalues.ValidateSingle(name, def, *newValue.Value)
+		}
+
+		if err == nil {
+			return &newValue, nil
+		}
+
+		fmt.Fprintln(os.Stderr, red("Invalid input:"), err)
+		if !cliutils.YesNoPrompt("Try again?", true) {
+			return nil, err
+		}
+	}
+}
+
+func printHeader(name string, def v1alpha1.ValueDefinition) {
+	title := name
+	if len(def.Metadata.Label) > 0 {
+		title = def.Metadata.Label
+	}
+	fmt.Fprintln(os.Stderr, bold(title))
+	if len(def.Metadata.Description) > 0 {
+		fmt.Fprintln(os.Stderr, def.Metadata.Description)
+	}
+}
+
+func getLiteralValue(name string, def v1alpha1.ValueDefinition) (*string, error) {
+	switch def.Type {
+	case v1alpha1.ValueTypeOptions:
+		if len(def.Options) == 0 {
+			// retry makes no sense in this case, we can return an error
+			return nil, fmt.Errorf("%v has no options", name)
+		}
+		if v, err := getOption(def.Options); err != nil {
+			return nil, err
+		} else {
+			return &v, nil
+		}
+	default:
+		fmt.Fprintln(os.Stderr, "Please enter a value:")
+		v := getInput(def.Type)
+		return &v, nil
+	}
+}
+
+func getReferenceValue() (*v1alpha1.ValueReference, error) {
+	if opt, err := getOption(referenceValueKinds); err != nil {
+		return nil, err
+	} else {
+		switch opt {
+		case configMapStr:
+			fmt.Fprintln(os.Stderr, "Specify the namespace and name and key of the ConfigMap data")
+			return &v1alpha1.ValueReference{ConfigMapRef: getObjectKeyValueSource()}, nil
+		case secretStr:
+			fmt.Fprintln(os.Stderr, "Specify the namespace and name and key of the Secret data")
+			return &v1alpha1.ValueReference{SecretRef: getObjectKeyValueSource()}, nil
+		case packageStr:
+			fmt.Fprintln(os.Stderr, "Specify the name and value of the Package")
+			return &v1alpha1.ValueReference{PackageRef: getPackageValueSource()}, nil
+		default:
+			return nil, fmt.Errorf("invalid option: %v (this is a bug)", opt)
+		}
+	}
+}
+
+func getObjectKeyValueSource() *v1alpha1.ObjectKeyValueSource {
+	var ref v1alpha1.ObjectKeyValueSource
+	ref.Namespace = getInputStr("namespace")
+	ref.Name = getInputStr("name")
+	ref.Key = getInputStr("key")
+	return &ref
+}
+
+func getPackageValueSource() *v1alpha1.PackageValueSource {
+	var ref v1alpha1.PackageValueSource
+	ref.Name = getInputStr("name")
+	ref.Value = getInputStr("value")
+	return &ref
+}
+
+func getInput(t v1alpha1.ValueType) string {
+	return getInputStr(string(t))
+}
+
+func getInputStr(s string) (input string) {
+	fmt.Fprintf(os.Stderr, "%v> ", s)
+	fmt.Scanln(&input)
+	return
+}
+
+func getOption(options []string) (string, error) {
+	return getOptionWithDefault(options, nil)
+}
+
+func getOptionWithDefault(options []string, defaultOption *string) (string, error) {
+	printOptions(options, defaultOption)
+	iStr := getInput(v1alpha1.ValueTypeOptions)
+	if len(iStr) == 0 && defaultOption != nil {
+		return *defaultOption, nil
+	} else if i, err := strconv.Atoi(iStr); err != nil {
+		return "", err
+	} else {
+		i-- // index is entered with offset 1
+		if 0 <= i && i < len(options) {
+			return options[i], nil
+		} else {
+			return "", fmt.Errorf("%v is not a valid option", i+1)
+		}
+	}
+}
+
+func printOptions(options []string, defaultOption *string) {
+	msg := "Enter the number of one of the following"
+	if defaultOption != nil {
+		msg += fmt.Sprintf(" (default: %v)", *defaultOption)
+	}
+	fmt.Fprintln(os.Stderr, msg+":")
+	for i, opt := range options {
+		fmt.Fprintf(os.Stderr, "%v) %v\n", i+1, opt)
+	}
+}
