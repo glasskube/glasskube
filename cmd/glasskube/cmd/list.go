@@ -8,6 +8,7 @@ import (
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
+	"github.com/glasskube/glasskube/internal/semver"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/list"
 	"github.com/spf13/cobra"
@@ -129,7 +130,7 @@ func versionString(pkg list.PackageWithStatus) string {
 			if statusVersion != specVersion {
 				versionAddons = append(versionAddons, fmt.Sprintf("%v desired", specVersion))
 			}
-			if repoVersion != "" && statusVersion != repoVersion {
+			if repoVersion != "" && !semver.IsUpgradable(repoVersion, statusVersion) && statusVersion != repoVersion {
 				versionAddons = append(versionAddons, fmt.Sprintf("%v available", repoVersion))
 			}
 			if len(versionAddons) > 0 {
