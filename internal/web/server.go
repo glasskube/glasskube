@@ -18,6 +18,7 @@ import (
 	"syscall"
 
 	clientadapter "github.com/glasskube/glasskube/internal/adapter/goclient"
+	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/dependency"
 
@@ -133,6 +134,7 @@ func (s *server) broadcastPkg(pkg *v1alpha1.Package, status *client.PackageStatu
 			s.wsHub.Broadcast <- bf.Bytes()
 		}
 	}()
+
 	go func() {
 		var bf bytes.Buffer
 		err := pkg_detail_btns.Render(&bf, pkgDetailBtnsTmpl, pkg, status, installedManifest, updateAvailable)
@@ -429,6 +431,7 @@ func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 	pkgName := mux.Vars(r)["pkgName"]
 	pkg, status, manifest, latestVersion, err := describe.DescribePackage(r.Context(), pkgName)
+	autoUpdate := clientutils.AutoUpdateString(pkg, "Disabled")
 	if err != nil {
 		err = fmt.Errorf("An error occurred fetching package details of %v: %w\n", pkgName, err)
 		fmt.Fprintf(os.Stderr, "%v\n", err)
@@ -448,6 +451,7 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 		"Manifest":        manifest,
 		"LatestVersion":   latestVersion,
 		"UpdateAvailable": pkg != nil && s.isUpdateAvailable(r.Context(), pkgName),
+		"AutoUpdate":      autoUpdate,
 	})
 	checkTmplError(err, fmt.Sprintf("package-detail (%s)", pkgName))
 }
