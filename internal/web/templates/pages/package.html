@@ -83,6 +83,11 @@
               <i>Installed version: {{ .Package.Status.Version }}</i>
             </div>
           {{ end }}
+          {{ if .AutoUpdate }}
+            <div class="my-1">
+              <i>Auto-Update: {{ .AutoUpdate }}</i>
+            </div>
+          {{ end }}
         </div>
         {{ if ne .Manifest.Dependencies nil }}
           <div class="mt-3">

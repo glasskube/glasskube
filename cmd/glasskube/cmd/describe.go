@@ -7,6 +7,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/repo"
 
 	"github.com/glasskube/glasskube/internal/cliutils"
@@ -36,7 +37,7 @@ var describeCmd = &cobra.Command{
 		fmt.Println(bold("Version:"), version(pkg, latestVersion))
 		fmt.Println(bold("Status: "), status(pkgStatus))
 		if pkg != nil {
-			fmt.Println(bold("Auto-Update:"), autoUpdateString(pkg, "Disabled"))
+			fmt.Println(bold("Auto-Update:"), clientutils.AutoUpdateString(pkg, "Disabled"))
 		}
 
 		if len(manifest.Entrypoints) > 0 {
