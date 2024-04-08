@@ -65,6 +65,50 @@ func (c *updater) WithStatusWriter(writer statuswriter.StatusWriter) *updater {
 	return c
 }
 
+func (c *updater) PrepareForVersion(
+	ctx context.Context,
+	pkgName string,
+	pkgVersion string) (*UpdateTransaction, error) {
+	c.status.Start()
+	defer c.status.Stop()
+	c.status.SetStatus("Collecting installed package")
+
+	var pkg v1alpha1.Package
+	if err := c.client.Packages().Get(ctx, pkgName, &pkg); err != nil {
+		return nil, fmt.Errorf("failed to get package %v: %v", pkgName, err)
+	}
+
+	c.status.SetStatus("Updating package index")
+	var index repo.PackageRepoIndex
+	if err := repo.FetchPackageRepoIndex("", &index); err != nil {
+		return nil, fmt.Errorf("failed to fetch index: %v", err)
+	}
+
+	var tx UpdateTransaction
+	for _, indexItem := range index.Packages {
+		if indexItem.Name == pkg.Name {
+			if !semver.IsUpgradable(pkg.Spec.PackageInfo.Version, pkgVersion) {
+				return nil, fmt.Errorf("can't update to downgraded version or equal version")
+			}
+			item := updateTransactionItem{Package: pkg, Version: pkgVersion}
+			var manifest v1alpha1.PackageManifest
+			if err := repo.FetchPackageManifest("", pkg.Name, pkgVersion, &manifest); err != nil {
+				return nil, err
+			}
+			if result, err := c.dm.Validate(ctx, &manifest, pkgVersion); err != nil {
+				return nil, err
+			} else if len(result.Conflicts) > 0 {
+				tx.ConflictItems = append(tx.ConflictItems, updateTransactionItemConflict{item, result.Conflicts})
+			} else {
+				tx.Items = append(tx.Items, item)
+			}
+			break
+		}
+	}
+
+	return &tx, nil
+}
+
 func (c *updater) Prepare(ctx context.Context, packageNames []string) (*UpdateTransaction, error) {
 	c.status.Start()
 	defer c.status.Stop()
