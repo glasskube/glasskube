@@ -130,7 +130,7 @@ func versionString(pkg list.PackageWithStatus) string {
 			if statusVersion != specVersion {
 				versionAddons = append(versionAddons, fmt.Sprintf("%v desired", specVersion))
 			}
-			if repoVersion != "" && semver.IsUpgradable(statusVersion, repoVersion) && statusVersion != repoVersion {
+			if repoVersion != "" && semver.IsUpgradable(statusVersion, repoVersion) {
 				versionAddons = append(versionAddons, fmt.Sprintf("%v available", repoVersion))
 			}
 			if len(versionAddons) > 0 {
