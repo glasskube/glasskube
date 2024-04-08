@@ -104,8 +104,10 @@ func validate(manifest v1alpha1.PackageManifest, values map[string]validationTar
 		namesFromDef[name] = struct{}{}
 		if validators, ok := validatorsForType[def.Type]; !ok {
 			multierr.AppendInto(&err, NewValidationError(name, NewValueTypeError(def.Type)))
-		} else if value, ok := values[name]; ok && !value.Skip() {
-			multierr.AppendInto(&err, NewValidationError(name, validators.Validate(def, value.Get())))
+		} else if value, ok := values[name]; ok {
+			if !value.Skip() {
+				multierr.AppendInto(&err, NewValidationError(name, validators.Validate(def, value.Get())))
+			}
 		} else if def.Constraints.Required {
 			multierr.AppendInto(&err, NewValidationError(name, ErrConstraintRequired))
 		}
