@@ -274,7 +274,7 @@ export default function PackagePage(): JSX.Element {
         <PackagesHeader/>
         <PackagesFilters/>
         <div
-          style={{display: 'flex', marginLeft: 'auto'}}
+          style={{display: 'flex', marginLeft: 'auto', justifyContent: 'center'}}
           className="container">
           <SearchBar/>
         </div>
