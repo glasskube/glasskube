@@ -17,6 +17,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var updateCmdOptions struct {
+	Version string
+}
+
 var updateCmd = &cobra.Command{
 	Use:               "update [packages...]",
 	Short:             "Update some or all packages in your cluster",
@@ -29,20 +33,33 @@ var updateCmd = &cobra.Command{
 		updater := update.NewUpdater(client).
 			WithStatusWriter(statuswriter.Spinner())
 
-		tx, err := updater.Prepare(ctx, packageNames)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "❌ update preparation failed: %v\n", err)
+		var tx *update.UpdateTransaction
+		var err error
+
+		if updateCmdOptions.Version != "" && len(args) > 1 {
+			fmt.Fprintf(os.Stderr, "Only accepts one package at a time\n")
 			os.Exit(1)
 		}
+		if len(args) == 1 && updateCmdOptions.Version != "" {
+			tx, err = updater.PrepareForVersion(ctx, args[0], updateCmdOptions.Version)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error in updating the package version : %v\n", err)
+				os.Exit(1)
+			}
+		} else {
+			tx, err = updater.Prepare(ctx, packageNames)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "❌ update preparation failed: %v\n", err)
+				os.Exit(1)
+			}
+		}
 
-		printTransaction(*tx)
-
-		if !tx.IsEmpty() {
+		if tx != nil && !tx.IsEmpty() {
+			printTransaction(*tx)
 			if !cliutils.YesNoPrompt("Do you want to apply these updates?", false) {
 				fmt.Fprintf(os.Stderr, "⛔ Update cancelled. No changes were made.\n")
 				os.Exit(0)
 			}
-
 			if err := updater.Apply(ctx, tx); err != nil {
 				fmt.Fprintf(os.Stderr, "❌ update failed: %v\n", err)
 				os.Exit(1)
@@ -101,5 +118,7 @@ func completeInstalledPackageNames(
 }
 
 func init() {
+	updateCmd.PersistentFlags().StringVarP(&updateCmdOptions.Version, "version", "v", "",
+		"update to a specific version")
 	RootCmd.AddCommand(updateCmd)
 }
