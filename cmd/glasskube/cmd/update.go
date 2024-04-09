@@ -19,6 +19,7 @@ import (
 
 var updateCmdOptions struct {
 	Version string
+	Yes     bool
 }
 
 var updateCmd = &cobra.Command{
@@ -56,7 +57,7 @@ var updateCmd = &cobra.Command{
 
 		if tx != nil && !tx.IsEmpty() {
 			printTransaction(*tx)
-			if !cliutils.YesNoPrompt("Do you want to apply these updates?", false) {
+			if !updateCmdOptions.Yes && !cliutils.YesNoPrompt("Do you want to apply these updates?", false) {
 				fmt.Fprintf(os.Stderr, "⛔ Update cancelled. No changes were made.\n")
 				os.Exit(0)
 			}
@@ -120,5 +121,7 @@ func completeInstalledPackageNames(
 func init() {
 	updateCmd.PersistentFlags().StringVarP(&updateCmdOptions.Version, "version", "v", "",
 		"update to a specific version")
+	updateCmd.PersistentFlags().BoolVarP(&updateCmdOptions.Yes, "yes", "y", false,
+		"do not ask for any confirmation")
 	RootCmd.AddCommand(updateCmd)
 }
