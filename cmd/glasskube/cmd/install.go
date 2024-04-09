@@ -22,6 +22,7 @@ var installCmdOptions = struct {
 	Version           string
 	EnableAutoUpdates bool
 	NoWait            bool
+	Yes               bool
 }{}
 
 var installCmd = &cobra.Command{
@@ -72,7 +73,7 @@ var installCmd = &cobra.Command{
 		}
 
 		if !installCmdOptions.EnableAutoUpdates {
-			if cliutils.YesNoPrompt("Would you like to enable automatic updates?", false) {
+			if installCmdOptions.Yes || cliutils.YesNoPrompt("Would you like to enable automatic updates?", false) {
 				installCmdOptions.EnableAutoUpdates = true
 			}
 		}
@@ -89,7 +90,7 @@ var installCmd = &cobra.Command{
 			fmt.Fprintln(os.Stderr, " * Automatic updates will be", bold("not enabled"))
 		}
 
-		if !cliutils.YesNoPrompt("Continue?", true) {
+		if !installCmdOptions.Yes && !cliutils.YesNoPrompt("Continue?", true) {
 			cancel()
 		}
 
@@ -183,6 +184,7 @@ func init() {
 	installCmd.PersistentFlags().BoolVar(&installCmdOptions.EnableAutoUpdates, "enable-auto-updates", false,
 		"enable automatic updates for this package")
 	installCmd.PersistentFlags().BoolVar(&installCmdOptions.NoWait, "no-wait", false, "perform non-blocking install")
+	installCmd.PersistentFlags().BoolVarP(&installCmdOptions.Yes, "yes", "y", false, "do not ask for any confirmation")
 	installCmd.MarkFlagsMutuallyExclusive("version", "enable-auto-updates")
 	RootCmd.AddCommand(installCmd)
 }
