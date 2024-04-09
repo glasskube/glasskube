@@ -29,7 +29,7 @@ SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
 
 .PHONY: all
-all: tidy fmt vet lint schema-gen build build-cert build-cli test
+all: tidy fmt lint schema-gen build build-cert build-cli test
 
 ##@ General
 
@@ -81,7 +81,7 @@ lint: lint-go lint-web
 lint-fix: lint-go-fix lint-web-fix
 
 .PHONY: test
-test: manifests generate fmt vet envtest ## Run tests.
+test: manifests generate fmt lint-go envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" $(GOCMD) test ./... -coverprofile cover.out
 
 GOLANGCI_LINT = $(shell pwd)/bin/golangci-lint
@@ -103,23 +103,23 @@ lint-go-fix: golangci-lint ## Run golangci-lint linter and perform fixes
 ##@ Build
 
 .PHONY: build
-build: manifests generate fmt vet lint-go ## Build manager binary.
+build: manifests generate fmt lint-go ## Build manager binary.
 	$(GOCMD) build -o $(OUT_DIR)/package-operator ./cmd/package-operator/
 
 .PHONY: build-cert
-build-cert: manifests generate fmt vet lint-go ## Build manager binary.
+build-cert: manifests generate fmt lint-go ## Build manager binary.
 	$(GOCMD) build -o $(OUT_DIR)/cert-manager ./cmd/cert-manager/
 
 .PHONY: build-cli
-build-cli: fmt vet lint-go lint-web web ## Build cli binary.
+build-cli: fmt lint-go lint-web web ## Build cli binary.
 	$(GOCMD) build -o $(OUT_DIR)/glasskube ./cmd/glasskube/
 
 .PHONY: run
-run: manifests generate fmt vet ## Run a controller from your host.
+run: manifests generate fmt ## Run a controller from your host.
 	$(GOCMD) run ./cmd/package-operator/
 
 .PHONY: cert
-cert: manifests generate fmt vet
+cert: manifests generate fmt
 	$(GOCMD) run ./cmd/cert-manager/ --cert-dir /tmp/k8s-webhook-server/serving-certs
 
 # If you wish to build the manager image targeting other platforms you can use the --platform flag.
