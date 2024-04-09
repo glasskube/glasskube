@@ -91,6 +91,7 @@ func parseTemplates() {
 	pkgUpdateModalTmpl = componentTmpl("pkg-update-modal", "pkg-update-modal.html")
 	pkgUninstallModalTmpl = componentTmpl("pkg-uninstall-modal", "pkg-uninstall-modal.html")
 	alertTmpl = componentTmpl("alert", "alert.html")
+	componentTmpl("version-mismatch-warning", "version-mismatch-warning.html")
 }
 
 func pageTmpl(fileName string) *template.Template {

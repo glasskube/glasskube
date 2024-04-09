@@ -61,6 +61,9 @@
         {{ if .Error }}
           {{ template "alert" .Error | ForAlert }}
         {{ end }}
+        {{ if .VersionMismatchWarning }}
+          {{ template "version-mismatch-warning" .VersionMismatchWarning }}
+        {{ end }}
       </div>
 
       {{ template "body" . }}

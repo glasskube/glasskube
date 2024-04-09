@@ -17,6 +17,8 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/Masterminds/semver/v3"
+
 	clientadapter "github.com/glasskube/glasskube/internal/adapter/goclient"
 	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/config"
@@ -418,13 +420,11 @@ func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 		packageUpdateAvailable[pkg.Name] = pkg.Package != nil && s.isUpdateAvailable(r.Context(), pkg.Name)
 	}
 
-	err = pkgsPageTmpl.Execute(w, &map[string]any{
-		"Error":                  err,
-		"CurrentContext":         s.rawConfig.CurrentContext,
+	err = pkgsPageTmpl.Execute(w, s.enrichWithErrorAndWarnings(r.Context(), map[string]any{
 		"Packages":               packages,
 		"PackageUpdateAvailable": packageUpdateAvailable,
 		"UpdatesAvailable":       s.isUpdateAvailable(r.Context()),
-	})
+	}, err))
 	checkTmplError(err, "packages")
 }
 
@@ -443,16 +443,14 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(os.Stderr, "%v\n", err)
 		}
 	}
-	err = pkgPageTmpl.Execute(w, &map[string]any{
-		"Error":           err,
-		"CurrentContext":  s.rawConfig.CurrentContext,
+	err = pkgPageTmpl.Execute(w, s.enrichWithErrorAndWarnings(r.Context(), map[string]any{
 		"Package":         pkg,
 		"Status":          status,
 		"Manifest":        manifest,
 		"LatestVersion":   latestVersion,
 		"UpdateAvailable": pkg != nil && s.isUpdateAvailable(r.Context(), pkgName),
 		"AutoUpdate":      autoUpdate,
-	})
+	}, err))
 	checkTmplError(err, fmt.Sprintf("package-detail (%s)", pkgName))
 }
 
@@ -533,6 +531,39 @@ func (s *server) kubeconfigPage(w http.ResponseWriter, r *http.Request) {
 		"DefaultKubeconfigExists":   defaultKubeconfigExists(),
 	})
 	checkTmplError(tplErr, "kubeconfig")
+}
+
+func (s *server) enrichWithErrorAndWarnings(ctx context.Context, data map[string]any, err error) map[string]any {
+	data["Error"] = err
+	data["CurrentContext"] = s.rawConfig.CurrentContext
+	if operatorVersion, clientVersion, err := s.getGlasskubeVersions(ctx); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to check for version mismatch: %v\n", err)
+	} else if operatorVersion != nil && clientVersion != nil && !operatorVersion.Equal(clientVersion) {
+		data["VersionMismatchWarning"] = map[string]any{
+			"OperatorVersion":     operatorVersion.String(),
+			"ClientVersion":       clientVersion.String(),
+			"NeedsOperatorUpdate": operatorVersion.LessThan(clientVersion),
+		}
+	}
+	return data
+}
+
+func (server *server) getGlasskubeVersions(ctx context.Context) (*semver.Version, *semver.Version, error) {
+	if !config.IsDevBuild() {
+		if operatorVersion, err := clientutils.GetPackageOperatorVersion(ctx); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to check package operator version: %v\n", err)
+			return nil, nil, err
+		} else if parsedOperator, err := semver.NewVersion(operatorVersion); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to parse operator version %v: %v\n", operatorVersion, err)
+			return nil, nil, err
+		} else if parsedClient, err := semver.NewVersion(config.Version); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to parse client version %v: %v\n", config.Version, err)
+			return nil, nil, err
+		} else {
+			return parsedOperator, parsedClient, nil
+		}
+	}
+	return nil, nil, nil
 }
 
 func (s *server) persistKubeconfig(w http.ResponseWriter, r *http.Request) {

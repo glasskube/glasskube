@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/glasskube/glasskube/internal/clientutils"
+
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/config"
 	"github.com/spf13/cobra"
@@ -17,7 +19,7 @@ var versioncmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		glasskubeVersion := config.Version
 		fmt.Fprintf(os.Stderr, "glasskube: v%s\n", glasskubeVersion)
-		operatorVersion, err := cliutils.GetPackageOperatorVersion(cmd.Context())
+		operatorVersion, err := clientutils.GetPackageOperatorVersion(cmd.Context())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "✗ no deployments found in the glasskube-system namespace\n")
 		} else {
