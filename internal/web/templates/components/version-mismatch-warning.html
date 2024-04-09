@@ -1,0 +1,16 @@
+{{ define "version-mismatch-warning" }}
+  <div class="alert alert-warning alert-dismissible" role="alert">
+    <div>
+      {{ if .NeedsOperatorUpdate }}
+        <i class="bi bi-exclamation-triangle-fill"></i> Glasskube cluster version ({{ .OperatorVersion }}) does not
+        match your client version ({{ .ClientVersion }}). Please update the cluster components to
+        {{ .ClientVersion }}
+        by running <code>glasskube bootstrap</code>.
+      {{ else }}
+        <i class="bi bi-exclamation-triangle-fill"></i> Glasskube client version ({{ .ClientVersion }}) does not match
+        your cluster components' version ({{ .OperatorVersion }}). Please update your client.
+      {{ end }}
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+{{ end }}
