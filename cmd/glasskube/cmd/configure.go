@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/fatih/color"
 	"github.com/glasskube/glasskube/api/v1alpha1"
@@ -11,17 +10,15 @@ import (
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/manifestvalues"
 	"github.com/glasskube/glasskube/internal/manifestvalues/cli"
+	"github.com/glasskube/glasskube/internal/manifestvalues/flags"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/manifest"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
 )
 
-var configureCmdOptions = struct {
-	values  []string
-	keepOld bool
-}{
-	keepOld: true,
+var configureCmdOptions = struct{ flags.ValuesOptions }{
+	ValuesOptions: flags.NewOptions(flags.WithKeepOldValuesFlag),
 }
 
 var configureCmd = &cobra.Command{
@@ -44,34 +41,29 @@ func runConfigure(cmd *cobra.Command, args []string) {
 	)
 	pkgName := args[0]
 	var pkg v1alpha1.Package
-	var pkgManifest *v1alpha1.PackageManifest
 
 	if err := pkgClient.Packages().Get(ctx, pkgName, &pkg); err != nil {
 		fmt.Fprintf(os.Stderr, "❌ error getting package: %v\n", err)
 		os.Exit(1)
-	} else if pkgManifest, err = manifest.GetInstalledManifestForPackage(ctx, pkg); err != nil {
-		fmt.Fprintf(os.Stderr, "❌ error getting installed manifest: %v\n", err)
-		os.Exit(1)
 	}
 
-	if configureCmdOptions.keepOld {
-		if len(configureCmdOptions.values) > 0 {
-			for name, value := range parseValuesFlag(configureCmdOptions.values) {
-				if pkg.Spec.Values == nil {
-					pkg.Spec.Values = make(map[string]v1alpha1.ValueConfiguration)
-				}
-				pkg.Spec.Values[name] = value
-			}
+	if configureCmdOptions.IsValuesSet() {
+		if values, err := configureCmdOptions.ParseValues(pkg.Spec.Values); err != nil {
+			fmt.Fprintf(os.Stderr, "❌ invalid values in command line flags: %v\n", err)
+			os.Exit(1)
 		} else {
-			if values, err := cli.Configure(*pkgManifest, pkg.Spec.Values); err != nil {
-				fmt.Fprintf(os.Stderr, "❌ error during configure: %v\n", err)
-				os.Exit(1)
-			} else {
-				pkg.Spec.Values = values
-			}
+			pkg.Spec.Values = values
 		}
 	} else {
-		pkg.Spec.Values = parseValuesFlag(configureCmdOptions.values)
+		if pkgManifest, err := manifest.GetInstalledManifestForPackage(ctx, pkg); err != nil {
+			fmt.Fprintf(os.Stderr, "❌ error getting installed manifest: %v\n", err)
+			os.Exit(1)
+		} else if values, err := cli.Configure(*pkgManifest, pkg.Spec.Values); err != nil {
+			fmt.Fprintf(os.Stderr, "❌ error during configure: %v\n", err)
+			os.Exit(1)
+		} else {
+			pkg.Spec.Values = values
+		}
 	}
 
 	fmt.Fprintln(os.Stderr, bold("Configuration:"))
@@ -84,6 +76,11 @@ func runConfigure(cmd *cobra.Command, args []string) {
 		cancel()
 	}
 
+	if err := pkgClient.Packages().Get(ctx, pkgName, &pkg); err != nil {
+		// Don't exit, we can still try to call update ...
+		fmt.Fprintf(os.Stderr, "⚠️  error fetching package: %v\n", err)
+	}
+
 	if err := pkgClient.Packages().Update(ctx, &pkg); err != nil {
 		fmt.Fprintf(os.Stderr, "❌ error updating package: %v\n", err)
 		os.Exit(1)
@@ -92,24 +89,7 @@ func runConfigure(cmd *cobra.Command, args []string) {
 	}
 }
 
-func parseValuesFlag(str []string) map[string]v1alpha1.ValueConfiguration {
-	result := make(map[string]v1alpha1.ValueConfiguration)
-	for _, s := range str {
-		split := strings.SplitN(s, "=", 2)
-		var key, value string
-		key = split[0]
-		if len(split) > 1 {
-			value = split[1]
-		}
-		result[key] = v1alpha1.ValueConfiguration{Value: &value}
-	}
-	return result
-}
-
 func init() {
-	configureCmd.Flags().StringArrayVar(&configureCmdOptions.values, "value", configureCmdOptions.values,
-		"set a value via flag (can be used multiple times)")
-	configureCmd.Flags().BoolVar(&configureCmdOptions.keepOld, "keep-old", configureCmdOptions.keepOld,
-		"set this to false erase any values not specified via --value")
+	configureCmdOptions.ValuesOptions.AddFlagsToCommand(configureCmd)
 	RootCmd.AddCommand(configureCmd)
 }
