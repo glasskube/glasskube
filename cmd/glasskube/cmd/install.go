@@ -12,6 +12,7 @@ import (
 	"github.com/glasskube/glasskube/internal/dependency"
 	"github.com/glasskube/glasskube/internal/manifestvalues"
 	"github.com/glasskube/glasskube/internal/manifestvalues/cli"
+	"github.com/glasskube/glasskube/internal/manifestvalues/flags"
 	"github.com/glasskube/glasskube/internal/repo"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/condition"
@@ -22,11 +23,14 @@ import (
 )
 
 var installCmdOptions = struct {
+	flags.ValuesOptions
 	Version           string
 	EnableAutoUpdates bool
 	NoWait            bool
 	Yes               bool
-}{}
+}{
+	ValuesOptions: flags.NewOptions(),
+}
 
 var installCmd = &cobra.Command{
 	Use:               "install [package-name]",
@@ -81,17 +85,19 @@ var installCmd = &cobra.Command{
 			os.Exit(1)
 		} else if len(validationResult.Requirements) > 0 {
 			installationPlan = append(installationPlan, validationResult.Requirements...)
-		} else if values, err := cli.Configure(manifest, nil); err != nil {
-			cancel()
-		} else {
-			if len(values) > 0 {
-				fmt.Fprintln(os.Stderr, bold("Configuration:"))
-				printValueConfigurations(os.Stderr, values)
-				if _, err := valueResolver.Resolve(ctx, values); err != nil {
-					fmt.Fprintf(os.Stderr, "⚠️  Some values can not be resolved: %v\n", err)
-				}
+		} else if installCmdOptions.IsValuesSet() {
+			if values, err := installCmdOptions.ParseValues(nil); err != nil {
+				fmt.Fprintf(os.Stderr, "❌ invalid values in command line flags: %v\n", err)
+				os.Exit(1)
+			} else {
+				pkgBuilder.WithValues(values)
 			}
-			pkgBuilder.WithValues(values)
+		} else {
+			if values, err := cli.Configure(manifest, nil); err != nil {
+				cancel()
+			} else {
+				pkgBuilder.WithValues(values)
+			}
 		}
 
 		if !installCmdOptions.EnableAutoUpdates && !installCmdOptions.Yes {
@@ -101,6 +107,8 @@ var installCmd = &cobra.Command{
 		}
 
 		pkgBuilder.WithAutoUpdates(installCmdOptions.EnableAutoUpdates)
+
+		pkg := pkgBuilder.Build()
 
 		fmt.Fprintln(os.Stderr, bold("Summary:"))
 		fmt.Fprintf(os.Stderr, " * The following packages will be installed in your cluster (%v):\n", config.CurrentContext)
@@ -113,12 +121,20 @@ var installCmd = &cobra.Command{
 			fmt.Fprintln(os.Stderr, " * Automatic updates will be", bold("not enabled"))
 		}
 
+		if len(pkg.Spec.Values) > 0 {
+			fmt.Fprintln(os.Stderr, bold("Configuration:"))
+			printValueConfigurations(os.Stderr, pkg.Spec.Values)
+			if _, err := valueResolver.Resolve(ctx, pkg.Spec.Values); err != nil {
+				fmt.Fprintf(os.Stderr, "⚠️  Some values can not be resolved: %v\n", err)
+			}
+		}
+
 		if !installCmdOptions.Yes && !cliutils.YesNoPrompt("Continue?", true) {
 			cancel()
 		}
 
 		if installCmdOptions.NoWait {
-			if err := installer.Install(ctx, pkgBuilder.Build()); err != nil {
+			if err := installer.Install(ctx, pkg); err != nil {
 				fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
 				os.Exit(1)
 			}
@@ -127,7 +143,7 @@ var installCmd = &cobra.Command{
 					"💡 Run \"glasskube describe %v\" to get the current status",
 				packageName, packageName)
 		} else {
-			status, err := installer.InstallBlocking(ctx, pkgBuilder.Build())
+			status, err := installer.InstallBlocking(ctx, pkg)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
 				os.Exit(1)
@@ -207,5 +223,6 @@ func init() {
 	installCmd.PersistentFlags().BoolVar(&installCmdOptions.NoWait, "no-wait", false, "perform non-blocking install")
 	installCmd.PersistentFlags().BoolVarP(&installCmdOptions.Yes, "yes", "y", false, "do not ask for any confirmation")
 	installCmd.MarkFlagsMutuallyExclusive("version", "enable-auto-updates")
+	installCmdOptions.ValuesOptions.AddFlagsToCommand(installCmd)
 	RootCmd.AddCommand(installCmd)
 }
