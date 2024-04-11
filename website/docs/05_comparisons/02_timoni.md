@@ -7,7 +7,7 @@ description: Timoni installs and updates cloud-native applications as bundles (O
 
 # Glasskube vs Timoni Comparison
 
-[Timoni](https://helm.sh/) was created by [Stefan Prodman](https://github.com/stefanprodan) to improve bundling cloud native applications and their lifecycle management.
+[Timoni](https://timoni.sh/) was created by [Stefan Prodman](https://github.com/stefanprodan) to improve bundling cloud native applications and their lifecycle management.
 
 Timoni is closer related to Helm than Glasskube, but brings some features and new approaches to the table Helm doesn't offer.
 Its bundles are OCI images, so the only way to install these bundles is to publish them first to an OCI registry,
