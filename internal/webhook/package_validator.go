@@ -3,6 +3,7 @@ package webhook
 import (
 	"context"
 	"errors"
+	"reflect"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	ctrladapter "github.com/glasskube/glasskube/internal/adapter/controllerruntime"
@@ -56,11 +57,11 @@ func (p *PackageValidatingWebhook) ValidateUpdate(ctx context.Context, oldObj ru
 	log := ctrl.LoggerFrom(ctx)
 	if oldPkg, ok := oldObj.(*v1alpha1.Package); ok {
 		if newPkg, ok := newObj.(*v1alpha1.Package); ok {
-			if oldPkg.Spec.PackageInfo == newPkg.Spec.PackageInfo {
+			log.Info("validate update", "name", newPkg.Name)
+			if reflect.DeepEqual(oldPkg.Spec, newPkg.Spec) {
 				// If the package info did not change, we are already done
 				return nil, nil
 			} else {
-				log.Info("validate update", "name", newPkg.Name)
 				return nil, p.validateCreateOrUpdate(ctx, newPkg)
 			}
 		}
