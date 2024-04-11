@@ -2,6 +2,7 @@ package manifestvalues
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"text/template"
 
@@ -92,7 +93,11 @@ func getActualValue(target v1alpha1.ValueDefinitionTarget, value string) (any, e
 		return value, nil
 	}
 
-	if tmpl, err := template.New("").Parse(target.ValueTemplate); err != nil {
+	tmplBase := template.New("").Funcs(template.FuncMap{
+		"base64": func(s string) string { return base64.StdEncoding.EncodeToString([]byte(s)) },
+	})
+
+	if tmpl, err := tmplBase.Parse(target.ValueTemplate); err != nil {
 		return nil, err
 	} else {
 		var bw bytes.Buffer
