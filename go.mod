@@ -6,6 +6,7 @@ toolchain go1.21.5
 
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
+	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/evanphx/json-patch/v5 v5.9.0
 	github.com/fatih/color v1.16.0
 	github.com/fluxcd/helm-controller/api v0.37.4
@@ -18,6 +19,7 @@ require (
 	github.com/invopop/jsonschema v0.12.0
 	github.com/onsi/ginkgo/v2 v2.17.1
 	github.com/onsi/gomega v1.32.0
+	github.com/posthog/posthog-go v0.0.0-20240327112532-87b23fe11103
 	github.com/schollz/progressbar/v3 v3.14.2
 	github.com/spf13/cobra v1.8.0
 	go.uber.org/multierr v1.11.0

@@ -20,6 +20,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/glasskube/glasskube/internal/telemetry"
+
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/controller/conditions"
 	"github.com/glasskube/glasskube/internal/controller/owners"
@@ -39,7 +41,8 @@ type PackageInfoReconciler struct {
 	client.Client
 	record.EventRecorder
 	*owners.OwnerManager
-	Scheme *runtime.Scheme
+	Scheme    *runtime.Scheme
+	Telemetry *telemetry.OperatorTelemetry
 }
 
 var (

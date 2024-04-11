@@ -22,6 +22,7 @@ var versioncmd = &cobra.Command{
 		operatorVersion, err := clientutils.GetPackageOperatorVersion(cmd.Context())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "✗ no deployments found in the glasskube-system namespace\n")
+			cliutils.ExitWithError(cmd.Context())
 		} else {
 			fmt.Fprintf(os.Stderr, "package-operator: %s\n", operatorVersion)
 		}

@@ -28,24 +28,24 @@ var uninstallCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		pkgName := args[0]
 		ctx := cmd.Context()
-		currentContext := pkgClient.RawConfigFromContext(cmd.Context()).CurrentContext
-		client := pkgClient.FromContext(cmd.Context())
+		currentContext := pkgClient.RawConfigFromContext(ctx).CurrentContext
+		client := pkgClient.FromContext(ctx)
 		dm := dependency.NewDependencyManager(clientadapter.NewPackageClientAdapter(client))
 
 		if g, err := dm.NewGraph(ctx); err != nil {
 			fmt.Fprintf(os.Stderr, "❌ Error validating uninstall: %v\n", err)
-			os.Exit(1)
+			cliutils.ExitWithError(ctx)
 		} else {
 			g.Delete(pkgName)
 			pruned := g.Prune()
 			if err := g.Validate(); err != nil {
 				fmt.Fprintf(os.Stderr, "❌ %v can not be uninstalled for the following reason: %v\n", pkgName, err)
-				os.Exit(1)
+				cliutils.ExitWithError(ctx)
 			} else {
 				showUninstallDetails(currentContext, pkgName, pruned)
 				if !uninstallCmdOptions.ForceUninstall && !cliutils.YesNoPrompt("Do you want to continue?", false) {
 					fmt.Println("❌ Uninstallation cancelled.")
-					os.Exit(0)
+					cliutils.ExitSuccess(ctx)
 				}
 			}
 		}
@@ -55,14 +55,13 @@ var uninstallCmd = &cobra.Command{
 		if uninstallCmdOptions.NoWait {
 			if err := uninstaller.Uninstall(ctx, pkg); err != nil {
 				fmt.Fprintf(os.Stderr, "\n❌ An error occurred during uninstallation:\n\n%v\n", err)
-				os.Exit(1)
+				cliutils.ExitWithError(ctx)
 			}
 			fmt.Fprintln(os.Stderr, "Uninstallation started in background")
 		} else {
 			if err := uninstaller.UninstallBlocking(ctx, pkg); err != nil {
 				fmt.Fprintf(os.Stderr, "\n❌ An error occurred during uninstallation:\n\n%v\n", err)
-				os.Exit(1)
-				return
+				cliutils.ExitWithError(ctx)
 			}
 			fmt.Fprintf(os.Stderr, "🗑️  %v uninstalled successfully.\n", pkgName)
 		}

@@ -11,9 +11,10 @@ import (
 )
 
 type bootstrapOptions struct {
-	url           string
-	bootstrapType bootstrap.BootstrapType
-	latest        bool
+	url              string
+	bootstrapType    bootstrap.BootstrapType
+	latest           bool
+	disableTelemetry bool
 }
 
 var bootstrapCmdOptions = bootstrapOptions{
@@ -32,16 +33,17 @@ var bootstrapCmd = &cobra.Command{
 		client := bootstrap.NewBootstrapClient(cfg)
 		if err := client.Bootstrap(cmd.Context(), bootstrapCmdOptions.asBootstrapOptions()); err != nil {
 			fmt.Fprintf(os.Stderr, "\nAn error occurred during bootstrap:\n%v\n", err)
-			os.Exit(1)
+			cliutils.ExitWithError(cmd.Context())
 		}
 	},
 }
 
 func (o bootstrapOptions) asBootstrapOptions() bootstrap.BootstrapOptions {
 	return bootstrap.BootstrapOptions{
-		Type:   o.bootstrapType,
-		Url:    o.url,
-		Latest: o.latest,
+		Type:             o.bootstrapType,
+		Url:              o.url,
+		Latest:           o.latest,
+		DisableTelemetry: o.disableTelemetry,
 	}
 }
 
@@ -51,6 +53,7 @@ func init() {
 	bootstrapCmd.Flags().VarP(&bootstrapCmdOptions.bootstrapType, "type", "t", `Type of manifest to use for bootstrapping`)
 	bootstrapCmd.Flags().BoolVar(&bootstrapCmdOptions.latest, "latest", config.IsDevBuild(),
 		"Fetch and bootstrap the latest version")
+	bootstrapCmd.Flags().BoolVar(&bootstrapCmdOptions.disableTelemetry, "disable-telemetry", false, "Disable telemetry")
 	bootstrapCmd.MarkFlagsMutuallyExclusive("url", "type")
 	bootstrapCmd.MarkFlagsMutuallyExclusive("url", "latest")
 }
