@@ -178,6 +178,7 @@ func (s *server) Start(ctx context.Context) error {
 	fileServer := http.FileServer(http.FS(root))
 
 	router := mux.NewRouter()
+	// router.Use(telemetry.ForWeb())
 	router.PathPrefix("/static/").Handler(fileServer)
 	router.Handle("/favicon.ico", fileServer)
 	router.HandleFunc("/ws", s.wsHub.handler)

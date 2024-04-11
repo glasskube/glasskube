@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -47,8 +48,7 @@ var listCmd = &cobra.Command{
 		pkgs, err := list.GetPackagesWithStatus(pkgClient, cmd.Context(), listCmdOptions.toListOptions())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "An error occurred:\n\n%v\n", err)
-			os.Exit(1)
-			return
+			cliutils.ExitWithError(cmd.Context())
 		}
 		if len(pkgs) == 0 {
 			if listCmdOptions.ListOutdatedOnly {
@@ -60,7 +60,7 @@ var listCmd = &cobra.Command{
 				fmt.Fprintln(os.Stderr, "No packages found. This is probably a bug.")
 			}
 		} else {
-			printPackageTable(pkgs)
+			printPackageTable(cmd.Context(), pkgs)
 		}
 	},
 }
@@ -83,7 +83,7 @@ func init() {
 	RootCmd.AddCommand(listCmd)
 }
 
-func printPackageTable(packages []*list.PackageWithStatus) {
+func printPackageTable(ctx context.Context, packages []*list.PackageWithStatus) {
 	header := []string{"NAME", "STATUS", "VERSION", "AUTO-UPDATE"}
 	if listCmdOptions.ShowLatestVersion {
 		header = append(header, "LATEST VERSION")
@@ -106,7 +106,7 @@ func printPackageTable(packages []*list.PackageWithStatus) {
 		})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "There was an error displaying the package table:\n%v\n(This is a bug)\n", err)
-		os.Exit(1)
+		cliutils.ExitWithError(ctx)
 	}
 }
 

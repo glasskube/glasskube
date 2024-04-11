@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/glasskube/glasskube/internal/telemetry"
+
 	ctrladapter "github.com/glasskube/glasskube/internal/adapter/controllerruntime"
 	"github.com/glasskube/glasskube/internal/manifestvalues"
 	"github.com/glasskube/glasskube/internal/names"
@@ -62,6 +64,7 @@ type PackageReconciler struct {
 	HelmAdapter      manifest.ManifestAdapter
 	KustomizeAdapter manifest.ManifestAdapter
 	dependencyMgr    *dependency.DependendcyManager
+	Telemetry        *telemetry.OperatorTelemetry
 }
 
 //+kubebuilder:rbac:groups=packages.glasskube.dev,resources=packages,verbs=get;list;watch;create;update;patch;delete
@@ -87,10 +90,12 @@ func (r *PackageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if err := r.Get(ctx, req.NamespacedName, &pkg); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+	r.Telemetry.ReconcilePackage(&pkg)
 
 	if !pkg.DeletionTimestamp.IsZero() {
 		err := conditions.SetUnknownAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions,
 			condition.Pending, "Package is being deleted")
+		// TODO telemetry deletion event ?
 		return ctrl.Result{}, err
 	}
 
