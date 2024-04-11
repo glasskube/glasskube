@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"slices"
@@ -10,6 +11,8 @@ import (
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/config"
+	"github.com/glasskube/glasskube/internal/repo"
+	"github.com/glasskube/glasskube/internal/semver"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/kubeconfig"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
@@ -117,8 +120,49 @@ func completeInstalledPackageNames(
 	return
 }
 
+func completeInstalledPackageVersions(
+	_ *cobra.Command,
+	args []string,
+	toComplete string,
+) (versions []string, dir cobra.ShellCompDirective) {
+	dir = cobra.ShellCompDirectiveNoFileComp
+	config, _, err := kubeconfig.New(config.Kubeconfig)
+	if err != nil {
+		dir &= cobra.ShellCompDirectiveError
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	client, err := client.New(config)
+	if err != nil {
+		dir &= cobra.ShellCompDirectiveError
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	if len(args) == 0 {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	packageName := args[0]
+	var packageIndex repo.PackageIndex
+	if err := repo.FetchPackageIndex("", packageName, &packageIndex); err != nil {
+		return nil, cobra.ShellCompDirectiveError
+	}
+	var pkg v1alpha1.PackageInfo
+	if err := client.PackageInfos().Get(context.Background(), packageName, &pkg); err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	versions = make([]string, 0, len(packageIndex.Versions))
+	for _, version := range packageIndex.Versions {
+		if toComplete == "" || strings.HasPrefix(version.Version, toComplete) {
+			if !semver.IsUpgradable(pkg.Status.Version, version.Version) {
+				continue
+			}
+			versions = append(versions, version.Version)
+		}
+	}
+	return versions, cobra.ShellCompDirectiveNoFileComp
+}
+
 func init() {
 	updateCmd.PersistentFlags().StringVarP(&updateCmdOptions.Version, "version", "v", "",
 		"update to a specific version")
 	RootCmd.AddCommand(updateCmd)
+	_ = updateCmd.RegisterFlagCompletionFunc("version", completeInstalledPackageVersions)
 }
