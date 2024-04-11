@@ -99,17 +99,17 @@ func completeInstalledPackageNames(
 	dir = cobra.ShellCompDirectiveNoFileComp
 	config, _, err := kubeconfig.New(config.Kubeconfig)
 	if err != nil {
-		dir &= cobra.ShellCompDirectiveError
+		dir = cobra.ShellCompDirectiveError
 		return
 	}
 	client, err := client.New(config)
 	if err != nil {
-		dir &= cobra.ShellCompDirectiveError
+		dir = cobra.ShellCompDirectiveError
 		return
 	}
 	var packageList v1alpha1.PackageList
 	if err := client.Packages().GetAll(cmd.Context(), &packageList); err != nil {
-		dir &= cobra.ShellCompDirectiveError
+		dir = cobra.ShellCompDirectiveError
 		return
 	}
 	for _, pkg := range packageList.Items {
