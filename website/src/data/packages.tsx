@@ -88,7 +88,7 @@ const Users: Package[] = [
   {
     name: "Velero",
     shortDescription: 'Backup and migrate Kubernetes applications and their persistent volumes',
-    iconUrl: 'https://avatars.githubusercontent.com/u/54452117?s=150',
+    iconUrl: 'https://github.com/glasskube/glasskube/assets/3041752/44efa073-fd5f-47b8-9ae5-95abb33a47e7',
     websiteUrl: 'https://velero.io/',
     sourceUrl: 'https://github.com/vmware-tanzu/velero',
     tags: ['planned', 'backup'],
