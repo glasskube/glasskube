@@ -72,8 +72,8 @@ var installCmd = &cobra.Command{
 			installationPlan = append(installationPlan, validationResult.Requirements...)
 		}
 
-		if !installCmdOptions.EnableAutoUpdates {
-			if installCmdOptions.Yes || cliutils.YesNoPrompt("Would you like to enable automatic updates?", false) {
+		if !installCmdOptions.EnableAutoUpdates && !installCmdOptions.Yes {
+			if cliutils.YesNoPrompt("Would you like to enable automatic updates?", false) {
 				installCmdOptions.EnableAutoUpdates = true
 			}
 		}
