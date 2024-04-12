@@ -8,6 +8,7 @@ import (
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/adapter"
+	"go.uber.org/multierr"
 )
 
 type Resolver struct {
@@ -23,15 +24,16 @@ func (r *Resolver) Resolve(ctx context.Context, values map[string]v1alpha1.Value
 	map[string]string,
 	error,
 ) {
+	var errComposite error
 	resolvedValues := make(map[string]string)
 	for name, value := range values {
 		if resolved, err := r.ResolveValue(ctx, value); err != nil {
-			return nil, fmt.Errorf("cannot resolve value %v: %w", name, err)
+			multierr.AppendInto(&errComposite, fmt.Errorf("cannot resolve value %v: %w", name, err))
 		} else {
 			resolvedValues[name] = resolved
 		}
 	}
-	return resolvedValues, nil
+	return resolvedValues, errComposite
 }
 
 func (r *Resolver) ResolveValue(ctx context.Context, value v1alpha1.ValueConfiguration) (string, error) {
