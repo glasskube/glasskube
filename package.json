@@ -13,8 +13,8 @@
     "htmx.org": "1.9.11"
   },
   "devDependencies": {
-    "@commitlint/cli": "19.2.1",
-    "@commitlint/config-conventional": "19.1.0",
+    "@commitlint/cli": "19.2.2",
+    "@commitlint/config-conventional": "19.2.2",
     "esbuild": "0.20.2",
     "prettier": "3.2.5",
     "prettier-plugin-go-template": "0.0.15"
