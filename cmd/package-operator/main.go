@@ -94,7 +94,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	tc := telemetry.ForOperator()
+	tc := telemetry.ForControllerManager(mgr)
 	if err = (&controller.PackageReconciler{
 		Client:          mgr.GetClient(),
 		EventRecorder:   mgr.GetEventRecorderFor("package-controller"),

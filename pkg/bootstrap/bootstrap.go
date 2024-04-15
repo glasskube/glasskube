@@ -6,13 +6,13 @@ import (
 	"time"
 
 	"github.com/glasskube/glasskube/internal/telemetry"
-	v1 "k8s.io/api/core/v1"
 
 	"github.com/fatih/color"
 	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/constants"
 	"github.com/glasskube/glasskube/internal/releaseinfo"
+	"github.com/glasskube/glasskube/internal/telemetry/annotations"
 	"github.com/schollz/progressbar/v3"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -79,16 +79,30 @@ func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOption
 	statusMessage("Successfully fetched Glasskube manifests", true)
 
 	statusMessage("Applying Glasskube manifests", true)
+	c.preprocessManifests(manifests, options)
 	if err = c.applyManifests(ctx, manifests); err != nil {
 		telemetry.BootstrapFailure(time.Since(start))
 		statusMessage(fmt.Sprintf("Couldn't apply manifests: %v", err), false)
 	}
 
 	elapsed := time.Since(start)
-	c.handleTelemetry(ctx, options.DisableTelemetry, elapsed)
+	c.handleTelemetry(options.DisableTelemetry, elapsed)
 
 	statusMessage(fmt.Sprintf("Glasskube successfully installed! (took %v)", elapsed.Round(time.Second)), true)
 	return nil
+}
+
+func (c *BootstrapClient) preprocessManifests(objs []unstructured.Unstructured, options BootstrapOptions) {
+	for _, obj := range objs {
+		if obj.GetKind() == "Namespace" && obj.GetName() == "glasskube-system" {
+			nsAnnotations := obj.GetAnnotations()
+			if nsAnnotations == nil {
+				nsAnnotations = make(map[string]string, 1)
+			}
+			annotations.UpdateTelemetryAnnotations(nsAnnotations, options.DisableTelemetry)
+			obj.SetAnnotations(nsAnnotations)
+		}
+	}
 }
 
 func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructured.Unstructured) error {
@@ -147,33 +161,11 @@ func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructure
 	return nil
 }
 
-func (c *BootstrapClient) handleTelemetry(ctx context.Context, disabled bool, elapsed time.Duration) {
-	dynamicClient, err := dynamic.NewForConfig(c.clientConfig)
-	if err != nil {
-		return
-	}
-
-	glasskubeNs := v1.SchemeGroupVersion.WithResource("namespaces")
-	if ns, err := dynamicClient.Resource(glasskubeNs).Get(ctx, "glasskube-system", metav1.GetOptions{}); err != nil {
-		if !disabled {
-			telemetry.SetupFailed()
-		}
-	} else {
-		currentAnnotations := ns.GetAnnotations()
-		if currentAnnotations == nil {
-			currentAnnotations = make(map[string]string)
-		}
-		telemetry.UpdateAnnotations(currentAnnotations, disabled)
-		ns.SetAnnotations(currentAnnotations)
-		if _, err := dynamicClient.Resource(glasskubeNs).Update(ctx, ns, metav1.UpdateOptions{}); err != nil {
-			if !disabled {
-				telemetry.SetupFailed()
-			}
-		} else if !disabled {
-			statusMessage("Telemetry is enabled for this cluster – "+
-				"see https://glasskube.dev/docs/components/package-operator/", true) // TODO
-			telemetry.BootstrapSuccess(elapsed, currentAnnotations[telemetry.TelemetryIdAnnotation])
-		}
+func (c *BootstrapClient) handleTelemetry(disabled bool, elapsed time.Duration) {
+	if !disabled {
+		statusMessage("Telemetry is enabled for this cluster – "+
+			"see https://glasskube.dev/docs/components/package-operator/", true) // TODO
+		telemetry.BootstrapSuccess(elapsed)
 	}
 }
 
