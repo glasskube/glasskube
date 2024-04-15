@@ -1,8 +1,8 @@
 # Package Configuration
 
 :::info Disclaimer
-This is a design document.
-Some or all of the functionality described in the following may not be implemented in a released version of Glasskube.
+The functionality described in this document is scheduled to be released in version 0.2.0 of Glasskube.
+You can star or watch our [GitHub repository](https://github.com/glasskube/glasskube) if you want to get notified about new releases.
 :::
 
 ## Probelm analysis

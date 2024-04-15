@@ -14,17 +14,13 @@ sidebar_position: 1
 
 🏗️ Glasskube **packages are dependency aware**, as you would expect from a package manager.
 
-🤖  Designed as a cloud native application, so you can follow your **GitOps approach**.
-
-
+🤖 Designed as a cloud native application, so you can follow your **GitOps approach**.
 
 > Glasskube is an open-source Kubernetes package manager that simplifies package management for Kubernetes.
-
 
 ## Fast Track ⏱️ {#fast-track}
 
 Install your first package in 5 minutes.
-
 
 Install Glasskube via [Homebrew](https://brew.sh/):
 
@@ -45,7 +41,6 @@ glasskube serve
 ```
 
 Open [`http://localhost:8580`](http://localhost:8580) and explore available packages.
-
 
 For more installation options see the [Getting started](getting-started/install) section.
 
@@ -74,7 +69,7 @@ flowchart BT
     PackageController-- 9. deploy package -->Kubernetes
   end
 
-  Kubernetes-- 10. package status -->Client 
+  Kubernetes-- 10. package status -->Client
 ```
 
 ### Components
@@ -110,21 +105,6 @@ Bootstraps Glasskube in the given cluster. For more information, check out our [
 
 Starts the UI server and opens a browser on [http://localhost:8580](http://localhost:8580).
 
-### `glasskube install <package>`
-
-Installs the latest version of a package in your cluster and waits until the installation is either finished successfully or failed.
-
-Use `--version=...` if you want to install a specific version of a package, or `--enable-auto-updates` if you want a package to always be updated to the latest version automatically.
-
-### `glasskube update <packages...>`
-
-Updates the given packages in your cluster to their respecive latest version. 
-If no packages are specified, all outdated packages will be updated.
-
-### `glasskube uninstall <package>`
-
-Removes the given package from your cluster.
-
 ### `glasskube list`
 
 Lists packages. By default, all packages available in the configured repository are shown, including their installation status in the given cluster.
@@ -132,19 +112,53 @@ Lists packages. By default, all packages available in the configured repository 
 With the `--installed` flag you can restrict the list of packages to the ones installed in your cluster.
 If you only want to see installed packages that have a newer version available, use the `--outdated` flag.
 
+### `glasskube install <package>`
+
+Installs the latest version of a package in your cluster and waits until the installation is either finished successfully or failed.
+
+Use `--version=...` if you want to install a specific version of a package, or `--enable-auto-updates` if you want a package to always be updated to the latest version automatically.
+
+If a package offers configuration parameters, `glassube install` provides a workflow to interactively set those parameters.
+For non-interactive parameter configuration, you can use `--value` (can be used multiple times).
+
+For more information, check out `glasskube help install`.
+
+### `glasskube update <packages...>`
+
+Updates the given packages in your cluster to their respecive latest version.
+If no packages are specified, all outdated packages will be updated.
+
+### `glasskube configure <package>`
+
+Interactively or non-interactively modify the configuration of a package.
+
+Use `--value` for non-interactive mode (can be used multiple times).
+If you want to delete existing values, use `--keep-old-values=false` (can be used in combination with `--value`)
+
+For more information, check out `glasskube help configure`.
+
+### `glasskube uninstall <package>`
+
+Removes the given package from your cluster.
+
 ### `glasskube describe <package>`
 
-Shows additional information about the given package. 
+Shows additional information about the given package.
 
 ### `glasskube open <package>`
 
-Opens the default entrypoint of the given package. 
+Opens the default entrypoint of the given package.
 Use `glasskube open <package> <entrypoint>` to open a specific entrypoint.
+
+### `glasskube version`
+
+Prints the version of the local Glasskube installation, as well as the installed cluster components.
 
 ### `glasskube --version`
 
-Prints the client version.
+Prints the version of the local Glasskube installation.
 
 ### `glasskube help`
 
-Prints helpful information about `glasskube` and its commands. 
+Prints helpful information about `glasskube` and its commands.
+Use `glasskube help <subcommand>` to learn more about a specific subcommand.
