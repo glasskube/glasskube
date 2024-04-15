@@ -3,28 +3,53 @@ package telemetry
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"os"
-	"runtime"
+	"strings"
 	"time"
 
+	"github.com/denisbrodbeck/machineid"
 	"github.com/glasskube/glasskube/internal/clientutils"
-	"github.com/glasskube/glasskube/internal/config"
+	"github.com/glasskube/glasskube/internal/telemetry/properties"
 	client2 "github.com/glasskube/glasskube/pkg/client"
 	"github.com/posthog/posthog-go"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
+type clientsetNamespaceGetter struct {
+	client *kubernetes.Clientset
+}
+
+func (g clientsetNamespaceGetter) GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
+	return g.client.CoreV1().Namespaces().Get(ctx, name, v1.GetOptions{})
+}
+
+type clientsetNodeLister struct {
+	client *kubernetes.Clientset
+}
+
+func (l clientsetNodeLister) ListNodes(ctx context.Context) (*corev1.NodeList, error) {
+	return l.client.CoreV1().Nodes().List(ctx, v1.ListOptions{})
+}
+
 type ClientTelemetry struct {
-	machineId string
-	posthog   posthog.Client
-	start     time.Time
+	properties properties.PropertyGetter
+	machineId  string
+	posthog    posthog.Client
+	start      time.Time
 }
 
 var instance *ClientTelemetry
 
 func Init() {
 	instance = ForClient()
+}
+
+func InitClient(config *rest.Config) {
+	instance.InitClient(config)
 }
 
 func BootstrapAttempt() {
@@ -50,7 +75,7 @@ func BootstrapFailure(elapsed time.Duration) {
 	}
 }
 
-func BootstrapSuccess(elapsed time.Duration, clusterId string) {
+func BootstrapSuccess(elapsed time.Duration) {
 	if instance != nil {
 		command, arguments, flags := getCommandAndArgs()
 		event := instance.getBaseEvent("bootstrap_success")
@@ -58,7 +83,6 @@ func BootstrapSuccess(elapsed time.Duration, clusterId string) {
 		event.Properties["arguments"] = arguments
 		event.Properties["flags"] = flags
 		event.Properties["execution_time"] = elapsed.Milliseconds()
-		event.Properties["cluster_id"] = clusterId
 		_ = instance.posthog.Enqueue(event)
 	}
 }
@@ -96,21 +120,32 @@ func ExitWithError(ctx context.Context) {
 }
 
 func ForClient() *ClientTelemetry {
-	if ph, err := posthog.NewWithConfig(
-		apiKey,
-		posthog.Config{
-			Endpoint: "https://eu.posthog.com",
-		},
-	); err != nil {
-		// TODO ?
-		return nil
-	} else {
-		return &ClientTelemetry{
-			machineId: getMachineId(),
-			posthog:   ph,
-			start:     time.Now(),
+	ct := ClientTelemetry{
+		machineId: getMachineId(),
+		start:     time.Now(),
+	}
+	if ph, err := posthog.NewWithConfig(apiKey, posthog.Config{Endpoint: endpoint}); err == nil {
+		ct.posthog = ph
+	}
+	return &ct
+}
+
+func (t *ClientTelemetry) InitClient(config *rest.Config) {
+	if config != nil {
+		if client, err := kubernetes.NewForConfig(config); err == nil {
+			t.properties.NamespaceGetter = clientsetNamespaceGetter{client}
+			t.properties.NodeLister = clientsetNodeLister{client}
+			t.properties.DiscoveryClient = client
 		}
 	}
+}
+
+func getMachineId() string {
+	id, err := machineid.ProtectedID("glasskube")
+	if err != nil {
+		return fmt.Sprintf("fallback-id-%v-%v", rand.Int(), err.Error())
+	}
+	return id
 }
 
 func getCommandAndArgs() (string, []string, []string) {
@@ -124,46 +159,41 @@ func getCommandAndArgs() (string, []string, []string) {
 	return command, arguments, flags
 }
 
+func extractFromArgs(args []string) ([]string, []string) {
+	var arguments = make([]string, 0)
+	flags := make([]string, 0)
+	if len(args) > 0 {
+		noMoreArguments := false
+		for _, arg := range args {
+			if strings.HasPrefix(arg, "-") {
+				noMoreArguments = true
+				flags = append(flags, arg)
+			} else if !noMoreArguments {
+				arguments = append(arguments, arg)
+			}
+		}
+	}
+	return arguments, flags
+}
+
 func (t *ClientTelemetry) getBaseEvent(event string) *posthog.Capture {
 	return &posthog.Capture{
 		DistinctId: t.machineId,
 		Event:      event,
-		Properties: map[string]any{
-			// event properties:
-			"cli_version": config.Version,
-			// user properties:
-			"$set": map[string]any{
-				"cli_version": config.Version,
-			},
-			"$set_once": map[string]any{
-				"type":                "client",
-				"initial_cli_version": config.Version,
-				"os":                  runtime.GOOS,
-				"architecture":        runtime.GOARCH,
-			},
-		},
+		Properties: properties.BuildProperties(
+			properties.ForClientUser(instance.properties),
+		),
 	}
 }
 
 func (t *ClientTelemetry) report(ctx context.Context, exitCode int, reason string) {
-	enabled := false
-	clusterId := ""
-	operatorVersion := ""
-	k8sVersion := ""
-	if cfg := client2.ConfigFromContext(ctx); cfg == nil {
-		return
-	} else if client, e := kubernetes.NewForConfig(cfg); e == nil {
-		if namespace, e := client.CoreV1().Namespaces().Get(ctx, "glasskube-system", v1.GetOptions{}); e == nil {
-			enabled, clusterId = IsEnabled(namespace.GetAnnotations())
-		}
-		operatorVersion, _ = clientutils.GetPackageOperatorVersion(ctx)
-		if version, e := client.ServerVersion(); e == nil {
-			k8sVersion = version.String()
-		}
-	}
-	if !enabled {
+	t.InitClient(client2.ConfigFromContext(ctx))
+
+	if !t.properties.Enabled() {
 		return
 	}
+
+	operatorVersion, _ := clientutils.GetPackageOperatorVersion(ctx)
 	command, arguments, flags := getCommandAndArgs()
 	duration := time.Since(t.start).Milliseconds()
 
@@ -173,9 +203,7 @@ func (t *ClientTelemetry) report(ctx context.Context, exitCode int, reason strin
 	event.Properties["execution_time"] = duration
 	event.Properties["exit_code"] = exitCode
 	event.Properties["exit_reason"] = reason
-	event.Properties["cluster_id"] = clusterId
 	event.Properties["operator_version"] = operatorVersion
-	event.Properties["cluster_kubernetes_version"] = k8sVersion
 
 	err := t.posthog.Enqueue(event)
 	if err != nil {

@@ -10,6 +10,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/glasskube/glasskube/internal/config"
+	"github.com/glasskube/glasskube/internal/telemetry"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/spf13/cobra"
 )
@@ -17,6 +18,7 @@ import (
 func SetupClientContext(requireBootstrapped bool, skipUpdateCheck *bool) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
 		cfg, rawCfg := RequireConfig(config.Kubeconfig)
+		telemetry.InitClient(cfg)
 		if requireBootstrapped {
 			RequireBootstrapped(cmd.Context(), cfg, rawCfg)
 		}
