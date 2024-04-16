@@ -59,7 +59,7 @@ Designed as a cloud native application, so you can follow your **GitOps approach
   <br> Keep track of all your packages in one central repository, with a [planned](https://glasskube.dev/roadmap/?utm_source=github) feature for custom repositories.
 - 🔍 **Cluster Scan** ([planned](https://glasskube.dev/roadmap/?utm_source=github)):
   <br> Introducing the Cluster Scan feature in a future version, which allows you to detect packages in your cluster, providing valuable insights for better management and upgrade paths.
-- 🔐 **Version Pinning** ([planned](https://glasskube.dev/roadmap/?utm_source=github)):
+- 🔐 **Version Pinning**:
   <br> With a future version, Glasskube will introduce Version Pinning, giving you control over your package versions.
 
 ## 🗄️ Table Of Contents
