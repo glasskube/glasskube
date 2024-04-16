@@ -32,6 +32,8 @@ builds:
     goos:
       - linux
     main: ./cmd/package-operator
+    ldflags:
+      - "-s -w -X github.com/glasskube/glasskube/internal/config.Version={{.Version}} -X github.com/glasskube/glasskube/internal/config.Commit={{.ShortCommit}} -X github.com/glasskube/glasskube/internal/config.Date={{.Date}}"
     binary: package-operator
   - id: cert-manager
     env:
