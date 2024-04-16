@@ -33,7 +33,7 @@ var bootstrapCmd = &cobra.Command{
 		client := bootstrap.NewBootstrapClient(cfg)
 		if err := client.Bootstrap(cmd.Context(), bootstrapCmdOptions.asBootstrapOptions()); err != nil {
 			fmt.Fprintf(os.Stderr, "\nAn error occurred during bootstrap:\n%v\n", err)
-			cliutils.ExitWithError(cmd.Context())
+			cliutils.ExitWithError()
 		}
 	},
 }

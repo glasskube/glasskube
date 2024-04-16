@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -11,7 +12,6 @@ import (
 	"github.com/denisbrodbeck/machineid"
 	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/telemetry/properties"
-	client2 "github.com/glasskube/glasskube/pkg/client"
 	"github.com/posthog/posthog-go"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,6 +40,7 @@ type ClientTelemetry struct {
 	machineId  string
 	posthog    posthog.Client
 	start      time.Time
+	restConfig *rest.Config
 }
 
 var instance *ClientTelemetry
@@ -87,34 +88,23 @@ func BootstrapSuccess(elapsed time.Duration) {
 	}
 }
 
-func SetupFailed() {
+func Exit() {
 	if instance != nil {
-		command, arguments, flags := getCommandAndArgs()
-		event := instance.getBaseEvent("telemetry_setup_failed")
-		event.Properties["original_command"] = command
-		event.Properties["arguments"] = arguments
-		event.Properties["flags"] = flags
-		_ = instance.posthog.Enqueue(event)
-	}
-}
-
-func Exit(ctx context.Context) {
-	if instance != nil {
-		instance.report(ctx, 0, "")
+		instance.report(0, "")
 		instance.close()
 	}
 }
 
-func ExitFromSignal(ctx context.Context, sig os.Signal) {
+func ExitFromSignal(sig os.Signal) {
 	if instance != nil {
-		instance.report(ctx, 1, sig.String())
+		instance.report(1, sig.String())
 		instance.close()
 	}
 }
 
-func ExitWithError(ctx context.Context) {
+func ExitWithError() {
 	if instance != nil {
-		instance.report(ctx, 1, "")
+		instance.report(1, "")
 		instance.close()
 	}
 }
@@ -132,6 +122,7 @@ func ForClient() *ClientTelemetry {
 
 func (t *ClientTelemetry) InitClient(config *rest.Config) {
 	if config != nil {
+		t.restConfig = config
 		if client, err := kubernetes.NewForConfig(config); err == nil {
 			t.properties.NamespaceGetter = clientsetNamespaceGetter{client}
 			t.properties.NodeLister = clientsetNodeLister{client}
@@ -186,14 +177,12 @@ func (t *ClientTelemetry) getBaseEvent(event string) *posthog.Capture {
 	}
 }
 
-func (t *ClientTelemetry) report(ctx context.Context, exitCode int, reason string) {
-	t.InitClient(client2.ConfigFromContext(ctx))
-
+func (t *ClientTelemetry) report(exitCode int, reason string) {
 	if !t.properties.Enabled() {
 		return
 	}
 
-	operatorVersion, _ := clientutils.GetPackageOperatorVersion(ctx)
+	operatorVersion, _ := clientutils.GetPackageOperatorVersionForConfig(t.restConfig, context.TODO())
 	command, arguments, flags := getCommandAndArgs()
 	duration := time.Since(t.start).Milliseconds()
 
@@ -217,5 +206,26 @@ func (t *ClientTelemetry) close() {
 	if err != nil {
 		// TODO only in dev?
 		fmt.Fprintf(os.Stderr, "%v\n", err)
+	}
+}
+
+func HttpMiddleware() func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			start := time.Now()
+			next.ServeHTTP(w, r)
+			defer func() {
+				if instance != nil {
+					go func() {
+						ev := instance.getBaseEvent("ui_endpoint")
+						ev.Properties["$current_url"] = r.URL.String()
+						ev.Properties["method"] = r.Method
+						ev.Properties["path"] = r.URL
+						ev.Properties["execution_time"] = time.Since(start).Milliseconds()
+						_ = instance.posthog.Enqueue(ev)
+					}()
+				}
+			}()
+		})
 	}
 }

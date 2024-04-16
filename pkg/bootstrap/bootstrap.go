@@ -185,7 +185,7 @@ func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructure
 func (c *BootstrapClient) handleTelemetry(disabled bool, elapsed time.Duration) {
 	if !disabled {
 		statusMessage("Telemetry is enabled for this cluster – "+
-			"see https://glasskube.dev/docs/components/package-operator/", true) // TODO
+			"Run \"glasskube telemetry status\" for more info.", true) // TODO
 		telemetry.BootstrapSuccess(elapsed)
 	}
 }

@@ -30,7 +30,7 @@ var serveCmd = &cobra.Command{
 		server := web.NewServer(options)
 		if err := server.Start(cmd.Context()); err != nil {
 			fmt.Fprintf(os.Stderr, "An error occurred starting the webserver:\n\n%v\n", err)
-			cliutils.ExitWithError(cmd.Context())
+			cliutils.ExitWithError()
 		}
 	},
 }

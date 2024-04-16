@@ -27,7 +27,7 @@ var telemetryStatusCmd = &cobra.Command{
 		var status string
 		if ns, err := clientset.CoreV1().Namespaces().Get(ctx, "glasskube-system", v1.GetOptions{}); err != nil {
 			fmt.Fprintf(os.Stderr, "error getting telemetry status: %v\n", err)
-			cliutils.ExitWithError(ctx)
+			cliutils.ExitWithError()
 		} else if annotations.IsTelemetryEnabled(ns.Annotations) {
 			status = "enabled"
 		} else {
@@ -56,7 +56,7 @@ var telemetryCmd = &cobra.Command{
 				WithAnnotations(map[string]string{annotations.TelemetryEnabledAnnotation: strconv.FormatBool(enabled)}),
 			v1.ApplyOptions{FieldManager: "glasskube-telemetry", Force: true}); err != nil {
 			fmt.Fprintf(os.Stderr, "error updating telemetry annotations: %v\n", err)
-			cliutils.ExitWithError(ctx)
+			cliutils.ExitWithError()
 		}
 
 		fmt.Fprintf(os.Stderr, "\nGlasskube telemetry is now %v for cluster %v.\n",

@@ -28,12 +28,13 @@ If the package manifest has more than one entrypoint, specify the name of the en
 		result, err := open.NewOpener().Open(cmd.Context(), pkgName, entrypointName)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "❌ Could not open package %v: %v\n", pkgName, err)
-			cliutils.ExitWithError(cmd.Context())
+			cliutils.ExitWithError()
 		}
 
 		stopBeforeExit := func() {
 			fmt.Fprintln(os.Stderr, "🛑 Terminating forwarders...")
 			result.Stop()
+			cliutils.ExitFromSignal(nil)
 		}
 		defer stopBeforeExit()
 
@@ -58,10 +59,10 @@ If the package manifest has more than one entrypoint, specify the name of the en
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "❌ An error occurred: %v\n", err)
 					stopBeforeExit()
-					cliutils.ExitWithError(cmd.Context())
+					cliutils.ExitWithError()
 				} else {
 					fmt.Fprintln(os.Stderr, "❗ Forwarders closed unexpectedly")
-					cliutils.ExitWithError(cmd.Context())
+					cliutils.ExitWithError()
 				}
 			}
 		}

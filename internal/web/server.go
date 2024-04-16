@@ -17,6 +17,8 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/glasskube/glasskube/internal/telemetry"
+
 	"github.com/glasskube/glasskube/internal/manifestvalues"
 	"k8s.io/client-go/kubernetes"
 
@@ -178,7 +180,7 @@ func (s *server) Start(ctx context.Context) error {
 	fileServer := http.FileServer(http.FS(root))
 
 	router := mux.NewRouter()
-	// router.Use(telemetry.ForWeb())
+	router.Use(telemetry.HttpMiddleware())
 	router.PathPrefix("/static/").Handler(fileServer)
 	router.Handle("/favicon.ico", fileServer)
 	router.HandleFunc("/ws", s.wsHub.handler)
@@ -692,6 +694,7 @@ func (server *server) initKubeConfig() ServerConfigError {
 		clientadapter.NewPackageClientAdapter(server.pkgClient),
 		clientadapter.NewKubernetesClientAdapter(*k8sclient),
 	)
+	telemetry.InitClient(restConfig)
 	return nil
 }
 

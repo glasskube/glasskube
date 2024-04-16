@@ -32,11 +32,14 @@ var (
 			signal.Notify(signals, os.Interrupt)
 			go func() {
 				sig := <-signals
-				cliutils.ExitFromSignal(cmd.Context(), &sig)
+				// TODO find another way
+				if cmd.Name() != openCmd.Name() {
+					cliutils.ExitFromSignal(&sig)
+				}
 			}()
 		},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
-			cliutils.ExitSuccess(cmd.Context())
+			cliutils.ExitSuccess()
 		},
 	}
 )

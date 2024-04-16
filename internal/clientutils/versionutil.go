@@ -3,6 +3,8 @@ package clientutils
 import (
 	"context"
 
+	"k8s.io/client-go/rest"
+
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -11,6 +13,10 @@ import (
 
 func GetPackageOperatorVersion(ctx context.Context) (string, error) {
 	config := client.ConfigFromContext(ctx)
+	return GetPackageOperatorVersionForConfig(config, ctx)
+}
+
+func GetPackageOperatorVersionForConfig(config *rest.Config, ctx context.Context) (string, error) {
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return "", err

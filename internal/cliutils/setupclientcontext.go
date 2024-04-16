@@ -54,18 +54,18 @@ func RequireBootstrapped(ctx context.Context, cfg *rest.Config, rawCfg *api.Conf
 	ok, err := bootstrap.IsBootstrapped(ctx, cfg)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error validating Glasskube:\n\n%v\n", err)
-		ExitWithError(ctx)
+		ExitWithError()
 	}
 	if !ok {
 		yes := YesNoPrompt(fmt.Sprintf(bootstrapMessage, rawCfg.CurrentContext, rawCfg.CurrentContext), false)
 		if !yes {
 			fmt.Fprint(os.Stderr, "Execution cancelled – Glasskube is not yet bootstrapped.\n")
-			ExitWithError(ctx)
+			ExitWithError()
 		}
 		client := bootstrap.NewBootstrapClient(cfg)
 		if err := client.Bootstrap(ctx, bootstrap.DefaultOptions()); err != nil {
 			fmt.Fprintf(os.Stderr, "\nAn error occurred during bootstrap:\n%v\n", err)
-			ExitWithError(ctx)
+			ExitWithError()
 		} else {
 			fmt.Fprintf(os.Stderr, "\n\nCongrats, Glasskube is all set up! Have fun managing packages!\n\n")
 		}

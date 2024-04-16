@@ -59,7 +59,7 @@ var installCmd = &cobra.Command{
 			var packageIndex repo.PackageIndex
 			if err := repo.FetchPackageIndex("", packageName, &packageIndex); err != nil {
 				fmt.Fprintf(os.Stderr, "❗ Error: Could not fetch package metadata: %v\n", err)
-				cliutils.ExitWithError(ctx)
+				cliutils.ExitWithError()
 			}
 			installCmdOptions.Version = packageIndex.LatestVersion
 			fmt.Fprintf(os.Stderr, "Version not specified. The latest version %v of %v will be installed.\n",
@@ -75,21 +75,21 @@ var installCmd = &cobra.Command{
 		var manifest v1alpha1.PackageManifest
 		if err := repo.FetchPackageManifest("", packageName, installCmdOptions.Version, &manifest); err != nil {
 			fmt.Fprintf(os.Stderr, "❗ Error: Could not fetch package manifest: %v\n", err)
-			cliutils.ExitWithError(ctx)
+			cliutils.ExitWithError()
 		} else if validationResult, err :=
 			dm.Validate(ctx, &manifest, installCmdOptions.Version); err != nil {
 			fmt.Fprintf(os.Stderr, "❗ Error: Could not validate dependencies: %v\n", err)
-			cliutils.ExitWithError(ctx)
+			cliutils.ExitWithError()
 		} else if len(validationResult.Conflicts) > 0 {
 			fmt.Fprintf(os.Stderr, "❗ Error: %v cannot be installed due to conflicts: %v\n",
 				packageName, validationResult.Conflicts)
-			cliutils.ExitWithError(ctx)
+			cliutils.ExitWithError()
 		} else if len(validationResult.Requirements) > 0 {
 			installationPlan = append(installationPlan, validationResult.Requirements...)
 		} else if installCmdOptions.IsValuesSet() {
 			if values, err := installCmdOptions.ParseValues(nil); err != nil {
 				fmt.Fprintf(os.Stderr, "❌ invalid values in command line flags: %v\n", err)
-				cliutils.ExitWithError(ctx)
+				cliutils.ExitWithError()
 			} else {
 				pkgBuilder.WithValues(values)
 			}
@@ -137,7 +137,7 @@ var installCmd = &cobra.Command{
 		if installCmdOptions.NoWait {
 			if err := installer.Install(ctx, pkg); err != nil {
 				fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
-				cliutils.ExitWithError(ctx)
+				cliutils.ExitWithError()
 			}
 			fmt.Fprintf(os.Stderr,
 				"☑️  %v is being installed in the background.\n"+
@@ -147,7 +147,7 @@ var installCmd = &cobra.Command{
 			status, err := installer.InstallBlocking(ctx, pkg)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
-				cliutils.ExitWithError(ctx)
+				cliutils.ExitWithError()
 			}
 			if status != nil {
 				switch status.Status {
@@ -159,7 +159,7 @@ var installCmd = &cobra.Command{
 				}
 			} else {
 				fmt.Fprintln(os.Stderr, "Installation status unknown - no error and no status have been observed (this is a bug).")
-				cliutils.ExitWithError(ctx)
+				cliutils.ExitWithError()
 			}
 		}
 	},
@@ -167,7 +167,7 @@ var installCmd = &cobra.Command{
 
 func cancel(ctx context.Context) {
 	fmt.Fprintf(os.Stderr, "❌ Operation cancelled.")
-	cliutils.ExitWithError(ctx)
+	cliutils.ExitWithError()
 }
 
 func completeAvailablePackageNames(

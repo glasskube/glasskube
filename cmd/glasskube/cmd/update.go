@@ -39,19 +39,19 @@ var updateCmd = &cobra.Command{
 
 		if updateCmdOptions.Version != "" && len(args) > 1 {
 			fmt.Fprintf(os.Stderr, "Updating to specific version is only possible for a single package\n")
-			cliutils.ExitWithError(ctx)
+			cliutils.ExitWithError()
 		}
 		if len(args) == 1 && updateCmdOptions.Version != "" {
 			tx, err = updater.PrepareForVersion(ctx, args[0], updateCmdOptions.Version)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "error in updating the package version : %v\n", err)
-				cliutils.ExitWithError(ctx)
+				cliutils.ExitWithError()
 			}
 		} else {
 			tx, err = updater.Prepare(ctx, packageNames)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "❌ update preparation failed: %v\n", err)
-				cliutils.ExitWithError(ctx)
+				cliutils.ExitWithError()
 			}
 		}
 
@@ -59,11 +59,11 @@ var updateCmd = &cobra.Command{
 			printTransaction(*tx)
 			if !updateCmdOptions.Yes && !cliutils.YesNoPrompt("Do you want to apply these updates?", false) {
 				fmt.Fprintf(os.Stderr, "⛔ Update cancelled. No changes were made.\n")
-				cliutils.ExitSuccess(ctx)
+				cliutils.ExitSuccess()
 			}
 			if err := updater.Apply(ctx, tx); err != nil {
 				fmt.Fprintf(os.Stderr, "❌ update failed: %v\n", err)
-				cliutils.ExitWithError(ctx)
+				cliutils.ExitWithError()
 			}
 		}
 

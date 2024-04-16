@@ -36,7 +36,8 @@ func ForClientUser(pg PropertyGetter) PropertiesBuilderFn {
 			Set("cluster_id", pg.ClusterId()).
 			Set("cluster_k8s_version", cp.kubernetesVersion).
 			Set("cluster_provider", cp.provider).
-			Set("cluster_nnodes", cp.nnodes)
+			Set("cluster_nnodes", cp.nnodes).
+			Set("version", config.Version)
 	}
 }
 

@@ -31,7 +31,7 @@ var describeCmd = &cobra.Command{
 		pkg, pkgStatus, manifest, latestVersion, err := describe.DescribePackage(cmd.Context(), pkgName)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "❌ Could not describe package %v: %v\n", pkgName, err)
-			cliutils.ExitWithError(cmd.Context())
+			cliutils.ExitWithError()
 		}
 		bold := color.New(color.Bold).SprintFunc()
 

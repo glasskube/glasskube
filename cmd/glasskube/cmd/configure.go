@@ -44,23 +44,23 @@ func runConfigure(cmd *cobra.Command, args []string) {
 
 	if err := pkgClient.Packages().Get(ctx, pkgName, &pkg); err != nil {
 		fmt.Fprintf(os.Stderr, "❌ error getting package: %v\n", err)
-		cliutils.ExitWithError(ctx)
+		cliutils.ExitWithError()
 	}
 
 	if configureCmdOptions.IsValuesSet() {
 		if values, err := configureCmdOptions.ParseValues(pkg.Spec.Values); err != nil {
 			fmt.Fprintf(os.Stderr, "❌ invalid values in command line flags: %v\n", err)
-			cliutils.ExitWithError(ctx)
+			cliutils.ExitWithError()
 		} else {
 			pkg.Spec.Values = values
 		}
 	} else {
 		if pkgManifest, err := manifest.GetInstalledManifestForPackage(ctx, pkg); err != nil {
 			fmt.Fprintf(os.Stderr, "❌ error getting installed manifest: %v\n", err)
-			cliutils.ExitWithError(ctx)
+			cliutils.ExitWithError()
 		} else if values, err := cli.Configure(*pkgManifest, pkg.Spec.Values); err != nil {
 			fmt.Fprintf(os.Stderr, "❌ error during configure: %v\n", err)
-			cliutils.ExitWithError(ctx)
+			cliutils.ExitWithError()
 		} else {
 			pkg.Spec.Values = values
 		}
@@ -83,7 +83,7 @@ func runConfigure(cmd *cobra.Command, args []string) {
 
 	if err := pkgClient.Packages().Update(ctx, &pkg); err != nil {
 		fmt.Fprintf(os.Stderr, "❌ error updating package: %v\n", err)
-		cliutils.ExitWithError(ctx)
+		cliutils.ExitWithError()
 	} else {
 		fmt.Fprintln(os.Stderr, "✅ configuration changed")
 	}
