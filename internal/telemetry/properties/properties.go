@@ -23,6 +23,12 @@ type PropertyGetter struct {
 	DiscoveryClient discovery.DiscoveryInterface
 }
 
+type ClusterProperties struct {
+	kubernetesVersion string
+	provider          string
+	nnodes            int
+}
+
 func (g PropertyGetter) Enabled() bool {
 	if g.NamespaceGetter != nil {
 		if ns, err := g.NamespaceGetter.GetNamespace(context.Background(), "glasskube-system"); err == nil {
@@ -41,27 +47,25 @@ func (g PropertyGetter) ClusterId() string {
 	return ""
 }
 
-func (g PropertyGetter) ClusterVersion() string {
+func (g PropertyGetter) ClusterProperties() (p ClusterProperties) {
 	if g.DiscoveryClient != nil {
 		if versionInfo, err := g.DiscoveryClient.ServerVersion(); err == nil {
-			return versionInfo.GitVersion
+			p.kubernetesVersion = versionInfo.GitVersion
 		}
 	}
-	return ""
-}
-
-func (g PropertyGetter) ClusterProvider() string {
 	if g.NodeLister != nil {
 		if nodes, err := g.NodeLister.ListNodes(context.Background()); err == nil {
+			p.nnodes = len(nodes.Items)
 			for _, node := range nodes.Items {
 				// ProviderID is the ID assigend to the node by the provider.
 				// It usually has the format <provider>://<nodeId>.
 				splits := strings.SplitN(node.Spec.ProviderID, "://", 2)
 				if len(splits) > 1 {
-					return splits[0]
+					p.provider = splits[0]
+					break
 				}
 			}
 		}
 	}
-	return ""
+	return
 }

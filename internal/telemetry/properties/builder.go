@@ -22,6 +22,7 @@ func BuildProperties(fns ...PropertiesBuilderFn) posthog.Properties {
 
 func ForClientUser(pg PropertyGetter) PropertiesBuilderFn {
 	return func(p posthog.Properties) posthog.Properties {
+		cp := pg.ClusterProperties()
 		return p.
 			Set("$set", map[string]any{
 				"version": config.Version,
@@ -33,19 +34,22 @@ func ForClientUser(pg PropertyGetter) PropertiesBuilderFn {
 				"architecture":    runtime.GOARCH,
 			}).
 			Set("cluster_id", pg.ClusterId()).
-			Set("cluster_k8s_version", pg.ClusterVersion()).
-			Set("cluster_provider", pg.ClusterProvider())
+			Set("cluster_k8s_version", cp.kubernetesVersion).
+			Set("cluster_provider", cp.provider).
+			Set("cluster_nnodes", cp.nnodes)
 	}
 }
 
 func ForOperatorUser(pg PropertyGetter) PropertiesBuilderFn {
 	// TODO: see document for additional required properties
 	return func(p posthog.Properties) posthog.Properties {
+		cp := pg.ClusterProperties()
 		return p.
 			Set("$set", map[string]any{
 				"version":     config.Version,
-				"k8s_version": pg.ClusterVersion(),
-				"provider":    pg.ClusterProvider(),
+				"k8s_version": cp.kubernetesVersion,
+				"provider":    cp.provider,
+				"nnodes":      cp.nnodes,
 			}).
 			Set("$set_once", map[string]any{
 				"type":            "operator",
