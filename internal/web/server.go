@@ -458,6 +458,7 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 		pkg = client.PackageBuilder(pkgName).
 			WithVersion(selectedVersion).
 			WithAutoUpdates(strings.ToLower(enableAutoUpdate) == "on").
+			WithValues(values).
 			Build()
 		err := install.NewInstaller(s.pkgClient).
 			WithStatusWriter(statuswriter.Stderr()).
