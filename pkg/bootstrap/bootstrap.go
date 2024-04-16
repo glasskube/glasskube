@@ -15,12 +15,14 @@ import (
 	"github.com/glasskube/glasskube/internal/telemetry/annotations"
 	"github.com/schollz/progressbar/v3"
 	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/util/retry"
@@ -79,7 +81,12 @@ func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOption
 	statusMessage("Successfully fetched Glasskube manifests", true)
 
 	statusMessage("Applying Glasskube manifests", true)
-	c.preprocessManifests(manifests, options)
+
+	if err = c.preprocessManifests(ctx, manifests, options); err != nil {
+		telemetry.BootstrapFailure(time.Since(start))
+		statusMessage(fmt.Sprintf("Couldn't prepare manifests: %v", err), false)
+	}
+
 	if err = c.applyManifests(ctx, manifests); err != nil {
 		telemetry.BootstrapFailure(time.Since(start))
 		statusMessage(fmt.Sprintf("Couldn't apply manifests: %v", err), false)
@@ -92,17 +99,31 @@ func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOption
 	return nil
 }
 
-func (c *BootstrapClient) preprocessManifests(objs []unstructured.Unstructured, options BootstrapOptions) {
+func (c *BootstrapClient) preprocessManifests(
+	ctx context.Context,
+	objs []unstructured.Unstructured,
+	options BootstrapOptions,
+) error {
 	for _, obj := range objs {
 		if obj.GetKind() == "Namespace" && obj.GetName() == "glasskube-system" {
+			clientset := kubernetes.NewForConfigOrDie(c.clientConfig)
 			nsAnnotations := obj.GetAnnotations()
 			if nsAnnotations == nil {
 				nsAnnotations = make(map[string]string, 1)
 			}
+			ns, err := clientset.CoreV1().Namespaces().Get(ctx, "glasskube-system", metav1.GetOptions{})
+			if err != nil && !errors.IsNotFound(err) {
+				return err
+			} else if err == nil {
+				nsAnnotations[annotations.TelemetryEnabledAnnotation] = ns.Annotations[annotations.TelemetryEnabledAnnotation]
+				nsAnnotations[annotations.TelemetryIdAnnotation] = ns.Annotations[annotations.TelemetryIdAnnotation]
+			}
 			annotations.UpdateTelemetryAnnotations(nsAnnotations, options.DisableTelemetry)
 			obj.SetAnnotations(nsAnnotations)
+			return nil
 		}
 	}
+	return nil
 }
 
 func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructured.Unstructured) error {
