@@ -94,14 +94,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	tc := telemetry.ForControllerManager(mgr)
+	telemetry.InitWithManager(mgr)
 	if err = (&controller.PackageReconciler{
 		Client:          mgr.GetClient(),
 		EventRecorder:   mgr.GetEventRecorderFor("package-controller"),
 		Scheme:          mgr.GetScheme(),
 		HelmAdapter:     flux.NewAdapter(),
 		ManifestAdapter: plain.NewAdapter(),
-		Telemetry:       tc,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Package")
 		os.Exit(1)
@@ -110,7 +109,6 @@ func main() {
 		Client:        mgr.GetClient(),
 		EventRecorder: mgr.GetEventRecorderFor("packageinfo-controller"),
 		Scheme:        mgr.GetScheme(),
-		Telemetry:     tc,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "PackageInfo")
 		os.Exit(1)
