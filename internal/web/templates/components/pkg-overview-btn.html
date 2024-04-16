@@ -1,7 +1,9 @@
 {{ define "pkg-overview-btn" }}
   <span id="{{ .ButtonId }}">
     {{ if eq .Status nil }}
-      <a href="/packages/{{ .PackageName }}#configuration" class="btn btn-primary btn-sm w-100">Install</a>
+      <a href="/packages/{{ .PackageName }}#configuration" hx-boost="true" class="btn btn-primary btn-sm w-100"
+        >Install</a
+      >
     {{ else if eq .Status.Status "Pending" }}
       <button type="button" class="btn btn-primary btn-sm fw-medium w-100" disabled>Pending</button>
     {{ else if eq .Status.Status "Failed" }}
