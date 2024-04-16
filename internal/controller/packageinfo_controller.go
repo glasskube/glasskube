@@ -25,7 +25,6 @@ import (
 	"github.com/glasskube/glasskube/internal/controller/owners"
 	"github.com/glasskube/glasskube/internal/controller/requeue"
 	"github.com/glasskube/glasskube/internal/repo"
-	"github.com/glasskube/glasskube/internal/telemetry"
 	"github.com/glasskube/glasskube/pkg/condition"
 	"go.uber.org/multierr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,8 +39,7 @@ type PackageInfoReconciler struct {
 	client.Client
 	record.EventRecorder
 	*owners.OwnerManager
-	Scheme    *runtime.Scheme
-	Telemetry *telemetry.OperatorTelemetry
+	Scheme *runtime.Scheme
 }
 
 var (

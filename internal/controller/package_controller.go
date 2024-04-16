@@ -60,7 +60,6 @@ type PackageReconciler struct {
 	HelmAdapter      manifest.ManifestAdapter
 	KustomizeAdapter manifest.ManifestAdapter
 	dependencyMgr    *dependency.DependendcyManager
-	Telemetry        *telemetry.OperatorTelemetry
 }
 
 //+kubebuilder:rbac:groups=packages.glasskube.dev,resources=packages,verbs=get;list;watch;create;update;patch;delete
@@ -86,7 +85,7 @@ func (r *PackageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if err := r.Get(ctx, req.NamespacedName, &pkg); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-	r.Telemetry.ReconcilePackage(&pkg)
+	telemetry.ForOperator().ReconcilePackage(&pkg)
 
 	if !pkg.DeletionTimestamp.IsZero() {
 		err := conditions.SetUnknownAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions,

@@ -7,6 +7,7 @@ import (
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/telemetry/properties"
+	"github.com/glasskube/glasskube/pkg/condition"
 	"github.com/posthog/posthog-go"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -38,6 +39,16 @@ func (l *managerNodeLister) ListNodes(ctx context.Context) (*corev1.NodeList, er
 	return &nl, l.List(ctx, &nl)
 }
 
+var operatorInstance *OperatorTelemetry
+
+func InitWithManager(mgr manager.Manager) {
+	operatorInstance = ForControllerManager(mgr)
+}
+
+func ForOperator() *OperatorTelemetry {
+	return operatorInstance
+}
+
 func ForControllerManager(mgr manager.Manager) *OperatorTelemetry {
 	t := OperatorTelemetry{
 		startTimestamp:            time.Now(),
@@ -57,6 +68,22 @@ func ForControllerManager(mgr manager.Manager) *OperatorTelemetry {
 	return &t
 }
 
+func (t *OperatorTelemetry) OnEvent(obj client.Object, status condition.Type, reason condition.Reason) {
+	_ = t.posthog.Enqueue(posthog.Capture{
+		DistinctId: t.ClusterId(),
+		Event:      "status_conditions_changed",
+		Properties: properties.BuildProperties(
+			properties.ForOperatorUser(t.PropertyGetter),
+			properties.FromMap(map[string]any{
+				"obj_kind":          obj.GetObjectKind().GroupVersionKind().Kind,
+				"obj_name":          obj.GetName(),
+				"obj_status_type":   status,
+				"obj_status_reason": reason,
+			}),
+		),
+	})
+}
+
 func (t *OperatorTelemetry) ReconcilePackage(pkg *v1alpha1.Package) {
 	if !t.Enabled() || t.posthog == nil {
 		return
@@ -64,7 +91,8 @@ func (t *OperatorTelemetry) ReconcilePackage(pkg *v1alpha1.Package) {
 	go func() {
 		t.packageReportTimesMutex.Lock()
 		defer t.packageReportTimesMutex.Unlock()
-		if lastReported, ok := t.packageReportTimes[pkg.Name]; ok && lastReported.Add(t.packageReportMuteDuration).After(time.Now()) {
+		if lastReported, ok := t.packageReportTimes[pkg.Name]; ok &&
+			lastReported.Add(t.packageReportMuteDuration).After(time.Now()) {
 			return
 		}
 		err := t.posthog.Enqueue(posthog.Capture{
