@@ -85,14 +85,17 @@ func (r *PackageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if err := r.Get(ctx, req.NamespacedName, &pkg); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-	telemetry.ForOperator().ReconcilePackage(&pkg)
 
 	if !pkg.DeletionTimestamp.IsZero() {
-		err := conditions.SetUnknownAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions,
+		changed, err := conditions.SetUnknownAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions,
 			condition.Pending, "Package is being deleted")
-		// TODO telemetry deletion event ?
+		if changed {
+			telemetry.ForOperator().ReportDelete(&pkg)
+		}
 		return ctrl.Result{}, err
 	}
+
+	telemetry.ForOperator().ReconcilePackage(&pkg)
 
 	return r.reconcilePackage(ctx, pkg)
 }

@@ -17,7 +17,8 @@ import (
 // Types Ready and Failed are initialized with Status Unknown.
 func SetInitialAndUpdate(ctx context.Context, client client.Client, obj client.Object, objConditions *[]metav1.Condition) error {
 	if objConditions == nil || len(*objConditions) == 0 {
-		return SetUnknownAndUpdate(ctx, client, obj, objConditions, condition.Reconciling, "Starting reconciliation")
+		_, err := SetUnknownAndUpdate(ctx, client, obj, objConditions, condition.Reconciling, "Starting reconciliation")
+		return err
 	}
 	return nil
 }
@@ -31,11 +32,11 @@ func SetUnknown(ctx context.Context, objConditions *[]metav1.Condition, reason c
 	)
 }
 
-func SetUnknownAndUpdate(ctx context.Context, client client.Client, obj client.Object, objConditions *[]metav1.Condition, reason condition.Reason, message string) error {
+func SetUnknownAndUpdate(ctx context.Context, client client.Client, obj client.Object, objConditions *[]metav1.Condition, reason condition.Reason, message string) (bool, error) {
 	if SetUnknown(ctx, objConditions, reason, message) {
-		return updateAfterConditionsChanged(ctx, client, obj)
+		return true, updateAfterConditionsChanged(ctx, client, obj)
 	}
-	return nil
+	return false, nil
 }
 
 // SetReady sets the Ready condition to Status=True and the Failed condition to Status=False.
