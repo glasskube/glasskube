@@ -24,7 +24,7 @@ func SetupClientContext(requireBootstrapped bool, skipUpdateCheck *bool) func(cm
 		}
 		if ctx, err := client.SetupContext(cmd.Context(), cfg, rawCfg); err != nil {
 			fmt.Fprintf(os.Stderr, "Error setting up the client:\n\n%v\n", err)
-			os.Exit(1)
+			ExitWithError()
 		} else {
 			cmd.SetContext(ctx)
 		}

@@ -216,7 +216,7 @@ func (s *server) Start(ctx context.Context) error {
 				bindAddr = fmt.Sprintf("%v:%d", s.Host, s.listener.Addr().(*net.TCPAddr).Port)
 			} else {
 				fmt.Println("Exiting. User chose not to use a different port.")
-				os.Exit(1)
+				cliutils.ExitWithError()
 			}
 		} else {
 			// If no Port Conflict error is found, return other errors
