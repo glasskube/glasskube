@@ -47,8 +47,7 @@ var listCmd = &cobra.Command{
 		pkgs, err := list.GetPackagesWithStatus(pkgClient, cmd.Context(), listCmdOptions.toListOptions())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "An error occurred:\n\n%v\n", err)
-			os.Exit(1)
-			return
+			cliutils.ExitWithError()
 		}
 		if len(pkgs) == 0 {
 			if listCmdOptions.ListOutdatedOnly {
@@ -106,7 +105,7 @@ func printPackageTable(packages []*list.PackageWithStatus) {
 		})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "There was an error displaying the package table:\n%v\n(This is a bug)\n", err)
-		os.Exit(1)
+		cliutils.ExitWithError()
 	}
 }
 

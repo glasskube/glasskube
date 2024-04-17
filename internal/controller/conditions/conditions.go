@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/glasskube/glasskube/internal/telemetry"
 	"github.com/glasskube/glasskube/pkg/condition"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,7 +17,8 @@ import (
 // Types Ready and Failed are initialized with Status Unknown.
 func SetInitialAndUpdate(ctx context.Context, client client.Client, obj client.Object, objConditions *[]metav1.Condition) error {
 	if objConditions == nil || len(*objConditions) == 0 {
-		return SetUnknownAndUpdate(ctx, client, obj, objConditions, condition.Reconciling, "Starting reconciliation")
+		_, err := SetUnknownAndUpdate(ctx, client, obj, objConditions, condition.Reconciling, "Starting reconciliation")
+		return err
 	}
 	return nil
 }
@@ -30,11 +32,11 @@ func SetUnknown(ctx context.Context, objConditions *[]metav1.Condition, reason c
 	)
 }
 
-func SetUnknownAndUpdate(ctx context.Context, client client.Client, obj client.Object, objConditions *[]metav1.Condition, reason condition.Reason, message string) error {
+func SetUnknownAndUpdate(ctx context.Context, client client.Client, obj client.Object, objConditions *[]metav1.Condition, reason condition.Reason, message string) (bool, error) {
 	if SetUnknown(ctx, objConditions, reason, message) {
-		return updateAfterConditionsChanged(ctx, client, obj)
+		return true, updateAfterConditionsChanged(ctx, client, obj)
 	}
-	return nil
+	return false, nil
 }
 
 // SetReady sets the Ready condition to Status=True and the Failed condition to Status=False.
@@ -42,10 +44,14 @@ func SetReady(ctx context.Context, recorder record.EventRecorder, obj client.Obj
 	log := log.FromContext(ctx)
 	log.V(1).Info("set condition to ready: " + message)
 	recorder.Event(obj, "Normal", string(reason), message)
-	return setStatusConditions(objConditions,
+	changed := setStatusConditions(objConditions,
 		metav1.Condition{Type: string(condition.Ready), Status: metav1.ConditionTrue, Reason: string(reason), Message: message},
 		metav1.Condition{Type: string(condition.Failed), Status: metav1.ConditionFalse, Reason: string(reason), Message: message},
 	)
+	if changed {
+		telemetry.ForOperator().OnEvent(obj, condition.Ready, reason)
+	}
+	return changed
 }
 
 func SetReadyAndUpdate(ctx context.Context, client client.Client, recorder record.EventRecorder, obj client.Object, objConditions *[]metav1.Condition, reason condition.Reason, message string) error {
@@ -59,10 +65,14 @@ func SetFailed(ctx context.Context, recorder record.EventRecorder, obj client.Ob
 	log := log.FromContext(ctx)
 	log.V(1).Info("set condition to failed: " + message)
 	recorder.Event(obj, "Warning", string(reason), message)
-	return setStatusConditions(objConditions,
+	changed := setStatusConditions(objConditions,
 		metav1.Condition{Type: string(condition.Ready), Status: metav1.ConditionFalse, Reason: string(reason), Message: message},
 		metav1.Condition{Type: string(condition.Failed), Status: metav1.ConditionTrue, Reason: string(reason), Message: message},
 	)
+	if changed {
+		telemetry.ForOperator().OnEvent(obj, condition.Failed, reason)
+	}
+	return changed
 }
 
 // SetFailedAndUpdate sets the Ready condition to Status=False and the Failed condition to Status=True, then updates the resource if the conditions have changed.

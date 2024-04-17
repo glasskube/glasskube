@@ -5,19 +5,24 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/glasskube/glasskube/internal/telemetry"
+
 	"github.com/fatih/color"
 	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/constants"
 	"github.com/glasskube/glasskube/internal/releaseinfo"
+	"github.com/glasskube/glasskube/internal/telemetry/annotations"
 	"github.com/schollz/progressbar/v3"
 	appsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/util/retry"
@@ -28,9 +33,10 @@ type BootstrapClient struct {
 }
 
 type BootstrapOptions struct {
-	Type   BootstrapType
-	Url    string
-	Latest bool
+	Type             BootstrapType
+	Url              string
+	Latest           bool
+	DisableTelemetry bool
 }
 
 func DefaultOptions() BootstrapOptions {
@@ -46,6 +52,7 @@ func NewBootstrapClient(config *rest.Config) *BootstrapClient {
 }
 
 func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOptions) error {
+	telemetry.BootstrapAttempt()
 	fmt.Println(installMessage)
 
 	start := time.Now()
@@ -54,6 +61,7 @@ func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOption
 		version := config.Version
 		if options.Latest {
 			if releaseInfo, err := releaseinfo.FetchLatestRelease(); err != nil {
+				telemetry.BootstrapFailure(time.Since(start))
 				return fmt.Errorf("could not determine latest version: %w", err)
 			} else {
 				version = releaseInfo.Version
@@ -67,17 +75,54 @@ func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOption
 	manifests, err := clientutils.FetchResources(options.Url)
 	if err != nil {
 		statusMessage("Couldn't fetch Glasskube manifests", false)
+		telemetry.BootstrapFailure(time.Since(start))
 		return err
 	}
 	statusMessage("Successfully fetched Glasskube manifests", true)
 
 	statusMessage("Applying Glasskube manifests", true)
+
+	if err = c.preprocessManifests(ctx, manifests, options); err != nil {
+		telemetry.BootstrapFailure(time.Since(start))
+		statusMessage(fmt.Sprintf("Couldn't prepare manifests: %v", err), false)
+	}
+
 	if err = c.applyManifests(ctx, manifests); err != nil {
+		telemetry.BootstrapFailure(time.Since(start))
 		statusMessage(fmt.Sprintf("Couldn't apply manifests: %v", err), false)
 	}
 
-	elapsed := time.Since(start).Round(time.Second)
-	statusMessage(fmt.Sprintf("Glasskube successfully installed! (took %v)", elapsed), true)
+	elapsed := time.Since(start)
+	c.handleTelemetry(options.DisableTelemetry, elapsed)
+
+	statusMessage(fmt.Sprintf("Glasskube successfully installed! (took %v)", elapsed.Round(time.Second)), true)
+	return nil
+}
+
+func (c *BootstrapClient) preprocessManifests(
+	ctx context.Context,
+	objs []unstructured.Unstructured,
+	options BootstrapOptions,
+) error {
+	for _, obj := range objs {
+		if obj.GetKind() == "Namespace" && obj.GetName() == "glasskube-system" {
+			clientset := kubernetes.NewForConfigOrDie(c.clientConfig)
+			nsAnnotations := obj.GetAnnotations()
+			if nsAnnotations == nil {
+				nsAnnotations = make(map[string]string, 1)
+			}
+			ns, err := clientset.CoreV1().Namespaces().Get(ctx, "glasskube-system", metav1.GetOptions{})
+			if err != nil && !errors.IsNotFound(err) {
+				return err
+			} else if err == nil {
+				nsAnnotations[annotations.TelemetryEnabledAnnotation] = ns.Annotations[annotations.TelemetryEnabledAnnotation]
+				nsAnnotations[annotations.TelemetryIdAnnotation] = ns.Annotations[annotations.TelemetryIdAnnotation]
+			}
+			annotations.UpdateTelemetryAnnotations(nsAnnotations, options.DisableTelemetry)
+			obj.SetAnnotations(nsAnnotations)
+			return nil
+		}
+	}
 	return nil
 }
 
@@ -135,6 +180,14 @@ func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructure
 	}
 
 	return nil
+}
+
+func (c *BootstrapClient) handleTelemetry(disabled bool, elapsed time.Duration) {
+	if !disabled {
+		statusMessage("Telemetry is enabled for this cluster – "+
+			"Run \"glasskube telemetry status\" for more info.", true)
+		telemetry.BootstrapSuccess(elapsed)
+	}
 }
 
 func (c *BootstrapClient) checkWorkloadReady(

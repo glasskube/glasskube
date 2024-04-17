@@ -20,6 +20,8 @@ import (
 	"flag"
 	"os"
 
+	"github.com/glasskube/glasskube/internal/telemetry"
+
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -92,6 +94,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	telemetry.InitWithManager(mgr)
 	if err = (&controller.PackageReconciler{
 		Client:          mgr.GetClient(),
 		EventRecorder:   mgr.GetEventRecorderFor("package-controller"),

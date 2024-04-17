@@ -17,6 +17,8 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/glasskube/glasskube/internal/telemetry"
+
 	"github.com/glasskube/glasskube/internal/manifestvalues"
 	"k8s.io/client-go/kubernetes"
 
@@ -178,6 +180,7 @@ func (s *server) Start(ctx context.Context) error {
 	fileServer := http.FileServer(http.FS(root))
 
 	router := mux.NewRouter()
+	router.Use(telemetry.HttpMiddleware())
 	router.PathPrefix("/static/").Handler(fileServer)
 	router.Handle("/favicon.ico", fileServer)
 	router.HandleFunc("/ws", s.wsHub.handler)
@@ -213,7 +216,7 @@ func (s *server) Start(ctx context.Context) error {
 				bindAddr = fmt.Sprintf("%v:%d", s.Host, s.listener.Addr().(*net.TCPAddr).Port)
 			} else {
 				fmt.Println("Exiting. User chose not to use a different port.")
-				os.Exit(1)
+				cliutils.ExitWithError()
 			}
 		} else {
 			// If no Port Conflict error is found, return other errors
@@ -691,6 +694,7 @@ func (server *server) initKubeConfig() ServerConfigError {
 		clientadapter.NewPackageClientAdapter(server.pkgClient),
 		clientadapter.NewKubernetesClientAdapter(*k8sclient),
 	)
+	telemetry.InitClient(restConfig)
 	return nil
 }
 

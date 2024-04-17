@@ -21,34 +21,32 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/glasskube/glasskube/api/v1alpha1"
+	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
 	ctrladapter "github.com/glasskube/glasskube/internal/adapter/controllerruntime"
+	"github.com/glasskube/glasskube/internal/controller/conditions"
+	"github.com/glasskube/glasskube/internal/controller/owners"
+	ownerutils "github.com/glasskube/glasskube/internal/controller/owners/utils"
+	"github.com/glasskube/glasskube/internal/controller/requeue"
+	"github.com/glasskube/glasskube/internal/dependency"
+	"github.com/glasskube/glasskube/internal/manifest"
+	"github.com/glasskube/glasskube/internal/manifest/result"
 	"github.com/glasskube/glasskube/internal/manifestvalues"
 	"github.com/glasskube/glasskube/internal/names"
-	"k8s.io/apimachinery/pkg/types"
-
-	"github.com/glasskube/glasskube/internal/dependency"
-
+	"github.com/glasskube/glasskube/internal/telemetry"
+	"github.com/glasskube/glasskube/pkg/condition"
 	"go.uber.org/multierr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
-	"github.com/glasskube/glasskube/api/v1alpha1"
-	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
-	"github.com/glasskube/glasskube/internal/controller/conditions"
-	"github.com/glasskube/glasskube/internal/controller/owners"
-	ownerutils "github.com/glasskube/glasskube/internal/controller/owners/utils"
-	"github.com/glasskube/glasskube/internal/controller/requeue"
-	"github.com/glasskube/glasskube/internal/manifest"
-	"github.com/glasskube/glasskube/internal/manifest/result"
-	"github.com/glasskube/glasskube/pkg/condition"
 )
 
 // PackageReconciler reconciles a Package object
@@ -89,10 +87,15 @@ func (r *PackageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	if !pkg.DeletionTimestamp.IsZero() {
-		err := conditions.SetUnknownAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions,
+		changed, err := conditions.SetUnknownAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions,
 			condition.Pending, "Package is being deleted")
+		if changed {
+			telemetry.ForOperator().ReportDelete(&pkg)
+		}
 		return ctrl.Result{}, err
 	}
+
+	telemetry.ForOperator().ReconcilePackage(&pkg)
 
 	return r.reconcilePackage(ctx, pkg)
 }

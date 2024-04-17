@@ -10,6 +10,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/glasskube/glasskube/internal/config"
+	"github.com/glasskube/glasskube/internal/telemetry"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/spf13/cobra"
 )
@@ -17,12 +18,13 @@ import (
 func SetupClientContext(requireBootstrapped bool, skipUpdateCheck *bool) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
 		cfg, rawCfg := RequireConfig(config.Kubeconfig)
+		telemetry.InitClient(cfg)
 		if requireBootstrapped {
 			RequireBootstrapped(cmd.Context(), cfg, rawCfg)
 		}
 		if ctx, err := client.SetupContext(cmd.Context(), cfg, rawCfg); err != nil {
 			fmt.Fprintf(os.Stderr, "Error setting up the client:\n\n%v\n", err)
-			os.Exit(1)
+			ExitWithError()
 		} else {
 			cmd.SetContext(ctx)
 		}
@@ -52,18 +54,18 @@ func RequireBootstrapped(ctx context.Context, cfg *rest.Config, rawCfg *api.Conf
 	ok, err := bootstrap.IsBootstrapped(ctx, cfg)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error validating Glasskube:\n\n%v\n", err)
-		os.Exit(1)
+		ExitWithError()
 	}
 	if !ok {
 		yes := YesNoPrompt(fmt.Sprintf(bootstrapMessage, rawCfg.CurrentContext, rawCfg.CurrentContext), false)
 		if !yes {
 			fmt.Fprint(os.Stderr, "Execution cancelled – Glasskube is not yet bootstrapped.\n")
-			os.Exit(1)
+			ExitWithError()
 		}
 		client := bootstrap.NewBootstrapClient(cfg)
 		if err := client.Bootstrap(ctx, bootstrap.DefaultOptions()); err != nil {
 			fmt.Fprintf(os.Stderr, "\nAn error occurred during bootstrap:\n%v\n", err)
-			os.Exit(1)
+			ExitWithError()
 		} else {
 			fmt.Fprintf(os.Stderr, "\n\nCongrats, Glasskube is all set up! Have fun managing packages!\n\n")
 		}

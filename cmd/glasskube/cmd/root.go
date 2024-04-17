@@ -2,9 +2,12 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
 
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/config"
+	"github.com/glasskube/glasskube/internal/telemetry"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/spf13/cobra"
@@ -20,9 +23,23 @@ var (
 		Version: config.Version,
 		Short:   "🧊 The missing Package Manager for Kubernetes 📦",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			telemetry.Init()
 			if !rootCmdOptions.SkipUpdateCheck {
 				cliutils.UpdateFetch()
 			}
+
+			signals := make(chan os.Signal, 1)
+			signal.Notify(signals, os.Interrupt)
+			go func() {
+				sig := <-signals
+				// TODO find another way
+				if cmd.Name() != openCmd.Name() {
+					cliutils.ExitFromSignal(&sig)
+				}
+			}()
+		},
+		PersistentPostRun: func(cmd *cobra.Command, args []string) {
+			cliutils.ExitSuccess()
 		},
 	}
 )

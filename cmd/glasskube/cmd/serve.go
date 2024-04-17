@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/glasskube/glasskube/internal/cliutils"
+
 	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/web"
 	"github.com/spf13/cobra"
@@ -28,7 +30,7 @@ var serveCmd = &cobra.Command{
 		server := web.NewServer(options)
 		if err := server.Start(cmd.Context()); err != nil {
 			fmt.Fprintf(os.Stderr, "An error occurred starting the webserver:\n\n%v\n", err)
-			os.Exit(1)
+			cliutils.ExitWithError()
 		}
 	},
 }
