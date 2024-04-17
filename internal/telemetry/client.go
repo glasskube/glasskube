@@ -3,11 +3,15 @@ package telemetry
 import (
 	"context"
 	"fmt"
+	"io"
+	"log"
 	"math/rand"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/glasskube/glasskube/internal/config"
 
 	"github.com/denisbrodbeck/machineid"
 	"github.com/glasskube/glasskube/internal/clientutils"
@@ -114,7 +118,10 @@ func ForClient() *ClientTelemetry {
 		machineId: getMachineId(),
 		start:     time.Now(),
 	}
-	if ph, err := posthog.NewWithConfig(apiKey, posthog.Config{Endpoint: endpoint}); err == nil {
+	if ph, err := posthog.NewWithConfig(apiKey, posthog.Config{
+		Endpoint: endpoint,
+		Logger:   posthog.StdLogger(log.New(io.Discard, "", 0)),
+	}); err == nil {
 		ct.posthog = ph
 	}
 	return &ct
@@ -195,17 +202,15 @@ func (t *ClientTelemetry) report(exitCode int, reason string) {
 	event.Properties["operator_version"] = operatorVersion
 
 	err := t.posthog.Enqueue(event)
-	if err != nil {
-		// TODO only in dev?
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+	if err != nil && config.IsDevBuild() {
+		fmt.Fprintf(os.Stderr, "Telemetry error: %v\n", err)
 	}
 }
 
 func (t *ClientTelemetry) close() {
 	err := t.posthog.Close()
-	if err != nil {
-		// TODO only in dev?
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+	if err != nil && config.IsDevBuild() {
+		fmt.Fprintf(os.Stderr, "Telemetry error: %v\n", err)
 	}
 }
 

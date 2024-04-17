@@ -53,7 +53,7 @@ func ForControllerManager(mgr manager.Manager) *OperatorTelemetry {
 	t := OperatorTelemetry{
 		startTimestamp:            time.Now(),
 		packageReportTimes:        make(map[string]time.Time),
-		packageReportMuteDuration: 5 * time.Second, // TODO change to x hours
+		packageReportMuteDuration: 8 * time.Hour,
 		PropertyGetter: properties.PropertyGetter{
 			NamespaceGetter: &managerNamespaceGetter{mgr.GetClient()},
 			NodeLister:      &managerNodeLister{mgr.GetClient()},
