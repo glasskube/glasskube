@@ -222,6 +222,7 @@ func HttpMiddleware() func(http.Handler) http.Handler {
 						ev.Properties["method"] = r.Method
 						ev.Properties["path"] = r.URL
 						ev.Properties["execution_time"] = time.Since(start).Milliseconds()
+						ev.Properties["user_agent"] = r.UserAgent()
 						_ = instance.posthog.Enqueue(ev)
 					}()
 				}
