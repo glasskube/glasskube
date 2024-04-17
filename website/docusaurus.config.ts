@@ -1,8 +1,8 @@
-import {themes as prismThemes} from 'prism-react-renderer';
-import type {Config} from '@docusaurus/types';
-import type {Options as IdealImageOptions} from '@docusaurus/plugin-ideal-image';
+import { themes as prismThemes } from 'prism-react-renderer';
+import type { Config } from '@docusaurus/types';
+import type { Options as IdealImageOptions } from '@docusaurus/plugin-ideal-image';
 import type * as Preset from '@docusaurus/preset-classic';
-import {EnumChangefreq} from 'sitemap';
+import { EnumChangefreq } from 'sitemap';
 
 const config: Config = {
   title: 'Glasskube.dev',
@@ -57,6 +57,14 @@ const config: Config = {
         showLastUpdateTime: true,
       },
     ],
+    [
+      'posthog-docusaurus',
+      {
+        apiKey: 'phc_EloQUW6cgfbTc0pI9c5CXElhQ4gVGRoBsrUAoakJVoQ',
+        appUrl: 'https://eu.posthog.com',
+        enableInDevelopment: false,
+      },
+    ],
   ],
   presets: [
     [
@@ -75,27 +83,27 @@ const config: Config = {
           editUrl: 'https://github.com/glasskube/glasskube/tree/main/website/',
         },
         theme: {
-          customCss: ['./src/css/custom.css']
+          customCss: ['./src/css/custom.css'],
         },
         sitemap: {
           changefreq: EnumChangefreq.DAILY,
           priority: 1,
-          ignorePatterns: ['/blog/archive','/blog/tags', '/blog/tags/**'],
+          ignorePatterns: ['/blog/archive', '/blog/tags', '/blog/tags/**'],
           filename: 'sitemap.xml',
-        }
+        },
       } satisfies Preset.Options,
     ],
   ],
   themes: [
     [
-      require.resolve("@easyops-cn/docusaurus-search-local"),
+      require.resolve('@easyops-cn/docusaurus-search-local'),
       /** @type {import("@easyops-cn/docusaurus-search-local").PluginOptions} */
-      ({
+      {
         hashed: true,
         indexBlog: false,
-        docsRouteBasePath: '/'
-      })
-    ]
+        docsRouteBasePath: '/',
+      },
+    ],
   ],
   markdown: {
     mermaid: true,
@@ -114,9 +122,10 @@ const config: Config = {
       id: 'announcementBar-0', // Increment on change
       // content: '⭐️ If you like <code>glasskube</code>, give it a star on <a target="_blank" rel="noopener noreferrer" href="https://github.com/glasskube/glasskube">GitHub</a> and follow us on <a target="_blank" rel="noopener noreferrer" href="https://x.com/glasskube">X</a> ⭐️',
       content: `🎉️ <a target="_blank" href="https://github.com/glasskube/glasskube"><code>glasskube/glasskube</code></a> is launching its technical concept on GitHub 🥳️ <a target="_blank" rel="noopener noreferrer" href="https://github.com/glasskube/glasskube">Leave a star to support us</a> ⭐️`,
-      isCloseable: false
+      isCloseable: false,
     },
-    image: 'https://opengraph.githubassets.com/3fbd03d4d860275ee154ca566f24ecce9243e229fe367523fbcab52e8b43db3f/glasskube/glasskube',
+    image:
+      'https://opengraph.githubassets.com/3fbd03d4d860275ee154ca566f24ecce9243e229fe367523fbcab52e8b43db3f/glasskube/glasskube',
     navbar: {
       title: 'Glasskube',
       logo: {
@@ -215,7 +224,7 @@ const config: Config = {
             },
             {
               label: 'Contact / Book appointment',
-              href: 'https://cal.glasskube.eu/team/founder/30min'
+              href: 'https://cal.glasskube.eu/team/founder/30min',
             },
             {
               label: 'Imprint',

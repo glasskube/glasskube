@@ -40,8 +40,10 @@ var telemetryStatusCmd = &cobra.Command{
 }
 
 var telemetryCmd = &cobra.Command{
-	Use:       "telemetry <enable|disable>",
-	Short:     "View and modify telemetry settings",
+	Use:   "telemetry <enable|disable>",
+	Short: "View and modify telemetry settings",
+	Long: "View and modify telemetry settings. \n" +
+		"For more information on how Glasskube uses telemetry see https://glasskube.dev/telemetry",
 	ValidArgs: []string{"enable", "disable"},
 	Args:      cobra.ExactArgs(1),
 	PreRun:    cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
