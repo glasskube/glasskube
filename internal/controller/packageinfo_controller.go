@@ -71,11 +71,6 @@ func (r *PackageInfoReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	if shouldSyncFromRepo(packageInfo) {
-		if err := conditions.SetUnknownAndUpdate(ctx, r.Client, &packageInfo, &packageInfo.Status.Conditions,
-			condition.Pending, "Updating manifest"); err != nil {
-			return requeue.Always(ctx, err)
-		}
-
 		log.Info("updating manifest")
 		if err := updatePackageManifest(&packageInfo); err != nil {
 			err1 := conditions.SetFailedAndUpdate(ctx, r.Client, r.EventRecorder, &packageInfo, &packageInfo.Status.Conditions,
