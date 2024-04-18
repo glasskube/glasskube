@@ -1,5 +1,118 @@
 # Changelog
 
+## [0.2.0](https://github.com/glasskube/glasskube/compare/v0.1.0...v0.2.0) (2024-04-18)
+
+
+### Features
+
+* add graph-based dependency validation ([c9957e6](https://github.com/glasskube/glasskube/commit/c9957e6516f3e056dc51bee2af3469a718cf795e))
+* add kubernetes client adapter ([9623eff](https://github.com/glasskube/glasskube/commit/9623eff8c34b472b3371941db32d7bf2f9580130))
+* add partial validation for package values ([5cfcb7c](https://github.com/glasskube/glasskube/commit/5cfcb7c2cf27e1266b67f359b40abf44c915fd1f))
+* add resolving, validating value configurations ([54d0f0f](https://github.com/glasskube/glasskube/commit/54d0f0f556a7ddefb5e15e5d252abbad8aa24948))
+* add support for transitive dependencies ([c9957e6](https://github.com/glasskube/glasskube/commit/c9957e6516f3e056dc51bee2af3469a718cf795e))
+* **api:** add pattern constraint for value definitions ([de5f040](https://github.com/glasskube/glasskube/commit/de5f04047231e623b1b413d40fc1ae894c6add4f))
+* **api:** add types for value configurations ([8e1c663](https://github.com/glasskube/glasskube/commit/8e1c66365ac894e3de7c406d698021b33fcb632b))
+* **cli:** add package configuration ([ba0cd32](https://github.com/glasskube/glasskube/commit/ba0cd324794f60d9a5ee7b7dbd3e12085607f94e))
+* **cli:** add value config flags ([9be6b1f](https://github.com/glasskube/glasskube/commit/9be6b1ffd23130574ae138b7ac9d5e225891e17d))
+* **cli:** added --yes flag for non-interactive modes for install command ([#468](https://github.com/glasskube/glasskube/issues/468)) ([3ee7308](https://github.com/glasskube/glasskube/commit/3ee730825c5a74856562ec6cace3b847886f9208))
+* **cli:** added --yes flag for non-interactive modes for update command ([#468](https://github.com/glasskube/glasskube/issues/468)) ([4e5d742](https://github.com/glasskube/glasskube/commit/4e5d7424effe2dc96fafcf448f085646944179c4))
+* **client, ui:** introduce package info cache ([#444](https://github.com/glasskube/glasskube/issues/444)) ([24d6466](https://github.com/glasskube/glasskube/commit/24d64668df90fdc2f7ee36f332c06a5995ebab94))
+* **cli:** made --enable-auto-updates flag value default even if --yes flag is used ([5d864a4](https://github.com/glasskube/glasskube/commit/5d864a4d585be6d61f307d4d267a1014f5a92c20))
+* **cli:** show removed dependencies before uninstall ([3e84e09](https://github.com/glasskube/glasskube/commit/3e84e09e46a92f0dfa920f0a183bb996a2d23c11))
+* **cli:** show whether a package is auto-updated ([#296](https://github.com/glasskube/glasskube/issues/296)) ([49a203a](https://github.com/glasskube/glasskube/commit/49a203a22f5b9ca355e351a5c2d22ef8cb0bcffb))
+* **cli:** update to specific package version cli ([aa7649a](https://github.com/glasskube/glasskube/commit/aa7649accfcd4f385b07f386bed455343cc09774))
+* **package-operator:** add base64 func to value templates ([3940dd2](https://github.com/glasskube/glasskube/commit/3940dd2a8f3aaad34cd8e0282c75a644a1b8cced))
+* **package-operator:** add generating patches from value definitions ([90b264d](https://github.com/glasskube/glasskube/commit/90b264d85a2fbd6c2f2c3085f1eef1e7023dd583))
+* **package-operator:** add handling package values ([8eb8e2b](https://github.com/glasskube/glasskube/commit/8eb8e2b7ce8890a6dd875f5df80e2ca74fce8346))
+* **package-operator:** add validating package values in webhook ([1bfb8bf](https://github.com/glasskube/glasskube/commit/1bfb8bf2d78acc488c15a94369d5b1aece05010d))
+* **ui:** alert when websocket has been closed ([#222](https://github.com/glasskube/glasskube/issues/222)) ([a86fc04](https://github.com/glasskube/glasskube/commit/a86fc04017ef0066ad289abac110cfcfcfedd827))
+* **ui:** display latest & installed version in package overview ([#452](https://github.com/glasskube/glasskube/issues/452)) ([374253f](https://github.com/glasskube/glasskube/commit/374253f331be78a3c72ac4387da15100ce8f6688))
+* **ui:** introduce global error handling ([d08abc0](https://github.com/glasskube/glasskube/commit/d08abc0d4dacda75a498aaf00542e64b0ce16a23))
+* **ui:** package configuration ([#121](https://github.com/glasskube/glasskube/issues/121)) ([7c9e3d7](https://github.com/glasskube/glasskube/commit/7c9e3d7447d5a1fa088bd7d035e79768b5f8e2bd))
+* **ui:** reuse transaction when applying updates ([#295](https://github.com/glasskube/glasskube/issues/295)) ([c26c471](https://github.com/glasskube/glasskube/commit/c26c47143123b6400586b9ee8335cf764082bfa7))
+* **ui:** show removed dependencies before uninstall ([200ea5d](https://github.com/glasskube/glasskube/commit/200ea5d9952106d644f5f0f76967cb398ed19377))
+* **ui:** show warning if operator and client versions differ ([#352](https://github.com/glasskube/glasskube/issues/352)) ([d50b164](https://github.com/glasskube/glasskube/commit/d50b16429e91a5aaaa5d2d89c56301bf56d2c1cc))
+* **ui:** show whether a package is auto-updated ([#296](https://github.com/glasskube/glasskube/issues/296)) ([a79a636](https://github.com/glasskube/glasskube/commit/a79a636f15a5f56c1f573a8ae695b06a18ad05a8))
+* **ui:** show whether a package is auto-updated ([#296](https://github.com/glasskube/glasskube/issues/296)) ([a79a636](https://github.com/glasskube/glasskube/commit/a79a636f15a5f56c1f573a8ae695b06a18ad05a8))
+* **ui:** show whether a package is auto-updated ([#296](https://github.com/glasskube/glasskube/issues/296)) ([a79a636](https://github.com/glasskube/glasskube/commit/a79a636f15a5f56c1f573a8ae695b06a18ad05a8))
+* **ui:** trigger refreshing package detail page ([#382](https://github.com/glasskube/glasskube/issues/382)) ([48f02bb](https://github.com/glasskube/glasskube/commit/48f02bbd593324dcda3dfeb14615e4c3e92644cb))
+
+
+### Bug Fixes
+
+* always try to resolve all values to improve error message ([b305bf9](https://github.com/glasskube/glasskube/commit/b305bf94d17654330c5c3a1b7c5380ddfd123572))
+* **api:** change value constraints to pointers ([235a456](https://github.com/glasskube/glasskube/commit/235a456c003edb8fdcef60d6cab7822f9825aa64))
+* avoid client rate limiting ([ab42a81](https://github.com/glasskube/glasskube/commit/ab42a81a931b389f9e4929584fcb8bc5c784d3e0))
+* avoid updates to smaller versions ([4a44e4d](https://github.com/glasskube/glasskube/commit/4a44e4d9d99a10acba2267339a52dabefe5c734a))
+* **cli, ui:** bootstrap handles nil values in `checkWorkloadReady` and major speedup ([d0b6683](https://github.com/glasskube/glasskube/commit/d0b66836306133e0dd507873da33b7ac2731f58b))
+* **cli:** `glasskube ls` no longer shows the latest version if the installed version is newer ([#483](https://github.com/glasskube/glasskube/issues/483)) ([6725d40](https://github.com/glasskube/glasskube/commit/6725d40b97cb6d7986d14673f87a04f53dacd7be))
+* **deps:** update dependency asciinema-player to v3.7.1 ([8a44cfa](https://github.com/glasskube/glasskube/commit/8a44cfa35760a5b6dd1848df1bfb9ce94386ce3b))
+* **deps:** update dependency htmx.org to v1.9.12 ([20e3491](https://github.com/glasskube/glasskube/commit/20e34916da858f4914d0738b2a54a0cc4c7357cb))
+* **deps:** update docusaurus monorepo to v3.2.0 ([1e65bc0](https://github.com/glasskube/glasskube/commit/1e65bc06351df0ed4b3a310f23a42ce2af3b21d5))
+* **deps:** update docusaurus monorepo to v3.2.1 ([9923205](https://github.com/glasskube/glasskube/commit/9923205b1dc73832c3e026ee8b58aff9845969cf))
+* **deps:** update font awesome to v6.5.2 ([995b95d](https://github.com/glasskube/glasskube/commit/995b95db7167ca1de16d21606955d1d913b03637))
+* **deps:** update kubernetes packages to v0.29.4 ([40ad3c4](https://github.com/glasskube/glasskube/commit/40ad3c402b6f61773003b98c8dfd6690f900c542))
+* **deps:** update module github.com/evanphx/json-patch/v5 to v5.9.0 ([62c5a55](https://github.com/glasskube/glasskube/commit/62c5a559e8d567053d56341d16330494eaa6d9fb))
+* **deps:** update module github.com/onsi/ginkgo/v2 to v2.17.1 ([a1faa39](https://github.com/glasskube/glasskube/commit/a1faa393eb7bc3c2f3a7728330c306bd457f5e33))
+* **deps:** update module sigs.k8s.io/controller-runtime to v0.17.3 ([82c53f9](https://github.com/glasskube/glasskube/commit/82c53f99600ddc02f76491ce3a0882e7a4930199))
+* made changes ([49a203a](https://github.com/glasskube/glasskube/commit/49a203a22f5b9ca355e351a5c2d22ef8cb0bcffb))
+* **package-operator:** correct incorrect constraint error in values validation ([bea16a1](https://github.com/glasskube/glasskube/commit/bea16a1b3cbdd37833db076b6cc02dc779585fa2))
+* **package-operator:** don't skip update validation if values changed ([536a7aa](https://github.com/glasskube/glasskube/commit/536a7aa3711170d6cd94e3a5c552642ad1c9d2b7))
+* **package-operator:** prevent reconcile loop on packageinfo error ([aced43f](https://github.com/glasskube/glasskube/commit/aced43f742b9ea878b4de9bf816f3fddcb1d2a96))
+* **ui, cli:** prevent a panic if a package has no OwnedPackageInfo ([#419](https://github.com/glasskube/glasskube/issues/419)) ([300490a](https://github.com/glasskube/glasskube/commit/300490acfdb6a0bba340e1fd542df1b7326e2918))
+* **ui:** add hx-boost to fix inconsistent browser back/forth ([dc89c02](https://github.com/glasskube/glasskube/commit/dc89c029dd3146ee0ffdf298f8c4597ca4d2b73f))
+* **ui:** make the whole card on package list clickable ([b4dcdd2](https://github.com/glasskube/glasskube/commit/b4dcdd215ddfecd2a541a174742bc582dfce83db))
+* **ui:** parse templates before starting informer to avoid panic ([45fea63](https://github.com/glasskube/glasskube/commit/45fea63d6a0de8109d72f549b7c2409a59cb42cd))
+* **ui:** take configured values into account at installation ([cd08eb9](https://github.com/glasskube/glasskube/commit/cd08eb9278ee20f841a5450ae6a8b1a2fea197e3))
+* update install.go ([49a203a](https://github.com/glasskube/glasskube/commit/49a203a22f5b9ca355e351a5c2d22ef8cb0bcffb))
+
+
+### Other
+
+* add renovate automerge config ([6159c2b](https://github.com/glasskube/glasskube/commit/6159c2b00983e43124a3ddf3f3808a11611812ee))
+* add telemetry ([#506](https://github.com/glasskube/glasskube/issues/506)) ([2221c64](https://github.com/glasskube/glasskube/commit/2221c64937f53521740365133d360e7ececdcccc))
+* change next release to 0.2.0 ([3600c09](https://github.com/glasskube/glasskube/commit/3600c093f7f2595a5a692254caf02b9ec31764bb))
+* **deps:** update commitlint monorepo to v19.2.2 ([cebb9ad](https://github.com/glasskube/glasskube/commit/cebb9adf5dc65895e338fb02cb01c8006be19036))
+* **deps:** update dependency typescript to v5.4.4 ([e71dbc1](https://github.com/glasskube/glasskube/commit/e71dbc152d04758adba1c618476f5daa54751025))
+* **deps:** update dependency typescript to v5.4.5 ([1bd3dfb](https://github.com/glasskube/glasskube/commit/1bd3dfb007c41481cc8621cb7ce66a4f2fa4cc09))
+* **deps:** update flux manifests to version v2.2.3 ([aa1189e](https://github.com/glasskube/glasskube/commit/aa1189e1814ad9d396e736ef2fdc7a5937244024))
+* remove unneeded OwnerManager in DependencyManager ([036db63](https://github.com/glasskube/glasskube/commit/036db633567b42d18ed80ce414dd760bf3920454))
+* **repo:** address contributor guideline changes ([2ee73e6](https://github.com/glasskube/glasskube/commit/2ee73e68588249d16f1c672c32687c0b54ba24a5))
+* **repo:** rebased and updated branch naming convention example ([69fa659](https://github.com/glasskube/glasskube/commit/69fa65955377812583aedac3f3b2cc831b4b4aef))
+* **repo:** try to remove merge commit ([d7c8981](https://github.com/glasskube/glasskube/commit/d7c8981709e22c98f0885ceea400aa00ac1c1839))
+* **repo:** update contributor guidelines ([bb9240c](https://github.com/glasskube/glasskube/commit/bb9240cdf3be34b34d0b71221291ac1ceb6bdaa6))
+* **ui:** add reloading templates after changes in dev mode ([#170](https://github.com/glasskube/glasskube/issues/170)) ([76823e9](https://github.com/glasskube/glasskube/commit/76823e9f225a8b89d1e993280fabd3ad733e532b))
+* **ui:** remove unnecessary htmx swap attributes ([08a0edb](https://github.com/glasskube/glasskube/commit/08a0edbdb353a5f52c75318ba89fd737469e8c2f))
+* update golang version to v1.22 ([929bfd9](https://github.com/glasskube/glasskube/commit/929bfd9d9c0718c3b0d374bcc66bbfaa6ea38b61))
+* **website:** update author avatar urls ([fe6c7ae](https://github.com/glasskube/glasskube/commit/fe6c7aed0083fe052eee65fea61a73d24c8dca4e))
+* **website:** update link in blog + added video to cont guidelines ([c6a6c94](https://github.com/glasskube/glasskube/commit/c6a6c94b8fa8e8f6cd6aec06b9632a61a5082a68))
+* **website:** updated video thumbnail ([e7f318e](https://github.com/glasskube/glasskube/commit/e7f318e1e92bc7bca2b33f3f540cde47e47a077b))
+
+
+### Docs
+
+* add glasskube activity chart ([1b63bb9](https://github.com/glasskube/glasskube/commit/1b63bb95177de19ea3face7a03ea25b361ed72b1))
+* add instructions for installation via nix ([478d5ec](https://github.com/glasskube/glasskube/commit/478d5ec534feaa5c8179cfc08154b786919657fa))
+* add proposal for package configuration ([#446](https://github.com/glasskube/glasskube/issues/446)) ([a7f3f92](https://github.com/glasskube/glasskube/commit/a7f3f9227dd05428abd0a5dcd9d11e1ce9a44e11))
+* as Timoni is still being created, rephrase the word was to is ([83a7666](https://github.com/glasskube/glasskube/commit/83a76669c64a969d77852901222dc1ff6bef34b5))
+* build numbers not allowed in dependency version ranges ([#405](https://github.com/glasskube/glasskube/issues/405)) ([594de21](https://github.com/glasskube/glasskube/commit/594de216c110145573be99b473641afcf8e62b8c))
+* fix Timoni link to homepage ([402549d](https://github.com/glasskube/glasskube/commit/402549d2d1b4c22b90e152b5222dc78e9d1609c1))
+* update CLI reference ([017c90d](https://github.com/glasskube/glasskube/commit/017c90d3eb96f10251e6167889d8624c3ba0e780))
+* update contributor guidelines ([f037c2c](https://github.com/glasskube/glasskube/commit/f037c2c4d9e8a24e7458a6a5a404280f26fa5e3a))
+* update go version to 1.22 ([b375170](https://github.com/glasskube/glasskube/commit/b375170c69ed9415807734e07e868f2bf04389fb))
+* update readme ([0d859cf](https://github.com/glasskube/glasskube/commit/0d859cfa13cc13ff8c699a951337ea385c449403))
+* **website:** address PR change requests ([25fda94](https://github.com/glasskube/glasskube/commit/25fda94d8863d8ba49f29f194ea2dc9585f86948))
+* **website:** new blog post - contributor guidelines ([e9b6ad3](https://github.com/glasskube/glasskube/commit/e9b6ad312424710649a7e5a9201e5f8dd2ac797d))
+* **website:** new Discord blog post + updated pic for v0.1.0 blog ([6e20133](https://github.com/glasskube/glasskube/commit/6e201333a0513e8f7735b77a55713b1bc4792d28))
+* **website:** release blog v0.1.0-ammend2 ([cbf9541](https://github.com/glasskube/glasskube/commit/cbf95414628a5bb1e6dd12aa14814bdb025bbb62))
+* **website:** update roadmap ([b9cfd73](https://github.com/glasskube/glasskube/commit/b9cfd73054d27ceafb6ce3666be244588722348a))
+* **website:** update velero icon url to improve browser compatibility ([#488](https://github.com/glasskube/glasskube/issues/488)) ([17260ab](https://github.com/glasskube/glasskube/commit/17260abe4a75fd697381f345ec390cca0b9d49ab))
+
+
+### Refactoring
+
+* move adapters out of dependency package ([3ebba24](https://github.com/glasskube/glasskube/commit/3ebba24ea49bf0a93fd35991f4b913f46117b493))
+
 ## [0.1.0](https://github.com/glasskube/glasskube/compare/v0.0.4...v0.1.0) (2024-03-21)
 
 
