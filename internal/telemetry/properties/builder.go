@@ -20,24 +20,25 @@ func BuildProperties(fns ...PropertiesBuilderFn) posthog.Properties {
 	return properties
 }
 
-func ForClientUser(pg PropertyGetter) PropertiesBuilderFn {
+func ForClientUser(pg PropertyGetter, includeCluster bool) PropertiesBuilderFn {
 	return func(p posthog.Properties) posthog.Properties {
-		cp := pg.ClusterProperties()
-		return p.
-			Set("$set", map[string]any{
-				"version": config.Version,
-			}).
-			Set("$set_once", map[string]any{
-				"type":            "client",
-				"initial_version": config.Version,
-				"os":              runtime.GOOS,
-				"architecture":    runtime.GOARCH,
-			}).
-			Set("cluster_id", pg.ClusterId()).
-			Set("cluster_k8s_version", cp.kubernetesVersion).
-			Set("cluster_provider", cp.provider).
-			Set("cluster_nnodes", cp.nnodes).
-			Set("version", config.Version)
+		var cp ClusterProperties
+		if includeCluster {
+			cp = pg.ClusterProperties()
+			p.Set("cluster_id", pg.ClusterId()).
+				Set("cluster_k8s_version", cp.kubernetesVersion).
+				Set("cluster_provider", cp.provider).
+				Set("cluster_nnodes", cp.nnodes)
+		}
+		p.Set("$set", map[string]any{
+			"version": config.Version,
+		}).Set("$set_once", map[string]any{
+			"type":            "client",
+			"initial_version": config.Version,
+			"os":              runtime.GOOS,
+			"architecture":    runtime.GOARCH,
+		}).Set("version", config.Version)
+		return p
 	}
 }
 
@@ -74,7 +75,8 @@ func FromPackage(pkg *v1alpha1.Package) PropertiesBuilderFn {
 			Set("package_version_desired", pkg.Spec.PackageInfo.Version).
 			Set("package_version_actual", pkg.Status.Version).
 			// TODO: set_once ?
-			Set("package_creation_timestamp", pkg.CreationTimestamp)
+			Set("package_creation_timestamp", pkg.CreationTimestamp).
+			Set("package_auto_update", pkg.Labels["packages.glasskube.dev/auto-update"])
 		if c := meta.FindStatusCondition(pkg.Status.Conditions, string(condition.Ready)); c != nil {
 			p.Set("package_ready_status", c.Status)
 			p.Set("package_ready_reason", c.Reason)

@@ -60,7 +60,7 @@ func InitClient(config *rest.Config) {
 func BootstrapAttempt() {
 	if instance != nil {
 		command, arguments, flags := getCommandAndArgs()
-		event := instance.getBaseEvent("bootstrap_attempt")
+		event := instance.getBaseEvent("bootstrap_attempt", true)
 		event.Properties["original_command"] = command
 		event.Properties["arguments"] = arguments
 		event.Properties["flags"] = flags
@@ -71,7 +71,7 @@ func BootstrapAttempt() {
 func BootstrapFailure(elapsed time.Duration) {
 	if instance != nil {
 		command, arguments, flags := getCommandAndArgs()
-		event := instance.getBaseEvent("bootstrap_failure")
+		event := instance.getBaseEvent("bootstrap_failure", true)
 		event.Properties["original_command"] = command
 		event.Properties["arguments"] = arguments
 		event.Properties["flags"] = flags
@@ -83,7 +83,7 @@ func BootstrapFailure(elapsed time.Duration) {
 func BootstrapSuccess(elapsed time.Duration) {
 	if instance != nil {
 		command, arguments, flags := getCommandAndArgs()
-		event := instance.getBaseEvent("bootstrap_success")
+		event := instance.getBaseEvent("bootstrap_success", true)
 		event.Properties["original_command"] = command
 		event.Properties["arguments"] = arguments
 		event.Properties["flags"] = flags
@@ -174,12 +174,12 @@ func extractFromArgs(args []string) ([]string, []string) {
 	return arguments, flags
 }
 
-func (t *ClientTelemetry) getBaseEvent(event string) *posthog.Capture {
+func (t *ClientTelemetry) getBaseEvent(event string, includeCluster bool) *posthog.Capture {
 	return &posthog.Capture{
 		DistinctId: t.machineId,
 		Event:      event,
 		Properties: properties.BuildProperties(
-			properties.ForClientUser(instance.properties),
+			properties.ForClientUser(instance.properties, includeCluster),
 		),
 	}
 }
@@ -193,7 +193,7 @@ func (t *ClientTelemetry) report(exitCode int, reason string) {
 	command, arguments, flags := getCommandAndArgs()
 	duration := time.Since(t.start).Milliseconds()
 
-	event := t.getBaseEvent(command)
+	event := t.getBaseEvent(command, true)
 	event.Properties["arguments"] = arguments
 	event.Properties["flags"] = flags
 	event.Properties["execution_time"] = duration
@@ -222,7 +222,7 @@ func HttpMiddleware() func(http.Handler) http.Handler {
 			defer func() {
 				if instance != nil {
 					go func() {
-						ev := instance.getBaseEvent("ui_endpoint")
+						ev := instance.getBaseEvent("ui_endpoint", false)
 						ev.Properties["$current_url"] = r.URL.String()
 						ev.Properties["method"] = r.Method
 						ev.Properties["path"] = r.URL
