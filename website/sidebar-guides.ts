@@ -14,6 +14,18 @@ const sidebars: SidebarsConfig = {
       },
       items: ['cert-manager', 'ingress-nginx'],
     },
+    {
+      type: 'category',
+      label: 'Contributor Guides',
+      link: {
+        type: 'generated-index',
+        title: 'Contributor Guides',
+        description:
+          '⚠️ Contributors are what make open source great, here is where we share some resources to support you. ⚠️',
+        slug: '/categories/contributors',
+      },
+      items: ['git-guide'],
+    },
   ],
 };
 
