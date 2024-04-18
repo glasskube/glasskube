@@ -107,6 +107,7 @@ type server struct {
 	updateMutex           sync.Mutex
 	updateTransactions    map[int]update.UpdateTransaction
 	valueResolver         *manifestvalues.Resolver
+	isBootstrapped        bool
 }
 
 func (s *server) RestConfig() *rest.Config {
@@ -166,17 +167,14 @@ func (s *server) Start(ctx context.Context) error {
 			fmt.Fprintf(os.Stderr, "templates will not be parsed after changes: %v\n", err)
 		}
 	}
-	_ = s.initKubeConfig()
-	if err := s.checkBootstrapped(ctx); err == nil {
-		s.startInformer(ctx)
-	}
+	s.wsHub = NewHub()
+	_ = s.ensureBootstrapped(ctx)
 
 	root, err := fs.Sub(webFs, "root")
 	if err != nil {
 		return err
 	}
 
-	s.wsHub = NewHub()
 	fileServer := http.FileServer(http.FS(root))
 
 	router := mux.NewRouter()
@@ -518,7 +516,7 @@ func (s *server) packageConfigurationInput(w http.ResponseWriter, r *http.Reques
 }
 
 func (s *server) supportPage(w http.ResponseWriter, r *http.Request) {
-	if err := s.checkBootstrapped(r.Context()); err != nil {
+	if err := s.ensureBootstrapped(r.Context()); err != nil {
 		if err.BootstrapMissing() {
 			http.Redirect(w, r, "/bootstrap", http.StatusFound)
 			return
@@ -658,7 +656,15 @@ func (server *server) checkKubeconfig() ServerConfigError {
 	}
 }
 
-func (server *server) checkBootstrapped(ctx context.Context) ServerConfigError {
+// ensureBootstrapped checks for a valid kubeconfig (see checkKubeconfig), and whether glasskube is bootstrapped in
+// the given cluster. If either of these checks fail, a ServerConfigError is returned, otherwise the result of the
+// check is cached in isBootstrapped and the check will not run anymore after that. After the first successful check,
+// additional components are intialized (which can only be done once glasskube is known to be bootstrapped) –
+// see initWhenBootstrapped
+func (server *server) ensureBootstrapped(ctx context.Context) ServerConfigError {
+	if server.isBootstrapped {
+		return nil
+	}
 	if err := server.checkKubeconfig(); err != nil {
 		return err
 	}
@@ -670,6 +676,8 @@ func (server *server) checkBootstrapped(ctx context.Context) ServerConfigError {
 		}
 		return newBootstrapErr(err)
 	}
+	server.isBootstrapped = isBootstrapped
+	server.initWhenBootstrapped(ctx)
 	return nil
 }
 
@@ -682,30 +690,30 @@ func (server *server) initKubeConfig() ServerConfigError {
 	if err != nil {
 		return newKubeconfigErr(err)
 	}
-	k8sclient, err := kubernetes.NewForConfig(restConfig)
-	if err != nil {
-		return newKubeconfigErr(err)
-	}
+	telemetry.InitClient(restConfig)
+
 	server.restConfig = restConfig
 	server.rawConfig = rawConfig
-	server.pkgClient = client
+	server.pkgClient = client // be aware that server.pkgClient is overridden with the cached client once bootstrap check succeeded
+	return nil
+}
+
+func (server *server) initWhenBootstrapped(ctx context.Context) {
+	k8sclient := kubernetes.NewForConfigOrDie(server.restConfig)
+	server.initCachedClient(context.WithoutCancel(ctx))
 	server.dependencyMgr = dependency.NewDependencyManager(clientadapter.NewPackageClientAdapter(server.pkgClient))
 	server.valueResolver = manifestvalues.NewResolver(
 		clientadapter.NewPackageClientAdapter(server.pkgClient),
 		clientadapter.NewKubernetesClientAdapter(*k8sclient),
 	)
-	telemetry.InitClient(restConfig)
-	return nil
 }
 
-func (server *server) startInformer(ctx context.Context) {
-	if server.packageStore == nil && server.packageController == nil && server.packageInfoStore == nil {
-		server.packageStore, server.packageController = server.initPackageStoreAndController(ctx)
-		server.packageInfoStore, server.packageInfoController = server.initPackageInfoStoreAndController(ctx)
-		go server.packageController.Run(ctx.Done())
-		go server.packageInfoController.Run(ctx.Done())
-		server.pkgClient = server.pkgClient.WithStores(server.packageStore, server.packageInfoStore)
-	}
+func (server *server) initCachedClient(ctx context.Context) {
+	server.packageStore, server.packageController = server.initPackageStoreAndController(ctx)
+	server.packageInfoStore, server.packageInfoController = server.initPackageInfoStoreAndController(ctx)
+	go server.packageController.Run(ctx.Done())
+	go server.packageInfoController.Run(ctx.Done())
+	server.pkgClient = server.pkgClient.WithStores(server.packageStore, server.packageInfoStore)
 }
 
 func (s *server) enrichContext(h http.Handler) http.Handler {
@@ -715,11 +723,10 @@ func (s *server) enrichContext(h http.Handler) http.Handler {
 func (s *server) requireReady(h http.HandlerFunc) http.Handler {
 	return &handler.PreconditionHandler{
 		Precondition: func(r *http.Request) error {
-			err := s.checkBootstrapped(r.Context())
+			err := s.ensureBootstrapped(r.Context())
 			if err != nil {
 				return err
 			}
-			s.startInformer(context.WithoutCancel(r.Context()))
 			return nil
 		},
 		Handler:       h,
