@@ -149,7 +149,7 @@ git rebase upstream/main
 
 ## Development Guide 👨‍💻
 
-Glasskube is developed using the [Go](https://golang.org/) programming language. The current version of Go being used is [v1.21](https://go.dev/doc/go1.21). It uses go modules for dependency management.
+Glasskube is developed using the [Go](https://golang.org/) programming language. The current version of Go being used is [v1.22](https://go.dev/doc/go1.22). It uses go modules for dependency management.
 
 We use [GNU Make](https://www.gnu.org/software/make/) and do not support other make flavors. 
 
