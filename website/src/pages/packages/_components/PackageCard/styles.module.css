@@ -1,10 +1,11 @@
 
 .packageCardImage {
+  /*background: white;*/
   overflow: hidden;
   height: 150px;
   text-align: center;
   border-bottom: 2px solid var(--ifm-color-emphasis-200);
-  margin-top: 15px;
+  padding-top: 15px;
 }
 
 .packageCardHeader {
