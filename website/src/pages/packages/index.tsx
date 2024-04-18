@@ -221,11 +221,7 @@ function Packages() {
                 </Heading>
               </div>
               <ul
-                className={clsx(
-                  'container',
-                  'clean-list',
-                  styles.packageList,
-                )}>
+                className={clsx('clean-list', styles.packageList,)}>
                 {favoriteUsers.map((user) => (
                   <PackageCard key={user.name} user={user}/>
                 ))}
