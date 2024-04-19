@@ -6,7 +6,6 @@ import (
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -42,7 +41,7 @@ func (c *chachedPackageClient) Get(ctx context.Context, pkgName string, result *
 	if obj, ok, err := c.store.GetByKey(pkgName); err != nil {
 		return apierrors.NewInternalError(err)
 	} else if !ok {
-		return apierrors.NewNotFound(schema.GroupResource{}, pkgName)
+		return c.PackageInterface.Get(ctx, pkgName, result)
 	} else if pkg, ok := obj.(*v1alpha1.Package); !ok {
 		return apierrors.NewInternalError(errors.New("not a package"))
 	} else {

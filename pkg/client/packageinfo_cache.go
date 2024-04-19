@@ -6,7 +6,6 @@ import (
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -19,7 +18,7 @@ func (c *cachedPackageInfoClient) Get(ctx context.Context, pkgInfoName string, r
 	if obj, ok, err := c.store.GetByKey(pkgInfoName); err != nil {
 		return apierrors.NewInternalError(err)
 	} else if !ok {
-		return apierrors.NewNotFound(schema.GroupResource{}, pkgInfoName)
+		return c.PackageInfoInterface.Get(ctx, pkgInfoName, result)
 	} else if pkgInfo, ok := obj.(*v1alpha1.PackageInfo); !ok {
 		return apierrors.NewInternalError(errors.New("not a packageinfo"))
 	} else {
