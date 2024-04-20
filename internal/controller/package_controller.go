@@ -137,13 +137,15 @@ type PackageReconcilationContext struct {
 	pkg                   *v1alpha1.Package
 	pi                    *v1alpha1.PackageInfo
 	isSuccess             bool
+	isRecoverable         bool
 	shouldUpdateStatus    bool
 	currentOwnedResources []v1alpha1.OwnedResourceRef
 	currentOwnedPackages  []v1alpha1.OwnedResourceRef
 }
 
-func (r *PackageReconcilationContext) setShouldUpdate(value bool) {
+func (r *PackageReconcilationContext) setShouldUpdate(value bool, isRecoverable bool) {
 	r.shouldUpdateStatus = r.shouldUpdateStatus || value
+	r.isRecoverable = isRecoverable
 }
 
 func (r *PackageReconcilationContext) reconcile(ctx context.Context) (ctrl.Result, error) {
@@ -163,7 +165,7 @@ func (r *PackageReconcilationContext) reconcile(ctx context.Context) (ctrl.Resul
 		return r.finalize(ctx)
 	} else {
 		r.setShouldUpdate(
-			conditions.SetUnknown(ctx, &r.pkg.Status.Conditions, condition.Pending, "PackageInfo status is unknown"))
+			conditions.SetUnknown(ctx, &r.pkg.Status.Conditions, condition.Pending, "PackageInfo status is unknown"), false)
 		return r.finalize(ctx)
 	}
 }
@@ -368,7 +370,7 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 	if len(waitingFor) > 0 {
 		message := fmt.Sprintf("waiting for required package(s) %v", strings.Join(waitingFor, ","))
 		r.setShouldUpdate(
-			conditions.SetUnknown(ctx, &r.pkg.Status.Conditions, condition.Pending, message))
+			conditions.SetUnknown(ctx, &r.pkg.Status.Conditions, condition.Pending, message), false)
 		return false
 	}
 
@@ -416,7 +418,7 @@ func (r *PackageReconcilationContext) ensurePackageInfo(ctx context.Context) err
 	if changed, err := ownerutils.AddOwnedResourceRef(r.Scheme, &r.pkg.Status.OwnedPackageInfos, &packageInfo); err != nil {
 		log.Error(err, "could not add PackageInfo to owned resources")
 	} else {
-		r.setShouldUpdate(changed)
+		r.setShouldUpdate(changed, false)
 	}
 
 	r.pi = &packageInfo
@@ -441,7 +443,7 @@ func (r *PackageReconcilationContext) handleAdapterResults(ctx context.Context, 
 		return false
 	} else if firstWaiting != nil {
 		r.setShouldUpdate(
-			conditions.SetUnknown(ctx, &r.pkg.Status.Conditions, condition.Pending, firstWaiting.Message))
+			conditions.SetUnknown(ctx, &r.pkg.Status.Conditions, condition.Pending, firstWaiting.Message), false)
 		return false
 	} else {
 		return true
@@ -461,8 +463,8 @@ func (r *PackageReconcilationContext) afterSuccess(ctx context.Context, results 
 	}
 
 	r.setShouldUpdate(
-		conditions.SetReady(ctx, r.EventRecorder, r.pkg, &r.pkg.Status.Conditions, reason, message))
-	r.setShouldUpdate(r.pkg.Status.Version != r.pi.Status.Version)
+		conditions.SetReady(ctx, r.EventRecorder, r.pkg, &r.pkg.Status.Conditions, reason, message), false)
+	r.setShouldUpdate(r.pkg.Status.Version != r.pi.Status.Version, false)
 	r.pkg.Status.Version = r.pi.Status.Version
 	r.isSuccess = true
 }
@@ -482,8 +484,8 @@ func (r *PackageReconcilationContext) finalizeWithError(ctx context.Context, err
 func (r *PackageReconcilationContext) actualFinalize(ctx context.Context) error {
 	log := ctrl.LoggerFrom(ctx)
 
-	r.setShouldUpdate(ownerutils.Add(&r.pkg.Status.OwnedResources, r.currentOwnedResources...))
-	r.setShouldUpdate(ownerutils.Add(&r.pkg.Status.OwnedPackages, r.currentOwnedPackages...))
+	r.setShouldUpdate(ownerutils.Add(&r.pkg.Status.OwnedResources, r.currentOwnedResources...), false)
+	r.setShouldUpdate(ownerutils.Add(&r.pkg.Status.OwnedPackages, r.currentOwnedPackages...), false)
 
 	var errs error
 	if r.isSuccess {
@@ -531,7 +533,7 @@ OuterLoop:
 			errs = multierr.Append(errs, fmt.Errorf("could not prune resource: %w", err))
 		} else {
 			log.V(1).Info("pruned resource", "reference", ref)
-			r.setShouldUpdate(ownerutils.Remove(&ownedResourcesCopy, ref))
+			r.setShouldUpdate(ownerutils.Remove(&ownedResourcesCopy, ref), false)
 		}
 	}
 	r.pkg.Status.OwnedResources = ownedResourcesCopy
@@ -584,7 +586,7 @@ func (r *PackageReconcilationContext) pruneOwnedPackageInfos(ctx context.Context
 
 			// Remove the PackageInfo from the owned PackageInfos field of pkg
 			ownerutils.RemoveOwnedResourceRef(&r.pkg.Status.OwnedPackageInfos, ref)
-			r.setShouldUpdate(true)
+			r.setShouldUpdate(true, false)
 		}
 	}
 	return compositeErr
@@ -608,7 +610,7 @@ OuterLoop:
 			Namespace: ref.Namespace,
 		}, &oldReqPkg); err != nil {
 			if apierrors.IsNotFound(err) {
-				r.setShouldUpdate(ownerutils.Remove(&ownedPackagesCopy, ref))
+				r.setShouldUpdate(ownerutils.Remove(&ownedPackagesCopy, ref), false)
 			} else {
 				log.Error(err, "Failed to get old required package", "oldPackage", ref.Name)
 			}
@@ -645,10 +647,10 @@ OuterLoop:
 				}
 			} else {
 				log.Info(fmt.Sprintf("marking for deletion: reference from %v to %v", r.pkg.Name, ref.Name))
-				r.setShouldUpdate(ownerutils.MarkForDeletion(&ownedPackagesCopy, ref))
+				r.setShouldUpdate(ownerutils.MarkForDeletion(&ownedPackagesCopy, ref), false)
 			}
 		} else {
-			r.setShouldUpdate(ownerutils.Remove(&ownedPackagesCopy, ref))
+			r.setShouldUpdate(ownerutils.Remove(&ownedPackagesCopy, ref), false)
 		}
 	}
 	r.pkg.Status.OwnedPackages = ownedPackagesCopy

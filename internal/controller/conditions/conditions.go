@@ -61,7 +61,7 @@ func SetReadyAndUpdate(ctx context.Context, client client.Client, recorder recor
 	return nil
 }
 
-func SetFailed(ctx context.Context, recorder record.EventRecorder, obj client.Object, objConditions *[]metav1.Condition, reason condition.Reason, message string) bool {
+func SetFailed(ctx context.Context, recorder record.EventRecorder, obj client.Object, objConditions *[]metav1.Condition, reason condition.Reason, message string) (bool, bool) {
 	log := log.FromContext(ctx)
 	log.V(1).Info("set condition to failed: " + message)
 	recorder.Event(obj, "Warning", string(reason), message)
@@ -72,14 +72,16 @@ func SetFailed(ctx context.Context, recorder record.EventRecorder, obj client.Ob
 	if changed {
 		telemetry.ForOperator().OnEvent(obj, condition.Failed, reason)
 	}
-	return changed
+	return changed, reason.Recoverable()
 }
 
 // SetFailedAndUpdate sets the Ready condition to Status=False and the Failed condition to Status=True, then updates the resource if the conditions have changed.
 func SetFailedAndUpdate(ctx context.Context, client client.Client, recorder record.EventRecorder, obj client.Object, objConditions *[]metav1.Condition, reason condition.Reason, message string) error {
-	if SetFailed(ctx, recorder, obj, objConditions, reason, message) {
+	needsUpdate, _ := SetFailed(ctx, recorder, obj, objConditions, reason, message)
+	if needsUpdate {
 		return updateAfterConditionsChanged(ctx, client, obj)
 	}
+
 	return nil
 }
 

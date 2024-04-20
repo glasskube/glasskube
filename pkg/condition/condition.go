@@ -21,3 +21,14 @@ const (
 	InstallationFailed        Reason = "InstallationFailed"
 	Pending                   Reason = "Pending"
 )
+
+func (r Reason) Recoverable() bool {
+	switch r {
+	case InstallationFailed:
+		return false
+	case UnsupportedFormat:
+		return false
+	default:
+		return true
+	}
+}
