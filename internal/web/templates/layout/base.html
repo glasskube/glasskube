@@ -50,8 +50,7 @@
           </ul>
         </div>
       </div>
-    </nav>
-
+    </nav>    
     <main id="main">
       <div id="ws-error-container" class="visually-hidden container-lg mt-2">
         <div class="alert alert-danger" role="alert" id="ws-error-container-message"></div>
@@ -62,7 +61,7 @@
           {{ template "alert" .Error "danger" | ForAlert }}
         {{ end }}
         {{ if .VersionMismatchWarning }}
-          {{ template "version-mismatch-warning" .VersionMismatchWarning }}
+          {{ template "version-mismatch-warning" .VersionDetails }}
         {{ end }}
       </div>
 
@@ -98,5 +97,16 @@
         }
       });
     </script>
+    <footer class="footer py-3 position-fixed bottom-0 w-100" style="background-color: #cccccc4a;">
+      <div class="container text-center">
+        <span class="text-muted">Glasskube Version: {{ .VersionDetails.OperatorVersion }}</span>
+        <br>
+        {{ if .VersionDetails.NeedsOperatorUpdate }}
+            <span class="text-danger">New version available! ({{ .VersionDetails.ClientVersion }})</span>
+        {{ else }}
+            <span class="text-success">Up to date</span>
+        {{ end }}
+    </div>
+    </footer>
   </body>
 </html>
