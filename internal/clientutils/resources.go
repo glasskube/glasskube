@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/glasskube/glasskube/internal/httperror"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
@@ -17,6 +18,20 @@ func FetchResources(url string) ([]unstructured.Unstructured, error) {
 	defer func(Body io.ReadCloser) {
 		_ = Body.Close()
 	}(response.Body)
+
+	if err := httperror.CheckResponse(response); err != nil {
+		switch {
+		case httperror.IsNotFound(err):
+			return nil, fmt.Errorf("manifest not found at %v: %v", url, err)
+		case httperror.Is(err, http.StatusForbidden):
+			return nil, fmt.Errorf("access denied to manifest at %v: %v", url, err)
+		case httperror.Is(err, http.StatusUnauthorized):
+			return nil, fmt.Errorf("unauthorized to access manifest at %v: %v", url, err)
+		default:
+			return nil, fmt.Errorf("failed to download manifest from %v: %v", url, err)
+		}
+	}
+
 	decoder := yaml.NewYAMLOrJSONDecoder(response.Body, 4096)
 	resources := make([]unstructured.Unstructured, 0)
 	for {
