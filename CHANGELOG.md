@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.2.1](https://github.com/glasskube/glasskube/compare/v0.2.0...v0.2.1) (2024-04-22)
+
+
+### Bug Fixes
+
+* **client:** fallback to regular client if item not yet in cache ([bdd566e](https://github.com/glasskube/glasskube/commit/bdd566e786d50443827864599c29cbbf9ff0ef92))
+* **deps:** update module github.com/onsi/gomega to v1.33.0 ([ad8da80](https://github.com/glasskube/glasskube/commit/ad8da80a64a15862f7581a900d7b47e3370cc2ea))
+* **package-operator:** do not set owner reference on existing resources ([e447370](https://github.com/glasskube/glasskube/commit/e447370f1c1abe36d62d3a1f49ab3cf379e5732e))
+* **ui:** restructure server initializations ([db1a585](https://github.com/glasskube/glasskube/commit/db1a585e4d7ebb6a2a6c82fdea3d56ccca76b795))
+
+
+### Other
+
+* **deps:** update actions/upload-artifact action to v4.3.2 ([e89e27b](https://github.com/glasskube/glasskube/commit/e89e27be833dfdb29a4fa09dd562aaefc248a57a))
+* **deps:** update dependency go to v1.22.2 ([e24bd86](https://github.com/glasskube/glasskube/commit/e24bd86456000e9a2dc6fcaaf2fd3280261163cd))
+
+
+### Docs
+
+* **website:** add newlines ([c494978](https://github.com/glasskube/glasskube/commit/c494978331d7f36206bf286de382b1f5cd083a53))
+* **website:** added guide plus updates description ([a03854e](https://github.com/glasskube/glasskube/commit/a03854e67f56f041fa2e52b3fdb55b1b25ff1656))
+* **website:** unify package logos from GitHub discussion ([77d5601](https://github.com/glasskube/glasskube/commit/77d560146a5cf48020e1a83e7941900dd71e0275))
+
+
+### Refactoring
+
+* http errors handled when calling glasskube bootstrap ([b6fdf90](https://github.com/glasskube/glasskube/commit/b6fdf9024fe9d94d786311e3aa0887a251e99a23))
+
 ## [0.2.0](https://github.com/glasskube/glasskube/compare/v0.1.0...v0.2.0) (2024-04-18)
 
 
