@@ -6,7 +6,7 @@ import {EnumChangefreq} from 'sitemap';
 
 const config: Config = {
   title: 'Glasskube.dev',
-  tagline: '🧊 The missing Package Manager for Kubernetes 📦',
+  tagline: '🧊 The next generation Package Manager for Kubernetes 📦',
   favicon: 'img/favicon.png',
   trailingSlash: true,
 
