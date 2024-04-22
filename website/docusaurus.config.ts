@@ -121,7 +121,7 @@ const config: Config = {
     announcementBar: {
       id: 'announcementBar-0', // Increment on change
       // content: '⭐️ If you like <code>glasskube</code>, give it a star on <a target="_blank" rel="noopener noreferrer" href="https://github.com/glasskube/glasskube">GitHub</a> and follow us on <a target="_blank" rel="noopener noreferrer" href="https://x.com/glasskube">X</a> ⭐️',
-      content: `🎉️ <a target="_blank" href="https://github.com/glasskube/glasskube"><code>glasskube/glasskube</code></a> is launching its technical concept on GitHub 🥳️ <a target="_blank" rel="noopener noreferrer" href="https://github.com/glasskube/glasskube">Leave a star to support us</a> ⭐️`,
+      content: `🎉️ <a target="_blank" href="https://github.com/glasskube/glasskube"><code>glasskube/glasskube</code></a> Beta is launching on <a target="_blank" rel="noopener noreferrer" href="https://www.producthunt.com/products/glasskube?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-glasskube">Producthunt</a> 🥳️`,
       isCloseable: false,
     },
     image:
