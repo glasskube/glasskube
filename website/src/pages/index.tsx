@@ -59,12 +59,11 @@ function HomepageHeader() {
               </Link>
             </div>
             <div className={styles.producthunt}>
-              <a
-                href="https://www.producthunt.com/posts/glasskube?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-glasskube"
-                target="_blank"><img
-                src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=452879&theme=light"
-                alt="Glasskube - &#0032;🧊&#0032;The&#0032;next&#0032;generation&#0032;Package&#0032;Manager&#0032;for&#0032;Kubernetes&#0032;📦 | Product Hunt"
-                style={{width: '250px', height: '54px'}}/></a>
+              <a href="https://www.producthunt.com/products/glasskube?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-glasskube" target="_blank">
+                <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=452879&theme=light"
+                  alt="Glasskube - &#0032;🧊&#0032;The&#0032;next&#0032;generation&#0032;Package&#0032;Manager&#0032;for&#0032;Kubernetes&#0032;📦 | Product Hunt"
+                  style={{width: '250px', height: '54px'}}/>
+              </a>
             </div>
           </div>
           <div className="col">
