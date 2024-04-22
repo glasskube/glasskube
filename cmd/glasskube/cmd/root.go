@@ -21,7 +21,7 @@ var (
 	RootCmd = cobra.Command{
 		Use:     "glasskube",
 		Version: config.Version,
-		Short:   "🧊 The missing Package Manager for Kubernetes 📦",
+		Short:   "🧊 The next generation Package Manager for Kubernetes 📦",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			telemetry.Init()
 			if !rootCmdOptions.SkipUpdateCheck {

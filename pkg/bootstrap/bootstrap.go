@@ -45,7 +45,7 @@ func DefaultOptions() BootstrapOptions {
 
 const installMessage = `
 ## Installing GLASSKUBE ##
-🧊 The missing Package Manager for Kubernetes 📦`
+🧊 The next generation Package Manager for Kubernetes 📦`
 
 func NewBootstrapClient(config *rest.Config) *BootstrapClient {
 	return &BootstrapClient{clientConfig: config}
