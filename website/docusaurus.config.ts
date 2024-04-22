@@ -1,8 +1,8 @@
-import { themes as prismThemes } from 'prism-react-renderer';
-import type { Config } from '@docusaurus/types';
-import type { Options as IdealImageOptions } from '@docusaurus/plugin-ideal-image';
+import {themes as prismThemes} from 'prism-react-renderer';
+import type {Config} from '@docusaurus/types';
+import type {Options as IdealImageOptions} from '@docusaurus/plugin-ideal-image';
 import type * as Preset from '@docusaurus/preset-classic';
-import { EnumChangefreq } from 'sitemap';
+import {EnumChangefreq} from 'sitemap';
 
 const config: Config = {
   title: 'Glasskube.dev',
@@ -148,17 +148,10 @@ const config: Config = {
         { to: '/blog', label: 'Blog', position: 'left' },
         { to: '/roadmap', label: 'Roadmap', position: 'left' },
         { to: '/packages', label: 'Packages', position: 'left' },
-
         {
-          href: 'https://github.com/glasskube/glasskube',
-          label: 'GitHub',
+          type: 'custom-wrapper',
           position: 'right',
-        },
-        {
-          href: 'https://x.com/glasskube',
-          label: 'Twitter / X',
-          position: 'right',
-        },
+        }
       ],
     },
     footer: {
