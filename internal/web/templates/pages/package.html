@@ -134,7 +134,7 @@
                     hx-target="main"
                     hx-get="/packages/{{ .Manifest.Name }}">
                     {{ with $idx := .PackageIndex }}
-                      {{ range $idx.Versions }}
+                      {{ range $idx.Versions | Reversed }}
                         <option value="{{ .Version }}" {{ if eq .Version $.SelectedVersion }}selected{{ end }}>
                           {{ .Version }}
                           {{ if eq .Version $idx.LatestVersion }}(latest){{ end }}
