@@ -13,7 +13,7 @@
     "htmx.org": "1.9.12"
   },
   "devDependencies": {
-    "@commitlint/cli": "19.2.2",
+    "@commitlint/cli": "19.3.0",
     "@commitlint/config-conventional": "19.2.2",
     "esbuild": "0.20.2",
     "prettier": "3.2.5",
