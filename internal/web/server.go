@@ -346,7 +346,7 @@ func (s *server) open(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := open.NewOpener().Open(r.Context(), pkgName, "")
+	result, err := open.NewOpener().Open(r.Context(), pkgName, "", 0)
 	if err != nil {
 		s.respondAlertAndLog(w, err, "Could not open "+pkgName, "danger")
 	} else {
