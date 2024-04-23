@@ -15,6 +15,7 @@ type bootstrapOptions struct {
 	bootstrapType    bootstrap.BootstrapType
 	latest           bool
 	disableTelemetry bool
+	force            bool
 }
 
 var bootstrapCmdOptions = bootstrapOptions{
@@ -44,6 +45,7 @@ func (o bootstrapOptions) asBootstrapOptions() bootstrap.BootstrapOptions {
 		Url:              o.url,
 		Latest:           o.latest,
 		DisableTelemetry: o.disableTelemetry,
+		Force:            o.force,
 	}
 }
 
@@ -53,6 +55,8 @@ func init() {
 	bootstrapCmd.Flags().VarP(&bootstrapCmdOptions.bootstrapType, "type", "t", `Type of manifest to use for bootstrapping`)
 	bootstrapCmd.Flags().BoolVar(&bootstrapCmdOptions.latest, "latest", config.IsDevBuild(),
 		"Fetch and bootstrap the latest version")
+	bootstrapCmd.Flags().BoolVarP(&bootstrapCmdOptions.force, "force", "f", bootstrapCmdOptions.force,
+		"Do not bail out if pre-checks fail")
 	bootstrapCmd.Flags().BoolVar(&bootstrapCmdOptions.disableTelemetry, "disable-telemetry", false, "Disable telemetry")
 	bootstrapCmd.MarkFlagsMutuallyExclusive("url", "type")
 	bootstrapCmd.MarkFlagsMutuallyExclusive("url", "latest")

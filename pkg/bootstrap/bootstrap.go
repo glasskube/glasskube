@@ -5,24 +5,23 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/glasskube/glasskube/internal/telemetry"
-
 	"github.com/fatih/color"
 	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/constants"
 	"github.com/glasskube/glasskube/internal/releaseinfo"
+	"github.com/glasskube/glasskube/internal/telemetry"
 	"github.com/glasskube/glasskube/internal/telemetry/annotations"
 	"github.com/schollz/progressbar/v3"
+	"go.uber.org/multierr"
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/util/retry"
@@ -30,6 +29,8 @@ import (
 
 type BootstrapClient struct {
 	clientConfig *rest.Config
+	mapper       meta.RESTMapper
+	client       dynamic.Interface
 }
 
 type BootstrapOptions struct {
@@ -37,6 +38,7 @@ type BootstrapOptions struct {
 	Url              string
 	Latest           bool
 	DisableTelemetry bool
+	Force            bool
 }
 
 func DefaultOptions() BootstrapOptions {
@@ -53,8 +55,22 @@ func NewBootstrapClient(config *rest.Config) *BootstrapClient {
 
 func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOptions) error {
 	telemetry.BootstrapAttempt()
-	fmt.Println(installMessage)
 
+	if discoveryClient, err := discovery.NewDiscoveryClientForConfig(c.clientConfig); err != nil {
+		return err
+	} else if groupResources, err := restmapper.GetAPIGroupResources(discoveryClient); err != nil {
+		return err
+	} else {
+		c.mapper = restmapper.NewDiscoveryRESTMapper(groupResources)
+	}
+
+	if client, err := dynamic.NewForConfig(c.clientConfig); err != nil {
+		return err
+	} else {
+		c.client = client
+	}
+
+	fmt.Println(installMessage)
 	start := time.Now()
 
 	if options.Url == "" {
@@ -78,18 +94,25 @@ func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOption
 		telemetry.BootstrapFailure(time.Since(start))
 		return err
 	}
-	statusMessage("Successfully fetched Glasskube manifests", true)
 
-	statusMessage("Applying Glasskube manifests", true)
+	statusMessage("Validating existing installation", true)
 
-	if err = c.preprocessManifests(ctx, manifests, options); err != nil {
+	if err = c.preprocessManifests(ctx, manifests, &options); err != nil {
 		telemetry.BootstrapFailure(time.Since(start))
 		statusMessage(fmt.Sprintf("Couldn't prepare manifests: %v", err), false)
+		if !options.Force {
+			return err
+		} else {
+			statusMessage("Attempting to force bootstrap anyways (Force option is enabled)", true)
+		}
 	}
+
+	statusMessage("Applying Glasskube manifests", true)
 
 	if err = c.applyManifests(ctx, manifests); err != nil {
 		telemetry.BootstrapFailure(time.Since(start))
 		statusMessage(fmt.Sprintf("Couldn't apply manifests: %v", err), false)
+		return err
 	}
 
 	elapsed := time.Since(start)
@@ -102,45 +125,49 @@ func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOption
 func (c *BootstrapClient) preprocessManifests(
 	ctx context.Context,
 	objs []unstructured.Unstructured,
-	options BootstrapOptions,
+	options *BootstrapOptions,
 ) error {
+	var compositeErr error
 	for _, obj := range objs {
+		gvk := obj.GroupVersionKind()
+		mapping, err := c.mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+		if err != nil {
+			return err
+		}
+		existing, err := c.client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).
+			Get(ctx, obj.GetName(), metav1.GetOptions{})
+		if err != nil && !apierrors.IsNotFound(err) {
+			return err
+		} else if err == nil {
+			if _, ok := existing.GetAnnotations()["kubectl.kubernetes.io/last-applied-configuration"]; ok {
+				multierr.AppendInto(&compositeErr,
+					fmt.Errorf("%v %v has been modified with kubectl", obj.GetKind(), obj.GetName()))
+			}
+		}
+
 		if obj.GetKind() == "Namespace" && obj.GetName() == "glasskube-system" {
-			clientset := kubernetes.NewForConfigOrDie(c.clientConfig)
 			nsAnnotations := obj.GetAnnotations()
 			if nsAnnotations == nil {
 				nsAnnotations = make(map[string]string, 1)
 			}
-			ns, err := clientset.CoreV1().Namespaces().Get(ctx, "glasskube-system", metav1.GetOptions{})
-			if err != nil && !errors.IsNotFound(err) {
-				return err
-			} else if err == nil {
-				nsAnnotations[annotations.TelemetryEnabledAnnotation] = ns.Annotations[annotations.TelemetryEnabledAnnotation]
-				nsAnnotations[annotations.TelemetryIdAnnotation] = ns.Annotations[annotations.TelemetryIdAnnotation]
+			if existing != nil {
+				existingAnnotations := existing.GetAnnotations()
+				nsAnnotations[annotations.TelemetryEnabledAnnotation] = existingAnnotations[annotations.TelemetryEnabledAnnotation]
+				nsAnnotations[annotations.TelemetryIdAnnotation] = existingAnnotations[annotations.TelemetryIdAnnotation]
 			}
 			annotations.UpdateTelemetryAnnotations(nsAnnotations, options.DisableTelemetry)
 			obj.SetAnnotations(nsAnnotations)
-			return nil
+			options.DisableTelemetry = !annotations.IsTelemetryEnabled(nsAnnotations)
 		}
 	}
-	return nil
+
+	if compositeErr != nil {
+		compositeErr = fmt.Errorf("unsupported installation: %w", compositeErr)
+	}
+	return compositeErr
 }
 
 func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructured.Unstructured) error {
-	dynamicClient, err := dynamic.NewForConfig(c.clientConfig)
-	if err != nil {
-		return err
-	}
-
-	var mapper meta.RESTMapper
-	if discoveryClient, err := discovery.NewDiscoveryClientForConfig(c.clientConfig); err != nil {
-		return err
-	} else if groupResources, err := restmapper.GetAPIGroupResources(discoveryClient); err != nil {
-		return err
-	} else {
-		mapper = restmapper.NewDiscoveryRESTMapper(groupResources)
-	}
-
 	bar := progressbar.Default(int64(len(objs)), "Applying manifests")
 	progressbar.OptionClearOnFinish()(bar)
 	progressbar.OptionOnCompletion(nil)(bar)
@@ -149,14 +176,14 @@ func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructure
 	var checkWorkloads []*unstructured.Unstructured
 	for i, obj := range objs {
 		gvk := obj.GroupVersionKind()
-		mapping, err := mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+		mapping, err := c.mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 		if err != nil {
 			return err
 		}
 
 		bar.Describe(fmt.Sprintf("Applying %v (%v)", obj.GetName(), obj.GetKind()))
 		if err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			_, err = dynamicClient.Resource(mapping.Resource).Namespace(obj.GetNamespace()).
+			_, err = c.client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).
 				Apply(ctx, obj.GetName(), &obj, metav1.ApplyOptions{Force: true, FieldManager: "glasskube"})
 			return err
 		}); err != nil {
@@ -173,7 +200,7 @@ func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructure
 
 	for _, obj := range checkWorkloads {
 		bar.Describe(fmt.Sprintf("Checking Status of %v (%v)", obj.GetName(), obj.GetKind()))
-		if err = c.checkWorkloadReady(obj.GetNamespace(), obj.GetName(), obj.GetKind(), 5*time.Minute); err != nil {
+		if err := c.checkWorkloadReady(obj.GetNamespace(), obj.GetName(), obj.GetKind(), 5*time.Minute); err != nil {
 			return err
 		}
 		_ = bar.Add(1)
