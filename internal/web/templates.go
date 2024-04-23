@@ -1,12 +1,14 @@
 package web
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
 	"os"
 	"path"
 
 	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
+	"github.com/yuin/goldmark"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/glasskube/glasskube/api/v1alpha1"
@@ -79,6 +81,13 @@ func parseTemplates() {
 		"ForAlert":          alert.ForAlert,
 		"ForPkgConfigInput": pkg_config_input.ForPkgConfigInput,
 		"IsUpgradable":      semver.IsUpgradable,
+		"Markdown": func(source string) template.HTML {
+			var buf bytes.Buffer
+			if err := goldmark.Convert([]byte(source), &buf); err != nil {
+				return template.HTML("<p>" + source + "</p>")
+			}
+			return template.HTML(buf.String())
+		},
 	}
 
 	baseTemplate = template.Must(template.New("base.html").
