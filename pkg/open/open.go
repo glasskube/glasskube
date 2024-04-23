@@ -49,7 +49,7 @@ func (o *opener) Open(ctx context.Context, packageName string, entrypointName st
 		return nil, fmt.Errorf("package has no entrypoint")
 	}
 
-	if port != 0 && len(manifest.Entrypoints) > 1 {
+	if port != 0 && len(manifest.Entrypoints) > 1 && entrypointName == "" {
 		return nil, fmt.Errorf("package has more than one entrypoint: %w", err)
 	}
 
