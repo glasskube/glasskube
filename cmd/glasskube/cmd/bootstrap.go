@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/config"
+	"github.com/glasskube/glasskube/internal/semver"
 	"github.com/glasskube/glasskube/pkg/bootstrap"
 	"github.com/spf13/cobra"
 )
@@ -31,6 +33,35 @@ var bootstrapCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg, _ := cliutils.RequireConfig(config.Kubeconfig)
 		client := bootstrap.NewBootstrapClient(cfg)
+
+		installedVersion, err := clientutils.GetPackageOperatorVersion(cmd.Context())
+		if err != nil {
+			IsBootstrapped, err := bootstrap.IsBootstrapped(cmd.Context(), cfg)
+			if err != nil && !IsBootstrapped {
+				fmt.Printf("error : %v\n", err)
+				cliutils.ExitWithError()
+			}
+		}
+
+		var desiredVersion string
+		if bootstrapCmdOptions.url == "" {
+			desiredVersion = config.Version
+		} else {
+			desiredVersion = ""
+		}
+		if !semver.IsUpgradable(installedVersion, desiredVersion) &&
+			installedVersion != "" &&
+			installedVersion[1:] != desiredVersion {
+			if !cliutils.YesNoPrompt(fmt.Sprintf("Glasskube is already installed in this cluster "+
+				"in the newer version %v. You are about to install version %v. This could lead "+
+				"to a broken cluster!\nAre you sure that you want to downgrade glasskube "+
+				"in this cluster?", installedVersion, desiredVersion), false) {
+				fmt.Println("Operation stopped")
+				cliutils.ExitWithError()
+			}
+
+		}
+
 		if err := client.Bootstrap(cmd.Context(), bootstrapCmdOptions.asBootstrapOptions()); err != nil {
 			fmt.Fprintf(os.Stderr, "\nAn error occurred during bootstrap:\n%v\n", err)
 			cliutils.ExitWithError()
