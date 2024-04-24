@@ -10,7 +10,10 @@ import (
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/config"
+	"github.com/glasskube/glasskube/internal/repo"
+	"github.com/glasskube/glasskube/internal/semver"
 	"github.com/glasskube/glasskube/pkg/client"
+	"github.com/glasskube/glasskube/pkg/describe"
 	"github.com/glasskube/glasskube/pkg/kubeconfig"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/glasskube/glasskube/pkg/update"
@@ -115,6 +118,34 @@ func completeInstalledPackageNames(
 		}
 	}
 	return
+}
+
+func completeUpgradablePackageVersions(
+	cmd *cobra.Command,
+	args []string,
+	toComplete string,
+) ([]string, cobra.ShellCompDirective) {
+	if len(args) == 0 {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+	packageName := args[0]
+	var packageIndex repo.PackageIndex
+	if err := repo.FetchPackageIndex("", packageName, &packageIndex); err != nil {
+		return nil, cobra.ShellCompDirectiveError
+	}
+	_, _, _, installedVersion, err := describe.DescribePackage(cmd.Context(), packageName)
+	if err != nil {
+		fmt.Printf("error : %v", err)
+	}
+	versions := make([]string, 0, len(packageIndex.Versions))
+	for _, version := range packageIndex.Versions {
+		if toComplete == "" || strings.HasPrefix(version.Version, toComplete) {
+			if !semver.IsUpgradable(installedVersion, version.Version) {
+				versions = append(versions, version.Version)
+			}
+		}
+	}
+	return versions, cobra.ShellCompDirectiveNoFileComp
 }
 
 func init() {
