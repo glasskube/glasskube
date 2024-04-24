@@ -31,12 +31,11 @@
     . 
      <a href="https://x.com/intent/follow?screen_name=glasskube" target="_blank">Twitter / X</a>
   </p>
-  <a href="https://www.producthunt.com/posts/glasskube?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-glasskube" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=452879&theme=neutral" alt="Glasskube - &#0032;🧊&#0032;The&#0032;next&#0032;generation&#0032;Package&#0032;Manager&#0032;for&#0032;Kubernetes&#0032;📦 | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 </div>
 <br>
 <br>
 <div align="center">
-<a href="https://www.producthunt.com/products/glasskube?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-glasskube" target="_blank">
+<a href="https://www.producthunt.com/posts/glasskube" target="_blank">
   <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=452879&theme=light"
     alt="Glasskube - &#0032;🧊&#0032;The&#0032;next&#0032;generation&#0032;Package&#0032;Manager&#0032;for&#0032;Kubernetes&#0032;📦 | Product Hunt"
     style="width: 250px; height: 54px;" width="250" height="54" />
