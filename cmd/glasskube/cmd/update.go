@@ -149,6 +149,7 @@ func completeUpgradablePackageVersions(
 }
 
 func init() {
+	_ = updateCmd.RegisterFlagCompletionFunc("version", completeUpgradablePackageVersions)
 	updateCmd.PersistentFlags().StringVarP(&updateCmdOptions.Version, "version", "v", "",
 		"update to a specific version")
 	updateCmd.PersistentFlags().BoolVarP(&updateCmdOptions.Yes, "yes", "y", false,
