@@ -31,7 +31,6 @@
     . 
      <a href="https://x.com/intent/follow?screen_name=glasskube" target="_blank">Twitter / X</a>
   </p>
-  <a href="https://www.producthunt.com/posts/glasskube?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-glasskube" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=452879&theme=neutral" alt="Glasskube - &#0032;🧊&#0032;The&#0032;next&#0032;generation&#0032;Package&#0032;Manager&#0032;for&#0032;Kubernetes&#0032;📦 | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 </div>
 <br>
 <br>
@@ -114,6 +113,9 @@ Congratulations, you can now explore and install all our available packages! �
 
 ## 📦 Supported Packages
 
+- ArgoCD [`argoproj/argo-cd`](https://github.com/argoproj/argo-cd)
+- Kube Prometheus Stack [`prometheus-operator/kube-prometheus`](https://github.com/prometheus-operator/kube-prometheus)
+- K8sGPT [`k8sgpt-ai/k8sgpt`](k8sgpt-ai/k8sgpt)
 - Cert Manager [`cert-manager/cert-manager`](https://github.com/cert-manager/cert-manager)
 - Cyclops [`cyclops-ui/cyclops`](https://github.com/cyclops-ui/cyclops)
 - Ingress-NGINX Controller [`kubernetes/ingress-nginx`](https://github.com/kubernetes/ingress-nginx)
