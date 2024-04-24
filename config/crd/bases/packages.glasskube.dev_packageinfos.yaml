@@ -191,6 +191,26 @@ spec:
                       chartVersion:
                         description: ChartVersion of the chart that should be installed.
                         type: string
+                      releases:
+                        items:
+                          properties:
+                            chartName:
+                              description: ChartName is the name of the chart that
+                                represents this package.
+                              type: string
+                            chartVersion:
+                              description: ChartVersion of the chart that should be
+                                installed.
+                              type: string
+                            values:
+                              description: Values that should be used for the helm
+                                release
+                              x-kubernetes-preserve-unknown-fields: true
+                          required:
+                          - chartName
+                          - chartVersion
+                          type: object
+                        type: array
                       repositoryUrl:
                         description: |-
                           RepositoryUrl is the remote URL of the helm repository. This is the same URL you would use
@@ -200,10 +220,10 @@ spec:
                         description: Values that should be used for the helm release
                         x-kubernetes-preserve-unknown-fields: true
                     required:
-                    - chartName
-                    - chartVersion
                     - repositoryUrl
                     type: object
+                    x-kubernetes-validations:
+                    - rule: size(self.releases) > 0 || (has(self.chartName) && has(self.chartVersion))
                   iconUrl:
                     type: string
                   kustomize:
