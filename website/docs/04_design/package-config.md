@@ -1,10 +1,5 @@
 # Package Configuration
 
-:::info Disclaimer
-The functionality described in this document is scheduled to be released in version 0.2.0 of Glasskube.
-You can star or watch our [GitHub repository](https://github.com/glasskube/glasskube) if you want to get notified about new releases.
-:::
-
 ## Probelm analysis
 
 At Glasskube, what we mean when we talk about package configuration, is a controlled alteration of the resources that are part of a package depending on values specified by the user.
