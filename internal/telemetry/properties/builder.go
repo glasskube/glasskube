@@ -43,7 +43,6 @@ func ForClientUser(pg PropertyGetter, includeCluster bool) PropertiesBuilderFn {
 }
 
 func ForOperatorUser(pg PropertyGetter) PropertiesBuilderFn {
-	// TODO: see document for additional required properties
 	return func(p posthog.Properties) posthog.Properties {
 		cp := pg.ClusterProperties()
 		return p.
