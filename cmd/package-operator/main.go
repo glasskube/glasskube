@@ -17,8 +17,11 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
+
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/glasskube/glasskube/internal/telemetry"
 
@@ -131,6 +134,10 @@ func main() {
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
+	_ = mgr.Add(manager.RunnableFunc(func(context.Context) error {
+		telemetry.ForOperator().ReportStart()
+		return nil
+	}))
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
