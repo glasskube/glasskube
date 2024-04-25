@@ -13,7 +13,6 @@ import (
 	"github.com/glasskube/glasskube/internal/repo"
 	"github.com/glasskube/glasskube/internal/semver"
 	"github.com/glasskube/glasskube/pkg/client"
-	"github.com/glasskube/glasskube/pkg/describe"
 	"github.com/glasskube/glasskube/pkg/kubeconfig"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/glasskube/glasskube/pkg/update"
@@ -133,14 +132,15 @@ func completeUpgradablePackageVersions(
 	if err := repo.FetchPackageIndex("", packageName, &packageIndex); err != nil {
 		return nil, cobra.ShellCompDirectiveError
 	}
-	_, _, _, installedVersion, err := describe.DescribePackage(cmd.Context(), packageName)
-	if err != nil {
-		fmt.Printf("error : %v", err)
+	var pkg v1alpha1.Package
+	if err := client.FromContext(cmd.Context()).Packages().Get(cmd.Context(), packageName, &pkg); err != nil {
+		fmt.Printf("error : ", err)
+		return nil, cobra.ShellCompDirectiveError
 	}
 	versions := make([]string, 0, len(packageIndex.Versions))
 	for _, version := range packageIndex.Versions {
 		if toComplete == "" || strings.HasPrefix(version.Version, toComplete) {
-			if !semver.IsUpgradable(installedVersion, version.Version) {
+			if !semver.IsUpgradable(pkg.Spec.PackageInfo.Version, version.Version) {
 				versions = append(versions, version.Version)
 			}
 		}
