@@ -1,5 +1,47 @@
 # Changelog
 
+## [0.3.0](https://github.com/glasskube/glasskube/compare/v0.2.1...v0.3.0) (2024-04-25)
+
+
+### Features
+
+* **cli, ui:** add markdown support in long description ([0f4891b](https://github.com/glasskube/glasskube/commit/0f4891b2cd4601fb03303f2974aa84b79e53377e))
+* **cli:** add support for custom local port in `glasskube open` ([#543](https://github.com/glasskube/glasskube/issues/543)) ([b6d98ca](https://github.com/glasskube/glasskube/commit/b6d98ca72ed87e6331b4be056e80912165aab92a))
+* **ui:** sort package versions descending ([#308](https://github.com/glasskube/glasskube/issues/308)) ([98cd78c](https://github.com/glasskube/glasskube/commit/98cd78cd6e6ee1bb3870036c9fd3b11dc7ab14ec))
+
+
+### Bug Fixes
+
+* **deps:** update dependency clsx to v2.1.1 ([5cc6ae9](https://github.com/glasskube/glasskube/commit/5cc6ae9d70d3f00a75fbb3cef0169320006db14f))
+* **deps:** update module golang.org/x/term to v0.19.0 ([d6057c3](https://github.com/glasskube/glasskube/commit/d6057c32c1b4c4cb1482832562df3789d9dcafb5))
+* **deps:** update module sigs.k8s.io/controller-runtime to v0.18.0 ([ae98bf0](https://github.com/glasskube/glasskube/commit/ae98bf0d4e0a681eca959c97a3cbf191967a76a7))
+* make `glasskube version` more helpful when not bootstrapped ([#547](https://github.com/glasskube/glasskube/issues/547)) ([03d4fd9](https://github.com/glasskube/glasskube/commit/03d4fd94f8e237280cee82858e9db5bbabd0981e))
+* **ui:** avoid boolean parsing error ([#558](https://github.com/glasskube/glasskube/issues/558)) ([3e8ea6e](https://github.com/glasskube/glasskube/commit/3e8ea6ec9e51f58447b8c8cce51a7c6c269564e0))
+
+
+### Other
+
+* **deps:** update actions/checkout digest to 1d96c77 ([d097c76](https://github.com/glasskube/glasskube/commit/d097c76dea0e934b1d8eeed5b5a1bdb68e7991b8))
+* **deps:** update actions/upload-artifact action to v4.3.3 ([2ce6f25](https://github.com/glasskube/glasskube/commit/2ce6f25db861efbfe00c90f056de6786cb8bdc57))
+* **deps:** update dependency @commitlint/cli to v19.3.0 ([1319b2a](https://github.com/glasskube/glasskube/commit/1319b2adf2970c1338a1db7f9585c5c0b5d4f843))
+* **main:** update readme to reflect beta launch ([acbd3d6](https://github.com/glasskube/glasskube/commit/acbd3d6eb14e98ce5ad4bc8e2a111959d3ef1c50))
+* update release-please configuration ([ff6c925](https://github.com/glasskube/glasskube/commit/ff6c925534b621d7ac05109e33ca6b54e96a6800))
+* update telemetry ([8010bd7](https://github.com/glasskube/glasskube/commit/8010bd7b5dc23ec97dc8c9633b75760f5e5b8374))
+
+
+### Docs
+
+* add product hunt banner ([16acffc](https://github.com/glasskube/glasskube/commit/16acffc8d89c36f78b6c34fdb72073cbede7919b))
+* update Product Hunt launch rul ([cf913bf](https://github.com/glasskube/glasskube/commit/cf913bf2fa80b593981aaf3cdbba4fb74a017c53))
+* **website:** add producthunt launch banner ([20ad520](https://github.com/glasskube/glasskube/commit/20ad52020e9f63cba68f1e9d3a4eb4ace597f9a7))
+* **website:** include GitHub star button in header ([#459](https://github.com/glasskube/glasskube/issues/459)) ([2e0e3a5](https://github.com/glasskube/glasskube/commit/2e0e3a56eb6f16637b05210fba69f056e3ff6e45))
+* **website:** remove version disclaimer ([f72d0d1](https://github.com/glasskube/glasskube/commit/f72d0d15b960570425fc66e46edcd0e461e7abe7))
+
+
+### Refactoring
+
+* change Glasskube tagline ([9bdf826](https://github.com/glasskube/glasskube/commit/9bdf8267ba59348ada443a31be688b7c7dc56a32))
+
 ## [0.2.1](https://github.com/glasskube/glasskube/compare/v0.2.0...v0.2.1) (2024-04-22)
 
 
