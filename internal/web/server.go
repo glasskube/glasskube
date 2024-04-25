@@ -1,7 +1,6 @@
 package web
 
 import (
-	"bytes"
 	"context"
 	"embed"
 	"errors"
@@ -17,12 +16,10 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/glasskube/glasskube/internal/telemetry"
-
-	"github.com/glasskube/glasskube/internal/manifestvalues"
-	"k8s.io/client-go/kubernetes"
-
 	"github.com/Masterminds/semver/v3"
+	"github.com/glasskube/glasskube/internal/manifestvalues"
+	"github.com/glasskube/glasskube/internal/telemetry"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
 
@@ -40,16 +37,12 @@ import (
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/repo"
-	"github.com/glasskube/glasskube/internal/web/components/pkg_detail_btns"
-	"github.com/glasskube/glasskube/internal/web/components/pkg_overview_btn"
-	"github.com/glasskube/glasskube/internal/web/components/pkg_update_alert"
 	"github.com/glasskube/glasskube/internal/web/handler"
 	"github.com/glasskube/glasskube/pkg/bootstrap"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/describe"
 	"github.com/glasskube/glasskube/pkg/install"
 	"github.com/glasskube/glasskube/pkg/list"
-	"github.com/glasskube/glasskube/pkg/manifest"
 	"github.com/glasskube/glasskube/pkg/open"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/glasskube/glasskube/pkg/uninstall"
@@ -71,8 +64,6 @@ func init() {
 		}
 	}
 }
-
-const TriggerRefreshPackageDetail = "gk:refresh-package-detail"
 
 type ServerOptions struct {
 	Host       string
@@ -97,7 +88,7 @@ type server struct {
 	restConfig            *rest.Config
 	rawConfig             *api.Config
 	pkgClient             client.PackageV1Alpha1Client
-	wsHub                 *WsHub
+	sseHub                *SSEHub
 	packageStore          cache.Store
 	packageController     cache.Controller
 	packageInfoStore      cache.Store
@@ -122,40 +113,6 @@ func (s *server) Client() client.PackageV1Alpha1Client {
 	return s.pkgClient
 }
 
-func (s *server) broadcastPkg(pkg *v1alpha1.Package, status *client.PackageStatus, installedManifest *v1alpha1.PackageManifest) {
-	go func() {
-		var bf bytes.Buffer
-		err := pkg_update_alert.Render(&bf, pkgUpdateAlertTmpl, s.isUpdateAvailable(context.TODO()))
-		checkTmplError(err, fmt.Sprintf("%s (%s)", pkg_update_alert.TemplateId, pkg.Name))
-		if err == nil {
-			s.wsHub.Broadcast <- bf.Bytes()
-		}
-	}()
-
-	updateAvailable := false
-	if installedManifest != nil {
-		updateAvailable = s.isUpdateAvailable(context.TODO(), pkg.Name)
-	}
-
-	go func() {
-		var bf bytes.Buffer
-		err := pkg_overview_btn.Render(&bf, pkgOverviewBtnTmpl, pkg, status, installedManifest, updateAvailable)
-		checkTmplError(err, fmt.Sprintf("%s (%s)", pkg_overview_btn.TemplateId, pkg.Name))
-		if err == nil {
-			s.wsHub.Broadcast <- bf.Bytes()
-		}
-	}()
-
-	go func() {
-		var bf bytes.Buffer
-		err := pkg_detail_btns.Render(&bf, pkgDetailBtnsTmpl, pkg, status, installedManifest, updateAvailable)
-		checkTmplError(err, fmt.Sprintf("%s (%s)", pkg_detail_btns.TemplateId, pkg.Name))
-		if err == nil {
-			s.wsHub.Broadcast <- bf.Bytes()
-		}
-	}()
-}
-
 func (s *server) Start(ctx context.Context) error {
 	if s.listener != nil {
 		return errors.New("server is already listening")
@@ -167,7 +124,7 @@ func (s *server) Start(ctx context.Context) error {
 			fmt.Fprintf(os.Stderr, "templates will not be parsed after changes: %v\n", err)
 		}
 	}
-	s.wsHub = NewHub()
+	s.sseHub = NewHub()
 	_ = s.ensureBootstrapped(ctx)
 
 	root, err := fs.Sub(webFs, "root")
@@ -181,7 +138,7 @@ func (s *server) Start(ctx context.Context) error {
 	router.Use(telemetry.HttpMiddleware())
 	router.PathPrefix("/static/").Handler(fileServer)
 	router.Handle("/favicon.ico", fileServer)
-	router.HandleFunc("/ws", s.wsHub.handler)
+	router.HandleFunc("/events", s.sseHub.handler)
 	router.HandleFunc("/support", s.supportPage)
 	router.HandleFunc("/kubeconfig", s.kubeconfigPage)
 	router.Handle("/bootstrap", s.requireKubeconfig(s.bootstrapPage))
@@ -225,7 +182,7 @@ func (s *server) Start(ctx context.Context) error {
 	fmt.Printf("glasskube UI is available at http://%v\n", bindAddr)
 	_ = cliutils.OpenInBrowser("http://" + bindAddr)
 
-	go s.wsHub.Run()
+	go s.sseHub.Run()
 	server := &http.Server{}
 	err = server.Serve(s.listener)
 	if err != nil && err != http.ErrServerClosed {
@@ -296,7 +253,6 @@ func (s *server) update(w http.ResponseWriter, r *http.Request) {
 		return
 	} else {
 		delete(s.updateTransactions, utId)
-		addHxTrigger(w, TriggerRefreshPackageDetail)
 	}
 }
 
@@ -335,7 +291,6 @@ func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
 		s.respondAlertAndLog(w, err, "An error occurred uninstalling "+pkgName, "danger")
 		return
 	}
-	addHxTrigger(w, TriggerRefreshPackageDetail)
 }
 
 func (s *server) open(w http.ResponseWriter, r *http.Request) {
@@ -468,7 +423,6 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 			s.respondAlertAndLog(w, err, "An error occurred installing "+pkgName, "danger")
 			return
 		}
-		addHxTrigger(w, TriggerRefreshPackageDetail)
 	} else {
 		pkg.Spec.Values = values
 		if err := s.pkgClient.Packages().Update(r.Context(), pkg); err != nil {
@@ -796,27 +750,30 @@ func (s *server) initPackageStoreAndController(ctx context.Context) (cache.Store
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj any) {
 				if pkg, ok := obj.(*v1alpha1.Package); ok {
-					s.broadcastPkg(pkg, client.GetStatusOrPending(&pkg.Status), nil)
+					s.broadcastRefreshTriggers(pkg)
 				}
 			},
 			UpdateFunc: func(oldObj, newObj any) {
 				if pkg, ok := newObj.(*v1alpha1.Package); ok {
-					ctx := client.SetupContextWithClient(ctx, s.restConfig, s.rawConfig, s.pkgClient)
-					mf, err := manifest.GetInstalledManifestForPackage(ctx, *pkg)
-					if err != nil {
-						fmt.Fprintf(os.Stderr, "Error fetching manifest for package %v: %v\n", pkg.Name, err)
-						mf = nil
-					}
-					s.broadcastPkg(pkg, client.GetStatusOrPending(&pkg.Status), mf)
+					s.broadcastRefreshTriggers(pkg)
 				}
 			},
 			DeleteFunc: func(obj any) {
 				if pkg, ok := obj.(*v1alpha1.Package); ok {
-					s.broadcastPkg(pkg, client.GetStatus(&pkg.Status), nil)
+					s.broadcastRefreshTriggers(pkg)
 				}
 			},
 		},
 	)
+}
+
+func (s *server) broadcastRefreshTriggers(pkg *v1alpha1.Package) {
+	s.sseHub.Broadcast <- &sse{
+		event: "refresh-pkg-overview",
+	}
+	s.sseHub.Broadcast <- &sse{
+		event: fmt.Sprintf("refresh-pkg-detail-%s", pkg.Name),
+	}
 }
 
 func (s *server) initPackageInfoStoreAndController(ctx context.Context) (cache.Store, cache.Controller) {
@@ -845,10 +802,6 @@ func (s *server) isUpdateAvailable(ctx context.Context, packages ...string) bool
 	} else {
 		return !tx.IsEmpty()
 	}
-}
-
-func addHxTrigger(w http.ResponseWriter, trigger string) {
-	w.Header().Add("HX-Trigger", trigger)
 }
 
 func (s *server) respondAlertAndLog(w http.ResponseWriter, err error, wrappingMsg string, alertType string) {
