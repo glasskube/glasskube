@@ -30,10 +30,7 @@ var (
 	supportPageTmpl       *template.Template
 	bootstrapPageTmpl     *template.Template
 	kubeconfigPageTmpl    *template.Template
-	pkgOverviewBtnTmpl    *template.Template
-	pkgDetailBtnsTmpl     *template.Template
 	pkgUpdateModalTmpl    *template.Template
-	pkgUpdateAlertTmpl    *template.Template
 	pkgConfigInput        *template.Template
 	pkgUninstallModalTmpl *template.Template
 	alertTmpl             *template.Template
@@ -116,9 +113,6 @@ func parseTemplates() {
 	supportPageTmpl = pageTmpl("support.html")
 	bootstrapPageTmpl = pageTmpl("bootstrap.html")
 	kubeconfigPageTmpl = pageTmpl("kubeconfig.html")
-	pkgOverviewBtnTmpl = componentTmpl(pkg_overview_btn.TemplateId, "pkg-overview-btn.html")
-	pkgDetailBtnsTmpl = componentTmpl(pkg_detail_btns.TemplateId, "pkg-detail-btns.html")
-	pkgUpdateAlertTmpl = componentTmpl(pkg_update_alert.TemplateId, "pkg-update-alert.html")
 	pkgUpdateModalTmpl = componentTmpl("pkg-update-modal", "pkg-update-modal.html")
 	pkgConfigInput = componentTmpl("pkg-config-input", "pkg-config-input.html")
 	pkgUninstallModalTmpl = componentTmpl("pkg-uninstall-modal", "pkg-uninstall-modal.html")
