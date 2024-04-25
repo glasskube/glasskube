@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -12,9 +11,6 @@ import (
 	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/manifestvalues"
 	"github.com/glasskube/glasskube/internal/repo"
-	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/renderer"
-	"github.com/yuin/goldmark/util"
 
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/pkg/client"
@@ -66,7 +62,7 @@ var describeCmd = &cobra.Command{
 		if len(trimmedDescription) > 0 {
 			fmt.Println()
 			fmt.Println(bold("Long Description:"))
-			printMarkdown(os.Stdout, trimmedDescription)
+			fmt.Println(trimmedDescription)
 		}
 
 		if pkg != nil && len(pkg.Spec.Values) > 0 {
@@ -132,22 +128,6 @@ func printReferences(pkg *v1alpha1.Package, manifest *v1alpha1.PackageManifest, 
 func printValueConfigurations(w io.Writer, values map[string]v1alpha1.ValueConfiguration) {
 	for name, value := range values {
 		fmt.Fprintf(w, " * %v: %v\n", name, manifestvalues.ValueAsString(value))
-	}
-}
-
-func printMarkdown(w io.Writer, text string) {
-	md := goldmark.New(
-		goldmark.WithRenderer(renderer.NewRenderer(
-			renderer.WithNodeRenderers(
-				util.Prioritized(cliutils.MarkdownRenderer(), 1000),
-			),
-		)),
-	)
-	var buf bytes.Buffer
-	if err := md.Convert([]byte(text), &buf); err != nil {
-		fmt.Fprintln(w, text)
-	} else {
-		fmt.Fprintln(w, strings.TrimSpace(buf.String()))
 	}
 }
 

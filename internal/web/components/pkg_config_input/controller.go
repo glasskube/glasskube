@@ -2,6 +2,7 @@ package pkg_config_input
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
@@ -40,7 +41,9 @@ func getStringValue(pkg *v1alpha1.Package, valueName string, valueDefinition *v1
 func getBoolValue(pkg *v1alpha1.Package, valueName string, valueDefinition *v1alpha1.ValueDefinition) bool {
 	if valueDefinition.Type == v1alpha1.ValueTypeBoolean {
 		strVal := getStringValue(pkg, valueName, valueDefinition)
-		if valBool, err := strconv.ParseBool(strVal); err == nil {
+		if valBool, err := strconv.ParseBool(strVal); err != nil {
+			fmt.Fprintf(os.Stderr, "%v\n", err)
+		} else {
 			return valBool
 		}
 	}

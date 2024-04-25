@@ -35,7 +35,7 @@ func NewOpener() *opener {
 	return &opener{}
 }
 
-func (o *opener) Open(ctx context.Context, packageName string, entrypointName string, port int32) (*OpenResult, error) {
+func (o *opener) Open(ctx context.Context, packageName string, entrypointName string) (*OpenResult, error) {
 	if err := o.initFromContext(ctx); err != nil {
 		return nil, err
 	}
@@ -47,10 +47,6 @@ func (o *opener) Open(ctx context.Context, packageName string, entrypointName st
 
 	if len(manifest.Entrypoints) < 1 {
 		return nil, fmt.Errorf("package has no entrypoint")
-	}
-
-	if port != 0 && len(manifest.Entrypoints) > 1 && entrypointName == "" {
-		return nil, fmt.Errorf("package has more than one entrypoint: %w", err)
 	}
 
 	if entrypointName != "" {
@@ -71,9 +67,6 @@ func (o *opener) Open(ctx context.Context, packageName string, entrypointName st
 	for _, entrypoint := range manifest.Entrypoints {
 		if entrypointName == "" || entrypoint.Name == entrypointName {
 			e := entrypoint
-			if port != 0 {
-				e.LocalPort = port
-			}
 			readyCh := make(chan struct{})
 			stopCh := make(chan struct{})
 			o.readyCh = append(o.readyCh, readyCh)
@@ -96,7 +89,6 @@ func (o *opener) Open(ctx context.Context, packageName string, entrypointName st
 		}
 	}
 	result.Completion = future.All(futures...)
-
 	return &result, nil
 }
 

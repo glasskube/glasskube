@@ -1,8 +1,8 @@
 module github.com/glasskube/glasskube
 
-go 1.22.0
+go 1.22
 
-toolchain go1.22.2
+toolchain go1.22.0
 
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
@@ -22,14 +22,12 @@ require (
 	github.com/posthog/posthog-go v0.0.0-20240327112532-87b23fe11103
 	github.com/schollz/progressbar/v3 v3.14.2
 	github.com/spf13/cobra v1.8.0
-	github.com/yuin/goldmark v1.7.1
 	go.uber.org/multierr v1.11.0
-	golang.org/x/term v0.19.0
-	k8s.io/api v0.30.0
-	k8s.io/apiextensions-apiserver v0.30.0
-	k8s.io/apimachinery v0.30.0
-	k8s.io/client-go v0.30.0
-	sigs.k8s.io/controller-runtime v0.18.0
+	k8s.io/api v0.29.4
+	k8s.io/apiextensions-apiserver v0.29.4
+	k8s.io/apimachinery v0.29.4
+	k8s.io/client-go v0.29.4
+	sigs.k8s.io/controller-runtime v0.17.3
 )
 
 require (
@@ -83,18 +81,20 @@ require (
 	golang.org/x/exp v0.0.0-20240112132812-db7319d0e0e3 // indirect
 	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/oauth2 v0.16.0 // indirect
-	golang.org/x/sys v0.19.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
+	golang.org/x/term v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
-	golang.org/x/tools v0.18.0 // indirect
+	golang.org/x/tools v0.17.0 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/klog/v2 v2.120.1 // indirect
-	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340 // indirect
+	k8s.io/component-base v0.29.4 // indirect
+	k8s.io/klog/v2 v2.120.0 // indirect
+	k8s.io/kube-openapi v0.0.0-20240105020646-a37d4de58910 // indirect
 	k8s.io/utils v0.0.0-20240102154912-e7106e64919e // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect

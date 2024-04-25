@@ -1,10 +1,8 @@
 package owners
 
 import (
-	"context"
 	"errors"
 
-	"github.com/glasskube/glasskube/internal/controller/labels"
 	"github.com/glasskube/glasskube/internal/controller/owners/utils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -110,18 +108,6 @@ func (mgr *OwnerManager) SetOwner(
 	obj.SetOwnerReferences(references)
 
 	return nil
-}
-
-// SetOwnerIfManagedOrNotExists ensures that the operator only sets owner references on objects when it also manages them.
-func (mgr *OwnerManager) SetOwnerIfManagedOrNotExists(c client.Client, ctx context.Context, owner client.Object, obj client.Object) error {
-	if shouldSetOwner, err := labels.IsManagedOrNotExists(c, ctx, obj); err != nil {
-		return err
-	} else if shouldSetOwner {
-		labels.SetManaged(obj)
-		return mgr.SetOwner(owner, obj, BlockOwnerDeletion)
-	} else {
-		return nil
-	}
 }
 
 func (mgr *OwnerManager) RemoveOwner(owner client.Object, obj metav1.Object) error {

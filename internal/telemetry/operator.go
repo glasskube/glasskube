@@ -68,19 +68,6 @@ func ForControllerManager(mgr manager.Manager) *OperatorTelemetry {
 	return &t
 }
 
-func (t *OperatorTelemetry) ReportStart() {
-	if !t.Enabled() || t.posthog == nil {
-		return
-	}
-	_ = t.posthog.Enqueue(posthog.Capture{
-		DistinctId: t.ClusterId(),
-		Event:      "operator_started",
-		Properties: properties.BuildProperties(
-			properties.ForOperatorUser(t.PropertyGetter),
-		),
-	})
-}
-
 func (t *OperatorTelemetry) OnEvent(obj client.Object, status condition.Type, reason condition.Reason) {
 	_ = t.posthog.Enqueue(posthog.Capture{
 		DistinctId: t.ClusterId(),

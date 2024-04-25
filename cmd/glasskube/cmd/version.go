@@ -21,8 +21,7 @@ var versioncmd = &cobra.Command{
 		fmt.Fprintf(os.Stderr, "glasskube: v%s\n", glasskubeVersion)
 		operatorVersion, err := clientutils.GetPackageOperatorVersion(cmd.Context())
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "package-operator: not installed\n")
-			fmt.Fprintf(os.Stderr, "Glasskube is not yet bootstrapped. Use 'glasskube bootstrap' to get started.\n")
+			fmt.Fprintf(os.Stderr, "✗ no deployments found in the glasskube-system namespace\n")
 			cliutils.ExitWithError()
 		} else {
 			fmt.Fprintf(os.Stderr, "package-operator: %s\n", operatorVersion)

@@ -6,7 +6,7 @@
       "release-type": "go",
       "prerelease": false,
       "bump-minor-pre-major": true,
-      "bump-patch-for-minor-pre-major": false,
+      "bump-patch-for-minor-pre-major": true,
       "draft": false,
       "extra-files": [
         "README.md",

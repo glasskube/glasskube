@@ -1,21 +1,18 @@
 package web
 
 import (
-	"bytes"
 	"fmt"
 	"html/template"
 	"os"
 	"path"
-	"reflect"
 
-	"github.com/yuin/goldmark"
+	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/repo"
 	"github.com/glasskube/glasskube/internal/semver"
 	"github.com/glasskube/glasskube/internal/web/components/alert"
-	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_detail_btns"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_overview_btn"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_update_alert"
@@ -82,30 +79,6 @@ func parseTemplates() {
 		"ForAlert":          alert.ForAlert,
 		"ForPkgConfigInput": pkg_config_input.ForPkgConfigInput,
 		"IsUpgradable":      semver.IsUpgradable,
-		"Markdown": func(source string) template.HTML {
-			var buf bytes.Buffer
-			if err := goldmark.Convert([]byte(source), &buf); err != nil {
-				return template.HTML("<p>" + source + "</p>")
-			}
-			return template.HTML(buf.String())
-		},
-		"Reversed": func(param any) any {
-			kind := reflect.TypeOf(param).Kind()
-			switch kind {
-			case reflect.Slice, reflect.Array:
-				val := reflect.ValueOf(param)
-
-				ln := val.Len()
-				newVal := make([]interface{}, ln)
-				for i := 0; i < ln; i++ {
-					newVal[ln-i-1] = val.Index(i).Interface()
-				}
-
-				return newVal
-			default:
-				return param
-			}
-		},
 	}
 
 	baseTemplate = template.Must(template.New("base.html").

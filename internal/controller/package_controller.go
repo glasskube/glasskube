@@ -25,7 +25,6 @@ import (
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
 	ctrladapter "github.com/glasskube/glasskube/internal/adapter/controllerruntime"
 	"github.com/glasskube/glasskube/internal/controller/conditions"
-	"github.com/glasskube/glasskube/internal/controller/labels"
 	"github.com/glasskube/glasskube/internal/controller/owners"
 	ownerutils "github.com/glasskube/glasskube/internal/controller/owners/utils"
 	"github.com/glasskube/glasskube/internal/controller/requeue"
@@ -525,26 +524,13 @@ OuterLoop:
 	for _, ref := range r.pkg.Status.OwnedResources {
 		for _, newRef := range r.currentOwnedResources {
 			if ownerutils.RefersToSameResource(ref, newRef) {
-				// ref is still an owned resource
 				continue OuterLoop
 			}
 		}
-		// ref is no longer an owned resource.
-		// check if it is managed by the operator and delete it if it is.
-		obj := ownerutils.OwnedResourceRefToObject(ref)
-		if err := r.Get(ctx, client.ObjectKeyFromObject(obj), obj); err != nil {
-			if !apierrors.IsNotFound(err) {
-				multierr.AppendInto(&errs, fmt.Errorf("could get resource during pruning: %w", err))
-			}
-		} else if labels.IsManaged(obj) {
-			if err := r.Delete(ctx, obj); err != nil && !apierrors.IsNotFound(err) {
-				multierr.AppendInto(&errs, fmt.Errorf("could not prune resource: %w", err))
-			} else {
-				log.V(1).Info("pruned resource", "reference", ref)
-				r.setShouldUpdate(ownerutils.Remove(&ownedResourcesCopy, ref))
-			}
+		if err := r.Delete(ctx, ownerutils.OwnedResourceRefToObject(ref)); err != nil && !apierrors.IsNotFound(err) {
+			errs = multierr.Append(errs, fmt.Errorf("could not prune resource: %w", err))
 		} else {
-			log.V(1).Info("skipped pruning unmanaged resource", "reference", ref)
+			log.V(1).Info("pruned resource", "reference", ref)
 			r.setShouldUpdate(ownerutils.Remove(&ownedResourcesCopy, ref))
 		}
 	}

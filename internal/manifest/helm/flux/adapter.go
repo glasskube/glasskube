@@ -9,7 +9,6 @@ import (
 	helmv1beta2 "github.com/fluxcd/helm-controller/api/v2beta2"
 	sourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
-	"github.com/glasskube/glasskube/internal/controller/labels"
 	"github.com/glasskube/glasskube/internal/controller/owners"
 	"github.com/glasskube/glasskube/internal/controller/owners/utils"
 	"github.com/glasskube/glasskube/internal/manifest"
@@ -102,7 +101,7 @@ func (a *FluxHelmAdapter) ensureNamespace(
 		if namespace.Status.Phase == corev1.NamespaceTerminating {
 			return nil
 		} else {
-			return a.SetOwnerIfManagedOrNotExists(a.Client, ctx, pkg, &namespace)
+			return a.SetOwner(pkg, &namespace, owners.BlockOwnerDeletion)
 		}
 	})
 	if err != nil {
@@ -128,7 +127,6 @@ func (a *FluxHelmAdapter) ensureHelmRepository(
 	result, err := controllerutil.CreateOrUpdate(ctx, a.Client, &helmRepository, func() error {
 		helmRepository.Spec.URL = manifest.Helm.RepositoryUrl
 		helmRepository.Spec.Interval = metav1.Duration{Duration: 1 * time.Hour}
-		labels.SetManaged(&helmRepository)
 		return a.SetOwner(pkg, &helmRepository, owners.BlockOwnerDeletion)
 	})
 	if err != nil {
@@ -166,7 +164,6 @@ func (a *FluxHelmAdapter) ensureHelmRelease(
 			return err
 		}
 		helmRelease.Spec.Interval = metav1.Duration{Duration: 5 * time.Minute}
-		labels.SetManaged(&helmRelease)
 		return a.SetOwner(pkg, &helmRelease, owners.BlockOwnerDeletion)
 	})
 	if err != nil {

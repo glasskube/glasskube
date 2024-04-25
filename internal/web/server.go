@@ -107,7 +107,6 @@ type server struct {
 	updateMutex           sync.Mutex
 	updateTransactions    map[int]update.UpdateTransaction
 	valueResolver         *manifestvalues.Resolver
-	isBootstrapped        bool
 }
 
 func (s *server) RestConfig() *rest.Config {
@@ -167,14 +166,17 @@ func (s *server) Start(ctx context.Context) error {
 			fmt.Fprintf(os.Stderr, "templates will not be parsed after changes: %v\n", err)
 		}
 	}
-	s.wsHub = NewHub()
-	_ = s.ensureBootstrapped(ctx)
+	_ = s.initKubeConfig()
+	if err := s.checkBootstrapped(ctx); err == nil {
+		s.startInformer(ctx)
+	}
 
 	root, err := fs.Sub(webFs, "root")
 	if err != nil {
 		return err
 	}
 
+	s.wsHub = NewHub()
 	fileServer := http.FileServer(http.FS(root))
 
 	router := mux.NewRouter()
@@ -346,7 +348,7 @@ func (s *server) open(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := open.NewOpener().Open(r.Context(), pkgName, "", 0)
+	result, err := open.NewOpener().Open(r.Context(), pkgName, "")
 	if err != nil {
 		s.respondAlertAndLog(w, err, "Could not open "+pkgName, "danger")
 	} else {
@@ -516,7 +518,7 @@ func (s *server) packageConfigurationInput(w http.ResponseWriter, r *http.Reques
 }
 
 func (s *server) supportPage(w http.ResponseWriter, r *http.Request) {
-	if err := s.ensureBootstrapped(r.Context()); err != nil {
+	if err := s.checkBootstrapped(r.Context()); err != nil {
 		if err.BootstrapMissing() {
 			http.Redirect(w, r, "/bootstrap", http.StatusFound)
 			return
@@ -597,13 +599,23 @@ func (s *server) kubeconfigPage(w http.ResponseWriter, r *http.Request) {
 func (s *server) enrichWithErrorAndWarnings(ctx context.Context, data map[string]any, err error) map[string]any {
 	data["Error"] = err
 	data["CurrentContext"] = s.rawConfig.CurrentContext
-	if operatorVersion, clientVersion, err := s.getGlasskubeVersions(ctx); err != nil {
+	operatorVersion, clientVersion, err := s.getGlasskubeVersions(ctx)
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to check for version mismatch: %v\n", err)
 	} else if operatorVersion != nil && clientVersion != nil && !operatorVersion.Equal(clientVersion) {
-		data["VersionMismatchWarning"] = map[string]any{
+		data["VersionMismatchWarning"] = true
+	}
+	if operatorVersion != nil && clientVersion != nil && !config.IsDevBuild() {
+		data["VersionDetails"] = map[string]any{
 			"OperatorVersion":     operatorVersion.String(),
 			"ClientVersion":       clientVersion.String(),
 			"NeedsOperatorUpdate": operatorVersion.LessThan(clientVersion),
+		}
+	}
+	if config.IsDevBuild() {
+		data["VersionDetails"] = map[string]any{
+			"OperatorVersion": config.Version,
+			"ClientVersion":   config.Version,
 		}
 	}
 	return data
@@ -656,15 +668,7 @@ func (server *server) checkKubeconfig() ServerConfigError {
 	}
 }
 
-// ensureBootstrapped checks for a valid kubeconfig (see checkKubeconfig), and whether glasskube is bootstrapped in
-// the given cluster. If either of these checks fail, a ServerConfigError is returned, otherwise the result of the
-// check is cached in isBootstrapped and the check will not run anymore after that. After the first successful check,
-// additional components are intialized (which can only be done once glasskube is known to be bootstrapped) –
-// see initWhenBootstrapped
-func (server *server) ensureBootstrapped(ctx context.Context) ServerConfigError {
-	if server.isBootstrapped {
-		return nil
-	}
+func (server *server) checkBootstrapped(ctx context.Context) ServerConfigError {
 	if err := server.checkKubeconfig(); err != nil {
 		return err
 	}
@@ -676,8 +680,6 @@ func (server *server) ensureBootstrapped(ctx context.Context) ServerConfigError 
 		}
 		return newBootstrapErr(err)
 	}
-	server.isBootstrapped = isBootstrapped
-	server.initWhenBootstrapped(ctx)
 	return nil
 }
 
@@ -690,30 +692,30 @@ func (server *server) initKubeConfig() ServerConfigError {
 	if err != nil {
 		return newKubeconfigErr(err)
 	}
-	telemetry.InitClient(restConfig)
-
+	k8sclient, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		return newKubeconfigErr(err)
+	}
 	server.restConfig = restConfig
 	server.rawConfig = rawConfig
-	server.pkgClient = client // be aware that server.pkgClient is overridden with the cached client once bootstrap check succeeded
-	return nil
-}
-
-func (server *server) initWhenBootstrapped(ctx context.Context) {
-	k8sclient := kubernetes.NewForConfigOrDie(server.restConfig)
-	server.initCachedClient(context.WithoutCancel(ctx))
+	server.pkgClient = client
 	server.dependencyMgr = dependency.NewDependencyManager(clientadapter.NewPackageClientAdapter(server.pkgClient))
 	server.valueResolver = manifestvalues.NewResolver(
 		clientadapter.NewPackageClientAdapter(server.pkgClient),
 		clientadapter.NewKubernetesClientAdapter(*k8sclient),
 	)
+	telemetry.InitClient(restConfig)
+	return nil
 }
 
-func (server *server) initCachedClient(ctx context.Context) {
-	server.packageStore, server.packageController = server.initPackageStoreAndController(ctx)
-	server.packageInfoStore, server.packageInfoController = server.initPackageInfoStoreAndController(ctx)
-	go server.packageController.Run(ctx.Done())
-	go server.packageInfoController.Run(ctx.Done())
-	server.pkgClient = server.pkgClient.WithStores(server.packageStore, server.packageInfoStore)
+func (server *server) startInformer(ctx context.Context) {
+	if server.packageStore == nil && server.packageController == nil && server.packageInfoStore == nil {
+		server.packageStore, server.packageController = server.initPackageStoreAndController(ctx)
+		server.packageInfoStore, server.packageInfoController = server.initPackageInfoStoreAndController(ctx)
+		go server.packageController.Run(ctx.Done())
+		go server.packageInfoController.Run(ctx.Done())
+		server.pkgClient = server.pkgClient.WithStores(server.packageStore, server.packageInfoStore)
+	}
 }
 
 func (s *server) enrichContext(h http.Handler) http.Handler {
@@ -723,10 +725,11 @@ func (s *server) enrichContext(h http.Handler) http.Handler {
 func (s *server) requireReady(h http.HandlerFunc) http.Handler {
 	return &handler.PreconditionHandler{
 		Precondition: func(r *http.Request) error {
-			err := s.ensureBootstrapped(r.Context())
+			err := s.checkBootstrapped(r.Context())
 			if err != nil {
 				return err
 			}
+			s.startInformer(context.WithoutCancel(r.Context()))
 			return nil
 		},
 		Handler:       h,

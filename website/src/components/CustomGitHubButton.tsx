@@ -9,7 +9,6 @@ const CustomGitHubButton: FC<CustomGitHubButtonProps> = ({ href, ...props }) => 
   <GitHubButton
     href={href}
     data-color-scheme="no-preference: light; light: light; dark: light;"
-    data-icon="octicon-star"
     data-size="large"
     data-show-count="true"
     aria-label={`Star ${href} on GitHub`}

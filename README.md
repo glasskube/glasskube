@@ -13,7 +13,7 @@
   </a>
   <img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=899d5aee-625c-4345-bad0-713d29caf929" />
 
-<h3 align="center">🧊 The next generation Package Manager for Kubernetes 📦 (Beta Version)</h3>
+<h3 align="center">🧊 The next generation Package Manager for Kubernetes 📦</h3>
 
   <p align="center">
     <a href="https://glasskube.dev/docs/getting-started/install?utm_source=github"><strong>Getting started »</strong></a>
@@ -32,24 +32,10 @@
      <a href="https://x.com/intent/follow?screen_name=glasskube" target="_blank">Twitter / X</a>
   </p>
 </div>
-<br>
-<br>
-<div align="center">
-<a href="https://www.producthunt.com/posts/glasskube" target="_blank">
-  <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=452879&theme=light"
-    alt="Glasskube - &#0032;🧊&#0032;The&#0032;next&#0032;generation&#0032;Package&#0032;Manager&#0032;for&#0032;Kubernetes&#0032;📦 | Product Hunt"
-    style="width: 250px; height: 54px;" width="250" height="54" />
-</a>
-</div>
-<br>
+
 <hr>
 
 ![Glasskube GUI Mockup](https://github.com/glasskube/operator/assets/3041752/71d0da0c-34ac-40b7-8740-bd2a81ca9f07)
-
-
-## 📦 What is Glasskube?
-
-Glasskube is the **next generation Kubernetes package manager**, now available in its `beta version`. Glasskube empowers you to effortlessly **install, upgrade, configure, and manage** your Kubernetes cluster packages, all while streamlining repetitive and cumbersome maintenance tasks. We're excited to roll out the beta release and invite all users to test it out! **Your feedback is incredibly valuable to us** as we aim to shape Glasskube into `the best Kubernetes package manager out there`. So go ahead, dive in, play around, and shoot us your thoughts!
 
 
 ## ⭐️ Why Glasskube?
@@ -87,7 +73,7 @@ Designed as a cloud native application, so you can follow your **GitOps approach
 - [How to Contribute](https://github.com/glasskube/glasskube#-how-to-contribute)
 - [Supported by](https://github.com/glasskube/glasskube#-supported-by)
 
-## 🚀 Quick Start - Install the Beta Version.
+## 🚀 Quick Start - Install your first package in less than 5 minutes.
 
 You can install Glasskube via [Homebrew](https://brew.sh/):
 
@@ -155,7 +141,7 @@ flowchart BT
   Kubernetes-- 10. package status -->Client 
 ```
 
-## ☝️ Need Help or Want to Provide Feedback?
+## ☝️ Need Help?
 
 If you encounter any problems, we will be happy to support you wherever we can on our [Discord](https://discord.gg/SxH6KUCGH7).
 For bugs, issues or feature requests fee free to [open an issue](https://github.com/glasskube/glasskube/issues/new/choose).
@@ -165,9 +151,9 @@ We are happy to assist you with anything related to the project.
 
 - Glasskube Apps Operator [`glasskube/operator`](https://github.com/glasskube/operator/)
 
-## 🤝 How to Contribute to Glasskube Beta
+## 🤝 How to Contribute
 
-Your feedback is invaluable to us as we continue to improve Glasskube. If you'd like to contribute, consider trying out the beta version, reporting any issues, and sharing your suggestions. See [the contributing guide](CONTRIBUTING.md) for detailed instructions on how you can contribute.
+See [the contributing guide](CONTRIBUTING.md) for detailed instructions.
 
 ## 🤩 Thanks to all our Contributors
 

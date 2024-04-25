@@ -132,11 +132,8 @@ func (r *Adapter) reconcilePlainManifest(
 
 	// TODO: check if namespace is terminating before applying
 
-	// Apply any modifications before changing anything on the cluster
+	// Apply all patches before changing anything on the cluster
 	for _, obj := range objectsToApply {
-		if err := r.SetOwnerIfManagedOrNotExists(r.Client, ctx, &pkg, obj); err != nil {
-			return nil, err
-		}
 		if err := patches.ApplyToResource(obj); err != nil {
 			return nil, err
 		}
@@ -144,6 +141,9 @@ func (r *Adapter) reconcilePlainManifest(
 
 	ownedResources := make([]packagesv1alpha1.OwnedResourceRef, 0, len(objectsToApply))
 	for _, obj := range objectsToApply {
+		if err := r.SetOwner(&pkg, obj, owners.BlockOwnerDeletion); err != nil {
+			return nil, fmt.Errorf("could set owner reference: %w", err)
+		}
 		if err := r.Patch(ctx, obj, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
 			return nil, fmt.Errorf("could not apply resource: %w", err)
 		}

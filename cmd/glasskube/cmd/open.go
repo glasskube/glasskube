@@ -11,10 +11,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	port int32
-)
-
 var openCmd = &cobra.Command{
 	Use:   "open [package-name] [entrypoint]",
 	Short: "Open the Web UI of a package",
@@ -29,7 +25,7 @@ If the package manifest has more than one entrypoint, specify the name of the en
 			entrypointName = args[1]
 		}
 
-		result, err := open.NewOpener().Open(cmd.Context(), pkgName, entrypointName, port)
+		result, err := open.NewOpener().Open(cmd.Context(), pkgName, entrypointName)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "❌ Could not open package %v: %v\n", pkgName, err)
 			cliutils.ExitWithError()
@@ -74,6 +70,5 @@ If the package manifest has more than one entrypoint, specify the name of the en
 }
 
 func init() {
-	openCmd.Flags().Int32Var(&port, "port", 0, "Custom port for opening the package")
 	RootCmd.AddCommand(openCmd)
 }

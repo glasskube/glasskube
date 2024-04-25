@@ -1,12 +1,12 @@
-import {themes as prismThemes} from 'prism-react-renderer';
-import type {Config} from '@docusaurus/types';
-import type {Options as IdealImageOptions} from '@docusaurus/plugin-ideal-image';
+import { themes as prismThemes } from 'prism-react-renderer';
+import type { Config } from '@docusaurus/types';
+import type { Options as IdealImageOptions } from '@docusaurus/plugin-ideal-image';
 import type * as Preset from '@docusaurus/preset-classic';
-import {EnumChangefreq} from 'sitemap';
+import { EnumChangefreq } from 'sitemap';
 
 const config: Config = {
   title: 'Glasskube.dev',
-  tagline: '🧊 The next generation Package Manager for Kubernetes 📦',
+  tagline: '🧊 The missing Package Manager for Kubernetes 📦',
   favicon: 'img/favicon.png',
   trailingSlash: true,
 
@@ -121,7 +121,7 @@ const config: Config = {
     announcementBar: {
       id: 'announcementBar-0', // Increment on change
       // content: '⭐️ If you like <code>glasskube</code>, give it a star on <a target="_blank" rel="noopener noreferrer" href="https://github.com/glasskube/glasskube">GitHub</a> and follow us on <a target="_blank" rel="noopener noreferrer" href="https://x.com/glasskube">X</a> ⭐️',
-      content: `🎉️ <a target="_blank" href="https://github.com/glasskube/glasskube"><code>glasskube/glasskube</code></a> Beta is launching on <a target="_blank" rel="noopener noreferrer" href="https://www.producthunt.com/posts/glasskube">Producthunt</a> 🥳️`,
+      content: `🎉️ <a target="_blank" href="https://github.com/glasskube/glasskube"><code>glasskube/glasskube</code></a> is launching its technical concept on GitHub 🥳️ <a target="_blank" rel="noopener noreferrer" href="https://github.com/glasskube/glasskube">Leave a star to support us</a> ⭐️`,
       isCloseable: false,
     },
     image:
@@ -148,10 +148,17 @@ const config: Config = {
         { to: '/blog', label: 'Blog', position: 'left' },
         { to: '/roadmap', label: 'Roadmap', position: 'left' },
         { to: '/packages', label: 'Packages', position: 'left' },
+
         {
-          type: 'custom-wrapper',
+          href: 'https://github.com/glasskube/glasskube',
+          label: 'GitHub',
           position: 'right',
-        }
+        },
+        {
+          href: 'https://x.com/glasskube',
+          label: 'Twitter / X',
+          position: 'right',
+        },
       ],
     },
     footer: {
