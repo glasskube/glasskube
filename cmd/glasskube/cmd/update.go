@@ -149,9 +149,9 @@ func completeUpgradablePackageVersions(
 }
 
 func init() {
-	_ = updateCmd.RegisterFlagCompletionFunc("version", completeUpgradablePackageVersions)
 	updateCmd.PersistentFlags().StringVarP(&updateCmdOptions.Version, "version", "v", "",
 		"update to a specific version")
+	_ = updateCmd.RegisterFlagCompletionFunc("version", completeUpgradablePackageVersions)
 	updateCmd.PersistentFlags().BoolVarP(&updateCmdOptions.Yes, "yes", "y", false,
 		"do not ask for any confirmation")
 	RootCmd.AddCommand(updateCmd)
