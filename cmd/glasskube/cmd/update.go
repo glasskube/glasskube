@@ -134,7 +134,7 @@ func completeUpgradablePackageVersions(
 	}
 	var pkg v1alpha1.Package
 	if err := client.FromContext(cmd.Context()).Packages().Get(cmd.Context(), packageName, &pkg); err != nil {
-		fmt.Printf("error : ", err)
+		fmt.Println("error : ", err)
 		return nil, cobra.ShellCompDirectiveError
 	}
 	versions := make([]string, 0, len(packageIndex.Versions))
