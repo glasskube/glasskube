@@ -127,29 +127,29 @@ func completeUpgradablePackageVersions(
 	var dir cobra.ShellCompDirective
 	config, _, err := kubeconfig.New(config.Kubeconfig)
 	if err != nil {
-		dir &= cobra.ShellCompDirectiveError
-		return nil, cobra.ShellCompDirectiveNoFileComp
+		dir = cobra.ShellCompDirectiveError
+		return nil, dir
 	}
 	client, err := client.New(config)
 	if err != nil {
-		dir &= cobra.ShellCompDirectiveError
-		return nil, cobra.ShellCompDirectiveNoFileComp
+		dir = cobra.ShellCompDirectiveError
+		return nil, dir
 	}
 	if len(args) == 0 {
-		return nil, cobra.ShellCompDirectiveNoFileComp
+		return nil, dir
 	}
 	packageName := args[0]
 	var packageIndex repo.PackageIndex
 	if err := repo.FetchPackageIndex("", packageName, &packageIndex); err != nil {
-		return nil, cobra.ShellCompDirectiveError
+		return nil, dir
 	}
 	if len(args) == 0 {
-		return nil, cobra.ShellCompDirectiveNoFileComp
+		return nil, dir
 	}
 	var pkg v1alpha1.Package
 	if err := client.Packages().Get(cmd.Context(), packageName, &pkg); err != nil {
 		dir &= cobra.ShellCompDirectiveError
-		return nil, cobra.ShellCompDirectiveNoFileComp
+		return nil, dir
 	}
 	versions := make([]string, 0, len(packageIndex.Versions))
 	for _, version := range packageIndex.Versions {
@@ -159,7 +159,7 @@ func completeUpgradablePackageVersions(
 			}
 		}
 	}
-	return versions, cobra.ShellCompDirectiveNoFileComp
+	return versions, dir
 }
 
 func init() {
