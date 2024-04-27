@@ -597,13 +597,23 @@ func (s *server) kubeconfigPage(w http.ResponseWriter, r *http.Request) {
 func (s *server) enrichWithErrorAndWarnings(ctx context.Context, data map[string]any, err error) map[string]any {
 	data["Error"] = err
 	data["CurrentContext"] = s.rawConfig.CurrentContext
-	if operatorVersion, clientVersion, err := s.getGlasskubeVersions(ctx); err != nil {
+	operatorVersion, clientVersion, err := s.getGlasskubeVersions(ctx)
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to check for version mismatch: %v\n", err)
 	} else if operatorVersion != nil && clientVersion != nil && !operatorVersion.Equal(clientVersion) {
-		data["VersionMismatchWarning"] = map[string]any{
+		data["VersionMismatchWarning"] = true
+	}
+	if operatorVersion != nil && clientVersion != nil && !config.IsDevBuild() {
+		data["VersionDetails"] = map[string]any{
 			"OperatorVersion":     operatorVersion.String(),
 			"ClientVersion":       clientVersion.String(),
 			"NeedsOperatorUpdate": operatorVersion.LessThan(clientVersion),
+		}
+	}
+	if config.IsDevBuild() {
+		data["VersionDetails"] = map[string]any{
+			"OperatorVersion": config.Version,
+			"ClientVersion":   config.Version,
 		}
 	}
 	return data
