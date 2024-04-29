@@ -125,7 +125,8 @@ func completeUpgradablePackageVersions(
 	toComplete string,
 ) ([]string, cobra.ShellCompDirective) {
 
-	var dir cobra.ShellCompDirective
+	dir := cobra.ShellCompDirectiveNoFileComp
+
 	config, _, err := kubeconfig.New(config.Kubeconfig)
 	if err != nil {
 		dir &= cobra.ShellCompDirectiveError
