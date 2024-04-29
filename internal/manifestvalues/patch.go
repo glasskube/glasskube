@@ -9,6 +9,7 @@ import (
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/fluxcd/helm-controller/api/v2beta2"
 	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/maputils"
 	corev1 "k8s.io/api/core/v1"
 	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -185,7 +186,8 @@ func (patches *TargetPatches) ApplyToHelmRelease(obj *v2beta2.HelmRelease) error
 // before using this!
 func GeneratePatches(manifest v1alpha1.PackageManifest, values map[string]string) (TargetPatches, error) {
 	var result []TargetPatch
-	for name, def := range manifest.ValueDefinitions {
+	for _, name := range maputils.KeysSorted(manifest.ValueDefinitions) {
+		def := manifest.ValueDefinitions[name]
 		if value, ok := values[name]; ok {
 			for _, target := range def.Targets {
 				if patch, err := generateTargetPatch(target, value); err != nil {
