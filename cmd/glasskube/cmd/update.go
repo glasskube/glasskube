@@ -128,12 +128,12 @@ func completeUpgradablePackageVersions(
 	var dir cobra.ShellCompDirective
 	config, _, err := kubeconfig.New(config.Kubeconfig)
 	if err != nil {
-		dir = cobra.ShellCompDirectiveError
+		dir &= cobra.ShellCompDirectiveError
 		return nil, dir
 	}
 	client, err := client.New(config)
 	if err != nil {
-		dir = cobra.ShellCompDirectiveError
+		dir &= cobra.ShellCompDirectiveError
 		return nil, dir
 	}
 	if len(args) == 0 {
@@ -142,9 +142,9 @@ func completeUpgradablePackageVersions(
 	packageName := args[0]
 	var packageIndex repo.PackageIndex
 	if err := repo.FetchPackageIndex("", packageName, &packageIndex); err != nil {
-		return nil, dir
+		return nil, cobra.ShellCompDirectiveError
 	}
-	if len(args) == 0 {
+	if len(args) != 1 {
 		return nil, dir
 	}
 	var pkg v1alpha1.Package
@@ -155,7 +155,7 @@ func completeUpgradablePackageVersions(
 	versions := make([]string, 0, len(packageIndex.Versions))
 	for _, version := range packageIndex.Versions {
 		if toComplete == "" || strings.HasPrefix(version.Version, toComplete) {
-			if !semver.IsUpgradable(pkg.Spec.PackageInfo.Version, version.Version) {
+			if semver.IsUpgradable(pkg.Spec.PackageInfo.Version, version.Version) {
 				versions = append(versions, version.Version)
 			}
 		}
