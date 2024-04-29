@@ -219,18 +219,10 @@ const config: Config = {
               label: 'Contact / Book appointment',
               href: 'https://cal.glasskube.eu/team/founder/30min',
             },
-            {
-              label: 'Imprint',
-              to: '/imprint',
-            },
-            {
-              label: 'Data privacy policy',
-              to: '/data-privacy',
-            },
           ],
         },
       ],
-      copyright: `<img src="/img/glasskube-logo-white.png" class="footer-logo"/><br>Copyright © ${new Date().getFullYear()} Glasskube<br>Built with Docusaurus.`,
+      copyright: `<img src="/img/glasskube-logo-white.png" class="footer-logo"/><br>Copyright © ${new Date().getFullYear()} Glasskube, Inc.<br>Built with Docusaurus.`,
     },
     prism: {
       theme: prismThemes.github,
