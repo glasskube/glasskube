@@ -137,16 +137,13 @@ func completeUpgradablePackageVersions(
 		dir &= cobra.ShellCompDirectiveError
 		return nil, dir
 	}
-	if len(args) == 0 {
+	if len(args) != 1 {
 		return nil, dir
 	}
 	packageName := args[0]
 	var packageIndex repo.PackageIndex
 	if err := repo.FetchPackageIndex("", packageName, &packageIndex); err != nil {
 		return nil, cobra.ShellCompDirectiveError
-	}
-	if len(args) != 1 {
-		return nil, dir
 	}
 	var pkg v1alpha1.Package
 	if err := client.Packages().Get(cmd.Context(), packageName, &pkg); err != nil {
