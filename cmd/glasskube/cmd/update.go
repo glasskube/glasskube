@@ -10,6 +10,8 @@ import (
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/config"
+	"github.com/glasskube/glasskube/internal/repo"
+	"github.com/glasskube/glasskube/internal/semver"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/kubeconfig"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
@@ -117,9 +119,52 @@ func completeInstalledPackageNames(
 	return
 }
 
+func completeUpgradablePackageVersions(
+	cmd *cobra.Command,
+	args []string,
+	toComplete string,
+) ([]string, cobra.ShellCompDirective) {
+
+	dir := cobra.ShellCompDirectiveNoFileComp
+
+	config, _, err := kubeconfig.New(config.Kubeconfig)
+	if err != nil {
+		dir &= cobra.ShellCompDirectiveError
+		return nil, dir
+	}
+	client, err := client.New(config)
+	if err != nil {
+		dir &= cobra.ShellCompDirectiveError
+		return nil, dir
+	}
+	if len(args) != 1 {
+		return nil, dir
+	}
+	packageName := args[0]
+	var packageIndex repo.PackageIndex
+	if err := repo.FetchPackageIndex("", packageName, &packageIndex); err != nil {
+		return nil, cobra.ShellCompDirectiveError
+	}
+	var pkg v1alpha1.Package
+	if err := client.Packages().Get(cmd.Context(), packageName, &pkg); err != nil {
+		dir &= cobra.ShellCompDirectiveError
+		return nil, dir
+	}
+	versions := make([]string, 0, len(packageIndex.Versions))
+	for _, version := range packageIndex.Versions {
+		if toComplete == "" || strings.HasPrefix(version.Version, toComplete) {
+			if semver.IsUpgradable(pkg.Spec.PackageInfo.Version, version.Version) {
+				versions = append(versions, version.Version)
+			}
+		}
+	}
+	return versions, dir
+}
+
 func init() {
 	updateCmd.PersistentFlags().StringVarP(&updateCmdOptions.Version, "version", "v", "",
 		"update to a specific version")
+	_ = updateCmd.RegisterFlagCompletionFunc("version", completeUpgradablePackageVersions)
 	updateCmd.PersistentFlags().BoolVarP(&updateCmdOptions.Yes, "yes", "y", false,
 		"do not ask for any confirmation")
 	RootCmd.AddCommand(updateCmd)
