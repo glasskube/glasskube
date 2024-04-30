@@ -595,6 +595,7 @@ func (s *server) kubeconfigPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) enrichWithErrorAndWarnings(ctx context.Context, data map[string]any, err error) map[string]any {
+	cacheBustStr := fmt.Sprintf("%d", rand.Int())
 	data["Error"] = err
 	data["CurrentContext"] = s.rawConfig.CurrentContext
 	operatorVersion, clientVersion, err := s.getGlasskubeVersions(ctx)
@@ -609,6 +610,7 @@ func (s *server) enrichWithErrorAndWarnings(ctx context.Context, data map[string
 			"ClientVersion":       clientVersion.String(),
 			"NeedsOperatorUpdate": operatorVersion.LessThan(clientVersion),
 		}
+		cacheBustStr = clientVersion.String()
 	}
 	if config.IsDevBuild() {
 		data["VersionDetails"] = map[string]any{
@@ -616,6 +618,7 @@ func (s *server) enrichWithErrorAndWarnings(ctx context.Context, data map[string
 			"ClientVersion":   config.Version,
 		}
 	}
+	data["CacheBustingString"] = cacheBustStr
 	return data
 }
 
