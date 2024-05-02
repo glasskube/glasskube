@@ -1,6 +1,6 @@
 /* eslint-disable global-require */
 
-import {sortBy} from '@site/src/utils/jsUtils';
+import { sortBy } from '@site/src/utils/jsUtils';
 
 /*
  * ADD YOUR PACKAGE TO THE GLASSKUBE PACKAGE OVERVIEW
@@ -24,8 +24,7 @@ export type TagType =
   | 'monitoring'
   | 'networking'
   | 'security'
-  | 'visualization'
-  ;
+  | 'visualization';
 
 // Add sites to this list
 // prettier-ignore
@@ -132,7 +131,7 @@ const Users: Package[] = [
     iconUrl: 'https://github.com/glasskube/glasskube/assets/3041752/adfe6b1b-625c-4344-aecb-416cd7fccea7',
     websiteUrl: 'https://www.rabbitmq.com/kubernetes/operator/operator-overview',
     sourceUrl: 'https://github.com/rabbitmq/cluster-operator',
-    tags: ['planned', 'messaging'],
+    tags: ['messaging'],
   },
   {
     name: 'robusta',
@@ -249,7 +248,6 @@ function sortUsers() {
   // Sort by favorite tag, favorites first
   result = sortBy(result, (user) => user.tags.includes('planned'));
   return result;
-  ;
 }
 
 export const sortedUsers = sortUsers();
