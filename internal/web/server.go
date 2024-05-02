@@ -150,6 +150,7 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle("/packages/uninstall/modal", s.requireReady(s.uninstallModal))
 	router.Handle("/packages/open", s.requireReady(s.open))
 	router.Handle("/packages/{pkgName}", s.requireReady(s.packageDetail))
+	router.Handle("/packages/{pkgName}/discussion", s.requireReady(s.packageDiscussion))
 	router.Handle("/packages/{pkgName}/configure", s.requireReady(s.installOrConfigurePackage))
 	router.Handle("/packages/{pkgName}/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/packages", http.StatusFound) })
@@ -383,6 +384,37 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 	checkTmplError(err, fmt.Sprintf("package-detail (%s)", pkgName))
 }
 
+// packageDiscussion is a full page for showing various discussions, reactions, etc.
+func (s *server) packageDiscussion(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		githubUrl := r.FormValue("githubUrl")
+		telemetry.SetUserProperty("github_url", githubUrl)
+		return
+	}
+	pkgName := mux.Vars(r)["pkgName"]
+	pkg, status, manifest, _, err := describe.DescribePackage(r.Context(), pkgName)
+	if err != nil {
+		err = fmt.Errorf("An error occurred fetching package details of %v: %w\n", pkgName, err)
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+	}
+
+	var idx repo.PackageIndex
+	if err := repo.FetchPackageIndex("", pkgName, &idx); err != nil {
+		s.respondAlertAndLog(w, err, "An error occurred fetching versions of "+pkgName, "danger")
+		return
+	}
+
+	err = pkgDiscussionPageTmpl.Execute(w, s.enrichWithErrorAndWarnings(r.Context(), map[string]any{
+		"Package":         pkg,
+		"Status":          status,
+		"Manifest":        manifest,
+		"LatestVersion":   idx.LatestVersion,
+		"UpdateAvailable": pkg != nil && s.isUpdateAvailable(r.Context(), pkgName),
+		"PackageIndex":    &idx,
+	}, err))
+	checkTmplError(err, fmt.Sprintf("package-detail (%s)", pkgName))
+}
+
 // installOrConfigurePackage is an endpoint which takes POST requests, containing all necessary parameters to either
 // install a new package if it does not exist yet, or update the configuration of an existing package.
 // The name of the concerned package is given in the pkgName query parameter.
@@ -549,7 +581,6 @@ func (s *server) kubeconfigPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) enrichWithErrorAndWarnings(ctx context.Context, data map[string]any, err error) map[string]any {
-	cacheBustStr := fmt.Sprintf("%d", rand.Int())
 	data["Error"] = err
 	data["CurrentContext"] = s.rawConfig.CurrentContext
 	operatorVersion, clientVersion, err := s.getGlasskubeVersions(ctx)
@@ -564,7 +595,6 @@ func (s *server) enrichWithErrorAndWarnings(ctx context.Context, data map[string
 			"ClientVersion":       clientVersion.String(),
 			"NeedsOperatorUpdate": operatorVersion.LessThan(clientVersion),
 		}
-		cacheBustStr = clientVersion.String()
 	}
 	if config.IsDevBuild() {
 		data["VersionDetails"] = map[string]any{
@@ -572,7 +602,7 @@ func (s *server) enrichWithErrorAndWarnings(ctx context.Context, data map[string
 			"ClientVersion":   config.Version,
 		}
 	}
-	data["CacheBustingString"] = cacheBustStr
+	data["CacheBustingString"] = config.Version
 	return data
 }
 

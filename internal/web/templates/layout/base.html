@@ -81,32 +81,6 @@
     <div class="modal" id="modal-container" tabindex="-1" style="display: none" aria-hidden="false">
       <div class="modal-dialog" role="document"></div>
     </div>
-    <script>
-      (() => {
-        const getColorSchemeQuery = () => window.matchMedia('(prefers-color-scheme: dark)');
-        const getPreferredTheme = () => (getColorSchemeQuery().matches ? 'dark' : 'light');
-        const setPreferredTheme = () => document.body.setAttribute('data-bs-theme', getPreferredTheme());
-        setPreferredTheme();
-        getColorSchemeQuery().addEventListener('change', () => setPreferredTheme());
-      })();
-    </script>
-    <script>
-      var sseOnline = true;
-      document.addEventListener('htmx:sseError', function () {
-        sseOnline = false;
-        document.getElementById('sse-error-container').classList.remove('visually-hidden');
-        document.getElementById('sse-error-container-message').innerHTML =
-          'You are disconnected from the server. Make sure to run <code>glasskube serve</code> and refresh this page!';
-      });
-      document.addEventListener('htmx:sseOpen', function () {
-        if (!sseOnline) {
-          sseOnline = true;
-          const msg = document.getElementById('sse-error-container-message');
-          msg.innerText =
-            'You have been disconnected for a while. Please refresh this page to make sure you are up to date!';
-        }
-      });
-    </script>
     <footer class="footer py-3 mt-auto w-100 bg-secondary-subtle">
       <div class="container text-center">
         <span class="text-muted">Glasskube cluster version: {{ .VersionDetails.OperatorVersion }}</span>
@@ -120,5 +94,7 @@
         {{ end }}
       </div>
     </footer>
+
+    <script src="/static/bundle/custom.min.js?v={{ .CacheBustingString }}"></script>
   </body>
 </html>

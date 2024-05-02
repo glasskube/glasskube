@@ -2,7 +2,7 @@ import { build } from 'esbuild'
 
 await build({
   logLevel: 'info',
-  entryPoints: ['web/index.*'],
+  entryPoints: ['web/index.*', 'web/custom.*'],
   bundle: true,
   minify: true,
   loader: {
