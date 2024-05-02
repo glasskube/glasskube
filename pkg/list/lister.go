@@ -6,8 +6,10 @@ import (
 	"sync"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/names"
 	"github.com/glasskube/glasskube/internal/repo"
+	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	"github.com/glasskube/glasskube/pkg/client"
 	"go.uber.org/multierr"
 )
@@ -25,13 +27,23 @@ type ListOptions struct {
 	OnlyOutdated        bool
 }
 
-func GetPackagesWithStatus(
-	pkgClient client.PackageV1Alpha1Client,
+type lister struct {
+	pkgClient  client.PackageV1Alpha1Client
+	repoClient repoclient.RepoClientset
+}
+
+func NewLister(ctx context.Context) *lister {
+	return &lister{
+		pkgClient:  cliutils.PackageClient(ctx),
+		repoClient: cliutils.RepositoryClientset(ctx),
+	}
+}
+
+func (l *lister) GetPackagesWithStatus(
 	ctx context.Context,
 	options ListOptions,
 ) ([]*PackageWithStatus, error) {
-
-	index, err := fetchRepoAndInstalled(pkgClient, ctx, options)
+	index, err := l.fetchRepoAndInstalled(ctx, options)
 	if err != nil {
 		return nil, err
 	}
@@ -43,10 +55,8 @@ func GetPackagesWithStatus(
 		}
 
 		if !((options.OnlyInstalled && !item.Installed()) || (options.OnlyOutdated && !item.Outdated())) {
-			if item.Package != nil {
-				pkgWithStatus.Package = item.Package
-				pkgWithStatus.Status = client.GetStatusOrPending(&item.Package.Status)
-			}
+			pkgWithStatus.Package = item.Package
+			pkgWithStatus.Status = client.GetStatusOrPending(item.Package)
 
 			if item.PackageInfo != nil {
 				pkgWithStatus.InstalledManifest = item.PackageInfo.Status.Manifest
@@ -58,23 +68,8 @@ func GetPackagesWithStatus(
 	return result, nil
 }
 
-type listResultTuple struct {
-	IndexItem   *repo.PackageRepoIndexItem
-	Package     *v1alpha1.Package
-	PackageInfo *v1alpha1.PackageInfo
-}
-
-func (item listResultTuple) Installed() bool {
-	return item.Package != nil
-}
-
-func (item listResultTuple) Outdated() bool {
-	return item.Package != nil && item.IndexItem != nil &&
-		item.Package.Spec.PackageInfo.Version != item.IndexItem.LatestVersion
-}
-
-func fetchRepoAndInstalled(pkgClient client.PackageV1Alpha1Client, ctx context.Context, options ListOptions) (
-	[]listResultTuple,
+func (l *lister) fetchRepoAndInstalled(ctx context.Context, options ListOptions) (
+	[]result,
 	error,
 ) {
 	var index repo.PackageRepoIndex
@@ -85,28 +80,26 @@ func fetchRepoAndInstalled(pkgClient client.PackageV1Alpha1Client, ctx context.C
 	wg.Add(2)
 
 	go func() {
-
-		if err := repo.FetchPackageRepoIndex("", &index); err != nil {
-			compositeErr = multierr.Append(compositeErr, fmt.Errorf("could not fetch package repository index: %w", err))
+		defer wg.Done()
+		if err := l.repoClient.Aggregate().FetchPackageRepoIndex(&index); err != nil {
+			multierr.AppendInto(&compositeErr, fmt.Errorf("could not fetch package repository index: %w", err))
 		}
-		wg.Done()
 	}()
 
 	go func() {
-
-		if err := pkgClient.Packages().GetAll(ctx, &packages); err != nil {
-			compositeErr = multierr.Append(compositeErr, fmt.Errorf("could not fetch installed packages: %w", err))
+		defer wg.Done()
+		if err := l.pkgClient.Packages().GetAll(ctx, &packages); err != nil {
+			multierr.AppendInto(&compositeErr, fmt.Errorf("could not fetch installed packages: %w", err))
 		}
-		wg.Done()
 	}()
 
 	if options.IncludePackageInfos {
 		wg.Add(1)
 		go func() {
-			if err := pkgClient.PackageInfos().GetAll(ctx, &packageInfos); err != nil {
-				compositeErr = multierr.Append(compositeErr, fmt.Errorf("could not fetch package infos: %w", err))
+			defer wg.Done()
+			if err := l.pkgClient.PackageInfos().GetAll(ctx, &packageInfos); err != nil {
+				multierr.AppendInto(&compositeErr, fmt.Errorf("could not fetch package infos: %w", err))
 			}
-			wg.Done()
 		}()
 	}
 
@@ -115,7 +108,7 @@ func fetchRepoAndInstalled(pkgClient client.PackageV1Alpha1Client, ctx context.C
 		return nil, compositeErr
 	}
 
-	result := make([]listResultTuple, len(index.Packages))
+	result := make([]result, len(index.Packages))
 	for i, indexPackage := range index.Packages {
 		result[i].IndexItem = &index.Packages[i]
 		for j, clusterPackage := range packages.Items {

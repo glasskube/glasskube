@@ -8,7 +8,6 @@ import (
 	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/semver"
-	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/list"
 	"github.com/spf13/cobra"
 )
@@ -38,13 +37,12 @@ var listCmd = &cobra.Command{
 		"as well as their installation status in your cluster.\nYou can choose to only show installed packages.",
 	PreRun: cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
 	Run: func(cmd *cobra.Command, args []string) {
+		ctx := cmd.Context()
 		if listCmdOptions.More {
 			listCmdOptions.ShowLatestVersion = true
 			listCmdOptions.ShowDescription = true
 		}
-
-		pkgClient := client.FromContext(cmd.Context())
-		pkgs, err := list.GetPackagesWithStatus(pkgClient, cmd.Context(), listCmdOptions.toListOptions())
+		pkgs, err := list.NewLister(ctx).GetPackagesWithStatus(ctx, listCmdOptions.toListOptions())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "An error occurred:\n\n%v\n", err)
 			cliutils.ExitWithError()
@@ -90,7 +88,7 @@ func printPackageTable(packages []*list.PackageWithStatus) {
 	if listCmdOptions.ShowDescription {
 		header = append(header, "DESCRIPTION")
 	}
-	err := cliutils.PrintPackageTable(os.Stdout,
+	err := cliutils.PrintTable(os.Stdout,
 		packages,
 		header,
 		func(pkg *list.PackageWithStatus) []string {

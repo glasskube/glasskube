@@ -17,10 +17,11 @@ import (
 )
 
 type defaultClient struct {
-	defaultRepositoryURL string
-	maxCacheAge          time.Duration
-	cache                sync.Map
-	debug                bool
+	url         string
+	headers     http.Header
+	maxCacheAge time.Duration
+	cache       sync.Map
+	debug       bool
 }
 
 type cacheItem struct {
@@ -29,31 +30,36 @@ type cacheItem struct {
 	mutex   sync.Mutex
 }
 
-func New(repoURL string, maxCacheAge time.Duration) *defaultClient {
-	return &defaultClient{defaultRepositoryURL: repoURL, maxCacheAge: maxCacheAge}
+func New(url string, headers http.Header, maxCacheAge time.Duration) *defaultClient {
+	return &defaultClient{url: url, headers: headers, maxCacheAge: maxCacheAge}
 }
 
-func NewDebug(repoURL string, maxCacheAge time.Duration) *defaultClient {
-	c := New(repoURL, maxCacheAge)
+func NewDebug(url string, headers http.Header, maxCacheAge time.Duration) *defaultClient {
+	c := New(url, headers, maxCacheAge)
 	c.debug = true
 	return c
 }
 
+var _ RepoClient = &defaultClient{}
+
 // FetchLatestPackageManifest implements repo.RepoClient.
-func (c *defaultClient) FetchLatestPackageManifest(repoURL string, name string, target *v1alpha1.PackageManifest) (version string, err error) {
+func (c *defaultClient) FetchLatestPackageManifest(name string, target *v1alpha1.PackageManifest) (
+	version string, err error,
+) {
 	var versions types.PackageIndex
-	if err = c.FetchPackageIndex(repoURL, name, &versions); err != nil {
+	if err = c.FetchPackageIndex(name, &versions); err != nil {
 		return
 	} else {
 		version = versions.LatestVersion
 	}
-	err = c.FetchPackageManifest(repoURL, name, version, target)
+	err = c.FetchPackageManifest(name, version, target)
 	return
 }
 
 // FetchPackageManifest implements repo.RepoClient.
-func (c *defaultClient) FetchPackageManifest(repoURL string, name string, version string, target *v1alpha1.PackageManifest) error {
-	if url, err := c.GetPackageManifestURL(repoURL, name, version); err != nil {
+func (c *defaultClient) FetchPackageManifest(name string, version string,
+	target *v1alpha1.PackageManifest) error {
+	if url, err := c.GetPackageManifestURL(name, version); err != nil {
 		return err
 	} else {
 		return c.fetchYAMLOrJSON(url, target)
@@ -61,8 +67,8 @@ func (c *defaultClient) FetchPackageManifest(repoURL string, name string, versio
 }
 
 // FetchPackageIndex implements repo.RepoClient.
-func (c *defaultClient) FetchPackageIndex(repoURL string, name string, target *types.PackageIndex) error {
-	if url, err := c.getPackageIndexURL(repoURL, name); err != nil {
+func (c *defaultClient) FetchPackageIndex(name string, target *types.PackageIndex) error {
+	if url, err := c.getPackageIndexURL(name); err != nil {
 		return err
 	} else {
 		return c.fetchYAMLOrJSON(url, target)
@@ -70,8 +76,8 @@ func (c *defaultClient) FetchPackageIndex(repoURL string, name string, target *t
 }
 
 // FetchPackageRepoIndex implements repo.RepoClient.
-func (c *defaultClient) FetchPackageRepoIndex(repoURL string, target *types.PackageRepoIndex) error {
-	if url, err := c.getPackageRepoIndexURL(repoURL); err != nil {
+func (c *defaultClient) FetchPackageRepoIndex(target *types.PackageRepoIndex) error {
+	if url, err := c.getPackageRepoIndexURL(); err != nil {
 		return err
 	} else {
 		return c.fetchYAMLOrJSON(url, target)
@@ -79,9 +85,9 @@ func (c *defaultClient) FetchPackageRepoIndex(repoURL string, target *types.Pack
 }
 
 // GetLatestVersion implements repo.RepoClient.
-func (c *defaultClient) GetLatestVersion(repoURL string, pkgName string) (string, error) {
+func (c *defaultClient) GetLatestVersion(pkgName string) (string, error) {
 	var idx types.PackageRepoIndex
-	if err := c.FetchPackageRepoIndex(repoURL, &idx); err != nil {
+	if err := c.FetchPackageRepoIndex(&idx); err != nil {
 		return "", err
 	}
 	for _, pkg := range idx.Packages {
@@ -124,7 +130,16 @@ func (c *defaultClient) fetchYAMLOrJSON(url string, target any) error {
 		fmt.Fprintln(os.Stderr, "cache miss", url)
 	}
 
-	resp, err := httperror.CheckResponse(http.Get(url))
+	request, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return err
+	}
+	for k, v := range c.headers {
+		for _, s := range v {
+			request.Header.Add(k, s)
+		}
+	}
+	resp, err := httperror.CheckResponse(http.DefaultClient.Do(request))
 	if err != nil {
 		return fmt.Errorf("failed to fetch %v: %w", url, err)
 	}
@@ -140,24 +155,20 @@ func (c *defaultClient) fetchYAMLOrJSON(url string, target any) error {
 	}
 }
 
-func (c *defaultClient) getPackageRepoIndexURL(repoURL string) (string, error) {
-	return url.JoinPath(c.getBaseURL(repoURL), "index.yaml")
+func (c *defaultClient) getPackageRepoIndexURL() (string, error) {
+	return url.JoinPath(c.getBaseURL(), "index.yaml")
 }
 
-func (c *defaultClient) getPackageIndexURL(repoURL, name string) (string, error) {
-	return url.JoinPath(c.getBaseURL(repoURL), url.PathEscape(name), "versions.yaml")
+func (c *defaultClient) getPackageIndexURL(name string) (string, error) {
+	return url.JoinPath(c.getBaseURL(), url.PathEscape(name), "versions.yaml")
 }
 
 // GetPackageManifestURL implements repo.RepoClient.
-func (c *defaultClient) GetPackageManifestURL(repoURL, name, version string) (string, error) {
+func (c *defaultClient) GetPackageManifestURL(name, version string) (string, error) {
 	pathSegments := []string{url.PathEscape(name), url.PathEscape(version), "package.yaml"}
-	return url.JoinPath(c.getBaseURL(repoURL), pathSegments...)
+	return url.JoinPath(c.getBaseURL(), pathSegments...)
 }
 
-func (c *defaultClient) getBaseURL(explicitRepositoryURL string) string {
-	if len(explicitRepositoryURL) > 0 {
-		return explicitRepositoryURL
-	} else {
-		return c.defaultRepositoryURL
-	}
+func (c *defaultClient) getBaseURL() string {
+	return c.url
 }

@@ -44,3 +44,15 @@ func (a *ControllerRuntimeAdapter) GetPackage(ctx context.Context, name string) 
 	var pkg v1alpha1.Package
 	return &pkg, a.client.Get(ctx, ctrlclient.ObjectKey{Name: name}, &pkg)
 }
+
+// GetPackageRepository implements adapter.PackageClientAdapter.
+func (a *ControllerRuntimeAdapter) GetPackageRepository(ctx context.Context, name string) (*v1alpha1.PackageRepository, error) {
+	var repo v1alpha1.PackageRepository
+	return &repo, a.client.Get(ctx, ctrlclient.ObjectKey{Name: name}, &repo)
+}
+
+// ListPackageRepositories implements adapter.PackageClientAdapter.
+func (a *ControllerRuntimeAdapter) ListPackageRepositories(ctx context.Context) (*v1alpha1.PackageRepositoryList, error) {
+	var list v1alpha1.PackageRepositoryList
+	return &list, a.client.List(ctx, &list, &ctrlclient.ListOptions{})
+}

@@ -10,6 +10,7 @@ import (
 type PackageV1Alpha1Client interface {
 	Packages() PackageInterface
 	PackageInfos() PackageInfoInterface
+	PackageRepositories() PackageRepositoryInterface
 	WithStores(packageStore cache.Store, packageInfoStore cache.Store) PackageV1Alpha1Client
 }
 
@@ -26,6 +27,11 @@ func (c *baseClient) Packages() PackageInterface {
 func (c *baseClient) PackageInfos() PackageInfoInterface {
 	return &packageInfoClient{restClient: c.restClient}
 }
+
+func (c *baseClient) PackageRepositories() PackageRepositoryInterface {
+	return &packageRepositoryClient{restClient: c.restClient}
+}
+
 func (c *baseClient) WithStores(packageStore cache.Store, packageInfoStore cache.Store) PackageV1Alpha1Client {
 	return &packageCacheClient{PackageV1Alpha1Client: c, packageStore: packageStore, packageInfoStore: packageInfoStore}
 }
@@ -40,6 +46,14 @@ func New(cfg *rest.Config) (PackageV1Alpha1Client, error) {
 		return nil, err
 	}
 	return &baseClient{restClient: restClient}, err
+}
+
+func NewOrDie(cfg *rest.Config) PackageV1Alpha1Client {
+	if client, err := New(cfg); err != nil {
+		panic(err)
+	} else {
+		return client
+	}
 }
 
 func init() {

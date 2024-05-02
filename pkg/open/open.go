@@ -9,7 +9,8 @@ import (
 	"os"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
-	"github.com/glasskube/glasskube/pkg/client"
+	"github.com/glasskube/glasskube/internal/clicontext"
+	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/pkg/future"
 	"github.com/glasskube/glasskube/pkg/manifest"
 	corev1 "k8s.io/api/core/v1"
@@ -102,15 +103,11 @@ func (o *opener) Open(ctx context.Context, packageName string, entrypointName st
 
 func (o *opener) initFromContext(ctx context.Context) error {
 	if o.ksClient == nil {
-		ksClient, err := kubernetes.NewForConfig(client.ConfigFromContext(ctx))
-		if err != nil {
-			return err
-		}
-		o.ksClient = ksClient
+		o.ksClient = cliutils.KubernetesClient(ctx)
 	}
 
 	if o.restClient == nil {
-		restConfig := *client.ConfigFromContext(ctx)
+		restConfig := *clicontext.ConfigFromContext(ctx)
 		restConfig.GroupVersion = &corev1.SchemeGroupVersion
 		restConfig.APIPath = "/api"
 		restConfig.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
@@ -156,7 +153,7 @@ func (o *opener) open(
 		return nil, err
 	}
 
-	roundTripper, upgrader, err := spdy.RoundTripperFor(client.ConfigFromContext(ctx))
+	roundTripper, upgrader, err := spdy.RoundTripperFor(clicontext.ConfigFromContext(ctx))
 	if err != nil {
 		return nil, fmt.Errorf("could not create RoundTripper: %w", err)
 	}
