@@ -27,6 +27,7 @@ var (
 	baseTemplate          *template.Template
 	pkgsPageTmpl          *template.Template
 	pkgPageTmpl           *template.Template
+	pkgDiscussionPageTmpl *template.Template
 	supportPageTmpl       *template.Template
 	bootstrapPageTmpl     *template.Template
 	kubeconfigPageTmpl    *template.Template
@@ -110,6 +111,7 @@ func parseTemplates() {
 		ParseFS(webFs, path.Join(templatesDir, "layout", "base.html")))
 	pkgsPageTmpl = pageTmpl("packages.html")
 	pkgPageTmpl = pageTmpl("package.html")
+	pkgDiscussionPageTmpl = pageTmpl("discussion.html")
 	supportPageTmpl = pageTmpl("support.html")
 	bootstrapPageTmpl = pageTmpl("bootstrap.html")
 	kubeconfigPageTmpl = pageTmpl("kubeconfig.html")

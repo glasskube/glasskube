@@ -1,0 +1,41 @@
+{{ define "content" }}
+  {{ if .Manifest }}
+    <div
+      class="container-lg mt-2"
+      hx-trigger="htmx:historyRestore from:body"
+      hx-get="/packages/{{ .Manifest.Name }}/discussion"
+      hx-select="main"
+      hx-target="main"
+      hx-swap="outerHTML">
+      <div
+        class="row p-3 col-lg-10 offset-lg-1"
+        hx-trigger="sse:refresh-pkg-detail-{{ .Manifest.Name }}"
+        hx-get="/packages/{{ .Manifest.Name }}/discussion"
+        hx-swap="outerHTML"
+        hx-select="#pkg-detail-header-swapped"
+        hx-target="#pkg-detail-header-swapped">
+        <div id="pkg-detail-header-swapped">
+          {{ template "pkg-detail-header" . }}
+        </div>
+        <div class="mt-3">
+          <giscus-widget
+            repo="glasskube/glasskube"
+            repoId="R_kgDOLDumDw"
+            category="Packages"
+            categoryId="DIC_kwDOLDumD84CcybS"
+            mapping="specific"
+            term="{{ .Manifest.Name }}"
+            strict="0"
+            reactionsEnabled="1"
+            emitMetadata="1"
+            inputPosition="top"
+            theme="preferred_color_scheme"
+            lang="en"
+            loading="lazy"
+            crossorigin="anonymous"
+            async></giscus-widget>
+        </div>
+      </div>
+    </div>
+  {{ end }}
+{{ end }}

@@ -235,3 +235,15 @@ func HttpMiddleware() func(http.Handler) http.Handler {
 		})
 	}
 }
+
+func SetUserProperty(key string, value string) {
+	_ = instance.posthog.Enqueue(posthog.Capture{
+		DistinctId: instance.machineId,
+		Event:      "$set",
+		Properties: map[string]any{
+			"$set": map[string]any{
+				key: value,
+			},
+		},
+	})
+}
