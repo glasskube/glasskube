@@ -41,3 +41,15 @@ func (a *goClientPackageAdapter) GetPackage(ctx context.Context, name string) (*
 	var pkg v1alpha1.Package
 	return &pkg, a.pkgClient.Packages().Get(ctx, name, &pkg)
 }
+
+// GetPackageRepository implements adapter.PackageClientAdapter.
+func (a *goClientPackageAdapter) GetPackageRepository(ctx context.Context, name string) (*v1alpha1.PackageRepository, error) {
+	var repo v1alpha1.PackageRepository
+	return &repo, a.pkgClient.PackageRepositories().Get(ctx, name, &repo)
+}
+
+// ListPackageRepositories implements adapter.PackageClientAdapter.
+func (a *goClientPackageAdapter) ListPackageRepositories(ctx context.Context) (*v1alpha1.PackageRepositoryList, error) {
+	var list v1alpha1.PackageRepositoryList
+	return &list, a.pkgClient.PackageRepositories().GetAll(ctx, &list)
+}

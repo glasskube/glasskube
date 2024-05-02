@@ -6,12 +6,10 @@ import (
 	"reflect"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
-	ctrladapter "github.com/glasskube/glasskube/internal/adapter/controllerruntime"
 	"github.com/glasskube/glasskube/internal/controller/owners"
 	"github.com/glasskube/glasskube/internal/dependency"
 	"github.com/glasskube/glasskube/internal/dependency/graph"
 	"github.com/glasskube/glasskube/internal/manifestvalues"
-	"github.com/glasskube/glasskube/internal/repo"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	"go.uber.org/multierr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -25,7 +23,7 @@ type PackageValidatingWebhook struct {
 	client.Client
 	*owners.OwnerManager
 	*dependency.DependendcyManager
-	repo repoclient.RepoClient
+	RepoClient repoclient.RepoClientset
 }
 
 //+kubebuilder:webhook:path=/validate-packages-glasskube-dev-v1alpha1-package,mutating=false,failurePolicy=fail,sideEffects=None,groups=packages.glasskube.dev,resources=packages,verbs=create;update;delete,versions=v1alpha1,name=vpackage.kb.io,admissionReviewVersions=v1
@@ -34,8 +32,6 @@ var _ webhook.CustomValidator = &PackageValidatingWebhook{}
 
 func (p *PackageValidatingWebhook) SetupWithManager(mgr ctrl.Manager) error {
 	p.OwnerManager = owners.NewOwnerManager(p.Scheme())
-	p.DependendcyManager = dependency.NewDependencyManager(ctrladapter.NewPackageClientAdapter(p.Client))
-	p.repo = repo.DefaultClient
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&v1alpha1.Package{}).
 		WithValidator(p).
@@ -101,7 +97,7 @@ func (p *PackageValidatingWebhook) ValidateDelete(ctx context.Context, obj runti
 func (p *PackageValidatingWebhook) validateCreateOrUpdate(ctx context.Context, pkg *v1alpha1.Package) error {
 	// We must expect that this package is not installed in this version, so the PackageInfo does not exist.
 	var manifest v1alpha1.PackageManifest
-	err := p.repo.FetchPackageManifest("", pkg.Spec.PackageInfo.Name, pkg.Spec.PackageInfo.Version, &manifest)
+	err := p.RepoClient.ForPackage(*pkg).FetchPackageManifest(pkg.Spec.PackageInfo.Name, pkg.Spec.PackageInfo.Version, &manifest)
 	if err != nil {
 		return err
 	}

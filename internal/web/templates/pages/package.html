@@ -21,19 +21,19 @@
           <div class="mt-3">
             <h2 class="text-reset">Package Details</h2>
 
-            {{ if eq .Manifest.LongDescription "" }}
-              <i>
-                This package has no detailed description yet. You can request to change this here:
-                <a
-                  class="icon-link text-reset me-2"
-                  href="{{ PackageManifestUrl .Manifest.Name .Package .LatestVersion }}"
-                  target="_blank">
-                  <span class="bi bi-box-arrow-up-right"></span>
-                  Glasskube Package Manifest
-                </a>
-              </i>
-            {{ else }}
+            {{ if  .Manifest.LongDescription }}
               {{ .Manifest.LongDescription | Markdown }}
+            {{ else }}
+              <i>
+                This package has no detailed description yet.
+                {{ if PackageManifestUrl .Package }}
+                  You can request to change this here:
+                  <a class="icon-link text-reset me-2" href="{{ PackageManifestUrl .Package }}" target="_blank">
+                    <span class="bi bi-box-arrow-up-right"></span>
+                    Glasskube Package Manifest
+                  </a>
+                {{ end }}
+              </i>
             {{ end }}
 
             {{ if or (eq .Package nil) (IsUpgradable .Package.Spec.PackageInfo.Version .LatestVersion) }}

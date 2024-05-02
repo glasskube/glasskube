@@ -5,14 +5,14 @@ import (
 
 	"k8s.io/client-go/rest"
 
-	"github.com/glasskube/glasskube/pkg/client"
+	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
 func GetPackageOperatorVersion(ctx context.Context) (string, error) {
-	config := client.ConfigFromContext(ctx)
+	config := clicontext.ConfigFromContext(ctx)
 	return GetPackageOperatorVersionForConfig(config, ctx)
 }
 

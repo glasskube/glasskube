@@ -6,9 +6,10 @@ import (
 	"fmt"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
-	clientadapter "github.com/glasskube/glasskube/internal/adapter/goclient"
+	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/dependency"
 	"github.com/glasskube/glasskube/internal/repo"
+	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	"github.com/glasskube/glasskube/internal/semver"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/condition"
@@ -47,16 +48,18 @@ func (txi updateTransactionItem) UpdateRequired() bool {
 }
 
 type updater struct {
-	client client.PackageV1Alpha1Client
-	status statuswriter.StatusWriter
-	dm     *dependency.DependendcyManager
+	client     client.PackageV1Alpha1Client
+	repoClient repoclient.RepoClientset
+	status     statuswriter.StatusWriter
+	dm         *dependency.DependendcyManager
 }
 
-func NewUpdater(client client.PackageV1Alpha1Client) *updater {
+func NewUpdater(ctx context.Context) *updater {
 	return &updater{
-		client: client,
-		status: statuswriter.Noop(),
-		dm:     dependency.NewDependencyManager(clientadapter.NewPackageClientAdapter(client)),
+		status:     statuswriter.Noop(),
+		client:     cliutils.PackageClient(ctx),
+		repoClient: cliutils.RepositoryClientset(ctx),
+		dm:         cliutils.DependencyManager(ctx),
 	}
 }
 
@@ -78,32 +81,23 @@ func (c *updater) PrepareForVersion(
 		return nil, fmt.Errorf("failed to get package %v: %v", pkgName, err)
 	}
 
-	c.status.SetStatus("Updating package index")
-	var index repo.PackageRepoIndex
-	if err := repo.FetchPackageRepoIndex("", &index); err != nil {
-		return nil, fmt.Errorf("failed to fetch index: %v", err)
+	if !semver.IsUpgradable(pkg.Spec.PackageInfo.Version, pkgVersion) {
+		return nil, fmt.Errorf("can't update to downgraded version or equal version")
 	}
 
+	c.status.SetStatus("Updating package index")
+
 	var tx UpdateTransaction
-	for _, indexItem := range index.Packages {
-		if indexItem.Name == pkg.Name {
-			if !semver.IsUpgradable(pkg.Spec.PackageInfo.Version, pkgVersion) {
-				return nil, fmt.Errorf("can't update to downgraded version or equal version")
-			}
-			item := updateTransactionItem{Package: pkg, Version: pkgVersion}
-			var manifest v1alpha1.PackageManifest
-			if err := repo.FetchPackageManifest("", pkg.Name, pkgVersion, &manifest); err != nil {
-				return nil, err
-			}
-			if result, err := c.dm.Validate(ctx, &manifest, pkgVersion); err != nil {
-				return nil, err
-			} else if len(result.Conflicts) > 0 {
-				tx.ConflictItems = append(tx.ConflictItems, updateTransactionItemConflict{item, result.Conflicts})
-			} else {
-				tx.Items = append(tx.Items, item)
-			}
-			break
-		}
+	item := updateTransactionItem{Package: pkg, Version: pkgVersion}
+	var manifest v1alpha1.PackageManifest
+	if err := c.repoClient.ForPackage(pkg).FetchPackageManifest(pkg.Name, pkgVersion, &manifest); err != nil {
+		return nil, err
+	} else if result, err := c.dm.Validate(ctx, &manifest, pkgVersion); err != nil {
+		return nil, err
+	} else if len(result.Conflicts) > 0 {
+		tx.ConflictItems = append(tx.ConflictItems, updateTransactionItemConflict{item, result.Conflicts})
+	} else {
+		tx.Items = append(tx.Items, item)
 	}
 
 	return &tx, nil
@@ -133,21 +127,23 @@ func (c *updater) Prepare(ctx context.Context, packageNames []string) (*UpdateTr
 	}
 
 	c.status.SetStatus("Updating package index")
-	var index repo.PackageRepoIndex
-	if err := repo.FetchPackageRepoIndex("", &index); err != nil {
-		return nil, fmt.Errorf("failed to fetch index: %v", err)
-	}
 
 	requirementsSet := make(map[dependency.Requirement]struct{})
 	var tx UpdateTransaction
 outer:
 	for _, pkg := range packagesToUpdate {
+		repoClient := c.repoClient.ForPackage(pkg)
+		var index repo.PackageRepoIndex
+		if err := repoClient.FetchPackageRepoIndex(&index); err != nil {
+			return nil, fmt.Errorf("failed to fetch index: %v", err)
+		}
+
 		for _, indexItem := range index.Packages {
 			if indexItem.Name == pkg.Name {
 				if semver.IsUpgradable(pkg.Spec.PackageInfo.Version, indexItem.LatestVersion) {
 					item := updateTransactionItem{Package: pkg, Version: indexItem.LatestVersion}
 					var manifest v1alpha1.PackageManifest
-					if err := repo.FetchPackageManifest("", pkg.Name, indexItem.LatestVersion, &manifest); err != nil {
+					if err := repoClient.FetchPackageManifest(pkg.Name, indexItem.LatestVersion, &manifest); err != nil {
 						return nil, err
 					}
 					if result, err := c.dm.Validate(ctx, &manifest, indexItem.LatestVersion); err != nil {

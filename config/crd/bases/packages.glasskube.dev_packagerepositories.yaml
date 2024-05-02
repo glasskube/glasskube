@@ -4,29 +4,20 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.14.0
-  name: packages.packages.glasskube.dev
+  name: packagerepositories.packages.glasskube.dev
 spec:
   group: packages.glasskube.dev
   names:
-    kind: Package
-    listKind: PackageList
-    plural: packages
-    shortNames:
-    - pkg
-    singular: package
+    kind: PackageRepository
+    listKind: PackageRepositoryList
+    plural: packagerepositories
+    singular: packagerepository
   scope: Cluster
   versions:
-  - additionalPrinterColumns:
-    - jsonPath: .spec.packageInfo.version
-      name: Desired version
-      type: string
-    - jsonPath: .status.version
-      name: Installed version
-      type: string
-    name: v1alpha1
+  - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: Package is the Schema for the packages API
+        description: PackageRepository is the Schema for the packagerepositories API
         properties:
           apiVersion:
             description: |-
@@ -46,79 +37,98 @@ spec:
           metadata:
             type: object
           spec:
-            description: PackageSpec defines the desired state of Package
+            description: PackageRepositorySpec defines the desired state of PackageRepository
             properties:
-              packageInfo:
+              auth:
                 properties:
-                  name:
-                    description: Name of the package to install
-                    type: string
-                  repositoryName:
-                    description: RepositoryName is the name of the repository to pull
-                      the package from (optional)
-                    type: string
-                  version:
-                    description: Version of the package to install
-                    type: string
-                required:
-                - name
-                - version
+                  basic:
+                    properties:
+                      password:
+                        type: string
+                      passwordSecretRef:
+                        description: SecretKeySelector selects a key of a Secret.
+                        properties:
+                          key:
+                            description: The key of the secret to select from.  Must
+                              be a valid secret key.
+                            type: string
+                          name:
+                            description: |-
+                              Name of the referent.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                              TODO: Add other useful fields. apiVersion, kind, uid?
+                            type: string
+                          optional:
+                            description: Specify whether the Secret or its key must
+                              be defined
+                            type: boolean
+                        required:
+                        - key
+                        type: object
+                        x-kubernetes-map-type: atomic
+                      username:
+                        type: string
+                      usernameSecretRef:
+                        description: SecretKeySelector selects a key of a Secret.
+                        properties:
+                          key:
+                            description: The key of the secret to select from.  Must
+                              be a valid secret key.
+                            type: string
+                          name:
+                            description: |-
+                              Name of the referent.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                              TODO: Add other useful fields. apiVersion, kind, uid?
+                            type: string
+                          optional:
+                            description: Specify whether the Secret or its key must
+                              be defined
+                            type: boolean
+                        required:
+                        - key
+                        type: object
+                        x-kubernetes-map-type: atomic
+                    type: object
+                  bearer:
+                    properties:
+                      token:
+                        type: string
+                      tokenSecretRef:
+                        description: SecretKeySelector selects a key of a Secret.
+                        properties:
+                          key:
+                            description: The key of the secret to select from.  Must
+                              be a valid secret key.
+                            type: string
+                          name:
+                            description: |-
+                              Name of the referent.
+                              More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                              TODO: Add other useful fields. apiVersion, kind, uid?
+                            type: string
+                          optional:
+                            description: Specify whether the Secret or its key must
+                              be defined
+                            type: boolean
+                        required:
+                        - key
+                        type: object
+                        x-kubernetes-map-type: atomic
+                    type: object
                 type: object
-              values:
-                additionalProperties:
-                  maxProperties: 1
-                  minProperties: 1
-                  properties:
-                    value:
-                      type: string
-                    valueFrom:
-                      maxProperties: 1
-                      minProperties: 1
-                      properties:
-                        configMapRef:
-                          properties:
-                            key:
-                              type: string
-                            name:
-                              type: string
-                            namespace:
-                              type: string
-                          required:
-                          - key
-                          - name
-                          type: object
-                        packageRef:
-                          properties:
-                            name:
-                              type: string
-                            value:
-                              type: string
-                          required:
-                          - name
-                          - value
-                          type: object
-                        secretRef:
-                          properties:
-                            key:
-                              type: string
-                            name:
-                              type: string
-                            namespace:
-                              type: string
-                          required:
-                          - key
-                          - name
-                          type: object
-                      type: object
-                  type: object
-                type: object
+              url:
+                type: string
             required:
-            - packageInfo
+            - url
             type: object
           status:
-            description: PackageStatus defines the observed state of Package
+            description: PackageRepositoryStatus defines the observed state of PackageRepository
             properties:
               conditions:
+                description: |-
+                  INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+                  Important: Run "make" to regenerate code after modifying this file
                 items:
                   description: "Condition contains details for one aspect of the current
                     state of this API Resource.\n---\nThis struct is intended for
@@ -187,74 +197,6 @@ spec:
                   - type
                   type: object
                 type: array
-              ownedPackageInfos:
-                items:
-                  properties:
-                    group:
-                      type: string
-                    kind:
-                      type: string
-                    markedForDeletion:
-                      type: boolean
-                    name:
-                      type: string
-                    namespace:
-                      type: string
-                    version:
-                      type: string
-                  required:
-                  - group
-                  - kind
-                  - name
-                  - version
-                  type: object
-                type: array
-              ownedPackages:
-                items:
-                  properties:
-                    group:
-                      type: string
-                    kind:
-                      type: string
-                    markedForDeletion:
-                      type: boolean
-                    name:
-                      type: string
-                    namespace:
-                      type: string
-                    version:
-                      type: string
-                  required:
-                  - group
-                  - kind
-                  - name
-                  - version
-                  type: object
-                type: array
-              ownedResources:
-                items:
-                  properties:
-                    group:
-                      type: string
-                    kind:
-                      type: string
-                    markedForDeletion:
-                      type: boolean
-                    name:
-                      type: string
-                    namespace:
-                      type: string
-                    version:
-                      type: string
-                  required:
-                  - group
-                  - kind
-                  - name
-                  - version
-                  type: object
-                type: array
-              version:
-                type: string
             type: object
         type: object
     served: true

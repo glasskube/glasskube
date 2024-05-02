@@ -2,11 +2,13 @@ package bootstrap
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/fatih/color"
+	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/constants"
@@ -14,6 +16,7 @@ import (
 	"github.com/glasskube/glasskube/internal/releaseinfo"
 	"github.com/glasskube/glasskube/internal/telemetry"
 	"github.com/glasskube/glasskube/internal/telemetry/annotations"
+	"github.com/glasskube/glasskube/internal/util"
 	"github.com/schollz/progressbar/v3"
 	"go.uber.org/multierr"
 	appsv1 "k8s.io/api/apps/v1"
@@ -112,6 +115,8 @@ func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOption
 			statusMessage("Attempting to force bootstrap anyways (Force option is enabled)", true)
 		}
 	}
+
+	manifests = append(manifests, defaultRepository())
 
 	statusMessage("Applying Glasskube manifests", true)
 
@@ -231,6 +236,25 @@ func (c *BootstrapClient) handleTelemetry(disabled bool, elapsed time.Duration) 
 			"Run \"glasskube telemetry status\" for more info.", true)
 		telemetry.BootstrapSuccess(elapsed)
 	}
+}
+
+func defaultRepository() unstructured.Unstructured {
+	repo := v1alpha1.PackageRepository{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "glasskube",
+			Annotations: map[string]string{
+				"packages.glasskube.dev/defaultRepository": "true",
+			},
+		},
+		Spec: v1alpha1.PackageRepositorySpec{
+			Url: "",
+		},
+	}
+	var repoUnstructured unstructured.Unstructured
+	if err := json.Unmarshal(util.Must(json.Marshal(repo)), &repoUnstructured); err != nil {
+		panic(err)
+	}
+	return repoUnstructured
 }
 
 func (c *BootstrapClient) checkWorkloadReady(
