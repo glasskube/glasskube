@@ -3,6 +3,7 @@ package httperror
 import (
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 )
 
@@ -46,4 +47,9 @@ func Is(err error, code int) bool {
 
 func IsNotFound(err error) bool {
 	return Is(err, http.StatusNotFound)
+}
+
+func IsNetworkError(err error) bool {
+	netErr, ok := err.(net.Error)
+	return ok && netErr.Timeout()
 }
