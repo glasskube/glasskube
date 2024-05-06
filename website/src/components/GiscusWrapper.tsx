@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import Giscus from '@giscus/react';
 import { useColorMode } from '@docusaurus/theme-common';
 
-export default function GiscusComponent() {
+export default function GiscusWrapper(props) {
   const { colorMode } = useColorMode();
 
   const handleGiscusMessage = (ev) => {
@@ -38,8 +38,8 @@ export default function GiscusComponent() {
     <Giscus
       repo="glasskube/glasskube"
       repoId="R_kgDOLDumDw"
-      category="Blog"
-      categoryId="DIC_kwDOLDumD84CfCte"
+      category={props.category}
+      categoryId={props.categoryId}
       mapping="title"
       strict="0"
       reactionsEnabled="1"
@@ -51,3 +51,8 @@ export default function GiscusComponent() {
     />
   );
 }
+
+
+export function BlogDiscussion() { return <GiscusWrapper category="Blog" categoryId="DIC_kwDOLDumD84CfCte" /> }
+export function GuidesDiscussion() { return <GiscusWrapper category="Guides" categoryId="DIC_kwDOLDumD84CfKxz" /> }
+
