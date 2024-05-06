@@ -124,14 +124,11 @@ func (c *defaultClient) fetchYAMLOrJSON(url string, target any) error {
 		fmt.Fprintln(os.Stderr, "cache miss", url)
 	}
 
-	resp, err := http.Get(url)
+	resp, err := httperror.CheckResponse(http.Get(url))
 	if err != nil {
-		return err
-	}
-	defer func() { _ = resp.Body.Close() }()
-	if err = httperror.CheckResponse(resp); err != nil {
 		return fmt.Errorf("failed to fetch %v: %w", url, err)
 	}
+	defer func() { _ = resp.Body.Close() }()
 	if bytes, err := io.ReadAll(resp.Body); err != nil {
 		return err
 	} else if err := yaml.Unmarshal(bytes, target); err != nil {

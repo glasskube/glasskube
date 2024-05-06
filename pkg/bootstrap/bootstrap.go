@@ -79,9 +79,9 @@ func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOption
 		version := config.Version
 		if options.Latest {
 			if releaseInfo, err := releaseinfo.FetchLatestRelease(); err != nil {
-				if httperror.Is(err, http.StatusServiceUnavailable) || httperror.IsNetworkError(err) {
+				if httperror.Is(err, http.StatusServiceUnavailable) || httperror.IsTimeoutError(err) {
 					telemetry.BootstrapFailure(time.Since(start))
-					return fmt.Errorf("Network connectivity error, cannot bootstrap %v", err)
+					return fmt.Errorf("Network connectivity error, check your network, cannot bootstrap")
 				}
 				telemetry.BootstrapFailure(time.Since(start))
 				return fmt.Errorf("could not determine latest version: %w", err)

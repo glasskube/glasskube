@@ -11,15 +11,8 @@ import (
 )
 
 func FetchResources(url string) ([]unstructured.Unstructured, error) {
-	response, err := http.Get(url)
+	response, err := httperror.CheckResponse(http.Get(url))
 	if err != nil {
-		return nil, fmt.Errorf("could not download manifest %v: %w", url, err)
-	}
-	defer func(Body io.ReadCloser) {
-		_ = Body.Close()
-	}(response.Body)
-
-	if err := httperror.CheckResponse(response); err != nil {
 		switch {
 		case httperror.IsNotFound(err):
 			return nil, fmt.Errorf("manifest not found at %v: %v", url, err)
@@ -31,6 +24,9 @@ func FetchResources(url string) ([]unstructured.Unstructured, error) {
 			return nil, fmt.Errorf("failed to download manifest from %v: %v", url, err)
 		}
 	}
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(response.Body)
 
 	decoder := yaml.NewYAMLOrJSONDecoder(response.Body, 4096)
 	resources := make([]unstructured.Unstructured, 0)
