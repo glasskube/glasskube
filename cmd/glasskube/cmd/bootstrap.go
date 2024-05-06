@@ -8,6 +8,7 @@ import (
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/semver"
+	"github.com/glasskube/glasskube/internal/util"
 	"github.com/glasskube/glasskube/pkg/bootstrap"
 	"github.com/spf13/cobra"
 )
@@ -29,7 +30,7 @@ var bootstrapCmd = &cobra.Command{
 	Long: "Bootstraps Glasskube in a Kubernetes cluster, " +
 		"thereby installing the Glasskube operator and checking if the installation was successful.",
 	Args:   cobra.NoArgs,
-	PreRun: cliutils.SetupClientContext(false, &rootCmdOptions.SkipUpdateCheck),
+	PreRun: cliutils.SetupClientContext(false, util.Pointer(true)),
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg, _ := cliutils.RequireConfig(config.Kubeconfig)
 		client := bootstrap.NewBootstrapClient(cfg)
