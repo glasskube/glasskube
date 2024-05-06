@@ -2,11 +2,10 @@
 title: The guide to Git I never had.
 slug: git
 description: 'Learn how to use git with commands for commiting, branching, rebasing and squashing'
+authors: [ jpage ]
+tags: [ git ]
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-import Install from '../src/partials/_install.mdx';
 import CustomGitHubButton from '../src/components/CustomGitHubButton.tsx';
 
 # The guide to Git I never had.
@@ -17,7 +16,7 @@ import CustomGitHubButton from '../src/components/CustomGitHubButton.tsx';
 
 Have you noticed that Git is so integral to working with code that people hardly ever include it in their tech stack or on their CV at all? The assumption is you know it already, or at least enough to get by, but do you?
 
-Git is a Version Control System (VCS). The ubiquitous technology that enables us to store, change, and collaborate on code with others. 
+Git is a Version Control System (VCS). The ubiquitous technology that enables us to store, change, and collaborate on code with others.
 
 > 🚨 As a disclaimer, I would like to point out that Git is a massive topic. Git books have been written, and blog posts that could be mistaken for academic papers too. That's not what I’m going for here. **I'm no Git expert**. My aim here is to write the Git fundamentals post I wish I had when learning Git.
 
@@ -39,8 +38,8 @@ If you are looking to put your Git skills to work and would like to contribute t
 
 ## Let’s lay down the foundations
 
-Does Git ever make you feel like Peter Griffin? 
-If you don’t learn Git the right way you run the risk of constantly scratching your head, getting stuck on the same issues, or rueing the day you see another merge conflict appear in your terminal. Let's ensure that doesn’t happen by defining some foundational Git concepts. 
+Does Git ever make you feel like Peter Griffin?
+If you don’t learn Git the right way you run the risk of constantly scratching your head, getting stuck on the same issues, or rueing the day you see another merge conflict appear in your terminal. Let's ensure that doesn’t happen by defining some foundational Git concepts.
 
 ### Branches
 
@@ -53,9 +52,9 @@ Git commits serve as bundles of updated code, capturing a snapshot of the projec
 
 ![Git commits](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/dcjp286j11bqkx0k9w35.png)
 
-When referencing commits you will generally use its uniquely identified cryptographic [hash](https://www.mikestreety.co.uk/blog/the-git-commit-hash/). 
+When referencing commits you will generally use its uniquely identified cryptographic [hash](https://www.mikestreety.co.uk/blog/the-git-commit-hash/).
 
-Example: 
+Example:
 ```
 git show abc123def456789
 ```
@@ -70,7 +69,7 @@ Git [tags](https://git-scm.com/book/en/v2/Git-Basics-Tagging) serve as landmarks
 The most recent commit on the currently checked-out branch is indicated by the `HEAD`, serving as a pointer to any reference within the repository. When you're on a specific branch, `HEAD` points to the latest commit on that branch. Sometimes, instead of pointing to the tip of a branch, `HEAD` can directly point to a specific commit (`detached HEAD` state).
 
 ### Stages
-Understanding Git stages is crucial for navigating your Git workflow. They represent the logical transitions where changes to your files occur before they are committed to the repository. 
+Understanding Git stages is crucial for navigating your Git workflow. They represent the logical transitions where changes to your files occur before they are committed to the repository.
 Let's delve into the concept of Git stages:
 
 ![Git stages](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/96ndc8w183kh0tcb3uxb.png)
@@ -93,10 +92,10 @@ The remote repository is a centralized location, typically hosted on a server (l
 
 ## Getting Started with Git
 
-Well, you have to start somewhere, and in Git that is your `workspace`. You can `fork` or `clone` an existing repository and have a copy of that workspace, or if you are starting completely fresh in a new local folder on your machine you have to turn it into a git repository with `git init`. The next step, crucially not to be overlooked is setting up your credentials.  
+Well, you have to start somewhere, and in Git that is your `workspace`. You can `fork` or `clone` an existing repository and have a copy of that workspace, or if you are starting completely fresh in a new local folder on your machine you have to turn it into a git repository with `git init`. The next step, crucially not to be overlooked is setting up your credentials.
 
 [![Source:  Shuai Li](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/fqr8mylqjo91zurb7gmi.png)](https://li.earthonline.us/)
-### Credentials set up 
+### Credentials set up
 When running pushing and pulling to a remote repository you don’t want to have to type your username and password every time, avoid that by simply executing the following command:
 
 ```
@@ -114,10 +113,10 @@ git config --global credential.helper
 ```
 
 ### Working with branches
-When working locally it’s crucial to know which branch you are currently on. These commands are helpful: 
+When working locally it’s crucial to know which branch you are currently on. These commands are helpful:
 ```
 # Will show the changes in the local repository
-git branch 
+git branch
 
 # Or create a branch directly with
 git branch feature-branch-name
@@ -126,10 +125,10 @@ To transition between branches use:
 ```
 git switch
 ```
-Additionally to transitioning between them, you can also use: 
+Additionally to transitioning between them, you can also use:
 ```
-git checkout 
-# A shortcut to switch to a branch that is yet to be created with the -b flag 
+git checkout
+# A shortcut to switch to a branch that is yet to be created with the -b flag
 git checkout -b feature-branch-name
 ```
 To check the repository's state, use:
@@ -137,7 +136,7 @@ To check the repository's state, use:
 git status
 ```
 
-A great way to always have a clear view of your current branch is to see it right in the terminal. Many terminal add-ons can help with this. Here is [one](https://gist.github.com/joseluisq/1e96c54fa4e1e5647940). 
+A great way to always have a clear view of your current branch is to see it right in the terminal. Many terminal add-ons can help with this. Here is [one](https://gist.github.com/joseluisq/1e96c54fa4e1e5647940).
 
 ![Terminal view](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/nycmbxgrtplax7q83g3n.png)
 
@@ -166,7 +165,7 @@ Use `git log` to show a chronological list of commits, starting from the most re
 
 Manipulating History involves some powerful commands. `Rebase` rewrites commit history, `Squashing` combines multiple commits into one, and `Cherry-picking` selects specific commits.
 
-### Rebasing and merging 
+### Rebasing and merging
 It makes sense to compare rebasing to merging since their aim is the same but they achieve it in different ways. The crucial difference is that rebasing rewrites the project's history. A desired choice for projects that value clear and easily understandable project history. On the other hand, merging maintains both branch histories by generating a new merge commit.
 
 During a rebase, the commit history of the feature branch is restructured as it's moved onto the `HEAD` of the main branch
@@ -192,7 +191,7 @@ git push origin your_branch --force
 > ⚠️ Exercise caution when utilizing `--force`, as it has the potential to overwrite the history of the target branch. Its application on the main/master branch should be generally avoided.
 
 ### Squashing
-Git squashing is used to condense multiple commits into a single, cohesive commit. 
+Git squashing is used to condense multiple commits into a single, cohesive commit.
 
 ![git squashing](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/owzri2ufj3meqhtjjpc0.png)
 
@@ -221,8 +220,8 @@ git push origin target_branch
 
 ## Advanced Git Commands
 ### Signing commits
-Signing commits is a way to verify the authenticity and integrity of your commits in Git. It allows you to cryptographically sign your commits using your GPG (GNU Privacy Guard) key, assuring Git that you are indeed the author of the commit. You can do so by creating a GPG key and configuring Git to use the key when committing. 
-Here are the steps: 
+Signing commits is a way to verify the authenticity and integrity of your commits in Git. It allows you to cryptographically sign your commits using your GPG (GNU Privacy Guard) key, assuring Git that you are indeed the author of the commit. You can do so by creating a GPG key and configuring Git to use the key when committing.
+Here are the steps:
 
 ```
 # Generate a GPG key
@@ -243,7 +242,7 @@ git log --show-signature
 ### Git reflog
 
 A topic that we haven’t explored is Git references, they are pointers to various objects within the repository, primarily commits, but also tags and branches. They serve as named points in the Git history, allowing users to navigate through the repository's timeline and access specific snapshots of the project. Knowing how to navigate git references can be very useful and they can use git reflog to do just that.
-Here are some of the benefits: 
+Here are some of the benefits:
 
 - Recovering lost commits or branches
 - Debugging and troubleshooting
@@ -253,7 +252,7 @@ Here are some of the benefits:
 
 Interactive rebase is a powerful Git feature that allows you to rewrite commit history interactively. It enables you to modify, reorder, combine, or delete commits before applying them to a branch.
 
-In order to use it you have to become familiar with the possible actions such are: 
+In order to use it you have to become familiar with the possible actions such are:
 
 - Pick (“p“)
 - Reword (“r“)
@@ -264,7 +263,7 @@ In order to use it you have to become familiar with the possible actions such ar
 
 ![Interactive rebase](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/98sngs9j2dl5awcmm8dt.png)
 
-Here is a useful [video](https://www.youtube.com/watch?v=qsTthZi23VE) to learn how to perform an interactive rebase in the terminal, I have also linked a useful tool at the bottom of the blog post. 
+Here is a useful [video](https://www.youtube.com/watch?v=qsTthZi23VE) to learn how to perform an interactive rebase in the terminal, I have also linked a useful tool at the bottom of the blog post.
 
 ## Collaborating with Git
 
@@ -298,7 +297,7 @@ Decide which changes to keep, modify, or remove, ensuring that the resulting cod
 
 After manually resolving conflicts in the conflicted files, remove the conflict markers `<<<<<<<`, `=======`, and `>>>>>>>` and adjust the code as necessary.
 
-Save the changes in the conflicted files once you're satisfied with the resolution. 
+Save the changes in the conflicted files once you're satisfied with the resolution.
 > If you have issues resolving conflicts, this [video](https://www.youtube.com/watch?v=xNVM5UxlFSA) does a good job at explaining it.
 
 ## Popular Git workflows
@@ -325,9 +324,9 @@ It includes long-lived branches such as main, develop, feature branches, release
 > - **Weakness**: Can be overly complex for smaller teams
 
 ### Forking Workflow 🍴
-In this workflow, each developer clones the main repository, but instead of pushing changes directly to it, they push changes to their own fork of the repository. Developers then create pull requests to propose changes to the main repository, allowing for code review and collaboration before merging. 
+In this workflow, each developer clones the main repository, but instead of pushing changes directly to it, they push changes to their own fork of the repository. Developers then create pull requests to propose changes to the main repository, allowing for code review and collaboration before merging.
 
-This is the workflow we use to collaborate on the open-source Glasskube repos. 
+This is the workflow we use to collaborate on the open-source Glasskube repos.
 
 > - **Strength**: Encourages collaboration from external contributors without granting direct write access to the main repository.
 > - **Weakness**: Maintaining synchronization between forks and the main repository can be challenging.
@@ -338,13 +337,13 @@ If you are on a team focused on rapid iteration and continuous delivery, you mig
 > - **Strength**: Promotes rapid iteration, continuous integration, and a focus on delivering small, frequent changes to production.
 > - **Weakness**: Requires robust automated testing and deployment pipelines to ensure the stability of the main branch, may not be suitable for projects with stringent release schedules or complex feature development.
 
-### What the fork? 
+### What the fork?
 
 Forking is highly recommended for collaborating on Open Source projects since you have complete control over your own copy of the repository. You can make changes, experiment with new features, or fix bugs without affecting the original project.
 
 > 💡 What took me a long time to figure out was that although forked repositories start as separate entities, they retain a connection to the original repository. This connection allows you to keep track of changes in the original project and synchronize your fork with updates made by others.
 
-That’s why even when you push to your origin repository. Your changes will show up on the remote also. 
+That’s why even when you push to your origin repository. Your changes will show up on the remote also.
 
 ## Git Cheatsheet
 ---
@@ -401,7 +400,7 @@ git rebase --interactive HEAD~3
 # Pull changes from remote repo
 git pull <remote_name> <branch_name>
 
-# Fetch changes from remote repo 
+# Fetch changes from remote repo
 git fetch <remote_name>
 ```
 
@@ -413,7 +412,7 @@ git fetch <remote_name>
 
 - [Cdiff](https://github.com/amigrave/cdiff) to view colorful, incremental diffs.
 
-- Interactive Git branching [playground](https://learngitbranching.js.org/?locale=en_US) 
+- Interactive Git branching [playground](https://learngitbranching.js.org/?locale=en_US)
 
 ---
 
