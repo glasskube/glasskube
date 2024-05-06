@@ -54,5 +54,5 @@ export default function GiscusWrapper(props) {
 
 
 export function BlogDiscussion() { return <GiscusWrapper category="Blog" categoryId="DIC_kwDOLDumD84CfCte" /> }
-export function GuidesDiscussion() { return <GiscusWrapper category="Guides" categoryId="DIC_kwDOLDumD84CfKxz" /> }
+export function GuidesDiscussion() { return <GiscusWrapper category="Guides" categoryId="DIC_kwDOLDumD84CfK3R" /> }
 
