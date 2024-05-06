@@ -1,28 +1,30 @@
 ---
+title: The guide to kubectl I never had.
 slug: kubectl
-title: The guide to kubectl I never had..
 description: "A deep dive into the tips and tricks, plugins and tool that make kubectl such a versatile CLI tool for Kubernetes"
 authors: [ jpage ]
-tags: [ glasskube ]
+tags: [ kubectl ]
 ---
+
+import CustomGitHubButton from '../src/components/CustomGitHubButton.tsx';
 
 ![kubectl thumbnail](https://github.com/glasskube/glasskube/assets/38757612/11729636-7337-4504-a62e-b1da495f9a19)
 
 What **kind of engineer are you**? 🤔
-Can somebody guess by just looking at you? 
-More than likely not. 
+Can somebody guess by just looking at you?
+More than likely not.
 
-Would that somebody be able to tell by looking at your keyboard instead? 
+Would that somebody be able to tell by looking at your keyboard instead?
 Might be a bit easier now. ⌨️
 
-You know you are dealing with a **Kubernetes engineer** when the “k“ key on their keyboard has seen better days. 
+You know you are dealing with a **Kubernetes engineer** when the “k“ key on their keyboard has seen better days.
 At the [Glasskube](https://github.com/glasskube/glasskube) office, you will find spare **“k“** keys all over the place, just in case 😄
 
 I’m joking of course.
-I’m not really sure about what a faded keyboard says about its owner. What I do know for sure is how important `kubectl` is to anybody who wants to be a proficient [Kubernetes](https://kubernetes.io/) administrator.  
+I’m not really sure about what a faded keyboard says about its owner. What I do know for sure is how important `kubectl` is to anybody who wants to be a proficient [Kubernetes](https://kubernetes.io/) administrator.
 
-`kubectl` is the CLI tool used to communicate to the Kubernetes API it can seem simple at first but can quickly get complicated. 
-So in this blog post, I aim to write **the guide I wish I had when I started**. Focusing first on command syntax and useful commands, before moving on to the vibrant ecosystem of [plugins](https://krew.sigs.k8s.io/plugins/) and tools built to expand the functionalities of `kubectl` and Kubernetes. 
+`kubectl` is the CLI tool used to communicate to the Kubernetes API it can seem simple at first but can quickly get complicated.
+So in this blog post, I aim to write **the guide I wish I had when I started**. Focusing first on command syntax and useful commands, before moving on to the vibrant ecosystem of [plugins](https://krew.sigs.k8s.io/plugins/) and tools built to expand the functionalities of `kubectl` and Kubernetes.
 Sharing tips and tricks along the way as well as a helpful `kubecltl cheatsheet` at the end. 📋
 
 Let’s get to it. ☸️
@@ -67,13 +69,13 @@ kubectl version --client
 
 ## kubectl commands:
 
-`kubectl` is a Command Line Interface (CLI) tool used to communicate with the Kubernetes API. There are many commands, too many to remember. 
+`kubectl` is a Command Line Interface (CLI) tool used to communicate with the Kubernetes API. There are many commands, too many to remember.
 
 ![k8s hard gif](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/j94hbqfxgqd8g669b7x1.png)
 
-Don’t worry though it’s not as daunting as some might want you to think. 
+Don’t worry though it’s not as daunting as some might want you to think.
 
-We will explore ways to quickly access command references, k8s-object-specific commands, helpful aliases, and command completion. But first, how are command strings built? 
+We will explore ways to quickly access command references, k8s-object-specific commands, helpful aliases, and command completion. But first, how are command strings built?
 
 ## The syntax
 
@@ -83,15 +85,15 @@ Hindi and Korean are `subject-object-verb (SOV)` languages.
 
 If kubectl were a language, it would be a `kubectl + verb + object/[name optional] + flag` (kvof) language 😄
 
-![kubectl syntax](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/y9lejsmm6u9sedap64mx.png)
+![kubectl syntax](https://github.com/glasskube/glasskube/assets/3041752/ebb44c40-d2c4-4889-9776-a7a803f6061c)
 
-Also similar to languages, the best way to learn and absorb grammar is by using it in context and not memorizing long verb and object lists. 
+Also similar to languages, the best way to learn and absorb grammar is by using it in context and not memorizing long verb and object lists.
 
 > ℹ️ If you are stuck and want to quickly reference the existing Kubernetes objects in any Kubernetes version run `kubectl api-resources`.
 
-Commands are built by choosing that `action [verb]` you want to apply to the desired Kubernetes `resource [object]` usually followed by the name of the resource additionally you have a large array of `filters [flags]` that can be applied to the command which will determine the final scope and output. 
+Commands are built by choosing that `action [verb]` you want to apply to the desired Kubernetes `resource [object]` usually followed by the name of the resource additionally you have a large array of `filters [flags]` that can be applied to the command which will determine the final scope and output.
 
-![kubectl command building](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/o4u0v1etq689t9dvk60v.png)
+![kubectl command building](https://github.com/glasskube/glasskube/assets/3041752/5d9d417a-2012-44d5-99b9-fdf6e0331785)
 
 Let’s look at a simple example of command building using the commonly used `get` verb to retrieve all resources in the `glasskube-system` namespace, and the output is in `yaml` format:
 
@@ -99,11 +101,11 @@ Let’s look at a simple example of command building using the commonly used `ge
 kubectl get all --namespace glasskube-system -o yaml
 ```
 
-> ℹ️ If you come across a Kubernetes resource that you haven’t heard of before or need a refresher use `kubectl explain [resource-name]` to get an in-terminal description and usage instructions. 
+> ℹ️ If you come across a Kubernetes resource that you haven’t heard of before or need a refresher use `kubectl explain [resource-name]` to get an in-terminal description and usage instructions.
 
-## Working imperatively 
+## Working imperatively
 
-When working in Kubernetes environments your tasks are many, anything from deploying new apps, troubleshooting faulty resources, inspecting usage, and much more. Later on, we will explore how useful declarative ways of working are more appropriate for defining and deploying workloads, but for everything else we have our arsenal of useful imperative Kubernetes commands at the ready. 
+When working in Kubernetes environments your tasks are many, anything from deploying new apps, troubleshooting faulty resources, inspecting usage, and much more. Later on, we will explore how useful declarative ways of working are more appropriate for defining and deploying workloads, but for everything else we have our arsenal of useful imperative Kubernetes commands at the ready.
 
 Simple commands to get us started are:
 
@@ -114,7 +116,7 @@ kubectl run nginx-deployment --image=nginx
 # Delete a pod named "nginx-deployment" in the default namespace
 kubectl delete pod nginx-deployment
 ```
-To take imperative commands to the next step know that you can modify resources by using the [TUI](https://en.wikipedia.org/wiki/Text-based_user_interface#:~:text=In%20computing%2C%20text%2Dbased%20user,before%20the%20advent%20of%20bitmapped) editor: 
+To take imperative commands to the next step know that you can modify resources by using the [TUI](https://en.wikipedia.org/wiki/Text-based_user_interface#:~:text=In%20computing%2C%20text%2Dbased%20user,before%20the%20advent%20of%20bitmapped) editor:
 By running `kubectl edit -n [namespace] [resource-name]` a text editor like the one below will open. Make you edits and close the editor just like in [vim](https://www.vim.org/) by running `ESC + :q!`.
 
 ```
@@ -144,10 +146,10 @@ metadata:
 "/var/folders/2q/wjmbwg1n5vn8v7vlw17nsz0h0000gn/T/kubectl-edit-1306753911.yaml" 209L, 5898B
 ```
 
-Most commands are applicable to all sorts of Kubernetes objects. Insofar as it is useful further down we will touch on specific commands that are useful for certain Kubernetes resources. Before that though, it’s worth learning about some useful flags that can be applied to many different objects.  
+Most commands are applicable to all sorts of Kubernetes objects. Insofar as it is useful further down we will touch on specific commands that are useful for certain Kubernetes resources. Before that though, it’s worth learning about some useful flags that can be applied to many different objects.
 
 ## Useful flags:
-**--env:** 
+**--env:**
 
 The `--env` flag allows you to specify environment variables for the container being created.
 ```
@@ -161,14 +163,14 @@ This flag allows you to specify a Go template for the output format of your kube
 kubectl get pods --template='{{range .items}}{{.metadata.name}}{{"\n"}}{{end}}'
 ```
 
-**--field-selector:** 
+**--field-selector:**
 With this flag, you can filter resources based on specific fields. For instance, you can filter pods based on their status or labels.
 
 ```
 kubectl get pods --field-selector=status.phase=Running
 ```
 
-**--field-selector type=[Normal/Warning]:** 
+**--field-selector type=[Normal/Warning]:**
 This is a specific use of the --field-selector flag, where you filter events based on their type, either Normal or Warning.
 
 **kubectl events -n [resource-namespace] --for=[resource-kind]/[resource-name]: **
@@ -217,14 +219,14 @@ kubectl exec -it -n [namespace] [pod-name] -- [command...]
 
 ## Working with nodes
 
-Nodes are the underlying instances that provide computational power and storage on top of which your Kubernetes cluster runs. 
+Nodes are the underlying instances that provide computational power and storage on top of which your Kubernetes cluster runs.
 
 ```
 # Show node resource utilization
 kubectl top node [node-name]  # Node name is optional; without shows table of all nodes
 
 # Get node information
-kubectl get node 
+kubectl get node
 ```
 
 ## Working with Deployments, DaemonSets and StatefulSets
@@ -245,7 +247,7 @@ kubectl rollout history deployment/[name]  # View rollout history of a deploymen
 kubectl scale deployment/ --replicas=[number]  # Scale a deployment to the specified number of replicas
 
 # Watch events related to a deployment
-kubectl events -n glasskube-system --for=deployment/glasskube-controller-manager  
+kubectl events -n glasskube-system --for=deployment/glasskube-controller-manager
 
 #Update Deployment Image
 kubectl set image deployment/[deployment-name] [container-name]=new-image:tag
@@ -285,7 +287,7 @@ kubectl get secrets [secret-name] -o jsonpath="{.data.key1}" | base64 --decode
 
 ## Shell completions
 
-As you have probably noticed, `kubectl` commands can get long in no time. A really nifty shell completion script can be added to your `bash` or `zshell` file to enable easy tab completions. No more memorizing. 
+As you have probably noticed, `kubectl` commands can get long in no time. A really nifty shell completion script can be added to your `bash` or `zshell` file to enable easy tab completions. No more memorizing.
 To do so in all your shell sessions, add the following to your `~/.zshrc` file:
 
 ```
@@ -356,14 +358,14 @@ kubectl apply --server-side -f manifest.yaml
 
 ## Plugins and tooling 🧰
 
-Whenever I see some back and forth around what Kubernetes is and isn’t. What use cases it’s best suited for and how should it best be thought of, the same [Kelsey Hightower](https://twitter.com/kelseyhightower/status/935252923721793536?lang=en) tweet pops into my head. 
+Whenever I see some back and forth around what Kubernetes is and isn’t. What use cases it’s best suited for and how should it best be thought of, the same [Kelsey Hightower](https://twitter.com/kelseyhightower/status/935252923721793536?lang=en) tweet pops into my head.
 
 ![Kelsey Hightower tweet](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/lpzdruwnpv86nmmj9n8x.png)
 
 The sentiment is widely agreed upon, as evidenced by the extensive ecosystem of Kubernetes plugins and tools designed to assist in various stages of the Kubernetes lifecycle.
 
 ### Krew the Kubernetes plugin manager
-A great plugin manager to find new plugins is [krew](https://krew.sigs.k8s.io/docs/user-guide/setup/install/), install is here. 
+A great plugin manager to find new plugins is [krew](https://krew.sigs.k8s.io/docs/user-guide/setup/install/), install is here.
 
 Command to install `kubectl` plugins via Krew:
 
@@ -377,7 +379,7 @@ Let’s explore some of the main plguing and tooling categories and highlight so
 In Kubernetes environments, you consistently operate within 2  hierarchical contexts the clusters and the namespaces. Ensuring accurate command execution requires specifying the appropriate context to obtain the desired output. Switching cluster contexts or namespaces can involve lengthy commands to remember, which is where tools like Kubectl and Kubens come in.
 
 #### Kubectx and Kubens
-Easily see the available clusters and namespaces and swith between them effortlessly. 
+Easily see the available clusters and namespaces and swith between them effortlessly.
 Installation instructions [here](https://github.com/ahmetb/kubectx).
 
 ![Kubectx screenshare](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/jbj2i5ay7w1ibgq3euwy.gif)
@@ -387,7 +389,7 @@ Installation instructions [here](https://github.com/ahmetb/kubectx).
 - [kubectl-cf](https://github.com/surfinggo/kubectl-cf): A faster way to switch between kubeconfig files (not contexts).
 
 ### Visibility 🔭
-Kubernetes clusters are complex systems, with many moving parts that depend on each other so that your apps run. To have clear visibility into what is happening at all times is crucial. 
+Kubernetes clusters are complex systems, with many moving parts that depend on each other so that your apps run. To have clear visibility into what is happening at all times is crucial.
 
 #### k9s
 [K9s](https://k9scli.io/) is a handy and low-weight interactive Kubernetes dashboard that runs right in the terminal. As well as visualizing your k8s resources, you can also easily execute into pods, edit manifest, and manage your workloads all in one place. It is probably one of my favorite tools for Kubernetes management
@@ -396,7 +398,7 @@ Install is [here.](https://k9scli.io/topics/install/)
 
 ![k9s-gif](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/njtibnqfg83vsats8e3s.gif)
 
-#### kubectl tree 
+#### kubectl tree
 A `kubectl` plugin to explore ownership relationships between Kubernetes objects through `ownersReferences` on the objects.
 
 ![kubectl tree](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/jmjhurlsn2vlbwbbjwk4.png)
@@ -406,17 +408,17 @@ kubectl krew install tree
 kubectl tree --help
 ```
 
-#### kubecolor 
+#### kubecolor
 [KubeColor](https://github.com/kubecolor/kubecolor) is used to add colors to your `kubectl` output.
 
 ![Kubecolor](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/qnqqg7x3hxxrqnwscrkl.png)
 Installations instructions [here.](https://github.com/kubecolor/kubecolor?tab=readme-ov-file#installation)
 
 ### Package management 📦
-Cluster package management with conventional package management tools can be a pain in the neck, and updating packages is a hassle. Configuration is clunky and applying your desired package stack declaratively has been still out of reach, until now. 
+Cluster package management with conventional package management tools can be a pain in the neck, and updating packages is a hassle. Configuration is clunky and applying your desired package stack declaratively has been still out of reach, until now.
 
-#### Glasskube: 
-With [Glasskube](https://github.com/glasskube/glasskube) all the pain points found in conventional package managers like helm are solved to ensure you have time to manage your workloads and not have to worry about managing your k8s package stack. 
+#### Glasskube:
+With [Glasskube](https://github.com/glasskube/glasskube) all the pain points found in conventional package managers like helm are solved to ensure you have time to manage your workloads and not have to worry about managing your k8s package stack.
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/ONNUP7l7WJM?si=zx01laPT6yXu48sI" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
@@ -445,7 +447,7 @@ Installation instructions [here](https://cert-manager.io/docs/installation/).
 
 ### RBAC 🫷
 
-#### Kubelogin 
+#### Kubelogin
 [Kubelogin](https://github.com/int128/kubelogin) is a plugin for `Kubernetes OpenID Connect (OIDC) authentication`, also known as `kubectl oidc-login`.
 
 Installation instructions [here](https://github.com/Azure/kubelogin?tab=readme-ov-file#installation).
@@ -544,21 +546,21 @@ Installation instructions [here](https://github.com/k8sgpt-ai/k8sgpt?tab=readme-
 ### Logging 🪵
 
 #### Stern:
-[Stern](https://github.com/stern/stern) allows you to `tail` multiple pods on Kubernetes and multiple containers within the pod. Each result is color-coded for quicker debugging. 
+[Stern](https://github.com/stern/stern) allows you to `tail` multiple pods on Kubernetes and multiple containers within the pod. Each result is color-coded for quicker debugging.
 Install:
 ```
 kubectl krew install stern
 ```
 
-> ℹ️ Some security implications of using `kubectl` plugins include possible Vulnerabilities, Privilege Escalation, and inadvertent Data Leakage. Make sure to only use actively maintained plugins and ideally have an active community around them. 
+> ℹ️ Some security implications of using `kubectl` plugins include possible Vulnerabilities, Privilege Escalation, and inadvertent Data Leakage. Make sure to only use actively maintained plugins and ideally have an active community around them.
 
 ## Aliases 📇
-With so many `kubectl` commands to remember, simplify your life by using keyboard shortcuts or aliases. 
+With so many `kubectl` commands to remember, simplify your life by using keyboard shortcuts or aliases.
 
-Here you will find a [repo](https://github.com/ahmetb/kubectl-aliases) with contains [a script](https://github.com/ahmetb/kubectl-aliases/blob/master/generate_aliases.py) to generate hundreds of convenient shell aliases for `kubectl`. The thing is that many of the aliases are long and might become hard to recall. Don’t worry though I found this [very pragmatic blog post by Benoit Couetil](https://dev.to/zenika/kubernetes-a-pragmatic-kubectl-aliases-collection-17oc) on how to deal with the many aliases generated by the above script. 
+Here you will find a [repo](https://github.com/ahmetb/kubectl-aliases) with contains [a script](https://github.com/ahmetb/kubectl-aliases/blob/master/generate_aliases.py) to generate hundreds of convenient shell aliases for `kubectl`. The thing is that many of the aliases are long and might become hard to recall. Don’t worry though I found this [very pragmatic blog post by Benoit Couetil](https://dev.to/zenika/kubernetes-a-pragmatic-kubectl-aliases-collection-17oc) on how to deal with the many aliases generated by the above script.
 
 ## Kubectl Cheatsheet
-No guide is complete without a cheatsheet now is it? 
+No guide is complete without a cheatsheet now is it?
 
 ```
 # Basic Commands
@@ -632,7 +634,7 @@ kubectl scale deployment/[name] --replicas=[replica-count]
 kubectl set image deployment/[deployment-name] [container-name]=new-image:tag
 
 # Watch events related to a deployment
-kubectl events -n glasskube-system --for=deployment/glasskube-controller-manager  
+kubectl events -n glasskube-system --for=deployment/glasskube-controller-manager
 
 # Delete DaemonSet
 kubectl delete daemonset [daemonset-name]
@@ -656,7 +658,7 @@ kubectl get secrets -n [namespace] [secret-name] --template='{{ .data.[key-name]
 # Working with Containers
 
 # Show Container Logs
-kubectl logs -n [namespace] [pod-name] 
+kubectl logs -n [namespace] [pod-name]
 kubectl logs -n [namespace] deployment/[deployment-name]
 
 # Run Command in Container
@@ -693,7 +695,7 @@ kubectl get events --field-selector involvedObject.name=[resource-name]
 kubectl top
 ```
 
-## Additional resources: 
+## Additional resources:
 
 - Curated list of plugins: https://github.com/ishantanu/awesome-kubectl-plugins
 - List of aliases: https://github.com/ahmetb/kubectl-aliases
@@ -701,6 +703,12 @@ kubectl top
 
 ---
 
-If you like this type of content and would like to see more of it, please consider supporting us by giving us a Star on GitHub 🙏
 
 [![Screenshot 2024-04-26 at 10 54 54](https://github.com/glasskube/glasskube/assets/38757612/05a03edf-7d6a-48fd-9b24-598abcfd1e9a)](https://github.com/glasskube/glasskube)
+
+If you like this sort of content and would like to see more of it, please consider supporting us by giving us a Star on GitHub 🙏
+<div style={{ display: 'flex', justifyContent: 'left' }}>
+  <CustomGitHubButton
+    href="https://github.com/glasskube/glasskube"
+  />
+</div>
