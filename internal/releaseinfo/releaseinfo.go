@@ -3,6 +3,8 @@ package releaseinfo
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/glasskube/glasskube/internal/httperror"
 )
 
 type ReleaseInfo struct {
@@ -12,8 +14,10 @@ type ReleaseInfo struct {
 func FetchLatestRelease() (*ReleaseInfo, error) {
 	url := "https://glasskube.dev/release.json"
 
-	resp, _ := http.Get(url)
-
+	resp, err := httperror.CheckResponse(http.Get(url))
+	if err != nil {
+		return nil, err
+	}
 	defer func() {
 		_ = resp.Body.Close()
 	}()

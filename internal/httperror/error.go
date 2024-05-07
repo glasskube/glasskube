@@ -3,6 +3,7 @@ package httperror
 import (
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 )
 
@@ -27,11 +28,13 @@ func IsErrorResponse(respose *http.Response) bool {
 	return respose.StatusCode >= 400
 }
 
-func CheckResponse(response *http.Response) error {
-	if IsErrorResponse(response) {
-		return &statusError{response.Status, response.StatusCode}
+func CheckResponse(response *http.Response, err error) (*http.Response, error) {
+	if err != nil {
+		return response, err
+	} else if IsErrorResponse(response) {
+		return response, &statusError{response.Status, response.StatusCode}
 	} else {
-		return nil
+		return response, nil
 	}
 }
 
@@ -46,4 +49,9 @@ func Is(err error, code int) bool {
 
 func IsNotFound(err error) bool {
 	return Is(err, http.StatusNotFound)
+}
+
+func IsTimeoutError(err error) bool {
+	var netErr net.Error
+	return errors.As(err, &netErr) && netErr.Timeout()
 }
