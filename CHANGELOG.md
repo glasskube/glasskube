@@ -1,5 +1,57 @@
 # Changelog
 
+## [0.4.0](https://github.com/glasskube/glasskube/compare/v0.3.0...v0.4.0) (2024-05-07)
+
+
+### Features
+
+* added ui footer with glasskube version ([#232](https://github.com/glasskube/glasskube/issues/232)) ([c8a1836](https://github.com/glasskube/glasskube/commit/c8a18368d914a7e7879165ca19e79806bbf43384))
+* **cli:** add `--version` autocomplete for `glasskube update` ([#565](https://github.com/glasskube/glasskube/issues/565)) ([3ca9bc9](https://github.com/glasskube/glasskube/commit/3ca9bc9f597726054afa168f0036bfa1747c5101))
+* **ui:** integrate giscus for package feedback ([#207](https://github.com/glasskube/glasskube/issues/207)) ([c50d3a8](https://github.com/glasskube/glasskube/commit/c50d3a86321829fb641af6da144e44d748dfb2a5))
+
+
+### Bug Fixes
+
+* add validating existing install before bootstrap ([08ee8bb](https://github.com/glasskube/glasskube/commit/08ee8bb2eb7be6ad5a7075fafc58ca947f8bf96d))
+* **cli:** prevent accidental bootstrapping of an older package-operator version ([abefab1](https://github.com/glasskube/glasskube/commit/abefab1d564476420e7ee93f81012412a86a578a))
+* **cli:** skip version check for `bootstrap` ([419b7b4](https://github.com/glasskube/glasskube/commit/419b7b4e2ada3af469f4f8f8a5cbc4cff125aeeb))
+* **deps:** update docusaurus monorepo to v3.3.2 ([f483034](https://github.com/glasskube/glasskube/commit/f483034219653f6d82fdd049afd607e37765d7a3))
+* **deps:** update module github.com/onsi/ginkgo/v2 to v2.17.2 ([0b4a5f2](https://github.com/glasskube/glasskube/commit/0b4a5f2f246b7cd148cc24b7698ec1c780f2587c))
+* **deps:** update module github.com/onsi/gomega to v1.33.1 ([b5cb34c](https://github.com/glasskube/glasskube/commit/b5cb34c0bd47dc29cc5105ae2bd306191e3db4aa))
+* **deps:** update module golang.org/x/term to v0.20.0 ([e474086](https://github.com/glasskube/glasskube/commit/e474086d7275ed3028b1fb74adeba481e1ca5499))
+* **deps:** update module sigs.k8s.io/controller-runtime to v0.18.1 ([7946560](https://github.com/glasskube/glasskube/commit/7946560c80fc535ff575bb7fedb2246bf80dab4d))
+* **deps:** update module sigs.k8s.io/controller-runtime to v0.18.2 ([a62f92d](https://github.com/glasskube/glasskube/commit/a62f92db68fd300938b4f56124e28028ef3959a7))
+* **deps:** update react monorepo to v18.3.0 ([94fa2a8](https://github.com/glasskube/glasskube/commit/94fa2a805a507e701ebb702cf2137429e4c0a01e))
+* **deps:** update react monorepo to v18.3.1 ([34ddcb6](https://github.com/glasskube/glasskube/commit/34ddcb660fc3ba2deef87653471a5aa30275082a))
+* **package-operator:** make order of patch application deterministic ([bfe5e59](https://github.com/glasskube/glasskube/commit/bfe5e59205d2f64d0f64ab1421d0d7065e681a07))
+* **ui:** introduce cache busting ([b91acee](https://github.com/glasskube/glasskube/commit/b91acee005f0361f79f1530bdac27b06b340170c))
+
+
+### Other
+
+* **deps:** update actions/checkout digest to 0ad4b8f ([15b8f13](https://github.com/glasskube/glasskube/commit/15b8f133270c0c49a776981e74798afc9795e0a0))
+* **deps:** update actions/setup-go digest to cdcb360 ([eed4598](https://github.com/glasskube/glasskube/commit/eed4598b45d8af90a2d03b0d237a68e3d42b8f3e))
+* **deps:** update dependency esbuild to v0.21.0 ([d6980f9](https://github.com/glasskube/glasskube/commit/d6980f91ed087d64b87355f5dc8e62acb58c0859))
+* update copyright information ([2c8b305](https://github.com/glasskube/glasskube/commit/2c8b305f7e0a481e9dbea6cf94e9a9e4fd9ec8a7))
+* **website:** update package list ([3ca994b](https://github.com/glasskube/glasskube/commit/3ca994b6e55e0f8eaea00a38c2c3b701a84ebf56))
+
+
+### Docs
+
+* **website:** add giscus for blog post comments ([f11851e](https://github.com/glasskube/glasskube/commit/f11851ec6da4e442662ef4354dde21ec336734bc))
+* **website:** added beta launch blogpost + cta ([18afd3a](https://github.com/glasskube/glasskube/commit/18afd3a01f7446c1d99d65afb14c36165c0de9c1))
+* **website:** added kubectl blog post ([2e7ac3f](https://github.com/glasskube/glasskube/commit/2e7ac3fc6d0e8511b5c838f0f647dd40f2acdaf4))
+* **website:** enable giscus on guide section ([867873e](https://github.com/glasskube/glasskube/commit/867873eb988a525dd411e965162ddbd2b6c61416))
+* **website:** update guides giscus categoryId ([12fa425](https://github.com/glasskube/glasskube/commit/12fa425033edee5ef0642961a32569a5025c2880))
+* **website:** updated roadmap to a more general approach ([56674e5](https://github.com/glasskube/glasskube/commit/56674e5e9271667f4af0133374b01e30b278f114))
+* **website:** updated the telemetry page ([d559d08](https://github.com/glasskube/glasskube/commit/d559d08f2af196e4773ed6b95c24c020e11b16f0))
+
+
+### Refactoring
+
+* **ui:** move to SSE and fix race conditions ([493c5e7](https://github.com/glasskube/glasskube/commit/493c5e7035c5d743df09e1330e22667629c12f31))
+* **website:** move kubectl blog post to guides ([0f269f6](https://github.com/glasskube/glasskube/commit/0f269f683a6520a3f24973d855cb62798f39a8cd))
+
 ## [0.3.0](https://github.com/glasskube/glasskube/compare/v0.2.1...v0.3.0) (2024-04-25)
 
 
