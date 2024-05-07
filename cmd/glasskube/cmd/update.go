@@ -44,7 +44,7 @@ var updateCmd = &cobra.Command{
 			cliutils.ExitWithError()
 		}
 		if len(args) == 1 && updateCmdOptions.Version != "" {
-			if updateCmdOptions.Version[:1] != "v" { // the slice notation is used to get a string instead of byte
+			if !strings.HasPrefix(updateCmdOptions.Version, "v") {
 				updateCmdOptions.Version = "v" + updateCmdOptions.Version
 			}
 			tx, err = updater.PrepareForVersion(ctx, args[0], updateCmdOptions.Version)

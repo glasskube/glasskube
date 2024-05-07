@@ -64,7 +64,7 @@ var installCmd = &cobra.Command{
 			installCmdOptions.Version = packageIndex.LatestVersion
 			fmt.Fprintf(os.Stderr, "Version not specified. The latest version %v of %v will be installed.\n",
 				installCmdOptions.Version, packageName)
-		} else if installCmdOptions.Version[:1] != "v" { // the slice notation is used to get a string instead of byte
+		} else if !strings.HasPrefix(updateCmdOptions.Version, "v") {
 			installCmdOptions.Version = "v" + installCmdOptions.Version
 		}
 
