@@ -1,0 +1,6 @@
+apiVersion: packages.glasskube.dev/v1alpha1
+kind: PackageRepository
+metadata:
+  name: local
+spec:
+  url: http://localhost:9090/packages/
