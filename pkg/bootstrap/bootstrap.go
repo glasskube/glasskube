@@ -191,7 +191,10 @@ func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructure
 		if obj.GetKind() == "Job" {
 			options := metav1.DeletePropagationBackground
 			fmt.Println("Deleting Job")
-			err := c.client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).Delete(ctx, obj.GetName(), metav1.DeleteOptions{PropagationPolicy: &options})
+			err := c.client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).Delete(
+				ctx,
+				obj.GetName(),
+				metav1.DeleteOptions{PropagationPolicy: &options})
 			if err != nil {
 				return err
 			}
