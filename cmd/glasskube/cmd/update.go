@@ -44,6 +44,9 @@ var updateCmd = &cobra.Command{
 			cliutils.ExitWithError()
 		}
 		if len(args) == 1 && updateCmdOptions.Version != "" {
+			if !strings.HasPrefix(updateCmdOptions.Version, "v") {
+				updateCmdOptions.Version = "v" + updateCmdOptions.Version
+			}
 			tx, err = updater.PrepareForVersion(ctx, args[0], updateCmdOptions.Version)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "error in updating the package version : %v\n", err)
