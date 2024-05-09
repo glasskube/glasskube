@@ -183,11 +183,11 @@ kubectl events -n my-namespace --for=deployment/my-deployment
 
 ## Old School vs. New School watching flags:
 
-**-o wide vs. -w:**
+**watch vs. -w**:
 
-`-o wide`: This is an **"old school"** flag that provides a wide output format, showing additional details about resources.
+`watch`: This is a traditional Unix command used to execute a specified command repeatedly at regular intervals, displaying its output in the terminal. Unlike the -w flag in kubectl, the watch command does not automatically update the terminal output when changes occur.
 
-`-w`: This is a **"new school"** flag that enables continuous watching for changes to resources, similar to the watch command.
+`-w`: This is a modern flag in kubectl that enables continuous watching for changes to resources.
 
 ## Working with Pods
 
