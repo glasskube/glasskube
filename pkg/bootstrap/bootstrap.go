@@ -190,7 +190,6 @@ func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructure
 		bar.Describe(fmt.Sprintf("Applying %v (%v)", obj.GetName(), obj.GetKind()))
 		if obj.GetKind() == "Job" {
 			options := metav1.DeletePropagationBackground
-			fmt.Println("Deleting Job")
 			err := c.client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).Delete(
 				ctx,
 				obj.GetName(),
@@ -198,12 +197,15 @@ func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructure
 			if err != nil {
 				return err
 			}
-			_, err = c.client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).Create(ctx, &obj, metav1.CreateOptions{})
+			_, err = c.client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).Apply(
+				ctx,
+				obj.GetName(),
+				&obj,
+				metav1.ApplyOptions{Force: true, FieldManager: "glasskube"})
 			if err != nil {
 				return err
 			}
 		} else {
-			fmt.Println("On : ", obj.GetKind())
 			if err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
 				_, err = c.client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).
 					Apply(ctx, obj.GetName(), &obj, metav1.ApplyOptions{Force: true, FieldManager: "glasskube"})
