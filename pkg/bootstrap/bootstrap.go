@@ -194,26 +194,19 @@ func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructure
 				ctx,
 				obj.GetName(),
 				metav1.DeleteOptions{PropagationPolicy: &options})
-			if err != nil {
-				return err
-			}
-			_, err = c.client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).Apply(
-				ctx,
-				obj.GetName(),
-				&obj,
-				metav1.ApplyOptions{Force: true, FieldManager: "glasskube"})
-			if err != nil {
-				return err
-			}
-		} else {
-			if err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
-				_, err = c.client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).
-					Apply(ctx, obj.GetName(), &obj, metav1.ApplyOptions{Force: true, FieldManager: "glasskube"})
-				return err
-			}); err != nil {
+			if err != nil && !apierrors.IsNotFound(err) {
 				return err
 			}
 		}
+
+		if err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			_, err = c.client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).
+				Apply(ctx, obj.GetName(), &obj, metav1.ApplyOptions{Force: true, FieldManager: "glasskube"})
+			return err
+		}); err != nil {
+			return err
+		}
+
 		if obj.GetKind() == constants.Deployment {
 			checkWorkloads = append(checkWorkloads, &objs[i])
 			bar.ChangeMax(bar.GetMax() + 1)
