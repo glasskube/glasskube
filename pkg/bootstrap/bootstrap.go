@@ -188,6 +188,17 @@ func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructure
 		}
 
 		bar.Describe(fmt.Sprintf("Applying %v (%v)", obj.GetName(), obj.GetKind()))
+		if obj.GetKind() == "Job" {
+			options := metav1.DeletePropagationBackground
+			err := c.client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).Delete(
+				ctx,
+				obj.GetName(),
+				metav1.DeleteOptions{PropagationPolicy: &options})
+			if err != nil && !apierrors.IsNotFound(err) {
+				return err
+			}
+		}
+
 		if err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
 			_, err = c.client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).
 				Apply(ctx, obj.GetName(), &obj, metav1.ApplyOptions{Force: true, FieldManager: "glasskube"})
@@ -211,7 +222,6 @@ func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructure
 		}
 		_ = bar.Add(1)
 	}
-
 	return nil
 }
 
