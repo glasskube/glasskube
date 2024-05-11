@@ -1,6 +1,6 @@
 # Package Configuration
 
-## Probelm analysis
+## Problem analysis
 
 At Glasskube, what we mean when we talk about package configuration, is a controlled alteration of the resources that are part of a package depending on values specified by the user.
 This can be thought of as three sub-problems:
