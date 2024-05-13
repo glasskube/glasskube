@@ -73,8 +73,12 @@ var listCmd = &cobra.Command{
 		}
 		pkgs, err := list.NewLister(ctx).GetPackagesWithStatus(ctx, listCmdOptions.toListOptions())
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "An error occurred:\n\n%v\n", err)
-			cliutils.ExitWithError()
+			fmt.Fprintf(os.Stderr, "❗ An error occurred listing packages: %v\n", err)
+			if len(pkgs) == 0 {
+				cliutils.ExitWithError()
+			} else {
+				fmt.Fprint(os.Stderr, "⚠️  The table shown below may be incomplete due to the error above.\n\n")
+			}
 		}
 		if len(pkgs) == 0 {
 			if listCmdOptions.ListOutdatedOnly {
