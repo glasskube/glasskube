@@ -32,7 +32,6 @@ function handleGiscusMessage(ev) {
   if (window.giscusReported) return;
   if (ev.origin !== 'https://giscus.app') return;
   if (!(typeof ev.data === 'object' && ev.data.giscus)) return;
-  console.log('giscusReported', window.giscusReported);
 
   const giscusData = ev.data.giscus;
   if (giscusData['discussion'] && giscusData['viewer']) {
