@@ -1,11 +1,15 @@
-
 .packageCardImage {
   /*background: white;*/
-  overflow: hidden;
-  height: 150px;
   text-align: center;
   border-bottom: 2px solid var(--ifm-color-emphasis-200);
   padding-top: 15px;
+  display: flex;
+  justify-content: center;
+}
+
+.packageCardImage > img {
+  height: 140px;
+  max-width: 100%;
 }
 
 .packageCardHeader {
@@ -53,12 +57,12 @@
   background-color: var(--ifm-color-secondary-dark);
 }
 
-[data-theme='dark'] .packageCardSrcBtn {
+[data-theme="dark"] .packageCardSrcBtn {
   background-color: var(--ifm-color-emphasis-200) !important;
   color: inherit;
 }
 
-[data-theme='dark'] .packageCardSrcBtn:hover {
+[data-theme="dark"] .packageCardSrcBtn:hover {
   background-color: var(--ifm-color-emphasis-300) !important;
 }
 
