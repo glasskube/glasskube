@@ -327,10 +327,10 @@ func (s *server) open(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	packages, err := list.NewLister(ctx).GetPackagesWithStatus(ctx, list.ListOptions{IncludePackageInfos: true})
-	if err != nil {
-		err = fmt.Errorf("could not load packages: %w", err)
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+	packages, listErr := list.NewLister(ctx).GetPackagesWithStatus(ctx, list.ListOptions{IncludePackageInfos: true})
+	if listErr != nil && len(packages) == 0 {
+		listErr = fmt.Errorf("could not load packages: %w", listErr)
+		fmt.Fprintf(os.Stderr, "%v\n", listErr)
 	}
 
 	// Call isUpdateAvailable for each installed package.
@@ -341,12 +341,12 @@ func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 		packageUpdateAvailable[pkg.Name] = pkg.Package != nil && s.isUpdateAvailable(r.Context(), pkg.Name)
 	}
 
-	err = s.templates.pkgsPageTmpl.Execute(w, s.enrichWithErrorAndWarnings(r.Context(), map[string]any{
+	tmplErr := s.templates.pkgsPageTmpl.Execute(w, s.enrichWithErrorAndWarnings(r.Context(), map[string]any{
 		"Packages":               packages,
 		"PackageUpdateAvailable": packageUpdateAvailable,
 		"UpdatesAvailable":       s.isUpdateAvailable(r.Context()),
-	}, err))
-	checkTmplError(err, "packages")
+	}, listErr))
+	checkTmplError(tmplErr, "packages")
 }
 
 func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {

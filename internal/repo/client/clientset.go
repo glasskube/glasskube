@@ -16,6 +16,7 @@ import (
 	"github.com/glasskube/glasskube/internal/maputils"
 	"github.com/glasskube/glasskube/internal/repo/types"
 	"github.com/glasskube/glasskube/internal/semver"
+	"go.uber.org/multierr"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -162,17 +163,19 @@ func (d *defaultClientset) FetchPackageRepoIndex(target *types.PackageRepoIndex)
 	if repoList, err := d.client.ListPackageRepositories(context.TODO()); err != nil {
 		return err
 	} else {
+		var compositeErr error
 		indexMap := make(map[string]types.PackageRepoIndexItem)
 		SortBy(repoList.Items, func(repo v1alpha1.PackageRepository) string { return repo.Name })
 		slices.Reverse(repoList.Items)
 		for _, repo := range repoList.Items {
 			var index types.PackageRepoIndex
 			if err := d.ForRepo(repo).FetchPackageRepoIndex(&index); err != nil {
-				return err
-			}
-			for _, item := range index.Packages {
-				if _, ok := indexMap[item.Name]; !ok || !IsDefaultRepository(repo) {
-					indexMap[item.Name] = item
+				multierr.AppendInto(&compositeErr, err)
+			} else {
+				for _, item := range index.Packages {
+					if _, ok := indexMap[item.Name]; !ok || !IsDefaultRepository(repo) {
+						indexMap[item.Name] = item
+					}
 				}
 			}
 		}
@@ -182,7 +185,7 @@ func (d *defaultClientset) FetchPackageRepoIndex(target *types.PackageRepoIndex)
 		for i, name := range maputils.KeysSorted(indexMap) {
 			target.Packages[i] = indexMap[name]
 		}
-		return nil
+		return compositeErr
 	}
 }
 

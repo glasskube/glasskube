@@ -44,10 +44,6 @@ func (l *lister) GetPackagesWithStatus(
 	options ListOptions,
 ) ([]*PackageWithStatus, error) {
 	index, err := l.fetchRepoAndInstalled(ctx, options)
-	if err != nil {
-		return nil, err
-	}
-
 	result := make([]*PackageWithStatus, 0, len(index))
 	for _, item := range index {
 		pkgWithStatus := PackageWithStatus{
@@ -65,7 +61,7 @@ func (l *lister) GetPackagesWithStatus(
 			result = append(result, &pkgWithStatus)
 		}
 	}
-	return result, nil
+	return result, err
 }
 
 func (l *lister) fetchRepoAndInstalled(ctx context.Context, options ListOptions) (
@@ -75,21 +71,21 @@ func (l *lister) fetchRepoAndInstalled(ctx context.Context, options ListOptions)
 	var index repo.PackageRepoIndex
 	var packages v1alpha1.PackageList
 	var packageInfos v1alpha1.PackageInfoList
-	var compositeErr error
+	var repoErr, pkgErr, pkgInfoErr error
 	wg := new(sync.WaitGroup)
 	wg.Add(2)
 
 	go func() {
 		defer wg.Done()
 		if err := l.repoClient.Aggregate().FetchPackageRepoIndex(&index); err != nil {
-			multierr.AppendInto(&compositeErr, fmt.Errorf("could not fetch package repository index: %w", err))
+			repoErr = fmt.Errorf("could not fetch package repository index: %w", err)
 		}
 	}()
 
 	go func() {
 		defer wg.Done()
 		if err := l.pkgClient.Packages().GetAll(ctx, &packages); err != nil {
-			multierr.AppendInto(&compositeErr, fmt.Errorf("could not fetch installed packages: %w", err))
+			pkgErr = fmt.Errorf("could not fetch installed packages: %w", err)
 		}
 	}()
 
@@ -98,13 +94,15 @@ func (l *lister) fetchRepoAndInstalled(ctx context.Context, options ListOptions)
 		go func() {
 			defer wg.Done()
 			if err := l.pkgClient.PackageInfos().GetAll(ctx, &packageInfos); err != nil {
-				multierr.AppendInto(&compositeErr, fmt.Errorf("could not fetch package infos: %w", err))
+				pkgInfoErr = fmt.Errorf("could not fetch package infos: %w", err)
 			}
 		}()
 	}
 
 	wg.Wait()
-	if compositeErr != nil {
+
+	compositeErr := multierr.Combine(repoErr, pkgErr, pkgInfoErr)
+	if pkgErr != nil || pkgInfoErr != nil {
 		return nil, compositeErr
 	}
 
@@ -125,5 +123,5 @@ func (l *lister) fetchRepoAndInstalled(ctx context.Context, options ListOptions)
 			}
 		}
 	}
-	return result, nil
+	return result, compositeErr
 }
