@@ -115,7 +115,7 @@ const Users: Package[] = [
     iconUrl: 'https://github.com/glasskube/glasskube/assets/3041752/fed38d57-1a62-44a3-bcb2-f07c9d6ab803',
     websiteUrl: 'https://cloudnative-pg.io/',
     sourceUrl: 'https://github.com/cloudnative-pg/cloudnative-pg',
-    tags: ['planned','database'],
+    tags: ['database'],
   },
   {
     name: 'MariaDB Operator',
@@ -143,11 +143,19 @@ const Users: Package[] = [
   },
   {
     name: 'Litmus',
-    shortDescription: 'Litmus helps SREs and developers practice chaos engineering in a Cloud-native way.',
+    shortDescription: 'Litmus helps SREs and developers practice chaos engineering in a Cloud-native way',
     iconUrl: 'https://github.com/glasskube/glasskube/assets/3041752/7e791499-5677-476b-8cd4-5172ac235e5a',
     websiteUrl: 'https://litmuschaos.io/',
     sourceUrl: 'https://github.com/litmuschaos/litmus',
     tags: ['planned', 'security'],
+  },
+  {
+    name: 'Quickwit',
+    shortDescription: 'Cloud-native search engine for observability',
+    iconUrl: 'https://github.com/glasskube/glasskube/assets/16959694/c36ac826-6f80-4e6b-9a08-9719759e94b6',
+    websiteUrl: 'https://quickwit.io/',
+    sourceUrl: 'https://github.com/quickwit-oss/quickwit',
+    tags: ['planned', 'logging'],
   },
   {
     name: 'Kubeflow',
