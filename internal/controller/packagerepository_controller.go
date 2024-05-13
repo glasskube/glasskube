@@ -18,10 +18,16 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/controller/requeue"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	repotypes "github.com/glasskube/glasskube/internal/repo/types"
+	"github.com/glasskube/glasskube/pkg/condition"
+	"go.uber.org/multierr"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -57,13 +63,29 @@ func (r *PackageRepositoryReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 
 	var index repotypes.PackageRepoIndex
-	if err := r.RepoClient.ForRepo(repo).FetchPackageRepoIndex(&index); err != nil {
-		// TODO: update status with error
-		return ctrl.Result{}, err
+	var cond metav1.Condition
+	err := r.RepoClient.ForRepo(repo).FetchPackageRepoIndex(&index)
+	if err != nil {
+		cond = metav1.Condition{
+			Type:    string(condition.Ready),
+			Status:  metav1.ConditionFalse,
+			Reason:  string(condition.SyncFailed),
+			Message: err.Error(),
+		}
+	} else {
+		cond = metav1.Condition{
+			Type:    string(condition.Ready),
+			Status:  metav1.ConditionTrue,
+			Reason:  string(condition.SyncCompleted),
+			Message: fmt.Sprintf("repo has %v packages", len(index.Packages)),
+		}
 	}
-	// TODO: Update status with data from index
 
-	return ctrl.Result{}, nil
+	if meta.SetStatusCondition(&repo.Status.Conditions, cond) {
+		multierr.AppendInto(&err, r.Status().Update(ctx, &repo))
+	}
+
+	return requeue.Always(ctx, err)
 }
 
 // SetupWithManager sets up the controller with the Manager.
