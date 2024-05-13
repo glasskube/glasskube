@@ -422,6 +422,9 @@ func (s *server) packageDiscussion(w http.ResponseWriter, r *http.Request) {
 	if err != nil && !apierrors.IsNotFound(err) {
 		err = fmt.Errorf("an error occurred fetching package details of %v: %w", pkgName, err)
 		fmt.Fprintf(os.Stderr, "%v\n", err)
+	} else if err != nil {
+		// implies that the package is not installed
+		err = nil
 	}
 
 	var idx repo.PackageIndex
