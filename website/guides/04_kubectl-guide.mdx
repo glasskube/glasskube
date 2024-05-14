@@ -164,6 +164,18 @@ This flag allows you to specify a Go template for the output format of your kube
 kubectl get pods --template='{{range .items}}{{.metadata.name}}{{"\n"}}{{end}}'
 ```
 
+**--dry-run=[client/server]:**
+Massively useful when you want render a manifest for an object you don't remember how to write from scratch or have a template at hand. The `--dry-run` flag prints the object manifest that would be sent without sending it. Use the `server` option to see the server side request that would be generated.
+
+```
+kubectl create secret generic github-api-token --from-literal token=$GITHUB_TOKEN --dry-run=client -o yaml
+```
+Concatenating the command with other tools can be very useful too. 
+Taking the example above, you can pipe the output of the generated manifest and pass in into a third party secret manager like [Sealed-secrets](https://github.com/bitnami-labs/sealed-secrets) to create a kubeseal secret manifest.
+```
+kubectl create secret generic github-api-token --from-literal token=$GITHUB_TOKEN --dry-run=client -o yaml | kubeseal --format yaml > api-token-secret.sealed.yaml
+```
+
 **--field-selector:**
 With this flag, you can filter resources based on specific fields. For instance, you can filter pods based on their status or labels.
 
