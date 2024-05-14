@@ -109,9 +109,11 @@ func (d *defaultClientset) getAuthHeaders(repo v1alpha1.PackageRepository) (http
 	headers := http.Header{}
 	if repo.Spec.Auth != nil {
 		if repo.Spec.Auth.Basic != nil {
-			user := repo.Spec.Auth.Basic.Username
+			var user, pass string
 			var userSecret *corev1.Secret
-			if len(user) == 0 {
+			if repo.Spec.Auth.Basic.Username != nil {
+				user = *repo.Spec.Auth.Basic.Username
+			} else if repo.Spec.Auth.Basic.UsernameSecretRef != nil {
 				if s, err := d.client.GetSecret(context.TODO(),
 					repo.Spec.Auth.Basic.UsernameSecretRef.Name, "glasskube-system"); err != nil {
 					return nil, fmt.Errorf("cannot get username: %w", err)
@@ -124,8 +126,9 @@ func (d *defaultClientset) getAuthHeaders(repo v1alpha1.PackageRepository) (http
 					user = u
 				}
 			}
-			pass := repo.Spec.Auth.Basic.Password
-			if len(pass) == 0 {
+			if repo.Spec.Auth.Basic.Password != nil {
+				pass = *repo.Spec.Auth.Basic.Password
+			} else if repo.Spec.Auth.Basic.PasswordSecretRef != nil {
 				passSecret := userSecret
 				if passSecret == nil || passSecret.Name != repo.Spec.Auth.Basic.PasswordSecretRef.Name {
 					if s, err := d.client.GetSecret(context.TODO(),
@@ -145,8 +148,10 @@ func (d *defaultClientset) getAuthHeaders(repo v1alpha1.PackageRepository) (http
 			userpassEncoded := base64.StdEncoding.EncodeToString([]byte(userpass))
 			headers.Set("Authorization", fmt.Sprintf("Basic %v", userpassEncoded))
 		} else if repo.Spec.Auth.Bearer != nil {
-			token := repo.Spec.Auth.Bearer.Token
-			if len(token) == 0 {
+			var token string
+			if repo.Spec.Auth.Bearer.Token != nil {
+				token = *repo.Spec.Auth.Bearer.Token
+			} else if repo.Spec.Auth.Bearer.TokenSecretRef != nil {
 				if tokenSecret, err := d.client.GetSecret(context.TODO(),
 					repo.Spec.Auth.Bearer.TokenSecretRef.Name, "glasskube-system"); err != nil {
 					return nil, fmt.Errorf("cannot get bearer token: %w", err)
