@@ -105,6 +105,9 @@ func (t *templates) parseTemplates() {
 				return param
 			}
 		},
+		"UrlEscape": func(param string) string {
+			return template.URLQueryEscaper(param)
+		},
 	}
 
 	t.baseTemplate = template.Must(template.New("base.html").
