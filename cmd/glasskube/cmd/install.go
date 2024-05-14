@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -73,7 +72,22 @@ var installCmd = &cobra.Command{
 				repoClient = repoClientset.ForRepo(repos[0])
 				pkgBuilder.WithRepositoryName(repos[0].Name)
 			default:
-				// TODO: show chooser for repo
+				names := make([]string, len(repos))
+				for i := range repos {
+					names[i] = repos[i].Name
+				}
+				for {
+					fmt.Fprintf(os.Stderr,
+						"%v is available from %v repositories. Please select the one to install from:",
+						packageName, len(names))
+					if repoName, err := cliutils.GetOption("", names); err != nil {
+						fmt.Fprintf(os.Stderr, "invalid input: %v\n", err)
+					} else {
+						repoClient = repoClientset.ForRepoWithName(repoName)
+						pkgBuilder.WithRepositoryName(repoName)
+						break
+					}
+				}
 			}
 		}
 
@@ -119,7 +133,7 @@ var installCmd = &cobra.Command{
 			}
 		} else {
 			if values, err := cli.Configure(manifest, nil); err != nil {
-				cancel(ctx)
+				cancel()
 			} else {
 				pkgBuilder.WithValues(values)
 			}
@@ -155,7 +169,7 @@ var installCmd = &cobra.Command{
 		}
 
 		if !installCmdOptions.Yes && !cliutils.YesNoPrompt("Continue?", true) {
-			cancel(ctx)
+			cancel()
 		}
 
 		if installCmdOptions.NoWait {
@@ -189,7 +203,7 @@ var installCmd = &cobra.Command{
 	},
 }
 
-func cancel(ctx context.Context) {
+func cancel() {
 	fmt.Fprintf(os.Stderr, "❌ Operation cancelled.")
 	cliutils.ExitWithError()
 }
