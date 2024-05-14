@@ -62,7 +62,6 @@ var installCmd = &cobra.Command{
 			repos, err := repoClientset.Aggregate().GetReposForPackage(packageName)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "❗ Error: could not collect repository list: %v\n", err)
-				cliutils.ExitWithError()
 			}
 			switch len(repos) {
 			case 0:
