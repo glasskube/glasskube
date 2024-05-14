@@ -25,15 +25,15 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 type PackageRepositoryBasicAuthSpec struct {
-	Username          string                   `json:"username,omitempty"`
-	UsernameSecretRef corev1.SecretKeySelector `json:"usernameSecretRef,omitempty"`
-	Password          string                   `json:"password,omitempty"`
-	PasswordSecretRef corev1.SecretKeySelector `json:"passwordSecretRef,omitempty"`
+	Username          *string                   `json:"username,omitempty"`
+	UsernameSecretRef *corev1.SecretKeySelector `json:"usernameSecretRef,omitempty"`
+	Password          *string                   `json:"password,omitempty"`
+	PasswordSecretRef *corev1.SecretKeySelector `json:"passwordSecretRef,omitempty"`
 }
 
 type PackageRepositoryBearerAuthSpec struct {
-	Token          string                   `json:"token,omitempty"`
-	TokenSecretRef corev1.SecretKeySelector `json:"tokenSecretRef,omitempty"`
+	Token          *string                   `json:"token,omitempty"`
+	TokenSecretRef *corev1.SecretKeySelector `json:"tokenSecretRef,omitempty"`
 }
 
 type PackageRepositoryAuthSpec struct {
