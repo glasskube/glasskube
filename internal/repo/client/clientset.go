@@ -204,16 +204,18 @@ func (d *defaultClientset) GetReposForPackage(name string) ([]v1alpha1.PackageRe
 		return nil, err
 	} else {
 		var result []v1alpha1.PackageRepository
+		var compositeErr error
 		for _, repo := range repoList.Items {
 			var index types.PackageRepoIndex
 			if err := d.ForRepo(repo).FetchPackageRepoIndex(&index); err != nil {
-				return nil, err
-			}
-			if slices.ContainsFunc(index.Packages, func(item types.PackageRepoIndexItem) bool { return item.Name == name }) {
-				result = append(result, repo)
+				multierr.AppendInto(&compositeErr, err)
+			} else {
+				if slices.ContainsFunc(index.Packages, func(item types.PackageRepoIndexItem) bool { return item.Name == name }) {
+					result = append(result, repo)
+				}
 			}
 		}
-		return result, nil
+		return result, compositeErr
 	}
 }
 
