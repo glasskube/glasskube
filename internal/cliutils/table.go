@@ -13,7 +13,7 @@ func PrintTable[T any](
 	w io.Writer,
 	rowItems []T,
 	columns []string,
-	getColsOfRow func(pkg T) []string,
+	getColsOfRow func(item T) []string,
 ) error {
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
 	fmt.Fprintln(tw, strings.Join(columns, tabSep))
