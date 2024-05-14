@@ -11,10 +11,13 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
 	"syscall"
+
+	"github.com/glasskube/glasskube/internal/repo/types"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/glasskube/glasskube/api/v1alpha1"
@@ -352,35 +355,57 @@ func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	pkgName := mux.Vars(r)["pkgName"]
-	repositoryName := mux.Vars(r)["repositoryName"]
+	repositoryName := r.FormValue("repositoryName")
 	selectedVersion := r.FormValue("selectedVersion")
 
 	pkg, manifest, err := describe.DescribeInstalledPackage(ctx, pkgName)
 	if err != nil && !apierrors.IsNotFound(err) {
-		// TODO: Show error in UI
-		err = fmt.Errorf("an error occurred fetching package details of %v: %w", pkgName, err)
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		w.WriteHeader(http.StatusInternalServerError)
+		s.respondAlertAndLog(w, err,
+			fmt.Sprintf("An error occurred fetching package details of installed package %v", pkgName),
+			"danger")
 		return
+	} else if pkg != nil {
+		repositoryName = pkg.Spec.PackageInfo.RepositoryName
 	}
 
 	var idx repo.PackageIndex
 	if err := s.repoClientset.ForRepoWithName(repositoryName).FetchPackageIndex(pkgName, &idx); err != nil {
-		err = fmt.Errorf("an error occurred fetching package index of %v: %w", pkgName, err)
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+		s.respondAlertAndLog(w, err,
+			fmt.Sprintf("An error occurred fetching package index of %v in repository %v", pkgName, repositoryName),
+			"danger")
+		return
 	}
 	latestVersion := idx.LatestVersion
 
 	if selectedVersion == "" {
 		selectedVersion = latestVersion
+	} else if !slices.ContainsFunc(idx.Versions, func(item types.PackageIndexItem) bool {
+		return item.Version == selectedVersion
+	}) {
+		selectedVersion = latestVersion
 	}
 
+	var repos []v1alpha1.PackageRepository
 	if manifest == nil {
+		if repos, err = s.repoClientset.Aggregate().GetReposForPackage(pkgName); err != nil {
+			s.respondAlertAndLog(w, err,
+				fmt.Sprintf("An error occurred fetching repositories of %v", pkgName),
+				"danger")
+			return
+		} else if repositoryName == "" {
+			for _, r := range repos {
+				if r.IsDefaultRepository() {
+					repositoryName = r.Name
+					break
+				}
+			}
+		}
 		manifest = &v1alpha1.PackageManifest{}
 		if err := s.repoClientset.ForRepoWithName(repositoryName).
 			FetchPackageManifest(pkgName, selectedVersion, manifest); err != nil {
 			s.respondAlertAndLog(w, err,
-				fmt.Sprintf("An error occurred fetching manifest of %v in version %v", pkgName, selectedVersion),
+				fmt.Sprintf("An error occurred fetching manifest of %v in version %v in repository %v",
+					pkgName, selectedVersion, repositoryName),
 				"danger")
 			return
 		}
@@ -404,6 +429,8 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 		"ShowConflicts":     res.Status == dependency.ValidationResultStatusConflict,
 		"SelectedVersion":   selectedVersion,
 		"PackageIndex":      &idx,
+		"Repositories":      repos,
+		"RepositoryName":    repositoryName,
 		"ShowConfiguration": (pkg != nil && len(manifest.ValueDefinitions) > 0 && pkg.DeletionTimestamp.IsZero()) || pkg == nil,
 	}, err))
 	checkTmplError(err, fmt.Sprintf("package-detail (%s)", pkgName))
@@ -420,8 +447,9 @@ func (s *server) packageDiscussion(w http.ResponseWriter, r *http.Request) {
 	repositoryName := mux.Vars(r)["repositoryName"]
 	pkg, manifest, err := describe.DescribeInstalledPackage(r.Context(), pkgName)
 	if err != nil && !apierrors.IsNotFound(err) {
-		err = fmt.Errorf("an error occurred fetching package details of %v: %w", pkgName, err)
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+		s.respondAlertAndLog(w, err,
+			fmt.Sprintf("An error occurred fetching installed package %v", pkgName), "danger")
+		return
 	} else if err != nil {
 		// implies that the package is not installed
 		err = nil
@@ -439,8 +467,8 @@ func (s *server) packageDiscussion(w http.ResponseWriter, r *http.Request) {
 		if err := s.repoClientset.ForRepoWithName(repositoryName).
 			FetchPackageManifest(pkgName, idx.LatestVersion, manifest); err != nil {
 			s.respondAlertAndLog(w, err,
-				fmt.Sprintf("An error occurred fetching manifest of %v in version %v", pkgName, idx.LatestVersion),
-				"danger")
+				fmt.Sprintf("An error occurred fetching manifest of %v in version %v in repository %v",
+					pkgName, idx.LatestVersion, repositoryName), "danger")
 			return
 		}
 	}
@@ -559,7 +587,8 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 // reference, and the actual input field(s).
 func (s *server) packageConfigurationInput(w http.ResponseWriter, r *http.Request) {
 	pkgName := mux.Vars(r)["pkgName"]
-	repositoryName := mux.Vars(r)["repositoryName"]
+	selectedVersion := r.FormValue("selectedVersion")
+	repositoryName := r.FormValue("repositoryName")
 	pkg, manifest, err := describe.DescribeInstalledPackage(r.Context(), pkgName)
 	if err != nil && !apierrors.IsNotFound(err) {
 		err = fmt.Errorf("an error occurred fetching package details of %v: %w", pkgName, err)
@@ -568,9 +597,13 @@ func (s *server) packageConfigurationInput(w http.ResponseWriter, r *http.Reques
 	}
 
 	if manifest == nil {
-		manifest, _, err = describe.DescribeLatestVersion(r.Context(), repositoryName, pkgName)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "%v\n", err)
+		manifest = &v1alpha1.PackageManifest{}
+		if err := s.repoClientset.ForRepoWithName(repositoryName).
+			FetchPackageManifest(pkgName, selectedVersion, manifest); err != nil {
+			// TODO check error handling again?
+			s.respondAlertAndLog(w, err,
+				fmt.Sprintf("An error occurred fetching manifest of %v in version %v", pkgName, selectedVersion),
+				"danger")
 			return
 		}
 	}
@@ -578,10 +611,11 @@ func (s *server) packageConfigurationInput(w http.ResponseWriter, r *http.Reques
 	valueName := mux.Vars(r)["valueName"]
 	refKind := r.URL.Query().Get("refKind")
 	if valueDefinition, ok := manifest.ValueDefinitions[valueName]; ok {
-		input := pkg_config_input.ForPkgConfigInput(pkg, pkgName, valueName, valueDefinition, &pkg_config_input.PkgConfigInputRenderOptions{
-			Autofocus:      true,
-			DesiredRefKind: &refKind,
-		})
+		input := pkg_config_input.ForPkgConfigInput(pkg, repositoryName, selectedVersion, pkgName, valueName, valueDefinition,
+			&pkg_config_input.PkgConfigInputRenderOptions{
+				Autofocus:      true,
+				DesiredRefKind: &refKind,
+			})
 		err = s.templates.pkgConfigInput.Execute(w, input)
 		checkTmplError(err, fmt.Sprintf("package config input (%s, %s)", pkgName, valueName))
 	}

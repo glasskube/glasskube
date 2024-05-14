@@ -45,6 +45,9 @@
               <div class="my-1">
                 <i>Installed version: {{ .Package.Spec.PackageInfo.Version }}</i>
               </div>
+              <div class="my-1">
+                <i>Repository: {{ .Package.Spec.PackageInfo.RepositoryName }}</i>
+              </div>
             {{ end }}
             {{ if .AutoUpdate }}
               <div class="my-1">
@@ -92,6 +95,27 @@
                 hx-select="div.alert"
                 hx-swap="innerHTML">
                 {{ if eq .Status nil }}
+                  {{ if gt (len .Repositories) 1 }}
+                    <label class="form-label" for="pkg-install-repository">Repository</label>
+                    <div class="input-group mb-2">
+                      <select
+                        class="form-select"
+                        id="pkg-install-repository"
+                        name="repositoryName"
+                        required
+                        hx-select="main"
+                        hx-swap="main"
+                        hx-target="main"
+                        hx-get="/packages/{{ .Manifest.Name }}"
+                        hx-include="#pkg-install-version">
+                        {{ range .Repositories }}
+                          <option value="{{ .Name }}" {{ if eq .Name $.RepositoryName }}selected{{ end }}>
+                            {{ .Name }}
+                          </option>
+                        {{ end }}
+                      </select>
+                    </div>
+                  {{ end }}
                   <label class="form-label" for="pkg-install-version">Version</label>
                   <div class="input-group mb-2">
                     <select
@@ -102,7 +126,8 @@
                       hx-select="main"
                       hx-swap="main"
                       hx-target="main"
-                      hx-get="/packages/{{ .Manifest.Name }}">
+                      hx-get="/packages/{{ .Manifest.Name }}"
+                      hx-include="#pkg-install-repository">
                       {{ with $idx := .PackageIndex }}
                         {{ range $idx.Versions | Reversed }}
                           <option value="{{ .Version }}" {{ if eq .Version $.SelectedVersion }}selected{{ end }}>
@@ -124,7 +149,7 @@
                     <h4 class="text-reset">Configuration</h4>
                   {{ end }}
                   {{ range $valName, $valDef := .Manifest.ValueDefinitions }}
-                    {{ template "pkg-config-input" ForPkgConfigInput $.Package $.Manifest.Name $valName $valDef nil }}
+                    {{ template "pkg-config-input" ForPkgConfigInput $.Package $.RepositoryName $.SelectedVersion $.Manifest.Name $valName $valDef nil }}
                   {{ end }}
                 {{ end }}
                 {{ if $.ShowConflicts }}

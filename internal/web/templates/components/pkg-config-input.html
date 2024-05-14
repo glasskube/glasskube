@@ -8,7 +8,7 @@
       <li>
         <button
           class="dropdown-item btn btn-sm"
-          hx-get="/packages/{{ .PkgName }}/configuration/{{ .ValueName }}?refKind=Secret"
+          hx-get="/packages/{{ .PkgName }}/configuration/{{ .ValueName }}?refKind=Secret&repositoryName={{ .RepositoryName }}&selectedVersion={{ .SelectedVersion | UrlEscape }}"
           hx-target="#{{ .ContainerId }}"
           hx-select="#{{ .ContainerId }}"
           hx-swap="outerHTML">
@@ -18,7 +18,7 @@
       <li>
         <button
           class="dropdown-item btn btn-sm"
-          hx-get="/packages/{{ .PkgName }}/configuration/{{ .ValueName }}?refKind=ConfigMap"
+          hx-get="/packages/{{ .PkgName }}/configuration/{{ .ValueName }}?refKind=ConfigMap&repositoryName={{ .RepositoryName }}&selectedVersion={{ .SelectedVersion | UrlEscape }}"
           hx-target="#{{ .ContainerId }}"
           hx-select="#{{ .ContainerId }}"
           hx-swap="outerHTML">
@@ -28,7 +28,7 @@
       <li>
         <button
           class="dropdown-item btn btn-sm"
-          hx-get="/packages/{{ .PkgName }}/configuration/{{ .ValueName }}?refKind=Package"
+          hx-get="/packages/{{ .PkgName }}/configuration/{{ .ValueName }}?refKind=Package&repositoryName={{ .RepositoryName }}&selectedVersion={{ .SelectedVersion | UrlEscape }}"
           hx-target="#{{ .ContainerId }}"
           hx-select="#{{ .ContainerId }}"
           hx-swap="outerHTML">
@@ -40,7 +40,7 @@
         <li>
           <button
             class="dropdown-item btn btn-sm"
-            hx-get="/packages/{{ .PkgName }}/configuration/{{ .ValueName }}"
+            hx-get="/packages/{{ .PkgName }}/configuration/{{ .ValueName }}?repositoryName={{ .RepositoryName }}&selectedVersion={{ .SelectedVersion | UrlEscape }}"
             hx-target="#{{ .ContainerId }}"
             hx-select="#{{ .ContainerId }}"
             hx-swap="outerHTML">
