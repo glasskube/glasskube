@@ -3,10 +3,10 @@ package describe
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
-	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	"github.com/glasskube/glasskube/pkg/manifest"
 )
 
@@ -44,10 +44,12 @@ func DescribeLatestVersion(ctx context.Context, repositoryName string, packageNa
 	if len(repositoryName) == 0 {
 		if repos, err := repoClient.Aggregate().GetReposForPackage(packageName); err != nil {
 			return nil, "", err
+		} else if len(repos) == 0 {
+			return nil, "", fmt.Errorf("no repo found for package %v", packageName)
 		} else {
 			for _, repo := range repos {
 				repositoryName = repo.Name
-				if !repoclient.IsDefaultRepository(repo) {
+				if !repo.IsDefaultRepository() {
 					break
 				}
 			}

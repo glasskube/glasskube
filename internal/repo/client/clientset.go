@@ -1,7 +1,6 @@
 package client
 
 import (
-	"cmp"
 	"context"
 	"encoding/base64"
 	"errors"
@@ -16,6 +15,7 @@ import (
 	"github.com/glasskube/glasskube/internal/maputils"
 	"github.com/glasskube/glasskube/internal/repo/types"
 	"github.com/glasskube/glasskube/internal/semver"
+	"github.com/glasskube/glasskube/internal/util"
 	"go.uber.org/multierr"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -26,10 +26,11 @@ type defaultClientsetClient struct {
 }
 
 type defaultClientset struct {
-	client       defaultClientsetClient
-	clients      map[string]RepoClient
-	clientsMutex sync.Mutex
-	maxCacheAge  time.Duration
+	client            defaultClientsetClient
+	clients           map[string]RepoClient
+	repoWithNameMutex sync.Mutex
+	repoMutex         sync.Mutex
+	maxCacheAge       time.Duration
 }
 
 var _ RepoClientset = &defaultClientset{}
@@ -55,8 +56,8 @@ func (d *defaultClientset) ForPackage(pkg v1alpha1.Package) RepoClient {
 
 // ForRepo implements RepoClientset.
 func (d *defaultClientset) ForRepoWithName(name string) RepoClient {
-	d.clientsMutex.Lock()
-	defer d.clientsMutex.Unlock()
+	d.repoWithNameMutex.Lock()
+	defer d.repoWithNameMutex.Unlock()
 	if client, ok := d.clients[name]; ok {
 		// TODO: update client details if older than maxCacheAge
 		return client
@@ -78,7 +79,7 @@ func (d *defaultClientset) Default() RepoClient {
 		return &errorclient{err}
 	} else {
 		for _, repo := range repos.Items {
-			if IsDefaultRepository(repo) {
+			if repo.IsDefaultRepository() {
 				return d.ForRepo(repo)
 			}
 		}
@@ -88,13 +89,14 @@ func (d *defaultClientset) Default() RepoClient {
 
 // ForRepo implements RepoClientset.
 func (d *defaultClientset) ForRepo(repo v1alpha1.PackageRepository) RepoClient {
-	// TODO: Mutex?
+	d.repoMutex.Lock()
+	defer d.repoMutex.Unlock()
 	if client, ok := d.clients[repo.Name]; ok {
 		// TODO: update client details if older than maxCacheAge
 		return client
 	} else {
 		if headers, err := d.getAuthHeaders(repo); err != nil {
-			return &errorclient{err}
+			return &errorclient{fmt.Errorf("invalid auth config: %w", err)}
 		} else {
 			client := New(repo.Spec.Url, headers, d.maxCacheAge)
 			d.clients[repo.Name] = client
@@ -112,12 +114,12 @@ func (d *defaultClientset) getAuthHeaders(repo v1alpha1.PackageRepository) (http
 			if len(user) == 0 {
 				if s, err := d.client.GetSecret(context.TODO(),
 					repo.Spec.Auth.Basic.UsernameSecretRef.Name, "glasskube-system"); err != nil {
-					return nil, err
+					return nil, fmt.Errorf("cannot get username: %w", err)
 				} else {
 					userSecret = s
 				}
-				if u, err := GetSecretKey(userSecret, repo.Spec.Auth.Basic.UsernameSecretRef.Key); err != nil {
-					return nil, err
+				if u, err := getKeyFromSecret(userSecret, repo.Spec.Auth.Basic.UsernameSecretRef.Key); err != nil {
+					return nil, fmt.Errorf("cannot get username: %w", err)
 				} else {
 					user = u
 				}
@@ -128,12 +130,12 @@ func (d *defaultClientset) getAuthHeaders(repo v1alpha1.PackageRepository) (http
 				if passSecret == nil || passSecret.Name != repo.Spec.Auth.Basic.PasswordSecretRef.Name {
 					if s, err := d.client.GetSecret(context.TODO(),
 						repo.Spec.Auth.Basic.PasswordSecretRef.Name, "glasskube-system"); err != nil {
-						return nil, err
+						return nil, fmt.Errorf("cannot get password: %w", err)
 					} else {
 						passSecret = s
 					}
-					if p, err := GetSecretKey(passSecret, repo.Spec.Auth.Basic.UsernameSecretRef.Key); err != nil {
-						return nil, err
+					if p, err := getKeyFromSecret(passSecret, repo.Spec.Auth.Basic.PasswordSecretRef.Key); err != nil {
+						return nil, fmt.Errorf("cannot get password: %w", err)
 					} else {
 						pass = p
 					}
@@ -145,7 +147,14 @@ func (d *defaultClientset) getAuthHeaders(repo v1alpha1.PackageRepository) (http
 		} else if repo.Spec.Auth.Bearer != nil {
 			token := repo.Spec.Auth.Bearer.Token
 			if len(token) == 0 {
-				panic("TODO token secret ref")
+				if tokenSecret, err := d.client.GetSecret(context.TODO(),
+					repo.Spec.Auth.Bearer.TokenSecretRef.Name, "glasskube-system"); err != nil {
+					return nil, fmt.Errorf("cannot get bearer token: %w", err)
+				} else if t, err := getKeyFromSecret(tokenSecret, repo.Spec.Auth.Bearer.TokenSecretRef.Key); err != nil {
+					return nil, fmt.Errorf("cannot get bearer token: %w", err)
+				} else {
+					token = t
+				}
 			}
 			headers.Set("Authorization", fmt.Sprintf("Bearer %v", token))
 		}
@@ -165,7 +174,7 @@ func (d *defaultClientset) FetchPackageRepoIndex(target *types.PackageRepoIndex)
 	} else {
 		var compositeErr error
 		indexMap := make(map[string]types.PackageRepoIndexItem)
-		SortBy(repoList.Items, func(repo v1alpha1.PackageRepository) string { return repo.Name })
+		util.SortBy(repoList.Items, func(repo v1alpha1.PackageRepository) string { return repo.Name })
 		slices.Reverse(repoList.Items)
 		for _, repo := range repoList.Items {
 			var index types.PackageRepoIndex
@@ -173,7 +182,7 @@ func (d *defaultClientset) FetchPackageRepoIndex(target *types.PackageRepoIndex)
 				multierr.AppendInto(&compositeErr, err)
 			} else {
 				for _, item := range index.Packages {
-					if _, ok := indexMap[item.Name]; !ok || !IsDefaultRepository(repo) {
+					if _, ok := indexMap[item.Name]; !ok || !repo.IsDefaultRepository() {
 						indexMap[item.Name] = item
 					}
 				}
@@ -227,26 +236,7 @@ func (d *defaultClientset) GetLatestVersion(pkgName string) (string, error) {
 	}
 }
 
-// TODO: make this reusable, extract annotation name to constant
-func IsDefaultRepository(repo v1alpha1.PackageRepository) bool {
-	return repo.Annotations["packages.glasskube.dev/defaultRepository"] == "true"
-}
-
-// TODO: move to a util package?
-func SortBy[S ~[]E, E any, P cmp.Ordered](s S, predicate func(e E) P) {
-	slices.SortFunc(s, func(a E, b E) int {
-		pa, pb := predicate(a), predicate(b)
-		if pa < pb {
-			return -1
-		} else if pa > pb {
-			return 1
-		} else {
-			return 0
-		}
-	})
-}
-
-func GetSecretKey(secret *corev1.Secret, key string) (string, error) {
+func getKeyFromSecret(secret *corev1.Secret, key string) (string, error) {
 	if enc, ok := secret.Data[key]; ok {
 		var dec []byte
 		if _, err := base64.StdEncoding.Decode(dec, enc); err != nil {

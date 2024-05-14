@@ -84,7 +84,7 @@ func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOption
 			if releaseInfo, err := releaseinfo.FetchLatestRelease(); err != nil {
 				if httperror.Is(err, http.StatusServiceUnavailable) || httperror.IsTimeoutError(err) {
 					telemetry.BootstrapFailure(time.Since(start))
-					return fmt.Errorf("Network connectivity error, check your network, cannot bootstrap")
+					return fmt.Errorf("network connectivity error, check your network: %w", err)
 				}
 				telemetry.BootstrapFailure(time.Since(start))
 				return fmt.Errorf("could not determine latest version: %w", err)
@@ -242,14 +242,12 @@ func defaultRepository() unstructured.Unstructured {
 	repo := v1alpha1.PackageRepository{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "glasskube",
-			Annotations: map[string]string{
-				"packages.glasskube.dev/defaultRepository": "true",
-			},
 		},
 		Spec: v1alpha1.PackageRepositorySpec{
-			Url: "",
+			Url: "https://packages.dl.glasskube.dev/packages/",
 		},
 	}
+	repo.SetDefaultRepository()
 	var repoUnstructured unstructured.Unstructured
 	if err := json.Unmarshal(util.Must(json.Marshal(repo)), &repoUnstructured); err != nil {
 		panic(err)

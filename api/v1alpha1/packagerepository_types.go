@@ -70,6 +70,26 @@ type PackageRepository struct {
 	Status PackageRepositoryStatus `json:"status,omitempty"`
 }
 
+var (
+	defaultRepositoryAnnotation = "packages.glasskube.dev/defaultRepository"
+)
+
+func (repo PackageRepository) IsDefaultRepository() bool {
+	return repo.Annotations[defaultRepositoryAnnotation] == "true"
+}
+
+func (repo PackageRepository) SetDefaultRepository() {
+	repo.SetDefaultRepositoryBool(true)
+}
+
+func (repo PackageRepository) SetDefaultRepositoryBool(value bool) {
+	if value {
+		repo.Annotations[defaultRepositoryAnnotation] = "true"
+	} else {
+		delete(repo.Annotations, defaultRepositoryAnnotation)
+	}
+}
+
 //+kubebuilder:object:root=true
 
 // PackageRepositoryList contains a list of PackageRepository
