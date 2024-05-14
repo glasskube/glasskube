@@ -65,7 +65,7 @@ func runConfigure(cmd *cobra.Command, args []string) {
 	}
 
 	if !cliutils.YesNoPrompt("Continue?", true) {
-		cancel(ctx)
+		cancel()
 	}
 
 	if err := pkgClient.Packages().Get(ctx, pkgName, &pkg); err != nil {
