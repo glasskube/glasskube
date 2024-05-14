@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -19,6 +20,7 @@ type ListCmdOptions struct {
 	ShowDescription   bool
 	ShowLatestVersion bool
 	More              bool
+	ListFormat        string
 }
 
 func (o ListCmdOptions) toListOptions() list.ListOptions {
@@ -59,8 +61,13 @@ var listCmd = &cobra.Command{
 				fmt.Fprintln(os.Stderr, "No packages found. This is probably a bug.")
 			}
 		} else {
-			printPackageTable(pkgs)
+			if listCmdOptions.ListFormat == "json" {
+				printPackageJSON(pkgs)
+			} else {
+				printPackageTable(pkgs)
+			}
 		}
+
 	},
 }
 
@@ -75,6 +82,7 @@ func init() {
 		"show the latest version of packages if available")
 	listCmd.PersistentFlags().BoolVarP(&listCmdOptions.More, "more", "m", false,
 		"show additional information about packages (like --show-description --show-latest)")
+	listCmd.PersistentFlags().StringVar(&listCmdOptions.ListFormat, "format", "", "output format (json, yaml, etc.)")
 
 	listCmd.MarkFlagsMutuallyExclusive("show-description", "more")
 	listCmd.MarkFlagsMutuallyExclusive("show-latest", "more")
@@ -107,6 +115,15 @@ func printPackageTable(packages []*list.PackageWithStatus) {
 		fmt.Fprintf(os.Stderr, "There was an error displaying the package table:\n%v\n(This is a bug)\n", err)
 		cliutils.ExitWithError()
 	}
+}
+
+func printPackageJSON(packages []*list.PackageWithStatus) {
+	jsonData, err := json.MarshalIndent(packages, "", "    ")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error marshaling data to JSON: %v\n", err)
+		cliutils.ExitWithError()
+	}
+	fmt.Println(string(jsonData))
 }
 
 func statusString(pkg list.PackageWithStatus) string {
