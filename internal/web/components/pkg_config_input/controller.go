@@ -13,6 +13,8 @@ type PkgConfigInputRenderOptions struct {
 }
 
 type pkgConfigInputInput struct {
+	RepositoryName     string
+	SelectedVersion    string
 	PkgName            string
 	ValueName          string
 	ValueDefinition    v1alpha1.ValueDefinition
@@ -83,12 +85,14 @@ func getOrCreateReference(pkg *v1alpha1.Package, valueName string, desiredRefKin
 	}
 }
 
-func ForPkgConfigInput(pkg *v1alpha1.Package, pkgName string, valueName string, valueDefinition v1alpha1.ValueDefinition, options *PkgConfigInputRenderOptions) *pkgConfigInputInput {
+func ForPkgConfigInput(pkg *v1alpha1.Package, repositoryName string, selectedVersion string, pkgName string, valueName string, valueDefinition v1alpha1.ValueDefinition, options *PkgConfigInputRenderOptions) *pkgConfigInputInput {
 	if options == nil {
 		options = &PkgConfigInputRenderOptions{}
 	}
 	valueReference, valueReferenceKind := getOrCreateReference(pkg, valueName, options.DesiredRefKind)
 	return &pkgConfigInputInput{
+		RepositoryName:     repositoryName,
+		SelectedVersion:    selectedVersion,
 		PkgName:            pkgName,
 		ValueName:          valueName,
 		ValueDefinition:    valueDefinition,
