@@ -37,11 +37,18 @@ var describeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 		pkgName := args[0]
+		repoClient := cliutils.RepositoryClientset(ctx)
 
 		latestManifest, latestVersion, err :=
 			describe.DescribeLatestVersion(ctx, describeCmdOptions.repository, pkgName)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "❌ Could not describe package %v: %v\n", pkgName, err)
+			fmt.Fprintf(os.Stderr, "❌ Could not get latest info for %v: %v\n", pkgName, err)
+			cliutils.ExitWithError()
+		}
+
+		repos, err := repoClient.Aggregate().GetReposForPackage(pkgName)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "❌ Could not get repos for %v: %v\n", pkgName, err)
 			cliutils.ExitWithError()
 		}
 
@@ -51,7 +58,7 @@ var describeCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "❌ Could not describe package %v: %v\n", pkgName, err)
 			cliutils.ExitWithError()
 		} else if err != nil {
-			// package not installed -> fetch latest manifest from repo
+			// package not installed -> use latest manifest from repo
 			manifest = latestManifest
 		}
 
@@ -75,6 +82,10 @@ var describeCmd = &cobra.Command{
 			fmt.Println(bold("Dependencies:"))
 			printDependencies(manifest)
 		}
+
+		fmt.Println()
+		fmt.Println(bold("Package repositories:"))
+		printRepositories(pkg, repos)
 
 		fmt.Println()
 		fmt.Printf("%v \n", bold("References:"))
@@ -130,6 +141,23 @@ func printDependencies(manifest *v1alpha1.PackageManifest) {
 		}
 		fmt.Println()
 	}
+}
+
+func printRepositories(pkg *v1alpha1.Package, repos []v1alpha1.PackageRepository) {
+	for _, repo := range repos {
+		fmt.Fprintf(os.Stderr, " * %v", repo.Name)
+		if isInstalledFrom(pkg, repo) {
+			fmt.Fprintln(os.Stderr, " (installed)")
+		} else {
+			fmt.Fprintln(os.Stderr)
+		}
+	}
+}
+
+func isInstalledFrom(pkg *v1alpha1.Package, repo v1alpha1.PackageRepository) bool {
+	return pkg != nil &&
+		(repo.Name == pkg.Spec.PackageInfo.RepositoryName ||
+			(len(pkg.Spec.PackageInfo.RepositoryName) == 0 && repo.IsDefaultRepository()))
 }
 
 func printReferences(ctx context.Context, pkg *v1alpha1.Package, manifest *v1alpha1.PackageManifest) {
