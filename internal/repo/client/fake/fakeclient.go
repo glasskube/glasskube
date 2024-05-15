@@ -17,8 +17,8 @@ func (f *FakeClientset) Default() client.RepoClient {
 	return f.Client
 }
 
-// Aggregate implements client.RepoClientset.
-func (f *FakeClientset) Aggregate() client.RepoAggregator {
+// Meta implements client.RepoClientset.
+func (f *FakeClientset) Meta() client.RepoMetaclient {
 	return f.Client
 }
 
@@ -43,6 +43,11 @@ var _ client.RepoClientset = &FakeClientset{}
 type FakeClient struct {
 	Packages            map[string]map[string]*v1alpha1.PackageManifest
 	PackageRepositories []v1alpha1.PackageRepository
+}
+
+// FetchMetaIndex implements client.RepoMetaclient.
+func (f *FakeClient) FetchMetaIndex(target *types.MetaIndex) error {
+	panic("unimplemented")
 }
 
 // GetReposForPackage implements client.RepoAggregator.

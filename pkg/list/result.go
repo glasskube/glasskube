@@ -2,13 +2,14 @@ package list
 
 import (
 	"github.com/glasskube/glasskube/api/v1alpha1"
-	"github.com/glasskube/glasskube/internal/repo"
+	"github.com/glasskube/glasskube/internal/repo/types"
 )
 
 type result struct {
-	IndexItem   *repo.PackageRepoIndexItem
-	Package     *v1alpha1.Package
-	PackageInfo *v1alpha1.PackageInfo
+	IndexItem    *types.MetaIndexItem
+	Package      *v1alpha1.Package
+	PackageInfo  *v1alpha1.PackageInfo
+	Repositories []*v1alpha1.PackageRepository
 }
 
 func (item result) Installed() bool {

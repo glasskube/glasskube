@@ -8,14 +8,14 @@ import (
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/names"
-	"github.com/glasskube/glasskube/internal/repo"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
+	repotypes "github.com/glasskube/glasskube/internal/repo/types"
 	"github.com/glasskube/glasskube/pkg/client"
 	"go.uber.org/multierr"
 )
 
 type PackageWithStatus struct {
-	repo.PackageRepoIndexItem
+	repotypes.MetaIndexItem
 	Status            *client.PackageStatus     `json:"status,omitempty"`
 	Package           *v1alpha1.Package         `json:"package,omitempty"`
 	InstalledManifest *v1alpha1.PackageManifest `json:"installedmanifest,omitempty"`
@@ -47,7 +47,7 @@ func (l *lister) GetPackagesWithStatus(
 	result := make([]*PackageWithStatus, 0, len(index))
 	for _, item := range index {
 		pkgWithStatus := PackageWithStatus{
-			PackageRepoIndexItem: *item.IndexItem,
+			MetaIndexItem: *item.IndexItem,
 		}
 
 		if !((options.OnlyInstalled && !item.Installed()) || (options.OnlyOutdated && !item.Outdated())) {
@@ -68,7 +68,7 @@ func (l *lister) fetchRepoAndInstalled(ctx context.Context, options ListOptions)
 	[]result,
 	error,
 ) {
-	var index repo.PackageRepoIndex
+	var index repotypes.MetaIndex
 	var packages v1alpha1.PackageList
 	var packageInfos v1alpha1.PackageInfoList
 	var repoErr, pkgErr, pkgInfoErr error
@@ -77,7 +77,7 @@ func (l *lister) fetchRepoAndInstalled(ctx context.Context, options ListOptions)
 
 	go func() {
 		defer wg.Done()
-		if err := l.repoClient.Aggregate().FetchPackageRepoIndex(&index); err != nil {
+		if err := l.repoClient.Meta().FetchMetaIndex(&index); err != nil {
 			repoErr = fmt.Errorf("could not fetch package repository index: %w", err)
 		}
 	}()

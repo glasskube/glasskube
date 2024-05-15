@@ -46,7 +46,7 @@ var describeCmd = &cobra.Command{
 			cliutils.ExitWithError()
 		}
 
-		repos, err := repoClient.Aggregate().GetReposForPackage(pkgName)
+		repos, err := repoClient.Meta().GetReposForPackage(pkgName)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "❌ Could not get repos for %v: %v\n", pkgName, err)
 			cliutils.ExitWithError()

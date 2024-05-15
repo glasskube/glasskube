@@ -126,6 +126,7 @@ func printPackageTable(packages []*list.PackageWithStatus) {
 	if listCmdOptions.ShowLatestVersion {
 		header = append(header, "LATEST VERSION")
 	}
+	header = append(header, "REPOSITORY")
 	if listCmdOptions.ShowDescription {
 		header = append(header, "DESCRIPTION")
 	}
@@ -137,6 +138,19 @@ func printPackageTable(packages []*list.PackageWithStatus) {
 			if listCmdOptions.ShowLatestVersion {
 				row = append(row, pkg.LatestVersion)
 			}
+			s := make([]string, len(pkg.Repos))
+			if pkg.Package != nil {
+				for i, r := range pkg.Repos {
+					if pkg.Package.Spec.PackageInfo.RepositoryName == r {
+						s[i] = fmt.Sprintf("%v (used)", r)
+					} else {
+						s[i] = r
+					}
+				}
+			} else {
+				s = pkg.Repos
+			}
+			row = append(row, strings.Join(s, ", "))
 			if listCmdOptions.ShowDescription {
 				row = append(row, pkg.ShortDescription)
 			}
