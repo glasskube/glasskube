@@ -42,7 +42,7 @@ func DescribeLatestVersion(ctx context.Context, repositoryName string, packageNa
 
 	repoClient := cliutils.RepositoryClientset(ctx)
 	if len(repositoryName) == 0 {
-		if repos, err := repoClient.Aggregate().GetReposForPackage(packageName); err != nil {
+		if repos, err := repoClient.Meta().GetReposForPackage(packageName); err != nil {
 			return nil, "", err
 		} else if len(repos) == 0 {
 			return nil, "", fmt.Errorf("no repo found for package %v", packageName)

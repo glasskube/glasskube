@@ -6,17 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"slices"
 	"sync"
 	"time"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/adapter"
-	"github.com/glasskube/glasskube/internal/maputils"
-	"github.com/glasskube/glasskube/internal/repo/types"
-	"github.com/glasskube/glasskube/internal/semver"
-	"github.com/glasskube/glasskube/internal/util"
-	"go.uber.org/multierr"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -34,7 +28,6 @@ type defaultClientset struct {
 }
 
 var _ RepoClientset = &defaultClientset{}
-var _ RepoAggregator = &defaultClientset{}
 
 func NewClientset(pkgClient adapter.PackageClientAdapter, k8sClient adapter.KubernetesClientAdapter) RepoClientset {
 	return NewClientsetWithMaxCacheAge(pkgClient, k8sClient, 5*time.Minute)
@@ -167,80 +160,9 @@ func (d *defaultClientset) getAuthHeaders(repo v1alpha1.PackageRepository) (http
 	return headers, nil
 }
 
-// Aggregate implements RepoClientset.
-func (d *defaultClientset) Aggregate() RepoAggregator {
-	return d
-}
-
-// FetchPackageRepoIndex implements RepoAggregator.
-func (d *defaultClientset) FetchPackageRepoIndex(target *types.PackageRepoIndex) error {
-	if repoList, err := d.client.ListPackageRepositories(context.TODO()); err != nil {
-		return err
-	} else {
-		var compositeErr error
-		indexMap := make(map[string]types.PackageRepoIndexItem)
-		util.SortBy(repoList.Items, func(repo v1alpha1.PackageRepository) string { return repo.Name })
-		slices.Reverse(repoList.Items)
-		for _, repo := range repoList.Items {
-			var index types.PackageRepoIndex
-			if err := d.ForRepo(repo).FetchPackageRepoIndex(&index); err != nil {
-				multierr.AppendInto(&compositeErr, err)
-			} else {
-				for _, item := range index.Packages {
-					if _, ok := indexMap[item.Name]; !ok || !repo.IsDefaultRepository() {
-						indexMap[item.Name] = item
-					}
-				}
-			}
-		}
-		*target = types.PackageRepoIndex{
-			Packages: make([]types.PackageRepoIndexItem, len(indexMap)),
-		}
-		for i, name := range maputils.KeysSorted(indexMap) {
-			target.Packages[i] = indexMap[name]
-		}
-		return compositeErr
-	}
-}
-
-// GetReposForPackage implements RepoAggregator.
-func (d *defaultClientset) GetReposForPackage(name string) ([]v1alpha1.PackageRepository, error) {
-	if repoList, err := d.client.ListPackageRepositories(context.TODO()); err != nil {
-		return nil, err
-	} else {
-		var result []v1alpha1.PackageRepository
-		var compositeErr error
-		for _, repo := range repoList.Items {
-			var index types.PackageRepoIndex
-			if err := d.ForRepo(repo).FetchPackageRepoIndex(&index); err != nil {
-				multierr.AppendInto(&compositeErr, err)
-			} else {
-				if slices.ContainsFunc(index.Packages, func(item types.PackageRepoIndexItem) bool { return item.Name == name }) {
-					result = append(result, repo)
-				}
-			}
-		}
-		return result, compositeErr
-	}
-}
-
-// GetLatestVersion implements RepoAggregator.
-func (d *defaultClientset) GetLatestVersion(pkgName string) (string, error) {
-	if repoList, err := d.client.ListPackageRepositories(context.TODO()); err != nil {
-		return "", err
-	} else {
-		var latest string
-		for _, repo := range repoList.Items {
-			var index types.PackageIndex
-			if err := d.ForRepo(repo).FetchPackageIndex(pkgName, &index); err != nil {
-				return "", err
-			}
-			if latest == "" || semver.IsUpgradable(latest, index.LatestVersion) {
-				latest = index.LatestVersion
-			}
-		}
-		return latest, nil
-	}
+// Meta implements RepoClientset.
+func (d *defaultClientset) Meta() RepoMetaclient {
+	return metaclient{clientset: d}
 }
 
 func getKeyFromSecret(secret *corev1.Secret, key string) (string, error) {

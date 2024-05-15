@@ -387,7 +387,7 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 
 	var repos []v1alpha1.PackageRepository
 	if manifest == nil {
-		if repos, err = s.repoClientset.Aggregate().GetReposForPackage(pkgName); err != nil {
+		if repos, err = s.repoClientset.Meta().GetReposForPackage(pkgName); err != nil {
 			s.respondAlertAndLog(w, err,
 				fmt.Sprintf("An error occurred fetching repositories of %v", pkgName),
 				"danger")
@@ -508,7 +508,7 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 	if pkg == nil {
 		var repoClient repoclient.RepoClient
 		if len(repositoryName) == 0 {
-			repos, err := s.repoClientset.Aggregate().GetReposForPackage(pkgName)
+			repos, err := s.repoClientset.Meta().GetReposForPackage(pkgName)
 			if err != nil {
 				s.respondAlertAndLog(w, err, "", "danger")
 				return

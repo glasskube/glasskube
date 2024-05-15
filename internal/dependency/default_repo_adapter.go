@@ -38,7 +38,7 @@ func (a *defaultRepoAdapter) GetManifest(name string, version string) (*v1alpha1
 }
 
 func (a *defaultRepoAdapter) getRepoForPackage(name string) (*v1alpha1.PackageRepository, error) {
-	if repos, err := a.client.Aggregate().GetReposForPackage(name); err != nil {
+	if repos, err := a.client.Meta().GetReposForPackage(name); err != nil {
 		return nil, err
 	} else {
 		switch len(repos) {

@@ -16,6 +16,7 @@ import (
 	"github.com/glasskube/glasskube/internal/maputils"
 	"github.com/glasskube/glasskube/internal/repo"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
+	repotypes "github.com/glasskube/glasskube/internal/repo/types"
 	"github.com/glasskube/glasskube/internal/util"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/condition"
@@ -59,7 +60,7 @@ var installCmd = &cobra.Command{
 			repoClient = repoClientset.ForRepoWithName(installCmdOptions.Repository)
 			pkgBuilder.WithRepositoryName(installCmdOptions.Repository)
 		} else {
-			repos, err := repoClientset.Aggregate().GetReposForPackage(packageName)
+			repos, err := repoClientset.Meta().GetReposForPackage(packageName)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "❗ Error: could not collect repository list: %v\n", err)
 			}
@@ -218,8 +219,8 @@ func completeAvailablePackageNames(
 	cfg, rawCfg := cliutils.RequireConfig(config.Kubeconfig)
 	ctx := util.Must(clicontext.SetupContext(cmd.Context(), cfg, rawCfg))
 	repoClient := cliutils.RepositoryClientset(ctx)
-	var index repo.PackageRepoIndex
-	err := repoClient.Aggregate().FetchPackageRepoIndex(&index)
+	var index repotypes.MetaIndex
+	err := repoClient.Meta().FetchMetaIndex(&index)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching package repository index: %v\n", err)
 		return nil, cobra.ShellCompDirectiveError
@@ -245,7 +246,7 @@ func completeAvailablePackageVersions(
 	cfg, rawCfg := cliutils.RequireConfig(config.Kubeconfig)
 	ctx := util.Must(clicontext.SetupContext(cmd.Context(), cfg, rawCfg))
 	repoClient := cliutils.RepositoryClientset(ctx)
-	repos, err := repoClient.Aggregate().GetReposForPackage(packageName)
+	repos, err := repoClient.Meta().GetReposForPackage(packageName)
 	if err != nil {
 		return nil, cobra.ShellCompDirectiveError
 	}
