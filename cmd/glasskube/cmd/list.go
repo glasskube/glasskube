@@ -12,6 +12,7 @@ import (
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/list"
 	"github.com/spf13/cobra"
+	"sigs.k8s.io/yaml"
 )
 
 type ListCmdOptions struct {
@@ -63,6 +64,8 @@ var listCmd = &cobra.Command{
 		} else {
 			if listCmdOptions.ListFormat == "json" {
 				printPackageJSON(pkgs)
+			} else if listCmdOptions.ListFormat == "yaml" {
+				printPackageYAML(pkgs)
 			} else {
 				printPackageTable(pkgs)
 			}
@@ -124,6 +127,18 @@ func printPackageJSON(packages []*list.PackageWithStatus) {
 		cliutils.ExitWithError()
 	}
 	fmt.Println(string(jsonData))
+}
+
+func printPackageYAML(packages []*list.PackageWithStatus) {
+	for _, pkg := range packages {
+		yamlData, err := yaml.Marshal(pkg)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error marshaling data to YAML: %v\n", err)
+			cliutils.ExitWithError()
+		}
+		fmt.Println(string(yamlData))
+		fmt.Println("---")
+	}
 }
 
 func statusString(pkg list.PackageWithStatus) string {
