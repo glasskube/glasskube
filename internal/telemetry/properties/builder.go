@@ -45,12 +45,16 @@ func ForClientUser(pg PropertyGetter, includeCluster bool) PropertiesBuilderFn {
 func ForOperatorUser(pg PropertyGetter) PropertiesBuilderFn {
 	return func(p posthog.Properties) posthog.Properties {
 		cp := pg.ClusterProperties()
+		rp := pg.RepositoryProperties()
 		return p.
 			Set("$set", map[string]any{
-				"version":     config.Version,
-				"k8s_version": cp.kubernetesVersion,
-				"provider":    cp.provider,
-				"nnodes":      cp.nnodes,
+				"version":             config.Version,
+				"k8s_version":         cp.kubernetesVersion,
+				"provider":            cp.provider,
+				"nnodes":              cp.nnodes,
+				"nrepositories":       rp.nrepositories,
+				"nrepositories_auth":  rp.nrepositoriesAuth,
+				"custom_default_repo": rp.customRepoAsDefault,
 			}).
 			Set("$set_once", map[string]any{
 				"type":            "operator",
@@ -75,7 +79,8 @@ func FromPackage(pkg *v1alpha1.Package) PropertiesBuilderFn {
 			Set("package_version_actual", pkg.Status.Version).
 			// TODO: set_once ?
 			Set("package_creation_timestamp", pkg.CreationTimestamp).
-			Set("package_auto_update", pkg.Labels["packages.glasskube.dev/auto-update"])
+			Set("package_auto_update", pkg.Labels["packages.glasskube.dev/auto-update"]).
+			Set("package_repository_name", pkg.Spec.PackageInfo.RepositoryName)
 		if c := meta.FindStatusCondition(pkg.Status.Conditions, string(condition.Ready)); c != nil {
 			p.Set("package_ready_status", c.Status)
 			p.Set("package_ready_reason", c.Reason)
