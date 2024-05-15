@@ -247,7 +247,7 @@ func defaultRepository() unstructured.Unstructured {
 			Name: "glasskube",
 		},
 		Spec: v1alpha1.PackageRepositorySpec{
-			Url: "https://packages.dl.glasskube.dev/packages/",
+			Url: constants.DefaultRepoUrl,
 		},
 	}
 	repo.SetDefaultRepository()

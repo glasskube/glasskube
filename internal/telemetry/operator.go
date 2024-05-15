@@ -39,6 +39,13 @@ func (l *managerNodeLister) ListNodes(ctx context.Context) (*corev1.NodeList, er
 	return &nl, l.List(ctx, &nl)
 }
 
+type managerRepositoryLister struct{ client.Client }
+
+func (l *managerRepositoryLister) ListRepositories(ctx context.Context) (*v1alpha1.PackageRepositoryList, error) {
+	var ls v1alpha1.PackageRepositoryList
+	return &ls, l.List(ctx, &ls)
+}
+
 var operatorInstance *OperatorTelemetry
 
 func InitWithManager(mgr manager.Manager) {
@@ -55,8 +62,9 @@ func ForControllerManager(mgr manager.Manager) *OperatorTelemetry {
 		packageReportTimes:        make(map[string]time.Time),
 		packageReportMuteDuration: 8 * time.Hour,
 		PropertyGetter: properties.PropertyGetter{
-			NamespaceGetter: &managerNamespaceGetter{mgr.GetClient()},
-			NodeLister:      &managerNodeLister{mgr.GetClient()},
+			NamespaceGetter:  &managerNamespaceGetter{mgr.GetClient()},
+			NodeLister:       &managerNodeLister{mgr.GetClient()},
+			RepositoryLister: &managerRepositoryLister{mgr.GetClient()},
 		},
 	}
 	if discoveryClient, err := discovery.NewDiscoveryClientForConfig(mgr.GetConfig()); err == nil {
