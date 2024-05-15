@@ -157,14 +157,22 @@ func printPackageJSON(packages []*list.PackageWithStatus) {
 }
 
 func printPackageYAML(packages []*list.PackageWithStatus) {
+	var isFirstPackage = true
+
 	for _, pkg := range packages {
 		yamlData, err := yaml.Marshal(pkg)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error marshaling data to YAML: %v\n", err)
 			cliutils.ExitWithError()
 		}
+
+		if isFirstPackage {
+			isFirstPackage = false
+		} else {
+			fmt.Println("---")
+		}
+
 		fmt.Println(string(yamlData))
-		fmt.Println("---")
 	}
 }
 

@@ -14,7 +14,7 @@ import (
 
 type PackageWithStatus struct {
 	repo.PackageRepoIndexItem
-	Status            *client.PackageStatus
+	Status            *client.PackageStatus `json:"status,omitempty"`
 	Package           *v1alpha1.Package
 	InstalledManifest *v1alpha1.PackageManifest
 }
