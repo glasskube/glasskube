@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.4.1](https://github.com/glasskube/glasskube/compare/v0.4.0...v0.4.1) (2024-05-15)
+
+
+### Bug Fixes
+
+* add re-creating `Job` resources when bootstrapping ([#619](https://github.com/glasskube/glasskube/issues/619)) ([ce3037b](https://github.com/glasskube/glasskube/commit/ce3037bac4b44761f344076def0c5e853bed9eeb))
+* **cli:** add "v" prefix to version option for `install` and `update` commands ([#609](https://github.com/glasskube/glasskube/issues/609)) ([3b296ad](https://github.com/glasskube/glasskube/commit/3b296adb474898e0f1963e6b90241f8405763a3c))
+* **cli:** add proper error handling for network related errors ([#597](https://github.com/glasskube/glasskube/issues/597)) ([c381ae0](https://github.com/glasskube/glasskube/commit/c381ae095dd073260cfdd52f380b5def880a1639))
+* **deps:** update module github.com/fatih/color to v1.17.0 ([c784ce3](https://github.com/glasskube/glasskube/commit/c784ce354dc7f5a24c885586a7ec05efdc8bce3f))
+* **deps:** update module github.com/onsi/ginkgo/v2 to v2.17.3 ([516118f](https://github.com/glasskube/glasskube/commit/516118fee740595413fb4275eb68a3d92edb33ee))
+
+
+### Other
+
+* **deps:** update dependency esbuild to v0.21.1 ([03f3926](https://github.com/glasskube/glasskube/commit/03f39268fd51323209f4693d591c837ac4658eb6))
+* **deps:** update dependency esbuild to v0.21.2 ([32af63d](https://github.com/glasskube/glasskube/commit/32af63dc45ff4a925dafc5db1561f5fe254c0b6c))
+* **deps:** update dependency go to v1.22.3 ([7704e5b](https://github.com/glasskube/glasskube/commit/7704e5b8293ae52d650a315ca54abf8e95004e0a))
+* **deps:** update google-github-actions/release-please-action action to v4.1.1 ([165782c](https://github.com/glasskube/glasskube/commit/165782cf860c10094c258fe970ae68b9ef43d63b))
+* **deps:** update googleapis/release-please-action action to v4.1.1 ([c2d0fcf](https://github.com/glasskube/glasskube/commit/c2d0fcf4306aa9c9f5c716143d644004e6a5f646))
+* **deps:** update goreleaser/goreleaser-action digest to 5742e2a ([fd73b5c](https://github.com/glasskube/glasskube/commit/fd73b5c56971e450ee3abd79bddc21c1eaa005ea))
+* **ui:** remove unnecessary console.log ([159a880](https://github.com/glasskube/glasskube/commit/159a880d96fa48906c19aed1b6e4492346c7ec96))
+
+
+### Docs
+
+* fix spelling mistake in package-config.md ([8808078](https://github.com/glasskube/glasskube/commit/8808078b4db6ef12067d28778f1a2183357d4c0a))
+* **website:** added rabbitmq guide + addressed review ([5982e0e](https://github.com/glasskube/glasskube/commit/5982e0e0aee95d45060dd50665d1f0515732924a))
+* **website:** update packages ([4d8afc5](https://github.com/glasskube/glasskube/commit/4d8afc5cd2137491086a7e5ec074de50a9a301d7))
+* **website:** update the watch vs -w section ([ed675f9](https://github.com/glasskube/glasskube/commit/ed675f9bd5e5092992ba9845d3c827a8d01d8076))
+
 ## [0.4.0](https://github.com/glasskube/glasskube/compare/v0.3.0...v0.4.0) (2024-05-07)
 
 
