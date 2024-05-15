@@ -167,6 +167,7 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle("/packages/{pkgName}/discussion", s.requireReady(s.packageDiscussion))
 	router.Handle("/packages/{pkgName}/configure", s.requireReady(s.installOrConfigurePackage))
 	router.Handle("/packages/{pkgName}/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
+	router.Handle("/settings", s.requireReady(s.settingsPage))
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/packages", http.StatusFound) })
 	http.Handle("/", s.enrichContext(router))
 
@@ -344,7 +345,7 @@ func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 		packageUpdateAvailable[pkg.Name] = pkg.Package != nil && s.isUpdateAvailable(r.Context(), pkg.Name)
 	}
 
-	tmplErr := s.templates.pkgsPageTmpl.Execute(w, s.enrichWithErrorAndWarnings(r.Context(), map[string]any{
+	tmplErr := s.templates.pkgsPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
 		"Packages":               packages,
 		"PackageUpdateAvailable": packageUpdateAvailable,
 		"UpdatesAvailable":       s.isUpdateAvailable(r.Context()),
@@ -418,7 +419,7 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 			"danger")
 		return
 	}
-	err = s.templates.pkgPageTmpl.Execute(w, s.enrichWithErrorAndWarnings(r.Context(), map[string]any{
+	err = s.templates.pkgPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
 		"Package":           pkg,
 		"Status":            client.GetStatusOrPending(pkg),
 		"Manifest":          manifest,
@@ -473,7 +474,7 @@ func (s *server) packageDiscussion(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	err = s.templates.pkgDiscussionPageTmpl.Execute(w, s.enrichWithErrorAndWarnings(r.Context(), map[string]any{
+	err = s.templates.pkgDiscussionPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
 		"Package":         pkg,
 		"Status":          client.GetStatusOrPending(pkg),
 		"Manifest":        manifest,
@@ -700,10 +701,26 @@ func (s *server) kubeconfigPage(w http.ResponseWriter, r *http.Request) {
 	checkTmplError(tplErr, "kubeconfig")
 }
 
-func (s *server) enrichWithErrorAndWarnings(ctx context.Context, data map[string]any, err error) map[string]any {
+func (s *server) settingsPage(w http.ResponseWriter, r *http.Request) {
+	var repos v1alpha1.PackageRepositoryList
+	if err := s.pkgClient.PackageRepositories().GetAll(r.Context(), &repos); err != nil {
+		s.respondAlertAndLog(w, err, "Failed to fetch repositories", "danger")
+		return
+	}
+
+	tmplErr := s.templates.settingsPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
+		"Repositories": repos.Items,
+	}, nil))
+	checkTmplError(tmplErr, "settings")
+}
+
+func (s *server) enrichPage(r *http.Request, data map[string]any, err error) map[string]any {
+	if pathParts := strings.Split(r.URL.Path, "/"); len(pathParts) >= 2 {
+		data["NavbarActiveItem"] = pathParts[1]
+	}
 	data["Error"] = err
 	data["CurrentContext"] = s.rawConfig.CurrentContext
-	operatorVersion, clientVersion, err := s.getGlasskubeVersions(ctx)
+	operatorVersion, clientVersion, err := s.getGlasskubeVersions(r.Context())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to check for version mismatch: %v\n", err)
 	} else if operatorVersion != nil && clientVersion != nil && !operatorVersion.Equal(clientVersion) {
