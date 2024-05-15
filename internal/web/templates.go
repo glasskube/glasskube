@@ -8,6 +8,10 @@ import (
 	"path"
 	"reflect"
 
+	"github.com/glasskube/glasskube/pkg/condition"
+	"k8s.io/apimachinery/pkg/api/meta"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/yuin/goldmark"
 
 	"github.com/fsnotify/fsnotify"
@@ -31,6 +35,7 @@ type templates struct {
 	supportPageTmpl       *template.Template
 	bootstrapPageTmpl     *template.Template
 	kubeconfigPageTmpl    *template.Template
+	settingsPageTmpl      *template.Template
 	pkgUpdateModalTmpl    *template.Template
 	pkgConfigInput        *template.Template
 	pkgUninstallModalTmpl *template.Template
@@ -108,6 +113,10 @@ func (t *templates) parseTemplates() {
 		"UrlEscape": func(param string) string {
 			return template.URLQueryEscaper(param)
 		},
+		"IsRepoStatusReady": func(repo v1alpha1.PackageRepository) bool {
+			cond := meta.FindStatusCondition(repo.Status.Conditions, string(condition.Ready))
+			return cond != nil && cond.Status == v1.ConditionTrue
+		},
 	}
 
 	t.baseTemplate = template.Must(template.New("base.html").
@@ -119,6 +128,7 @@ func (t *templates) parseTemplates() {
 	t.supportPageTmpl = t.pageTmpl("support.html")
 	t.bootstrapPageTmpl = t.pageTmpl("bootstrap.html")
 	t.kubeconfigPageTmpl = t.pageTmpl("kubeconfig.html")
+	t.settingsPageTmpl = t.pageTmpl("settings.html")
 	t.pkgUpdateModalTmpl = t.componentTmpl("pkg-update-modal", "pkg-update-modal.html")
 	t.pkgConfigInput = t.componentTmpl("pkg-config-input", "pkg-config-input.html")
 	t.pkgUninstallModalTmpl = t.componentTmpl("pkg-uninstall-modal", "pkg-uninstall-modal.html")
