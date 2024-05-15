@@ -16,31 +16,30 @@
     sse-connect="/events"
     hx-indicator="#indicator"
     hx-target-error="#error-container">
-    <nav
-      hx-boost="true"
-      hx-select="main"
-      hx-target="main"
-      hx-swap="outerHTML"
-      class="navbar navbar-expand-lg navbar-dark bg-secondary">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-secondary">
       <div id="indicator" class="progress-container bg-transparent w-100 position-fixed top-0 start-0">
         <div class="htmx-indicator progress-bar bg-primary h-100 w-100"></div>
       </div>
 
-      <div class="container">
+      <div class="container" hx-swap-oob="outerHTML:#navbar-content" id="navbar-content">
         <a class="navbar-brand d-flex align-items-center" href="/">
           <img src="/static/assets/glasskube-logo.svg" alt="Logo" height="32" width="32" />
           <h1 class="navbar-brand text-white mx-1 my-0">Glasskube</h1>
         </a>
 
-        <ul class="navbar-nav">
+        <ul class="navbar-nav" hx-boost="true" hx-select="main" hx-target="main" hx-swap="outerHTML">
           <li class="nav-item mx-1">
-            <a class="nav-link active" href="/packages"> Packages </a>
+            {{ with $packages := "packages" }}
+              <a class="nav-link {{ if eq $.NavbarActiveItem $packages }}active{{ end }}" href="/packages">Packages</a>
+            {{ end }}
           </li>
           <li class="nav-item mx-1">
             <a class="nav-link disabled">Apps</a>
           </li>
           <li class="nav-item mx-1">
-            <a class="nav-link disabled">Settings</a>
+            {{ with $settings := "settings" }}
+              <a class="nav-link {{ if eq $.NavbarActiveItem $settings }}active{{ end }}" href="/settings">Settings</a>
+            {{ end }}
           </li>
         </ul>
 
