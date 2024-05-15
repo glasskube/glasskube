@@ -39,15 +39,16 @@ type BootstrapClient struct {
 }
 
 type BootstrapOptions struct {
-	Type             BootstrapType
-	Url              string
-	Latest           bool
-	DisableTelemetry bool
-	Force            bool
+	Type                    BootstrapType
+	Url                     string
+	Latest                  bool
+	DisableTelemetry        bool
+	Force                   bool
+	CreateDefaultRepository bool
 }
 
 func DefaultOptions() BootstrapOptions {
-	return BootstrapOptions{Type: BootstrapTypeAio, Latest: config.IsDevBuild()}
+	return BootstrapOptions{Type: BootstrapTypeAio, Latest: config.IsDevBuild(), CreateDefaultRepository: true}
 }
 
 const installMessage = `
@@ -116,7 +117,9 @@ func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOption
 		}
 	}
 
-	manifests = append(manifests, defaultRepository())
+	if options.CreateDefaultRepository {
+		manifests = append(manifests, defaultRepository())
+	}
 
 	statusMessage("Applying Glasskube manifests", true)
 
