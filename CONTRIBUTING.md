@@ -185,6 +185,14 @@ This will make sure the `alias-name` is in sync with your glasskube binary. Howe
 
 **Note:** Don't use `alias-name` as _glasskube_ since the actual glasskube CLI tool installed locally will get in conflict with executable `glasskube` binary.
 
+#### dependencies
+
+Install dependencies using the following command:
+
+```
+kubectl apply -k config/dependencies 
+```
+
 #### package-operator
 
 **tl;dr:** Use [minikube](https://minikube.sigs.k8s.io/docs/) during development and run: `make install webhook cert run`
