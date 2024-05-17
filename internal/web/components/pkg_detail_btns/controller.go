@@ -15,6 +15,7 @@ type pkgDetailBtnsInput struct {
 	Status          *client.PackageStatus
 	Manifest        *v1alpha1.PackageManifest
 	UpdateAvailable bool
+	Pkg             *v1alpha1.Package
 }
 
 func getId(pkgName string) string {
@@ -35,5 +36,6 @@ func ForPkgDetailBtns(
 		Status:          status,
 		Manifest:        manifest,
 		UpdateAvailable: updateAvailable,
+		Pkg:             pkg,
 	}
 }

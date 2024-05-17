@@ -33,7 +33,9 @@
 {{ define "pkg-detail-btns" }}
   <span id="{{ .ContainerId }}" hx-swap="none">
     {{ if ne .Status nil }}
-      {{ if eq .Status.Status "Pending" }}
+      {{ if not .Pkg.DeletionTimestamp.IsZero }}
+        <button type="button" class="btn btn-primary btn-sm fw-medium" disabled>Uninstalling</button>
+      {{ else if eq .Status.Status "Pending" }}
         <button type="button" class="btn btn-primary btn-sm fw-medium" disabled>Pending</button>
       {{ else if eq .Status.Status "Failed" }}
         <a class="btn btn-danger btn-sm pe-none">

@@ -16,6 +16,7 @@ type pkgOverviewBtnInput struct {
 	Status          *client.PackageStatus
 	Manifest        *v1alpha1.PackageManifest
 	UpdateAvailable bool
+	Pkg             *v1alpha1.Package
 }
 
 func getButtonId(pkgName string) string {
@@ -30,5 +31,6 @@ func ForPkgOverviewBtn(packageWithStatus *list.PackageWithStatus, updateAvailabl
 		Status:          packageWithStatus.Status,
 		Manifest:        packageWithStatus.InstalledManifest,
 		UpdateAvailable: updateAvailable,
+		Pkg:             packageWithStatus.Package,
 	}
 }

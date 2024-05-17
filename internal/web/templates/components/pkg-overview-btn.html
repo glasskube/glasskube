@@ -10,6 +10,10 @@
         class="btn btn-primary btn-sm w-100"
         >Install</a
       >
+    {{ else if not .Pkg.DeletionTimestamp.IsZero }}
+      <div>
+        <button type="button" class="btn btn-primary btn-sm fw-medium w-100" disabled>Uninstalling</button>
+      </div>
     {{ else if eq .Status.Status "Pending" }}
       <button type="button" class="btn btn-primary btn-sm fw-medium w-100" disabled>Pending</button>
     {{ else if eq .Status.Status "Failed" }}
