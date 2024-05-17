@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -11,7 +13,33 @@ import (
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/list"
 	"github.com/spf13/cobra"
+	"sigs.k8s.io/yaml"
 )
+
+type ListFormat string
+
+const (
+	JSON ListFormat = "json"
+	YAML ListFormat = "yaml"
+)
+
+func (o *ListFormat) String() string {
+	return string(*o)
+}
+
+func (o *ListFormat) Set(value string) error {
+	switch value {
+	case string(JSON), string(YAML):
+		*o = ListFormat(value)
+		return nil
+	default:
+		return errors.New(`invalid output format, must be "json" or "yaml"`)
+	}
+}
+
+func (o *ListFormat) Type() string {
+	return "string"
+}
 
 type ListCmdOptions struct {
 	ListInstalledOnly bool
@@ -19,6 +47,7 @@ type ListCmdOptions struct {
 	ShowDescription   bool
 	ShowLatestVersion bool
 	More              bool
+	ListFormat        ListFormat
 }
 
 func (o ListCmdOptions) toListOptions() list.ListOptions {
@@ -59,8 +88,15 @@ var listCmd = &cobra.Command{
 				fmt.Fprintln(os.Stderr, "No packages found. This is probably a bug.")
 			}
 		} else {
-			printPackageTable(pkgs)
+			if listCmdOptions.ListFormat == JSON {
+				printPackageJSON(pkgs)
+			} else if listCmdOptions.ListFormat == YAML {
+				printPackageYAML(pkgs)
+			} else {
+				printPackageTable(pkgs)
+			}
 		}
+
 	},
 }
 
@@ -75,6 +111,7 @@ func init() {
 		"show the latest version of packages if available")
 	listCmd.PersistentFlags().BoolVarP(&listCmdOptions.More, "more", "m", false,
 		"show additional information about packages (like --show-description --show-latest)")
+	listCmd.PersistentFlags().VarP((&listCmdOptions.ListFormat), "output", "o", "output format (json, yaml, etc.)")
 
 	listCmd.MarkFlagsMutuallyExclusive("show-description", "more")
 	listCmd.MarkFlagsMutuallyExclusive("show-latest", "more")
@@ -106,6 +143,33 @@ func printPackageTable(packages []*list.PackageWithStatus) {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "There was an error displaying the package table:\n%v\n(This is a bug)\n", err)
 		cliutils.ExitWithError()
+	}
+}
+
+func printPackageJSON(packages []*list.PackageWithStatus) {
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "    ")
+	err := enc.Encode(packages)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error marshaling data to JSON: %v\n", err)
+		cliutils.ExitWithError()
+	}
+}
+
+func printPackageYAML(packages []*list.PackageWithStatus) {
+
+	for i, pkg := range packages {
+		yamlData, err := yaml.Marshal(pkg)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error marshaling data to YAML: %v\n", err)
+			cliutils.ExitWithError()
+		}
+
+		if i > 0 {
+			fmt.Println("---")
+		}
+
+		fmt.Println(string(yamlData))
 	}
 }
 
