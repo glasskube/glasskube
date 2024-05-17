@@ -14,9 +14,9 @@ import (
 
 type PackageWithStatus struct {
 	repo.PackageRepoIndexItem
-	Status            *client.PackageStatus `json:"status,omitempty"`
-	Package           *v1alpha1.Package
-	InstalledManifest *v1alpha1.PackageManifest
+	Status            *client.PackageStatus     `json:"status,omitempty"`
+	Package           *v1alpha1.Package         `json:"package,omitempty"`
+	InstalledManifest *v1alpha1.PackageManifest `json:"installedmanifest,omitempty"`
 }
 
 type ListOptions struct {
