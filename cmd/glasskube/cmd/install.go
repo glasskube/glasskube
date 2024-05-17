@@ -78,7 +78,7 @@ var installCmd = &cobra.Command{
 				}
 				for {
 					fmt.Fprintf(os.Stderr,
-						"%v is available from %v repositories. Please select the one to install from:",
+						"%v is available from %v repositories. Please select the one to install from.\n",
 						packageName, len(names))
 					if repoName, err := cliutils.GetOption("", names); err != nil {
 						fmt.Fprintf(os.Stderr, "invalid input: %v\n", err)
