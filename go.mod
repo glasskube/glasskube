@@ -19,7 +19,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.17.3
 	github.com/onsi/gomega v1.33.1
 	github.com/posthog/posthog-go v0.0.0-20240327112532-87b23fe11103
-	github.com/schollz/progressbar/v3 v3.14.2
+	github.com/schollz/progressbar/v3 v3.14.3
 	github.com/spf13/cobra v1.8.0
 	github.com/yuin/goldmark v1.7.1
 	go.uber.org/multierr v1.11.0
