@@ -75,7 +75,7 @@ func FromPackage(pkg *v1alpha1.Package) PropertiesBuilderFn {
 			Set("package_version_actual", pkg.Status.Version).
 			// TODO: set_once ?
 			Set("package_creation_timestamp", pkg.CreationTimestamp).
-			Set("package_auto_update", pkg.Labels["packages.glasskube.dev/auto-update"])
+			Set("package_auto_update", pkg.Annotations["packages.glasskube.dev/auto-update"])
 		if c := meta.FindStatusCondition(pkg.Status.Conditions, string(condition.Ready)); c != nil {
 			p.Set("package_ready_status", c.Status)
 			p.Set("package_ready_reason", c.Reason)
