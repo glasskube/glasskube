@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"slices"
@@ -17,11 +18,13 @@ import (
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/glasskube/glasskube/pkg/update"
 	"github.com/spf13/cobra"
+	"sigs.k8s.io/yaml"
 )
 
 var updateCmdOptions struct {
 	Version string
 	Yes     bool
+	Output  string
 }
 
 var updateCmd = &cobra.Command{
@@ -70,6 +73,7 @@ var updateCmd = &cobra.Command{
 				fmt.Fprintf(os.Stderr, "❌ update failed: %v\n", err)
 				cliutils.ExitWithError()
 			}
+			handleOutput(tx)
 		}
 
 		fmt.Fprintf(os.Stderr, "✅ all packages up-to-date\n")
@@ -91,6 +95,31 @@ func printTransaction(tx update.UpdateTransaction) {
 		fmt.Fprintf(w, "%v:\t-\t-> %v\n", req.Name, req.Version)
 	}
 	_ = w.Flush()
+}
+
+func handleOutput(tx *update.UpdateTransaction) {
+	if updateCmdOptions.Output == "" {
+		return
+	}
+
+	var outputData []byte
+	var err error
+	switch updateCmdOptions.Output {
+	case "json":
+		outputData, err = json.Marshal(tx)
+	case "yaml":
+		outputData, err = yaml.Marshal(tx)
+	default:
+		fmt.Fprintf(os.Stderr, "❌ unsupported output format: %v\n", updateCmdOptions.Output)
+		cliutils.ExitWithError()
+	}
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "❌ failed to marshal output: %v\n", err)
+		cliutils.ExitWithError()
+	}
+
+	fmt.Fprintln(os.Stdout, string(outputData))
 }
 
 func completeInstalledPackageNames(
@@ -170,5 +199,7 @@ func init() {
 	_ = updateCmd.RegisterFlagCompletionFunc("version", completeUpgradablePackageVersions)
 	updateCmd.PersistentFlags().BoolVarP(&updateCmdOptions.Yes, "yes", "y", false,
 		"do not ask for any confirmation")
+	updateCmd.PersistentFlags().StringVarP(&updateCmdOptions.Output, "output", "o", "",
+		"output format (json|yaml)")
 	RootCmd.AddCommand(updateCmd)
 }
