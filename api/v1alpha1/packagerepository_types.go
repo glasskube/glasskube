@@ -71,7 +71,7 @@ type PackageRepository struct {
 }
 
 var (
-	defaultRepositoryAnnotation = "packages.glasskube.dev/defaultRepository"
+	defaultRepositoryAnnotation = "packages.glasskube.dev/default-repository"
 )
 
 func (repo PackageRepository) IsDefaultRepository() bool {
