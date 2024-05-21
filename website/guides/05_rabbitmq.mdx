@@ -7,7 +7,7 @@ tags: [ rabbitmq ]
 ---
 
 import CustomGitHubButton from '../src/components/CustomGitHubButton.tsx';
-import GuidesDiscussion from '@site/src/components/GiscusWrapper';
+import Discussion from '@site/src/components/GiscusWrapper';
 import Install from '../src/partials/_install.mdx';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
@@ -89,11 +89,11 @@ By `clustering`, `replicating` and `node federation`, no node or storage volume 
 
 So which architectures or apps might benefit the most from messaging systems? Think of those that require asynchronous communication, scalability, reliability, and decoupling between components. Solutions like social media apps, financial services, IoT products, telecommunication apps, and supply chain management tools are just a few.
 
-**Messaging app example:** **💬**  
+**Messaging app example:** **💬**
 
 For instance, every time you receive a message on WhatsApp or via text, the message payload is processed asynchronously using queues.
 
-**Financial app example:** **📈**  
+**Financial app example:** **📈**
 
 The same goes for when you use a financial app to put a buy order on your favorite stock. The buy details will be delivered from the front end of the producer app to the queue so that a backend consumer app can pick it up and continue processing your buy order.
 
@@ -122,33 +122,33 @@ The same goes for when you use a financial app to put a buy order on your favori
 ## Features of RabbitMQ 🧰
 
 ### Ease of use
-    
+
 Compared to other messaging systems, RabbitMQ’s simplicity of configuration and use stands out among the rest.
-        
+
 ### Delivery Acknowledgement and consumer confirms
-    
+
 Typical of synchronous communication but less present in async is a received acknowledgment when a message was successfully consumed. RabbitMQ has a [feature](https://www.rabbitmq.com/docs/confirms) that can be enabled to achieve this.
-        
+
 ### Distributed network
 
 RabbitMQ as a messaging broker fits into distributed architectures, using producer and consumer apps connecting from remote hosts, this makes it desirable for the RabbitMQ broker to also be distributed there are three ways to accomplish this: [clustering, federations, or the shovel plugin](https://www.rabbitmq.com/docs/distributed).
-        
-### Tools + plugins
-    
-RabbitMQ has a series of tools and [plugins](https://www.rabbitmq.com/docs/plugins) to make managment and configuration much easier. Just as the management plugin which delivers a useful GUI from which mange management and monitoring tasks can be done as well as deployment plugins. Some useful plugins
-        
-  -   **rabbitmq\_management:** for management console access
-            
-  -   **rabbitmq\_prometheus:** exports metrics in Prometheus-compatible format, facilitating monitoring and observability.
-            
-  -   **rabbitmq\_federation:** enables cluster and exchange formation and data replication
-            
-  -   **rabbitmq\_peer\_discovery\_k8s:** used for automatic node discovery (cluster formation) in k8s environments
-            
-  -   RabbitMQ comes with some useful CLI tools `rabbitmqcli` ,`rabbitmq-plugins`,`rabbitmqadmin` and `rabbitmq-queues`. To be executed inside the RabbitMQ nodes they enable cluster management, plugin configurations, and an array of customizations.
-        
 
-## RabbitMQ Installation methods 
+### Tools + plugins
+
+RabbitMQ has a series of tools and [plugins](https://www.rabbitmq.com/docs/plugins) to make managment and configuration much easier. Just as the management plugin which delivers a useful GUI from which mange management and monitoring tasks can be done as well as deployment plugins. Some useful plugins
+
+  -   **rabbitmq\_management:** for management console access
+
+  -   **rabbitmq\_prometheus:** exports metrics in Prometheus-compatible format, facilitating monitoring and observability.
+
+  -   **rabbitmq\_federation:** enables cluster and exchange formation and data replication
+
+  -   **rabbitmq\_peer\_discovery\_k8s:** used for automatic node discovery (cluster formation) in k8s environments
+
+  -   RabbitMQ comes with some useful CLI tools `rabbitmqcli` ,`rabbitmq-plugins`,`rabbitmqadmin` and `rabbitmq-queues`. To be executed inside the RabbitMQ nodes they enable cluster management, plugin configurations, and an array of customizations.
+
+
+## RabbitMQ Installation methods
 
 ### Docker 🐳
 
@@ -161,11 +161,11 @@ docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3.13-ma
 ### Open Source RabbitMQ Server on multiple operating systems
 
 -   Linux: ([Debian](https://www.rabbitmq.com/docs/install-debian), [RHEL, CentOS Stream, Fedora, Amazon Linux 2023](https://www.rabbitmq.com/docs/install-rpm))
-    
+
 -   [Windows](https://www.rabbitmq.com/docs/install-windows)
-    
+
 -   [MacOS](https://www.rabbitmq.com/docs/install-homebrew)
-    
+
 
 ### RabbitMQ Cluster Kubernetes Operator ☸️
 
@@ -248,7 +248,7 @@ kubectl apply -f definition.yaml
 
 Then verify that the process was successful by running:
 
-``` 
+```
 kubectl get all -l app.kubernetes.io/name=definition
 ```
 
@@ -336,19 +336,19 @@ rabbitmqctl set_permissions -p vhost-1 jake ".*" ".*" ".*"
 #### Queue Creation via Management UI
 
 1.  **Access RabbitMQ Management Console**: Open the RabbitMQ Management UI in your web browser.
-    
+
 2.  **Login with Credentials**: Use the credentials of the user you created (e.g., username: **jake**, password: **jakepassword**) to log in to the Management UI.
-    
+
 3.  **Navigate to Queues Section**: Click on the "Queues" tab in the Management UI to view existing queues.
-    
+
 4.  **Add Queue**: Scroll to the bottom of the page and click on the "Add a new queue" button to create a new queue.
-    
+
     -   Specify the queue name, type, and other desired properties like node preference.
-        
+
     -   Optionally, configure queue bindings, policies, and other advanced settings based on your requirements.
-        
+
 5.  **Save Changes**: Click on the "Add queue" or "Save" button to confirm and create the new queue.
-    
+
 
 By following these steps, you can easily create and manage queues in RabbitMQ according to your specific needs.
 
@@ -356,7 +356,7 @@ By following these steps, you can easily create and manage queues in RabbitMQ ac
 
 The queue is now ready:
 
-![The queue is live](https://github.com/glasskube/glasskube/assets/38757612/bae29873-901a-47d2-955b-8838f9023a55)  
+![The queue is live](https://github.com/glasskube/glasskube/assets/38757612/bae29873-901a-47d2-955b-8838f9023a55)
 
 ## Build a RabbitMQ cluster 🐇
 
@@ -364,7 +364,7 @@ When building a production application with a messaging component to its archite
 
 ![rabbitmq-cluster-graph](https://github.com/glasskube/glasskube/assets/38757612/69b9d748-f616-4944-8a4f-b0d9f0aed85f)
 
-> ℹ️ To understand how clusters are formed we will need to understand a few concepts.  
+> ℹ️ To understand how clusters are formed we will need to understand a few concepts.
 By using the operator, much of the concepts we explore below will be configured for you by default. Nonetheless, it’s still valuable to understand what is happening under the hood.
 
 ### Authentication
@@ -436,7 +436,7 @@ spec:
     additionalConfig: |
       load_definitions = /etc/rabbitmq/definitions.json
   replicas: 3 # added three replicas which will for the RabbitMQ cluster
-  resources: 
+  resources:
     limits:
       cpu: "2"
       memory: 2Gi
@@ -471,3 +471,5 @@ If you like this sort of content and would like to see more of it, please consid
     href="https://github.com/glasskube/glasskube"
   />
 </div>
+
+<Discussion category="Guides" categoryId="DIC_kwDOLDumD84CfK3R" />
