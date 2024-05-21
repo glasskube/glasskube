@@ -149,7 +149,7 @@
                     <h4 class="text-reset">Configuration</h4>
                   {{ end }}
                   {{ range $valName, $valDef := .Manifest.ValueDefinitions }}
-                    {{ template "pkg-config-input" ForPkgConfigInput $.Package $.RepositoryName $.SelectedVersion $.Manifest.Name $valName $valDef nil }}
+                    {{ template "pkg-config-input" ForPkgConfigInput $.Package $.RepositoryName $.SelectedVersion $.Manifest.Name $valName $valDef (index $.ValueErrors $valName) nil }}
                   {{ end }}
                 {{ end }}
                 {{ if $.ShowConflicts }}

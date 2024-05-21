@@ -19,6 +19,8 @@ import (
 
 	"github.com/glasskube/glasskube/internal/repo/types"
 
+	"github.com/glasskube/glasskube/internal/util"
+
 	"github.com/Masterminds/semver/v3"
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	clientadapter "github.com/glasskube/glasskube/internal/adapter/goclient"
@@ -419,6 +421,15 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 			"danger")
 		return
 	}
+
+	valueErrors := make(map[string]error)
+	if pkg != nil {
+		for key, v := range pkg.Spec.Values {
+			if _, err := s.valueResolver.ResolveValue(r.Context(), v); err != nil {
+				valueErrors[key] = util.GetRootCause(err)
+			}
+		}
+	}
 	err = s.templates.pkgPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
 		"Package":           pkg,
 		"Status":            client.GetStatusOrPending(pkg),
@@ -433,6 +444,7 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 		"Repositories":      repos,
 		"RepositoryName":    repositoryName,
 		"ShowConfiguration": (pkg != nil && len(manifest.ValueDefinitions) > 0 && pkg.DeletionTimestamp.IsZero()) || pkg == nil,
+		"ValueErrors":       valueErrors,
 	}, err))
 	checkTmplError(err, fmt.Sprintf("package-detail (%s)", pkgName))
 }
@@ -613,7 +625,7 @@ func (s *server) packageConfigurationInput(w http.ResponseWriter, r *http.Reques
 	refKind := r.URL.Query().Get("refKind")
 	if valueDefinition, ok := manifest.ValueDefinitions[valueName]; ok {
 		input := pkg_config_input.ForPkgConfigInput(pkg, repositoryName, selectedVersion, pkgName, valueName, valueDefinition,
-			&pkg_config_input.PkgConfigInputRenderOptions{
+			nil, &pkg_config_input.PkgConfigInputRenderOptions{
 				Autofocus:      true,
 				DesiredRefKind: &refKind,
 			})

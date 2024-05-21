@@ -25,6 +25,7 @@ type pkgConfigInputInput struct {
 	ContainerId        string
 	ValueReference     v1alpha1.ValueReference
 	ValueReferenceKind string
+	ValueError         error
 	Autofocus          bool
 }
 
@@ -85,7 +86,7 @@ func getOrCreateReference(pkg *v1alpha1.Package, valueName string, desiredRefKin
 	}
 }
 
-func ForPkgConfigInput(pkg *v1alpha1.Package, repositoryName string, selectedVersion string, pkgName string, valueName string, valueDefinition v1alpha1.ValueDefinition, options *PkgConfigInputRenderOptions) *pkgConfigInputInput {
+func ForPkgConfigInput(pkg *v1alpha1.Package, repositoryName string, selectedVersion string, pkgName string, valueName string, valueDefinition v1alpha1.ValueDefinition, valueError error, options *PkgConfigInputRenderOptions) *pkgConfigInputInput {
 	if options == nil {
 		options = &PkgConfigInputRenderOptions{}
 	}
@@ -103,6 +104,7 @@ func ForPkgConfigInput(pkg *v1alpha1.Package, repositoryName string, selectedVer
 		ContainerId:        fmt.Sprintf("input-container-%v", valueName),
 		ValueReference:     valueReference,
 		ValueReferenceKind: valueReferenceKind,
+		ValueError:         valueError,
 		Autofocus:          options.Autofocus,
 	}
 }
