@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -11,9 +12,13 @@ import (
 	"github.com/glasskube/glasskube/internal/manifestvalues/flags"
 	"github.com/glasskube/glasskube/pkg/manifest"
 	"github.com/spf13/cobra"
+	"sigs.k8s.io/yaml"
 )
 
-var configureCmdOptions = struct{ flags.ValuesOptions }{
+var configureCmdOptions = struct {
+	flags.ValuesOptions
+	outputFormat string
+}{
 	ValuesOptions: flags.NewOptions(flags.WithKeepOldValuesFlag),
 }
 
@@ -79,9 +84,29 @@ func runConfigure(cmd *cobra.Command, args []string) {
 	} else {
 		fmt.Fprintln(os.Stderr, "✅ configuration changed")
 	}
+
+	if configureCmdOptions.outputFormat != "" {
+		var output []byte
+		var err error
+		switch configureCmdOptions.outputFormat {
+		case "json":
+			output, err = json.MarshalIndent(pkg.Spec.Values, "", "  ")
+		case "yaml":
+			output, err = yaml.Marshal(pkg.Spec.Values)
+		default:
+			fmt.Fprintf(os.Stderr, "❌ invalid output format: %s\n", configureCmdOptions.outputFormat)
+			cliutils.ExitWithError()
+		}
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "❌ error marshalling output: %v\n", err)
+			cliutils.ExitWithError()
+		}
+		fmt.Println(string(output))
+	}
 }
 
 func init() {
+	configureCmd.Flags().StringVarP(&configureCmdOptions.outputFormat, "output", "o", "", "Output format (json|yaml)")
 	configureCmdOptions.ValuesOptions.AddFlagsToCommand(configureCmd)
 	RootCmd.AddCommand(configureCmd)
 }
