@@ -3,6 +3,6 @@ kind: PackageRepository
 metadata:
   name: glasskube
   annotations:
-    packages.glasskube.dev/defaultRepository: "true"
+    packages.glasskube.dev/default-repository: "true"
 spec:
   url: https://packages.dl.glasskube.dev/packages/
