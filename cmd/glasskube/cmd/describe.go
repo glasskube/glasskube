@@ -245,6 +245,6 @@ func nameAndDescription(manifest *v1alpha1.PackageManifest) string {
 
 func init() {
 	describeCmd.Flags().StringVar(&describeCmdOptions.repository, "repository", describeCmdOptions.repository,
-		"TODO")
+		"specify the name of the package repository used to use when the package is not installed")
 	RootCmd.AddCommand(describeCmd)
 }
