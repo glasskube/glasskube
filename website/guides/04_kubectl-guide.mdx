@@ -7,7 +7,7 @@ tags: [ kubectl ]
 ---
 
 import CustomGitHubButton from '../src/components/CustomGitHubButton.tsx';
-import GuidesDiscussion from '@site/src/components/GiscusWrapper';
+import Discussion from '@site/src/components/GiscusWrapper';
 
 ![kubectl thumbnail](https://github.com/glasskube/glasskube/assets/38757612/11729636-7337-4504-a62e-b1da495f9a19)
 
@@ -170,7 +170,7 @@ Massively useful when you want render a manifest for an object you don't remembe
 ```
 kubectl create secret generic github-api-token --from-literal token=$GITHUB_TOKEN --dry-run=client -o yaml
 ```
-Concatenating the command with other tools can be very useful too. 
+Concatenating the command with other tools can be very useful too.
 Taking the example above, you can pipe the output of the generated manifest and pass in into a third party secret manager like [Sealed-secrets](https://github.com/bitnami-labs/sealed-secrets) to create a kubeseal secret manifest.
 ```
 kubectl create secret generic github-api-token --from-literal token=$GITHUB_TOKEN --dry-run=client -o yaml | kubeseal --format yaml > api-token-secret.sealed.yaml
@@ -727,4 +727,4 @@ If you like this sort of content and would like to see more of it, please consid
 </div>
 
 
-<GuidesDiscussion />
+<Discussion category="Guides" categoryId="DIC_kwDOLDumD84CfK3R" />
