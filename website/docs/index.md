@@ -55,7 +55,7 @@ title: glasskube install [package]
 flowchart BT
   UI([UI])-- via local server<br>http://localhost:8580 ---Client(Client)
   CLI([CLI])-- cobra cli ---Client
-  Client-- 1. validate package -->Repo[(Public Glasskube<br>Package Repo)]
+  Client-- 1. validate package -->Repo[(Package Repo)]
   Client-- 2. create<br>`Package` CR -->Kubernetes(((Kubernetes API)))
   subgraph Cluster
     Kubernetes-- 3. reconcile<br>`Package` -->PackageController
