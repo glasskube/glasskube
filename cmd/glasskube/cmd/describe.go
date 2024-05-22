@@ -46,7 +46,7 @@ func (o *DescribeFormat) String() string {
 
 func (o *DescribeFormat) Set(value string) error {
 	switch value {
-	case string(JSON), string(YAML):
+	case JSON, YAML:
 		*o = DescribeFormat(value)
 		return nil
 	default:
