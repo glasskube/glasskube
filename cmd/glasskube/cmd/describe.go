@@ -306,7 +306,11 @@ func getConfigurations(pkg *v1alpha1.Package) map[string]string {
 	return configuration
 }
 
-func printJson(pkg *v1alpha1.Package, pkgStatus *client.PackageStatus, manifest *v1alpha1.PackageManifest, latestVersion string) {
+func printJson(
+	pkg *v1alpha1.Package,
+	pkgStatus *client.PackageStatus,
+	manifest *v1alpha1.PackageManifest,
+	latestVersion string) {
 	output := DescribeOutput{
 		Package:         nameAndDescription(manifest),
 		Version:         version(pkg, latestVersion),
@@ -328,7 +332,11 @@ func printJson(pkg *v1alpha1.Package, pkgStatus *client.PackageStatus, manifest 
 	}
 }
 
-func printYaml(pkg *v1alpha1.Package, pkgStatus *client.PackageStatus, manifest *v1alpha1.PackageManifest, latestVersion string) {
+func printYaml(
+	pkg *v1alpha1.Package,
+	pkgStatus *client.PackageStatus,
+	manifest *v1alpha1.PackageManifest,
+	latestVersion string) {
 	output := DescribeOutput{
 		Package:         nameAndDescription(manifest),
 		Version:         version(pkg, latestVersion),
