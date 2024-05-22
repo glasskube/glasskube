@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.1](https://github.com/glasskube/glasskube/compare/v0.5.0...v0.5.1) (2024-05-22)
+
+
+### Bug Fixes
+
+* create a new restmapper after applying a crd ([7c1bbf0](https://github.com/glasskube/glasskube/commit/7c1bbf01554a26f0b54a4047cb9b1b09f21f51b2))
+* set correct API version to make bootstrap work ([16dce6d](https://github.com/glasskube/glasskube/commit/16dce6d45b6545843b4b7e5aa77ea9931dcfb7bf))
+
 ## [0.5.0](https://github.com/glasskube/glasskube/compare/v0.4.1...v0.5.0) (2024-05-22)
 
 
