@@ -239,7 +239,7 @@ func nameAndDescription(manifest *v1alpha1.PackageManifest) string {
 }
 
 func getEntrypoints(manifest *v1alpha1.PackageManifest) []map[string]string {
-	var entrypoints []map[string]string
+	entrypoints := []map[string]string{}
 	for _, i := range manifest.Entrypoints {
 		entrypoint := make(map[string]string)
 		if i.Name != "" {
@@ -267,7 +267,7 @@ func getEntrypoints(manifest *v1alpha1.PackageManifest) []map[string]string {
 }
 
 func getDependencies(manifest *v1alpha1.PackageManifest) []map[string]string {
-	var dependencies []map[string]string
+	dependencies := []map[string]string{}
 	for _, dep := range manifest.Dependencies {
 		dependency := make(map[string]string)
 		dependency["name"] = dep.Name
@@ -280,7 +280,7 @@ func getDependencies(manifest *v1alpha1.PackageManifest) []map[string]string {
 }
 
 func getReferences(manifest *v1alpha1.PackageManifest, latestVersion string) []map[string]string {
-	var references []map[string]string
+	references := []map[string]string{}
 	if url, err := repo.GetPackageManifestURL("", manifest.Name, latestVersion); err == nil {
 		references = append(references, map[string]string{
 			"label": "Glasskube Package Manifest",
