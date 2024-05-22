@@ -29,7 +29,7 @@ func (o *ListFormat) String() string {
 
 func (o *ListFormat) Set(value string) error {
 	switch value {
-	case string(JSON), string(YAML):
+	case JSON, YAML:
 		*o = ListFormat(value)
 		return nil
 	default:
