@@ -17,6 +17,11 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
+
+	"k8s.io/client-go/informers"
+	corev1 "k8s.io/client-go/listers/core/v1"
+
 	"github.com/glasskube/glasskube/internal/repo/types"
 
 	"github.com/glasskube/glasskube/internal/util"
@@ -32,7 +37,6 @@ import (
 	"github.com/glasskube/glasskube/internal/repo"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	"github.com/glasskube/glasskube/internal/telemetry"
-	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
 	"github.com/glasskube/glasskube/internal/web/handler"
 	"github.com/glasskube/glasskube/pkg/bootstrap"
 	"github.com/glasskube/glasskube/pkg/client"
@@ -100,6 +104,9 @@ type server struct {
 	packageController     cache.Controller
 	packageInfoStore      cache.Store
 	packageInfoController cache.Controller
+	namespaceLister       *corev1.NamespaceLister
+	configMapLister       *corev1.ConfigMapLister
+	secretLister          *corev1.SecretLister
 	forwarders            map[string]*open.OpenResult
 	dependencyMgr         *dependency.DependendcyManager
 	updateMutex           sync.Mutex
@@ -169,6 +176,8 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle("/packages/{pkgName}/discussion", s.requireReady(s.packageDiscussion))
 	router.Handle("/packages/{pkgName}/configure", s.requireReady(s.installOrConfigurePackage))
 	router.Handle("/packages/{pkgName}/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
+	router.Handle("/packages/{pkgName}/configuration/{valueName}/datalists/names", s.requireReady(s.namesDatalist))
+	router.Handle("/packages/{pkgName}/configuration/{valueName}/datalists/keys", s.requireReady(s.keysDatalist))
 	router.Handle("/settings", s.requireReady(s.settingsPage))
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/packages", http.StatusFound) })
 	http.Handle("/", s.enrichContext(router))
@@ -425,13 +434,24 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	valueErrors := make(map[string]error)
+	datalistOptions := make(map[string]*pkg_config_input.PkgConfigInputDatalistOptions)
 	if pkg != nil {
+		nsOptions, _ := s.getNamespaceOptions()
+		pkgsOptions, _ := s.getPackagesOptions(r.Context())
 		for key, v := range pkg.Spec.Values {
 			if _, err := s.valueResolver.ResolveValue(r.Context(), v); err != nil {
 				valueErrors[key] = util.GetRootCause(err)
 			}
+			if v.ValueFrom != nil {
+				options, err := s.getDatalistOptions(r.Context(), v.ValueFrom, nsOptions, pkgsOptions)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "%v\n", err)
+				}
+				datalistOptions[key] = options
+			}
 		}
 	}
+
 	err = s.templates.pkgPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
 		"Package":           pkg,
 		"Status":            client.GetStatusOrPending(pkg),
@@ -447,6 +467,7 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 		"RepositoryName":    repositoryName,
 		"ShowConfiguration": (pkg != nil && len(manifest.ValueDefinitions) > 0 && pkg.DeletionTimestamp.IsZero()) || pkg == nil,
 		"ValueErrors":       valueErrors,
+		"DatalistOptions":   datalistOptions,
 	}, err))
 	checkTmplError(err, fmt.Sprintf("package-detail (%s)", pkgName))
 }
@@ -590,49 +611,6 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 			})
 			checkTmplError(err, "success")
 		}
-	}
-}
-
-// packageConfigurationInput is a GET endpoint, which returns an html snippet containing an input container.
-// The endpoint requires the pkgName query parameter to be set, as well as the valueName query parameter (which holds
-// the name of the desired value according to the package value definitions).
-// An optional query parameter refKind can be passed to request the snippet in a certain variant, where the accepted
-// refKind values are: ConfigMap, Secret, Package. If no refKind is given, the "regular" input is returned.
-// In any case, the input container consists of a button where the user can change the type of reference or remove the
-// reference, and the actual input field(s).
-func (s *server) packageConfigurationInput(w http.ResponseWriter, r *http.Request) {
-	pkgName := mux.Vars(r)["pkgName"]
-	selectedVersion := r.FormValue("selectedVersion")
-	repositoryName := r.FormValue("repositoryName")
-	pkg, manifest, err := describe.DescribeInstalledPackage(r.Context(), pkgName)
-	if err != nil && !apierrors.IsNotFound(err) {
-		err = fmt.Errorf("an error occurred fetching package details of %v: %w", pkgName, err)
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		return
-	}
-
-	if manifest == nil {
-		manifest = &v1alpha1.PackageManifest{}
-		if err := s.repoClientset.ForRepoWithName(repositoryName).
-			FetchPackageManifest(pkgName, selectedVersion, manifest); err != nil {
-			// TODO check error handling again?
-			s.respondAlertAndLog(w, err,
-				fmt.Sprintf("An error occurred fetching manifest of %v in version %v", pkgName, selectedVersion),
-				"danger")
-			return
-		}
-	}
-
-	valueName := mux.Vars(r)["valueName"]
-	refKind := r.URL.Query().Get("refKind")
-	if valueDefinition, ok := manifest.ValueDefinitions[valueName]; ok {
-		input := pkg_config_input.ForPkgConfigInput(pkg, repositoryName, selectedVersion, pkgName, valueName, valueDefinition,
-			nil, &pkg_config_input.PkgConfigInputRenderOptions{
-				Autofocus:      true,
-				DesiredRefKind: &refKind,
-			})
-		err = s.templates.pkgConfigInput.Execute(w, input)
-		checkTmplError(err, fmt.Sprintf("package config input (%s, %s)", pkgName, valueName))
 	}
 }
 
@@ -863,6 +841,15 @@ func (server *server) initWhenBootstrapped(ctx context.Context) {
 		clientadapter.NewPackageClientAdapter(server.pkgClient),
 		clientadapter.NewKubernetesClientAdapter(server.k8sClient),
 	)
+	factory := informers.NewSharedInformerFactory(server.k8sClient, 0)
+	c := make(chan struct{})
+	namespaceLister := factory.Core().V1().Namespaces().Lister()
+	server.namespaceLister = &namespaceLister
+	configMapLister := factory.Core().V1().ConfigMaps().Lister()
+	server.configMapLister = &configMapLister
+	secretLister := factory.Core().V1().Secrets().Lister()
+	server.secretLister = &secretLister
+	factory.Start(c)
 }
 
 func (server *server) initCachedClient(ctx context.Context) {

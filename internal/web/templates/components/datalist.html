@@ -1,0 +1,7 @@
+{{ define "datalist" }}
+  <datalist id="{{ .Id }}">
+    {{ range .Options }}
+      <option value="{{ . }}">{{ . }}</option>
+    {{ end }}
+  </datalist>
+{{ end }}
