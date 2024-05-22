@@ -17,7 +17,7 @@ import (
 
 var configureCmdOptions = struct {
 	flags.ValuesOptions
-	outputFormat string
+	OutputOptions
 }{
 	ValuesOptions: flags.NewOptions(flags.WithKeepOldValuesFlag),
 }
@@ -85,16 +85,16 @@ func runConfigure(cmd *cobra.Command, args []string) {
 		fmt.Fprintln(os.Stderr, "✅ configuration changed")
 	}
 
-	if configureCmdOptions.outputFormat != "" {
+	if configureCmdOptions.Output != "" {
 		var output []byte
 		var err error
-		switch configureCmdOptions.outputFormat {
-		case "json":
+		switch configureCmdOptions.Output {
+		case OutputFormatJSON:
 			output, err = json.MarshalIndent(pkg.Spec.Values, "", "  ")
-		case "yaml":
+		case OutputFormatYAML:
 			output, err = yaml.Marshal(pkg.Spec.Values)
 		default:
-			fmt.Fprintf(os.Stderr, "❌ invalid output format: %s\n", configureCmdOptions.outputFormat)
+			fmt.Fprintf(os.Stderr, "❌ invalid output format: %s\n", configureCmdOptions.Output)
 			cliutils.ExitWithError()
 		}
 		if err != nil {
@@ -106,7 +106,7 @@ func runConfigure(cmd *cobra.Command, args []string) {
 }
 
 func init() {
-	configureCmd.Flags().StringVarP(&configureCmdOptions.outputFormat, "output", "o", "", "Output format (json|yaml)")
 	configureCmdOptions.ValuesOptions.AddFlagsToCommand(configureCmd)
+	configureCmdOptions.OutputOptions.AddFlagsToCommand(configureCmd)
 	RootCmd.AddCommand(configureCmd)
 }
