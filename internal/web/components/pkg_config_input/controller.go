@@ -12,6 +12,12 @@ type PkgConfigInputRenderOptions struct {
 	DesiredRefKind *string
 }
 
+type PkgConfigInputDatalistOptions struct {
+	Namespaces []string
+	Names      []string
+	Keys       []string
+}
+
 type pkgConfigInputInput struct {
 	RepositoryName     string
 	SelectedVersion    string
@@ -27,6 +33,7 @@ type pkgConfigInputInput struct {
 	ValueReferenceKind string
 	ValueError         error
 	Autofocus          bool
+	DatalistOptions    *PkgConfigInputDatalistOptions
 }
 
 func getStringValue(pkg *v1alpha1.Package, valueName string, valueDefinition *v1alpha1.ValueDefinition) string {
@@ -86,7 +93,17 @@ func getOrCreateReference(pkg *v1alpha1.Package, valueName string, desiredRefKin
 	}
 }
 
-func ForPkgConfigInput(pkg *v1alpha1.Package, repositoryName string, selectedVersion string, pkgName string, valueName string, valueDefinition v1alpha1.ValueDefinition, valueError error, options *PkgConfigInputRenderOptions) *pkgConfigInputInput {
+func ForPkgConfigInput(
+	pkg *v1alpha1.Package,
+	repositoryName string,
+	selectedVersion string,
+	pkgName string,
+	valueName string,
+	valueDefinition v1alpha1.ValueDefinition,
+	valueError error,
+	datalistOptions *PkgConfigInputDatalistOptions,
+	options *PkgConfigInputRenderOptions,
+) *pkgConfigInputInput {
 	if options == nil {
 		options = &PkgConfigInputRenderOptions{}
 	}
@@ -106,5 +123,6 @@ func ForPkgConfigInput(pkg *v1alpha1.Package, repositoryName string, selectedVer
 		ValueReferenceKind: valueReferenceKind,
 		ValueError:         valueError,
 		Autofocus:          options.Autofocus,
+		DatalistOptions:    datalistOptions,
 	}
 }

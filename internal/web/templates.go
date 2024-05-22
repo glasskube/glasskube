@@ -8,6 +8,8 @@ import (
 	"path"
 	"reflect"
 
+	"github.com/glasskube/glasskube/internal/web/components/datalist"
+
 	"github.com/glasskube/glasskube/pkg/condition"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,6 +42,7 @@ type templates struct {
 	pkgConfigInput        *template.Template
 	pkgUninstallModalTmpl *template.Template
 	alertTmpl             *template.Template
+	datalistTmpl          *template.Template
 	repoClientset         repoclient.RepoClientset
 }
 
@@ -85,6 +88,7 @@ func (t *templates) parseTemplates() {
 		},
 		"ForAlert":          alert.ForAlert,
 		"ForPkgConfigInput": pkg_config_input.ForPkgConfigInput,
+		"ForDatalist":       datalist.ForDatalist,
 		"IsUpgradable":      semver.IsUpgradable,
 		"Markdown": func(source string) template.HTML {
 			var buf bytes.Buffer
@@ -129,10 +133,11 @@ func (t *templates) parseTemplates() {
 	t.bootstrapPageTmpl = t.pageTmpl("bootstrap.html")
 	t.kubeconfigPageTmpl = t.pageTmpl("kubeconfig.html")
 	t.settingsPageTmpl = t.pageTmpl("settings.html")
-	t.pkgUpdateModalTmpl = t.componentTmpl("pkg-update-modal", "pkg-update-modal.html")
-	t.pkgConfigInput = t.componentTmpl("pkg-config-input", "pkg-config-input.html")
-	t.pkgUninstallModalTmpl = t.componentTmpl("pkg-uninstall-modal", "pkg-uninstall-modal.html")
-	t.alertTmpl = t.componentTmpl("alert", "alert.html")
+	t.pkgUpdateModalTmpl = t.componentTmpl("pkg-update-modal")
+	t.pkgConfigInput = t.componentTmpl("pkg-config-input", "datalist")
+	t.pkgUninstallModalTmpl = t.componentTmpl("pkg-uninstall-modal")
+	t.alertTmpl = t.componentTmpl("alert")
+	t.datalistTmpl = t.componentTmpl("datalist")
 }
 
 func (t *templates) pageTmpl(fileName string) *template.Template {
@@ -143,11 +148,16 @@ func (t *templates) pageTmpl(fileName string) *template.Template {
 			path.Join(componentsDir, "*.html")))
 }
 
-func (t *templates) componentTmpl(id string, fileName string) *template.Template {
+func (t *templates) componentTmpl(id string, requiredTemplates ...string) *template.Template {
+	tpls := make([]string, 0)
+	for _, requiredTmpl := range requiredTemplates {
+		tpls = append(tpls, path.Join(componentsDir, requiredTmpl+".html"))
+	}
+	tpls = append(tpls, path.Join(componentsDir, id+".html"))
 	return template.Must(
 		template.New(id).Funcs(t.templateFuncs).ParseFS(
 			webFs,
-			path.Join(componentsDir, fileName)))
+			tpls...))
 }
 
 func checkTmplError(e error, tmplName string) {
