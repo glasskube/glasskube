@@ -18,9 +18,9 @@ import (
 
 type ListFormat string
 
-const (
-	JSON ListFormat = "json"
-	YAML ListFormat = "yaml"
+var (
+	JSON string = "json"
+	YAML string = "yaml"
 )
 
 func (o *ListFormat) String() string {
@@ -88,9 +88,9 @@ var listCmd = &cobra.Command{
 				fmt.Fprintln(os.Stderr, "No packages found. This is probably a bug.")
 			}
 		} else {
-			if listCmdOptions.ListFormat == JSON {
+			if listCmdOptions.ListFormat == ListFormat(JSON) {
 				printPackageJSON(pkgs)
-			} else if listCmdOptions.ListFormat == YAML {
+			} else if listCmdOptions.ListFormat == ListFormat(YAML) {
 				printPackageYAML(pkgs)
 			} else {
 				printPackageTable(pkgs)
@@ -111,7 +111,7 @@ func init() {
 		"show the latest version of packages if available")
 	listCmd.PersistentFlags().BoolVarP(&listCmdOptions.More, "more", "m", false,
 		"show additional information about packages (like --show-description --show-latest)")
-	listCmd.PersistentFlags().VarP((&listCmdOptions.ListFormat), "output", "o", "output format (json, yaml, etc.)")
+	listCmd.PersistentFlags().VarP((&listCmdOptions.ListFormat), "output", "o", "output format (json, yaml)")
 
 	listCmd.MarkFlagsMutuallyExclusive("show-description", "more")
 	listCmd.MarkFlagsMutuallyExclusive("show-latest", "more")
