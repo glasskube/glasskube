@@ -78,11 +78,14 @@ func (repo PackageRepository) IsDefaultRepository() bool {
 	return repo.Annotations[defaultRepositoryAnnotation] == "true"
 }
 
-func (repo PackageRepository) SetDefaultRepository() {
+func (repo *PackageRepository) SetDefaultRepository() {
 	repo.SetDefaultRepositoryBool(true)
 }
 
-func (repo PackageRepository) SetDefaultRepositoryBool(value bool) {
+func (repo *PackageRepository) SetDefaultRepositoryBool(value bool) {
+	if repo.Annotations == nil {
+		repo.SetAnnotations(map[string]string{})
+	}
 	if value {
 		repo.Annotations[defaultRepositoryAnnotation] = "true"
 	} else {

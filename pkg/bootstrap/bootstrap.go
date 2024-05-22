@@ -243,6 +243,10 @@ func (c *BootstrapClient) handleTelemetry(disabled bool, elapsed time.Duration) 
 
 func defaultRepository() unstructured.Unstructured {
 	repo := v1alpha1.PackageRepository{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: v1alpha1.GroupVersion.Version,
+			Kind:       "PackageRepository",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "glasskube",
 		},
