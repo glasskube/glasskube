@@ -59,15 +59,22 @@ func NewBootstrapClient(config *rest.Config) *BootstrapClient {
 	return &BootstrapClient{clientConfig: config}
 }
 
-func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOptions) error {
-	telemetry.BootstrapAttempt()
-
+func (c *BootstrapClient) initRestMapper() error {
 	if discoveryClient, err := discovery.NewDiscoveryClientForConfig(c.clientConfig); err != nil {
 		return err
 	} else if groupResources, err := restmapper.GetAPIGroupResources(discoveryClient); err != nil {
 		return err
 	} else {
 		c.mapper = restmapper.NewDiscoveryRESTMapper(groupResources)
+		return nil
+	}
+}
+
+func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOptions) error {
+	telemetry.BootstrapAttempt()
+
+	if err := c.initRestMapper(); err != nil {
+		return err
 	}
 
 	if client, err := dynamic.NewForConfig(c.clientConfig); err != nil {
@@ -192,7 +199,7 @@ func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructure
 		gvk := obj.GroupVersionKind()
 		mapping, err := c.mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 		if err != nil {
-			return err
+			return fmt.Errorf("could not get restmapping for %v %v: %w", obj.GetKind(), obj.GetName(), err)
 		}
 
 		bar.Describe(fmt.Sprintf("Applying %v (%v)", obj.GetName(), obj.GetKind()))
@@ -218,6 +225,11 @@ func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructure
 		if obj.GetKind() == constants.Deployment {
 			checkWorkloads = append(checkWorkloads, &objs[i])
 			bar.ChangeMax(bar.GetMax() + 1)
+		} else if obj.GetKind() == "CustomResourceDefinition" {
+			// The RESTMapping must be re-created after applying a CRD, so we can create resources of that kind immediately.
+			if err := c.initRestMapper(); err != nil {
+				return err
+			}
 		}
 
 		_ = bar.Add(1)
