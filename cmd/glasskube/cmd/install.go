@@ -1,31 +1,34 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/fatih/color"
 	"github.com/glasskube/glasskube/api/v1alpha1"
-	clientadapter "github.com/glasskube/glasskube/internal/adapter/goclient"
+	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/cliutils"
+	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/dependency"
-	"github.com/glasskube/glasskube/internal/manifestvalues"
 	"github.com/glasskube/glasskube/internal/manifestvalues/cli"
 	"github.com/glasskube/glasskube/internal/manifestvalues/flags"
+	"github.com/glasskube/glasskube/internal/maputils"
 	"github.com/glasskube/glasskube/internal/repo"
+	repoclient "github.com/glasskube/glasskube/internal/repo/client"
+	repotypes "github.com/glasskube/glasskube/internal/repo/types"
+	"github.com/glasskube/glasskube/internal/util"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/condition"
 	"github.com/glasskube/glasskube/pkg/install"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/spf13/cobra"
-	"k8s.io/client-go/kubernetes"
 )
 
 var installCmdOptions = struct {
 	flags.ValuesOptions
 	Version           string
+	Repository        string
 	EnableAutoUpdates bool
 	NoWait            bool
 	Yes               bool
@@ -42,22 +45,55 @@ var installCmd = &cobra.Command{
 	ValidArgsFunction: completeAvailablePackageNames,
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
-		config := client.RawConfigFromContext(ctx)
-		pkgClient := client.FromContext(ctx)
-		k8sClient := kubernetes.NewForConfigOrDie(client.ConfigFromContext(ctx))
-		dm := dependency.NewDependencyManager(clientadapter.NewPackageClientAdapter(pkgClient))
-		valueResolver := manifestvalues.NewResolver(
-			clientadapter.NewPackageClientAdapter(pkgClient),
-			clientadapter.NewKubernetesClientAdapter(*k8sClient),
-		)
+		config := clicontext.RawConfigFromContext(ctx)
+		pkgClient := clicontext.PackageClientFromContext(ctx)
+		dm := cliutils.DependencyManager(ctx)
+		valueResolver := cliutils.ValueResolver(ctx)
+		repoClientset := cliutils.RepositoryClientset(ctx)
 		installer := install.NewInstaller(pkgClient).WithStatusWriter(statuswriter.Spinner())
 		bold := color.New(color.Bold).SprintFunc()
 		packageName := args[0]
 		pkgBuilder := client.PackageBuilder(packageName)
+		var repoClient repoclient.RepoClient
+
+		if len(installCmdOptions.Repository) > 0 {
+			repoClient = repoClientset.ForRepoWithName(installCmdOptions.Repository)
+			pkgBuilder.WithRepositoryName(installCmdOptions.Repository)
+		} else {
+			repos, err := repoClientset.Meta().GetReposForPackage(packageName)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "❗ Error: could not collect repository list: %v\n", err)
+			}
+			switch len(repos) {
+			case 0:
+				fmt.Fprintf(os.Stderr, "❗ Error: %v is not available\n", packageName)
+				cliutils.ExitWithError()
+			case 1:
+				repoClient = repoClientset.ForRepo(repos[0])
+				pkgBuilder.WithRepositoryName(repos[0].Name)
+			default:
+				names := make([]string, len(repos))
+				for i := range repos {
+					names[i] = repos[i].Name
+				}
+				for {
+					fmt.Fprintf(os.Stderr,
+						"%v is available from %v repositories. Please select the one to install from.\n",
+						packageName, len(names))
+					if repoName, err := cliutils.GetOption("", names); err != nil {
+						fmt.Fprintf(os.Stderr, "invalid input: %v\n", err)
+					} else {
+						repoClient = repoClientset.ForRepoWithName(repoName)
+						pkgBuilder.WithRepositoryName(repoName)
+						break
+					}
+				}
+			}
+		}
 
 		if installCmdOptions.Version == "" {
 			var packageIndex repo.PackageIndex
-			if err := repo.FetchPackageIndex("", packageName, &packageIndex); err != nil {
+			if err := repoClient.FetchPackageIndex(packageName, &packageIndex); err != nil {
 				fmt.Fprintf(os.Stderr, "❗ Error: Could not fetch package metadata: %v\n", err)
 				cliutils.ExitWithError()
 			}
@@ -75,7 +111,7 @@ var installCmd = &cobra.Command{
 		}
 
 		var manifest v1alpha1.PackageManifest
-		if err := repo.FetchPackageManifest("", packageName, installCmdOptions.Version, &manifest); err != nil {
+		if err := repoClient.FetchPackageManifest(packageName, installCmdOptions.Version, &manifest); err != nil {
 			fmt.Fprintf(os.Stderr, "❗ Error: Could not fetch package manifest: %v\n", err)
 			cliutils.ExitWithError()
 		} else if validationResult, err :=
@@ -97,7 +133,7 @@ var installCmd = &cobra.Command{
 			}
 		} else {
 			if values, err := cli.Configure(manifest, nil); err != nil {
-				cancel(ctx)
+				cancel()
 			} else {
 				pkgBuilder.WithValues(values)
 			}
@@ -133,7 +169,7 @@ var installCmd = &cobra.Command{
 		}
 
 		if !installCmdOptions.Yes && !cliutils.YesNoPrompt("Continue?", true) {
-			cancel(ctx)
+			cancel()
 		}
 
 		if installCmdOptions.NoWait {
@@ -167,7 +203,7 @@ var installCmd = &cobra.Command{
 	},
 }
 
-func cancel(ctx context.Context) {
+func cancel() {
 	fmt.Fprintf(os.Stderr, "❌ Operation cancelled.")
 	cliutils.ExitWithError()
 }
@@ -180,8 +216,11 @@ func completeAvailablePackageNames(
 	if len(args) > 0 {
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
-	var index repo.PackageRepoIndex
-	err := repo.FetchPackageRepoIndex("", &index)
+	cfg, rawCfg := cliutils.RequireConfig(config.Kubeconfig)
+	ctx := util.Must(clicontext.SetupContext(cmd.Context(), cfg, rawCfg))
+	repoClient := cliutils.RepositoryClientset(ctx)
+	var index repotypes.MetaIndex
+	err := repoClient.Meta().FetchMetaIndex(&index)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching package repository index: %v\n", err)
 		return nil, cobra.ShellCompDirectiveError
@@ -204,17 +243,26 @@ func completeAvailablePackageVersions(
 		return nil, cobra.ShellCompDirectiveNoFileComp
 	}
 	packageName := args[0]
-	var packageIndex repo.PackageIndex
-	if err := repo.FetchPackageIndex("", packageName, &packageIndex); err != nil {
+	cfg, rawCfg := cliutils.RequireConfig(config.Kubeconfig)
+	ctx := util.Must(clicontext.SetupContext(cmd.Context(), cfg, rawCfg))
+	repoClient := cliutils.RepositoryClientset(ctx)
+	repos, err := repoClient.Meta().GetReposForPackage(packageName)
+	if err != nil {
 		return nil, cobra.ShellCompDirectiveError
 	}
-	versions := make([]string, 0, len(packageIndex.Versions))
-	for _, version := range packageIndex.Versions {
-		if toComplete == "" || strings.HasPrefix(version.Version, toComplete) {
-			versions = append(versions, version.Version)
+	versionsMap := make(map[string]struct{})
+	for _, r := range repos {
+		var packageIndex repo.PackageIndex
+		if err := repoClient.ForRepo(r).FetchPackageIndex(packageName, &packageIndex); err != nil {
+			continue
+		}
+		for _, version := range packageIndex.Versions {
+			if toComplete == "" || strings.HasPrefix(version.Version, toComplete) {
+				versionsMap[version.Version] = struct{}{}
+			}
 		}
 	}
-	return versions, cobra.ShellCompDirectiveNoFileComp
+	return maputils.KeysSorted(versionsMap), cobra.ShellCompDirectiveNoFileComp
 }
 
 func init() {
@@ -223,6 +271,8 @@ func init() {
 	_ = installCmd.RegisterFlagCompletionFunc("version", completeAvailablePackageVersions)
 	installCmd.PersistentFlags().BoolVar(&installCmdOptions.EnableAutoUpdates, "enable-auto-updates", false,
 		"enable automatic updates for this package")
+	installCmd.PersistentFlags().StringVar(&installCmdOptions.Repository, "repository", installCmdOptions.Repository,
+		"specify the name of the package repository to install this package from")
 	installCmd.PersistentFlags().BoolVar(&installCmdOptions.NoWait, "no-wait", false, "perform non-blocking install")
 	installCmd.PersistentFlags().BoolVarP(&installCmdOptions.Yes, "yes", "y", false, "do not ask for any confirmation")
 	installCmd.MarkFlagsMutuallyExclusive("version", "enable-auto-updates")

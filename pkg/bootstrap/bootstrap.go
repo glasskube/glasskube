@@ -2,11 +2,13 @@ package bootstrap
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/fatih/color"
+	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/constants"
@@ -14,6 +16,7 @@ import (
 	"github.com/glasskube/glasskube/internal/releaseinfo"
 	"github.com/glasskube/glasskube/internal/telemetry"
 	"github.com/glasskube/glasskube/internal/telemetry/annotations"
+	"github.com/glasskube/glasskube/internal/util"
 	"github.com/schollz/progressbar/v3"
 	"go.uber.org/multierr"
 	appsv1 "k8s.io/api/apps/v1"
@@ -36,15 +39,16 @@ type BootstrapClient struct {
 }
 
 type BootstrapOptions struct {
-	Type             BootstrapType
-	Url              string
-	Latest           bool
-	DisableTelemetry bool
-	Force            bool
+	Type                    BootstrapType
+	Url                     string
+	Latest                  bool
+	DisableTelemetry        bool
+	Force                   bool
+	CreateDefaultRepository bool
 }
 
 func DefaultOptions() BootstrapOptions {
-	return BootstrapOptions{Type: BootstrapTypeAio, Latest: config.IsDevBuild()}
+	return BootstrapOptions{Type: BootstrapTypeAio, Latest: config.IsDevBuild(), CreateDefaultRepository: true}
 }
 
 const installMessage = `
@@ -81,7 +85,7 @@ func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOption
 			if releaseInfo, err := releaseinfo.FetchLatestRelease(); err != nil {
 				if httperror.Is(err, http.StatusServiceUnavailable) || httperror.IsTimeoutError(err) {
 					telemetry.BootstrapFailure(time.Since(start))
-					return fmt.Errorf("Network connectivity error, check your network, cannot bootstrap")
+					return fmt.Errorf("network connectivity error, check your network: %w", err)
 				}
 				telemetry.BootstrapFailure(time.Since(start))
 				return fmt.Errorf("could not determine latest version: %w", err)
@@ -111,6 +115,10 @@ func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOption
 		} else {
 			statusMessage("Attempting to force bootstrap anyways (Force option is enabled)", true)
 		}
+	}
+
+	if options.CreateDefaultRepository {
+		manifests = append(manifests, defaultRepository())
 	}
 
 	statusMessage("Applying Glasskube manifests", true)
@@ -231,6 +239,27 @@ func (c *BootstrapClient) handleTelemetry(disabled bool, elapsed time.Duration) 
 			"Run \"glasskube telemetry status\" for more info.", true)
 		telemetry.BootstrapSuccess(elapsed)
 	}
+}
+
+func defaultRepository() unstructured.Unstructured {
+	repo := v1alpha1.PackageRepository{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: v1alpha1.GroupVersion.Version,
+			Kind:       "PackageRepository",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "glasskube",
+		},
+		Spec: v1alpha1.PackageRepositorySpec{
+			Url: constants.DefaultRepoUrl,
+		},
+	}
+	repo.SetDefaultRepository()
+	var repoUnstructured unstructured.Unstructured
+	if err := json.Unmarshal(util.Must(json.Marshal(repo)), &repoUnstructured); err != nil {
+		panic(err)
+	}
+	return repoUnstructured
 }
 
 func (c *BootstrapClient) checkWorkloadReady(

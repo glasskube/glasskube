@@ -14,25 +14,19 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/glasskube/glasskube/api/v1alpha1"
-	"github.com/glasskube/glasskube/internal/repo"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 )
 
 type DependendcyManager struct {
-	clientAdapter adapter.PackageClientAdapter
-	repoAdapter   adapter.RepoAdapter
+	pkgClient   adapter.PackageClientAdapter
+	repoAdapter adapter.RepoAdapter
 }
 
-func NewDependencyManager(adapter adapter.PackageClientAdapter) *DependendcyManager {
+func NewDependencyManager(pkgClient adapter.PackageClientAdapter, repoClient repoclient.RepoClientset) *DependendcyManager {
 	return &DependendcyManager{
-		clientAdapter: adapter,
-		repoAdapter:   &defaultRepoAdapter{repo: repo.DefaultClient},
+		pkgClient:   pkgClient,
+		repoAdapter: &defaultRepoAdapter{client: repoClient},
 	}
-}
-
-func (dm *DependendcyManager) WithRepo(repoClient repoclient.RepoClient) *DependendcyManager {
-	dm.repoAdapter = &defaultRepoAdapter{repo: repoClient}
-	return dm
 }
 
 func (dm *DependendcyManager) Validate(
@@ -88,7 +82,7 @@ func (dm *DependendcyManager) Validate(
 
 // NewGraph constructs a DependencyGraph from all packages returned by clientAdapter.ListPackages
 func (dm *DependendcyManager) NewGraph(ctx context.Context) (*graph.DependencyGraph, error) {
-	pkgs, err := dm.clientAdapter.ListPackages(ctx)
+	pkgs, err := dm.pkgClient.ListPackages(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +94,7 @@ func (dm *DependendcyManager) NewGraph(ctx context.Context) (*graph.DependencyGr
 			// A package that is currently being deleted is added to the graph, but in a state representing
 			// "not installed"
 			installedVersion = ""
-		} else if pi, err := dm.clientAdapter.GetPackageInfo(ctx, names.PackageInfoName(pkg)); err != nil {
+		} else if pi, err := dm.pkgClient.GetPackageInfo(ctx, names.PackageInfoName(pkg)); err != nil {
 			return nil, err
 		} else if pi.Status.Manifest != nil {
 			deps = pi.Status.Manifest.Dependencies
@@ -136,7 +130,7 @@ func (dm *DependendcyManager) addDependencies(
 				// This error occurs when no suitable version exists.
 				// In this case, the dependency is not added to the graph and a validation error detects this later.
 				continue
-			} else if depManifest, err := dm.repoAdapter.GetManifest("", dep, maxVersion.Original()); err != nil {
+			} else if depManifest, err := dm.repoAdapter.GetManifest(dep, maxVersion.Original()); err != nil {
 				return nil, err
 			} else if err := dm.add(g, *depManifest, maxVersion.Original()); err != nil {
 				return nil, err
@@ -177,7 +171,7 @@ func errorToConflict(err error) (*Conflict, error) {
 
 // getVersions is a utility to get all versions for a package from repoAdapter and also parse them
 func (dm *DependendcyManager) getVersions(name string) ([]*semver.Version, error) {
-	if versions, err := dm.repoAdapter.GetVersions("", name); err != nil {
+	if versions, err := dm.repoAdapter.GetVersions(name); err != nil {
 		return nil, err
 	} else {
 		parsedVersions := make([]*semver.Version, len(versions))

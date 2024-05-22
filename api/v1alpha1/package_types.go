@@ -28,8 +28,8 @@ type PackageInfoTemplate struct {
 	Name string `json:"name"`
 	// Version of the package to install
 	Version string `json:"version"`
-	// Optional URL of the repository to pull the package from
-	RepositoryUrl string `json:"repositoryUrl,omitempty"`
+	// RepositoryName is the name of the repository to pull the package from (optional)
+	RepositoryName string `json:"repositoryName,omitempty"`
 }
 
 type ObjectKeyValueSource struct {

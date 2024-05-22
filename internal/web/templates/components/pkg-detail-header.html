@@ -35,13 +35,12 @@
             <span class="bi bi-chat-left-text-fill"></span>
             Discussion
           </a>
-          <a
-            class="icon-link text-reset me-2"
-            href="{{ PackageManifestUrl .Manifest.Name .Package .LatestVersion }}"
-            target="_blank">
-            <span class="bi bi-box-arrow-up-right"></span>
-            Glasskube Package Manifest
-          </a>
+          {{ if PackageManifestUrl .Package }}
+            <a class="icon-link text-reset me-2" href="{{ PackageManifestUrl .Package }}" target="_blank">
+              <span class="bi bi-box-arrow-up-right"></span>
+              Glasskube Package Manifest
+            </a>
+          {{ end }}
           {{ range .Manifest.References }}
             <a class="icon-link text-reset me-2" href="{{ .Url }}" target="_blank">
               <span class="bi bi-box-arrow-up-right"></span>

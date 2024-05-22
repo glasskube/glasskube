@@ -19,3 +19,12 @@ type PackageRepoIndexItem struct {
 	IconUrl          string `json:"iconUrl,omitempty"`
 	LatestVersion    string `json:"latestVersion,omitempty"`
 }
+
+type MetaIndex struct {
+	Packages []MetaIndexItem
+}
+
+type MetaIndexItem struct {
+	PackageRepoIndexItem
+	Repos []string `json:"repos,omitempty"`
+}

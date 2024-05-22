@@ -6,15 +6,11 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/glasskube/glasskube/api/v1alpha1"
-	clientadapter "github.com/glasskube/glasskube/internal/adapter/goclient"
 	"github.com/glasskube/glasskube/internal/cliutils"
-	"github.com/glasskube/glasskube/internal/manifestvalues"
 	"github.com/glasskube/glasskube/internal/manifestvalues/cli"
 	"github.com/glasskube/glasskube/internal/manifestvalues/flags"
-	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/manifest"
 	"github.com/spf13/cobra"
-	"k8s.io/client-go/kubernetes"
 )
 
 var configureCmdOptions = struct{ flags.ValuesOptions }{
@@ -33,12 +29,8 @@ var configureCmd = &cobra.Command{
 func runConfigure(cmd *cobra.Command, args []string) {
 	bold := color.New(color.Bold).SprintFunc()
 	ctx := cmd.Context()
-	pkgClient := client.FromContext(ctx)
-	k8sClient := kubernetes.NewForConfigOrDie(client.ConfigFromContext(ctx))
-	valueResolver := manifestvalues.NewResolver(
-		clientadapter.NewPackageClientAdapter(pkgClient),
-		clientadapter.NewKubernetesClientAdapter(*k8sClient),
-	)
+	pkgClient := cliutils.PackageClient(ctx)
+	valueResolver := cliutils.ValueResolver(ctx)
 	pkgName := args[0]
 	var pkg v1alpha1.Package
 
@@ -73,7 +65,7 @@ func runConfigure(cmd *cobra.Command, args []string) {
 	}
 
 	if !cliutils.YesNoPrompt("Continue?", true) {
-		cancel(ctx)
+		cancel()
 	}
 
 	if err := pkgClient.Packages().Get(ctx, pkgName, &pkg); err != nil {

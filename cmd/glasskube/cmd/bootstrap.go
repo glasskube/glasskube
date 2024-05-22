@@ -14,15 +14,17 @@ import (
 )
 
 type bootstrapOptions struct {
-	url              string
-	bootstrapType    bootstrap.BootstrapType
-	latest           bool
-	disableTelemetry bool
-	force            bool
+	url                     string
+	bootstrapType           bootstrap.BootstrapType
+	latest                  bool
+	disableTelemetry        bool
+	force                   bool
+	createDefaultRepository bool
 }
 
 var bootstrapCmdOptions = bootstrapOptions{
-	bootstrapType: bootstrap.BootstrapTypeAio,
+	bootstrapType:           bootstrap.BootstrapTypeAio,
+	createDefaultRepository: true,
 }
 
 var bootstrapCmd = &cobra.Command{
@@ -73,11 +75,12 @@ var bootstrapCmd = &cobra.Command{
 
 func (o bootstrapOptions) asBootstrapOptions() bootstrap.BootstrapOptions {
 	return bootstrap.BootstrapOptions{
-		Type:             o.bootstrapType,
-		Url:              o.url,
-		Latest:           o.latest,
-		DisableTelemetry: o.disableTelemetry,
-		Force:            o.force,
+		Type:                    o.bootstrapType,
+		Url:                     o.url,
+		Latest:                  o.latest,
+		DisableTelemetry:        o.disableTelemetry,
+		Force:                   o.force,
+		CreateDefaultRepository: o.createDefaultRepository,
 	}
 }
 
@@ -90,6 +93,9 @@ func init() {
 	bootstrapCmd.Flags().BoolVarP(&bootstrapCmdOptions.force, "force", "f", bootstrapCmdOptions.force,
 		"Do not bail out if pre-checks fail")
 	bootstrapCmd.Flags().BoolVar(&bootstrapCmdOptions.disableTelemetry, "disable-telemetry", false, "Disable telemetry")
+	bootstrapCmd.Flags().BoolVar(&bootstrapCmdOptions.createDefaultRepository, "create-default-repository",
+		bootstrapCmdOptions.createDefaultRepository,
+		"Toggle creation of the default glasskube package repository")
 	bootstrapCmd.MarkFlagsMutuallyExclusive("url", "type")
 	bootstrapCmd.MarkFlagsMutuallyExclusive("url", "latest")
 }

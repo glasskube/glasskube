@@ -6,9 +6,9 @@ import (
 )
 
 type packageBuilder struct {
-	name, version string
-	autoUpdate    bool
-	values        map[string]v1alpha1.ValueConfiguration
+	name, version, repositoryName string
+	autoUpdate                    bool
+	values                        map[string]v1alpha1.ValueConfiguration
 }
 
 func PackageBuilder(name string) *packageBuilder {
@@ -28,6 +28,11 @@ func (b *packageBuilder) WithAutoUpdates(enabled bool) *packageBuilder {
 	return b
 }
 
+func (b *packageBuilder) WithRepositoryName(repositoryName string) *packageBuilder {
+	b.repositoryName = repositoryName
+	return b
+}
+
 func (b *packageBuilder) WithValues(values map[string]v1alpha1.ValueConfiguration) *packageBuilder {
 	for name, value := range values {
 		b.values[name] = value
@@ -42,8 +47,9 @@ func (b *packageBuilder) Build() *v1alpha1.Package {
 		},
 		Spec: v1alpha1.PackageSpec{
 			PackageInfo: v1alpha1.PackageInfoTemplate{
-				Name:    b.name,
-				Version: b.version,
+				Name:           b.name,
+				Version:        b.version,
+				RepositoryName: b.repositoryName,
 			},
 			Values: b.values,
 		},

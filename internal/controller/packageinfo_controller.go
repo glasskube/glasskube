@@ -24,7 +24,7 @@ import (
 	"github.com/glasskube/glasskube/internal/controller/conditions"
 	"github.com/glasskube/glasskube/internal/controller/owners"
 	"github.com/glasskube/glasskube/internal/controller/requeue"
-	"github.com/glasskube/glasskube/internal/repo"
+	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	"github.com/glasskube/glasskube/pkg/condition"
 	"go.uber.org/multierr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,7 +39,8 @@ type PackageInfoReconciler struct {
 	client.Client
 	record.EventRecorder
 	*owners.OwnerManager
-	Scheme *runtime.Scheme
+	RepoClient repoclient.RepoClientset
+	Scheme     *runtime.Scheme
 }
 
 var (
@@ -72,7 +73,7 @@ func (r *PackageInfoReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	if shouldSyncFromRepo(packageInfo) {
 		log.Info("updating manifest")
-		if err := updatePackageManifest(&packageInfo); err != nil {
+		if err := r.updatePackageManifest(&packageInfo); err != nil {
 			err1 := conditions.SetFailedAndUpdate(ctx, r.Client, r.EventRecorder, &packageInfo, &packageInfo.Status.Conditions,
 				condition.SyncFailed, err.Error())
 			return requeue.Always(ctx, multierr.Append(err, err1))
@@ -115,9 +116,10 @@ func shouldSyncFromRepo(pi packagesv1alpha1.PackageInfo) bool {
 		time.Since(pi.Status.LastUpdateTimestamp.Time) > repositorySyncInterval
 }
 
-func updatePackageManifest(pi *packagesv1alpha1.PackageInfo) (err error) {
+func (r *PackageInfoReconciler) updatePackageManifest(pi *packagesv1alpha1.PackageInfo) (err error) {
 	var manifest packagesv1alpha1.PackageManifest
-	if err = repo.FetchPackageManifest(pi.Spec.RepositoryUrl, pi.Spec.Name, pi.Spec.Version, &manifest); err != nil {
+	if err = r.RepoClient.ForRepoWithName(pi.Spec.RepositoryName).
+		FetchPackageManifest(pi.Spec.Name, pi.Spec.Version, &manifest); err != nil {
 		return
 	}
 	pi.Status.Manifest = &manifest

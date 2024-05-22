@@ -21,27 +21,27 @@ import (
 	"flag"
 	"os"
 
-	"sigs.k8s.io/controller-runtime/pkg/manager"
-
+	ctrladapter "github.com/glasskube/glasskube/internal/adapter/controllerruntime"
+	"github.com/glasskube/glasskube/internal/dependency"
+	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	"github.com/glasskube/glasskube/internal/telemetry"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
-	"k8s.io/apimachinery/pkg/runtime"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/healthz"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/controller"
 	"github.com/glasskube/glasskube/internal/manifest/helm/flux"
 	"github.com/glasskube/glasskube/internal/manifest/plain"
 	"github.com/glasskube/glasskube/internal/webhook"
+	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -97,13 +97,23 @@ func main() {
 		os.Exit(1)
 	}
 
+	repoClient := repoclient.NewClientset(
+		ctrladapter.NewPackageClientAdapter(mgr.GetClient()),
+		ctrladapter.NewKubernetesClientAdapter(mgr.GetClient()),
+	)
+	dependencyManager := dependency.NewDependencyManager(
+		ctrladapter.NewPackageClientAdapter(mgr.GetClient()),
+		repoClient,
+	)
+
 	telemetry.InitWithManager(mgr)
 	if err = (&controller.PackageReconciler{
-		Client:          mgr.GetClient(),
-		EventRecorder:   mgr.GetEventRecorderFor("package-controller"),
-		Scheme:          mgr.GetScheme(),
-		HelmAdapter:     flux.NewAdapter(),
-		ManifestAdapter: plain.NewAdapter(),
+		Client:            mgr.GetClient(),
+		EventRecorder:     mgr.GetEventRecorderFor("package-controller"),
+		Scheme:            mgr.GetScheme(),
+		HelmAdapter:       flux.NewAdapter(),
+		ManifestAdapter:   plain.NewAdapter(),
+		DependencyManager: dependencyManager,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Package")
 		os.Exit(1)
@@ -112,13 +122,24 @@ func main() {
 		Client:        mgr.GetClient(),
 		EventRecorder: mgr.GetEventRecorderFor("packageinfo-controller"),
 		Scheme:        mgr.GetScheme(),
+		RepoClient:    repoClient,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "PackageInfo")
 		os.Exit(1)
 	}
+	if err = (&controller.PackageRepositoryReconciler{
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		RepoClient: repoClient,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "PackageRepository")
+		os.Exit(1)
+	}
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err = (&webhook.PackageValidatingWebhook{
-			Client: mgr.GetClient(),
+			Client:             mgr.GetClient(),
+			DependendcyManager: dependencyManager,
+			RepoClient:         repoClient,
 		}).SetupWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Package")
 			os.Exit(1)

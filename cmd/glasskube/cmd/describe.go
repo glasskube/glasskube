@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -10,18 +11,21 @@ import (
 	"github.com/fatih/color"
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clientutils"
-	"github.com/glasskube/glasskube/internal/manifestvalues"
-	"github.com/glasskube/glasskube/internal/repo"
-	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/renderer"
-	"github.com/yuin/goldmark/util"
-
 	"github.com/glasskube/glasskube/internal/cliutils"
+	"github.com/glasskube/glasskube/internal/manifestvalues"
+	repoclient "github.com/glasskube/glasskube/internal/repo/client"
+	"github.com/glasskube/glasskube/internal/semver"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/condition"
 	"github.com/glasskube/glasskube/pkg/describe"
 	"github.com/spf13/cobra"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/renderer"
+	"github.com/yuin/goldmark/util"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
+
+var describeCmdOptions = struct{ repository string }{}
 
 var describeCmd = &cobra.Command{
 	Use:               "describe [package-name]",
@@ -31,17 +35,38 @@ var describeCmd = &cobra.Command{
 	PreRun:            cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
 	ValidArgsFunction: completeAvailablePackageNames,
 	Run: func(cmd *cobra.Command, args []string) {
+		ctx := cmd.Context()
 		pkgName := args[0]
-		pkg, pkgStatus, manifest, latestVersion, err := describe.DescribePackage(cmd.Context(), pkgName)
+		repoClient := cliutils.RepositoryClientset(ctx)
+
+		latestManifest, latestVersion, err :=
+			describe.DescribeLatestVersion(ctx, describeCmdOptions.repository, pkgName)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "❌ Could not describe package %v: %v\n", pkgName, err)
+			fmt.Fprintf(os.Stderr, "❌ Could not get latest info for %v: %v\n", pkgName, err)
 			cliutils.ExitWithError()
 		}
+
+		repos, err := repoClient.Meta().GetReposForPackage(pkgName)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "❌ Could not get repos for %v: %v\n", pkgName, err)
+			cliutils.ExitWithError()
+		}
+
+		pkg, manifest, err := describe.DescribeInstalledPackage(ctx, pkgName)
+		if err != nil && !apierrors.IsNotFound(err) {
+			// Unhandled error -> exit
+			fmt.Fprintf(os.Stderr, "❌ Could not describe package %v: %v\n", pkgName, err)
+			cliutils.ExitWithError()
+		} else if err != nil {
+			// package not installed -> use latest manifest from repo
+			manifest = latestManifest
+		}
+
 		bold := color.New(color.Bold).SprintFunc()
 
 		fmt.Println(bold("Package:"), nameAndDescription(manifest))
 		fmt.Println(bold("Version:"), version(pkg, latestVersion))
-		fmt.Println(bold("Status: "), status(pkgStatus))
+		fmt.Println(bold("Status: "), status(pkg))
 		if pkg != nil {
 			fmt.Println(bold("Auto-Update:"), clientutils.AutoUpdateString(pkg, "Disabled"))
 		}
@@ -59,8 +84,12 @@ var describeCmd = &cobra.Command{
 		}
 
 		fmt.Println()
+		fmt.Println(bold("Package repositories:"))
+		printRepositories(pkg, repos)
+
+		fmt.Println()
 		fmt.Printf("%v \n", bold("References:"))
-		printReferences(pkg, manifest, latestVersion)
+		printReferences(ctx, pkg, manifest)
 
 		trimmedDescription := strings.TrimSpace(manifest.LongDescription)
 		if len(trimmedDescription) > 0 {
@@ -114,15 +143,33 @@ func printDependencies(manifest *v1alpha1.PackageManifest) {
 	}
 }
 
-func printReferences(pkg *v1alpha1.Package, manifest *v1alpha1.PackageManifest, latestVersion string) {
-	version := latestVersion
-	if pkg != nil {
-		version = pkg.Spec.PackageInfo.Version
+func printRepositories(pkg *v1alpha1.Package, repos []v1alpha1.PackageRepository) {
+	for _, repo := range repos {
+		fmt.Fprintf(os.Stderr, " * %v", repo.Name)
+		if isInstalledFrom(pkg, repo) {
+			fmt.Fprintln(os.Stderr, " (installed)")
+		} else {
+			fmt.Fprintln(os.Stderr)
+		}
 	}
-	if url, err := repo.GetPackageManifestURL("", manifest.Name, version); err != nil {
-		fmt.Fprintf(os.Stderr, "❌ Could not get package manifest url: %v\n", err)
-	} else {
-		fmt.Printf(" * Glasskube Package Manifest: %v\n", url)
+}
+
+func isInstalledFrom(pkg *v1alpha1.Package, repo v1alpha1.PackageRepository) bool {
+	return pkg != nil &&
+		(repo.Name == pkg.Spec.PackageInfo.RepositoryName ||
+			(len(pkg.Spec.PackageInfo.RepositoryName) == 0 && repo.IsDefaultRepository()))
+}
+
+func printReferences(ctx context.Context, pkg *v1alpha1.Package, manifest *v1alpha1.PackageManifest) {
+	repo := cliutils.RepositoryClientset(ctx)
+	var repoClient repoclient.RepoClient
+	if pkg != nil {
+		repoClient = repo.ForPackage(*pkg)
+		if url, err := repoClient.GetPackageManifestURL(manifest.Name, pkg.Spec.PackageInfo.Version); err != nil {
+			fmt.Fprintf(os.Stderr, "❌ Could not get package manifest url: %v\n", err)
+		} else {
+			fmt.Printf(" * Glasskube Package Manifest: %v\n", url)
+		}
 	}
 	for _, ref := range manifest.References {
 		fmt.Printf(" * %v: %v\n", ref.Label, ref.Url)
@@ -151,7 +198,8 @@ func printMarkdown(w io.Writer, text string) {
 	}
 }
 
-func status(pkgStatus *client.PackageStatus) string {
+func status(pkg *v1alpha1.Package) string {
+	pkgStatus := client.GetStatusOrPending(pkg)
 	if pkgStatus != nil {
 		switch pkgStatus.Status {
 		case string(condition.Ready):
@@ -167,12 +215,18 @@ func status(pkgStatus *client.PackageStatus) string {
 }
 
 func version(pkg *v1alpha1.Package, latestVersion string) string {
-	if len(latestVersion) == 0 {
-		if pkg.Spec.PackageInfo.Version != pkg.Status.Version {
-			return fmt.Sprintf("%v (desired: %v)", pkg.Status.Version, pkg.Spec.PackageInfo.Version)
-		} else {
-			return pkg.Status.Version
+	if pkg != nil {
+		var parts []string
+		if len(pkg.Status.Version) > 0 {
+			parts = append(parts, pkg.Status.Version)
 		}
+		if pkg.Spec.PackageInfo.Version != pkg.Status.Version {
+			parts = append(parts, fmt.Sprintf("(desired: %v)", pkg.Spec.PackageInfo.Version))
+		}
+		if semver.IsUpgradable(pkg.Spec.PackageInfo.Version, latestVersion) {
+			parts = append(parts, fmt.Sprintf("(latest: %v)", latestVersion))
+		}
+		return strings.Join(parts, " ")
 	} else {
 		return latestVersion
 	}
@@ -190,5 +244,7 @@ func nameAndDescription(manifest *v1alpha1.PackageManifest) string {
 }
 
 func init() {
+	describeCmd.Flags().StringVar(&describeCmdOptions.repository, "repository", describeCmdOptions.repository,
+		"specify the name of the package repository used to use when the package is not installed")
 	RootCmd.AddCommand(describeCmd)
 }

@@ -11,7 +11,11 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var fakeRepo = &fake.FakeClient{}
+var fakeRepo = &fake.FakeClient{
+	PackageRepositories: []v1alpha1.PackageRepository{
+		{},
+	},
+}
 
 type testClientAdapter struct {
 }
@@ -49,8 +53,19 @@ func (a *testClientAdapter) GetPackage(ctx context.Context, name string) (*v1alp
 	panic("unimplemented")
 }
 
+// GetPackageRepository implements adapter.PackageClientAdapter.
+func (a *testClientAdapter) GetPackageRepository(ctx context.Context, name string) (
+	*v1alpha1.PackageRepository, error) {
+	panic("unimplemented")
+}
+
+// ListPackageRepositories implements adapter.PackageClientAdapter.
+func (a *testClientAdapter) ListPackageRepositories(ctx context.Context) (*v1alpha1.PackageRepositoryList, error) {
+	panic("unimplemented")
+}
+
 func createDependencyManager() *DependendcyManager {
-	return NewDependencyManager(&testClientAdapter{}).WithRepo(fakeRepo)
+	return NewDependencyManager(&testClientAdapter{}, &fake.FakeClientset{Client: fakeRepo})
 }
 
 var dm *DependendcyManager
