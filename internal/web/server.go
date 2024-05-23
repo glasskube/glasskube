@@ -371,6 +371,22 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 		repositoryName = pkg.Spec.PackageInfo.RepositoryName
 	}
 
+	var repos []v1alpha1.PackageRepository
+	if repos, err = s.repoClientset.Meta().GetReposForPackage(pkgName); err != nil {
+		fmt.Fprintf(os.Stderr, "error getting repos for package; %v", err)
+	} else if repositoryName == "" && pkg == nil {
+		if len(repos) == 0 {
+			s.respondAlertAndLog(w, fmt.Errorf("%v not found in any repository", pkgName), "", "danger")
+			return
+		}
+		for _, r := range repos {
+			repositoryName = r.Name
+			if r.IsDefaultRepository() {
+				break
+			}
+		}
+	}
+
 	var idx repo.PackageIndex
 	if err := s.repoClientset.ForRepoWithName(repositoryName).FetchPackageIndex(pkgName, &idx); err != nil {
 		s.respondAlertAndLog(w, err,
@@ -388,21 +404,7 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 		selectedVersion = latestVersion
 	}
 
-	var repos []v1alpha1.PackageRepository
 	if manifest == nil {
-		if repos, err = s.repoClientset.Meta().GetReposForPackage(pkgName); err != nil {
-			s.respondAlertAndLog(w, err,
-				fmt.Sprintf("An error occurred fetching repositories of %v", pkgName),
-				"danger")
-			return
-		} else if repositoryName == "" {
-			for _, r := range repos {
-				if r.IsDefaultRepository() {
-					repositoryName = r.Name
-					break
-				}
-			}
-		}
 		manifest = &v1alpha1.PackageManifest{}
 		if err := s.repoClientset.ForRepoWithName(repositoryName).
 			FetchPackageManifest(pkgName, selectedVersion, manifest); err != nil {
