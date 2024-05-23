@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.6.0](https://github.com/glasskube/glasskube/compare/v0.5.1...v0.6.0) (2024-05-23)
+
+
+### Features
+
+* **ui:** show broken config references ([#496](https://github.com/glasskube/glasskube/issues/496)) ([7f77ff9](https://github.com/glasskube/glasskube/commit/7f77ff9b350b96ee8d02b0cfcbc0c46a2d9415d4))
+
+
+### Bug Fixes
+
+* **deps:** update dependency @easyops-cn/docusaurus-search-local to ^0.41.0 ([edca7ca](https://github.com/glasskube/glasskube/commit/edca7ca2ea75973d51a7dfe538df27c06ceb88ab))
+* **deps:** update dependency @fortawesome/react-fontawesome to v0.2.2 ([195a210](https://github.com/glasskube/glasskube/commit/195a2107db6894e35e8894620e2313e96c2bdda9))
+* **ui:** use correct repository on details page ([#684](https://github.com/glasskube/glasskube/issues/684)) ([86b4e8b](https://github.com/glasskube/glasskube/commit/86b4e8b6a36614a7bbc6562f02293da10f5e47bb))
+
 ## [0.5.1](https://github.com/glasskube/glasskube/compare/v0.5.0...v0.5.1) (2024-05-22)
 
 
