@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
@@ -11,11 +13,29 @@ const (
 	OutputFormatYAML OutputFormat = "yaml"
 )
 
+func (of *OutputFormat) String() string {
+	return string(*of)
+}
+
+func (of *OutputFormat) Set(value string) error {
+	switch value {
+	case string(OutputFormatJSON), string(OutputFormatYAML):
+		*of = OutputFormat(value)
+		return nil
+	default:
+		return fmt.Errorf("invalid output format: %s", value)
+	}
+}
+
+func (of *OutputFormat) Type() string {
+	return "OutputFormat"
+}
+
 type OutputOptions struct {
 	Output OutputFormat
 }
 
 func (opts *OutputOptions) AddFlagsToCommand(cmd *cobra.Command) {
 	flags := cmd.Flags()
-	flags.StringVarP((*string)(&opts.Output), "output", "o", "", "Output format (json|yaml)")
+	flags.VarP(&opts.Output, "output", "o", "Output format (json|yaml)")
 }

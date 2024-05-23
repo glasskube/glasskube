@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -15,38 +14,13 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-type ListFormat string
-
-const (
-	JSON ListFormat = "json"
-	YAML ListFormat = "yaml"
-)
-
-func (o *ListFormat) String() string {
-	return string(*o)
-}
-
-func (o *ListFormat) Set(value string) error {
-	switch value {
-	case string(JSON), string(YAML):
-		*o = ListFormat(value)
-		return nil
-	default:
-		return errors.New(`invalid output format, must be "json" or "yaml"`)
-	}
-}
-
-func (o *ListFormat) Type() string {
-	return "string"
-}
-
 type ListCmdOptions struct {
 	ListInstalledOnly bool
 	ListOutdatedOnly  bool
 	ShowDescription   bool
 	ShowLatestVersion bool
 	More              bool
-	ListFormat        ListFormat
+	OutputOptions
 }
 
 func (o ListCmdOptions) toListOptions() list.ListOptions {
@@ -90,9 +64,9 @@ var listCmd = &cobra.Command{
 				fmt.Fprintln(os.Stderr, "No packages found. This is probably a bug.")
 			}
 		} else {
-			if listCmdOptions.ListFormat == JSON {
+			if listCmdOptions.Output == OutputFormatJSON {
 				printPackageJSON(pkgs)
-			} else if listCmdOptions.ListFormat == YAML {
+			} else if listCmdOptions.Output == OutputFormatYAML {
 				printPackageYAML(pkgs)
 			} else {
 				printPackageTable(pkgs)
@@ -113,7 +87,7 @@ func init() {
 		"show the latest version of packages if available")
 	listCmd.PersistentFlags().BoolVarP(&listCmdOptions.More, "more", "m", false,
 		"show additional information about packages (like --show-description --show-latest)")
-	listCmd.PersistentFlags().VarP((&listCmdOptions.ListFormat), "output", "o", "output format (json, yaml, etc.)")
+	listCmdOptions.OutputOptions.AddFlagsToCommand(listCmd)
 
 	listCmd.MarkFlagsMutuallyExclusive("show-description", "more")
 	listCmd.MarkFlagsMutuallyExclusive("show-latest", "more")
