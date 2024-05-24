@@ -90,9 +90,9 @@ func runConfigure(cmd *cobra.Command, args []string) {
 		var err error
 		switch configureCmdOptions.Output {
 		case OutputFormatJSON:
-			output, err = json.MarshalIndent(pkg.Spec.Values, "", "  ")
+			output, err = json.MarshalIndent(pkg, "", "  ")
 		case OutputFormatYAML:
-			output, err = yaml.Marshal(pkg.Spec.Values)
+			output, err = yaml.Marshal(pkg)
 		default:
 			fmt.Fprintf(os.Stderr, "❌ invalid output format: %s\n", configureCmdOptions.Output)
 			cliutils.ExitWithError()
