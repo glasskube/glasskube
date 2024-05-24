@@ -28,7 +28,7 @@ func (of *OutputFormat) Set(value string) error {
 }
 
 func (of *OutputFormat) Type() string {
-	return "OutputFormat"
+	return fmt.Sprintf("[%v|%v]", OutputFormatJSON, OutputFormatYAML)
 }
 
 type OutputOptions struct {
@@ -37,5 +37,5 @@ type OutputOptions struct {
 
 func (opts *OutputOptions) AddFlagsToCommand(cmd *cobra.Command) {
 	flags := cmd.Flags()
-	flags.VarP(&opts.Output, "output", "o", "Output format (json|yaml)")
+	flags.VarP(&opts.Output, "output", "o", "output format")
 }
