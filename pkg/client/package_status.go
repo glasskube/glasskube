@@ -27,6 +27,9 @@ func GetStatus(status *v1alpha1.PackageStatus) *PackageStatus {
 
 func GetStatusOrPending(pkg *v1alpha1.Package) *PackageStatus {
 	if pkg != nil {
+		if !pkg.DeletionTimestamp.IsZero() {
+			return NewUninstallingStatus()
+		}
 		if status := GetStatus(&pkg.Status); status != nil {
 			return status
 		} else {
@@ -46,5 +49,10 @@ func newPackageStatus(cnd *metav1.Condition) *PackageStatus {
 }
 
 func NewPendingStatus() *PackageStatus {
+
 	return &PackageStatus{Status: "Pending"}
+}
+
+func NewUninstallingStatus() *PackageStatus {
+	return &PackageStatus{Status: "Uninstalling"}
 }
