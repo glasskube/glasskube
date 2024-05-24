@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -11,9 +12,14 @@ import (
 	"github.com/glasskube/glasskube/internal/manifestvalues/flags"
 	"github.com/glasskube/glasskube/pkg/manifest"
 	"github.com/spf13/cobra"
+	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/yaml"
 )
 
-var configureCmdOptions = struct{ flags.ValuesOptions }{
+var configureCmdOptions = struct {
+	flags.ValuesOptions
+	OutputOptions
+}{
 	ValuesOptions: flags.NewOptions(flags.WithKeepOldValuesFlag),
 }
 
@@ -79,9 +85,32 @@ func runConfigure(cmd *cobra.Command, args []string) {
 	} else {
 		fmt.Fprintln(os.Stderr, "✅ configuration changed")
 	}
+
+	if configureCmdOptions.Output != "" {
+		if gvks, _, err := scheme.Scheme.ObjectKinds(&pkg); err == nil && len(gvks) == 1 {
+			pkg.SetGroupVersionKind(gvks[0])
+		}
+		var output []byte
+		var err error
+		switch configureCmdOptions.Output {
+		case OutputFormatJSON:
+			output, err = json.MarshalIndent(pkg, "", "  ")
+		case OutputFormatYAML:
+			output, err = yaml.Marshal(pkg)
+		default:
+			fmt.Fprintf(os.Stderr, "❌ invalid output format: %s\n", configureCmdOptions.Output)
+			cliutils.ExitWithError()
+		}
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "❌ error marshalling output: %v\n", err)
+			cliutils.ExitWithError()
+		}
+		fmt.Println(string(output))
+	}
 }
 
 func init() {
 	configureCmdOptions.ValuesOptions.AddFlagsToCommand(configureCmd)
+	configureCmdOptions.OutputOptions.AddFlagsToCommand(configureCmd)
 	RootCmd.AddCommand(configureCmd)
 }
