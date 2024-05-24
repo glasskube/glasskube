@@ -12,6 +12,7 @@ import (
 	"github.com/glasskube/glasskube/internal/manifestvalues/flags"
 	"github.com/glasskube/glasskube/pkg/manifest"
 	"github.com/spf13/cobra"
+	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/yaml"
 )
 
@@ -86,6 +87,9 @@ func runConfigure(cmd *cobra.Command, args []string) {
 	}
 
 	if configureCmdOptions.Output != "" {
+		if gvks, _, err := scheme.Scheme.ObjectKinds(&pkg); err == nil && len(gvks) == 1 {
+			pkg.SetGroupVersionKind(gvks[0])
+		}
 		var output []byte
 		var err error
 		switch configureCmdOptions.Output {
