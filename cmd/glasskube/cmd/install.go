@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -23,6 +24,7 @@ import (
 	"github.com/glasskube/glasskube/pkg/install"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/spf13/cobra"
+	"sigs.k8s.io/yaml"
 )
 
 var installCmdOptions = struct {
@@ -32,8 +34,10 @@ var installCmdOptions = struct {
 	EnableAutoUpdates bool
 	NoWait            bool
 	Yes               bool
+	OutputOptions
 }{
 	ValuesOptions: flags.NewOptions(),
+	OutputOptions: OutputOptions{},
 }
 
 var installCmd = &cobra.Command{
@@ -205,7 +209,34 @@ var installCmd = &cobra.Command{
 				cliutils.ExitWithError()
 			}
 		}
+		if installCmdOptions.OutputOptions.Output != "" {
+			output, err := formatOutput(pkg, installCmdOptions.OutputOptions.Output)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "❗ Error: %v\n", err)
+				cliutils.ExitWithError()
+			}
+			fmt.Println(output)
+		}
 	},
+}
+
+func formatOutput(pkg *v1alpha1.Package, format OutputFormat) (string, error) {
+	switch format {
+	case OutputFormatJSON:
+		jsonOutput, err := json.MarshalIndent(pkg, "", "  ")
+		if err != nil {
+			return "", err
+		}
+		return string(jsonOutput), nil
+	case OutputFormatYAML:
+		yamlOutput, err := yaml.Marshal(pkg)
+		if err != nil {
+			return "", err
+		}
+		return string(yamlOutput), nil
+	default:
+		return "", fmt.Errorf("invalid output format: %s", format)
+	}
 }
 
 func cancel() {
@@ -282,5 +313,6 @@ func init() {
 	installCmd.PersistentFlags().BoolVarP(&installCmdOptions.Yes, "yes", "y", false, "do not ask for any confirmation")
 	installCmd.MarkFlagsMutuallyExclusive("version", "enable-auto-updates")
 	installCmdOptions.ValuesOptions.AddFlagsToCommand(installCmd)
+	installCmdOptions.OutputOptions.AddFlagsToCommand(installCmd)
 	RootCmd.AddCommand(installCmd)
 }
