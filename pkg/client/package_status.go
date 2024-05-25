@@ -25,11 +25,15 @@ func GetStatus(status *v1alpha1.PackageStatus) *PackageStatus {
 	return nil
 }
 
-func GetStatusOrPending(status *v1alpha1.PackageStatus) *PackageStatus {
-	if status := GetStatus(status); status != nil {
-		return status
+func GetStatusOrPending(pkg *v1alpha1.Package) *PackageStatus {
+	if pkg != nil {
+		if status := GetStatus(&pkg.Status); status != nil {
+			return status
+		} else {
+			return NewPendingStatus()
+		}
 	} else {
-		return NewPendingStatus()
+		return nil
 	}
 }
 

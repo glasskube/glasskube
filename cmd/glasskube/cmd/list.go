@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -10,36 +9,10 @@ import (
 	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/semver"
-	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/list"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 )
-
-type ListFormat string
-
-const (
-	JSON ListFormat = "json"
-	YAML ListFormat = "yaml"
-)
-
-func (o *ListFormat) String() string {
-	return string(*o)
-}
-
-func (o *ListFormat) Set(value string) error {
-	switch value {
-	case string(JSON), string(YAML):
-		*o = ListFormat(value)
-		return nil
-	default:
-		return errors.New(`invalid output format, must be "json" or "yaml"`)
-	}
-}
-
-func (o *ListFormat) Type() string {
-	return "string"
-}
 
 type ListCmdOptions struct {
 	ListInstalledOnly bool
@@ -47,7 +20,7 @@ type ListCmdOptions struct {
 	ShowDescription   bool
 	ShowLatestVersion bool
 	More              bool
-	ListFormat        ListFormat
+	OutputOptions
 }
 
 func (o ListCmdOptions) toListOptions() list.ListOptions {
@@ -67,16 +40,19 @@ var listCmd = &cobra.Command{
 		"as well as their installation status in your cluster.\nYou can choose to only show installed packages.",
 	PreRun: cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
 	Run: func(cmd *cobra.Command, args []string) {
+		ctx := cmd.Context()
 		if listCmdOptions.More {
 			listCmdOptions.ShowLatestVersion = true
 			listCmdOptions.ShowDescription = true
 		}
-
-		pkgClient := client.FromContext(cmd.Context())
-		pkgs, err := list.GetPackagesWithStatus(pkgClient, cmd.Context(), listCmdOptions.toListOptions())
+		pkgs, err := list.NewLister(ctx).GetPackagesWithStatus(ctx, listCmdOptions.toListOptions())
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "An error occurred:\n\n%v\n", err)
-			cliutils.ExitWithError()
+			fmt.Fprintf(os.Stderr, "❗ An error occurred listing packages: %v\n", err)
+			if len(pkgs) == 0 {
+				cliutils.ExitWithError()
+			} else {
+				fmt.Fprint(os.Stderr, "⚠️  The table shown below may be incomplete due to the error above.\n\n")
+			}
 		}
 		if len(pkgs) == 0 {
 			if listCmdOptions.ListOutdatedOnly {
@@ -88,9 +64,9 @@ var listCmd = &cobra.Command{
 				fmt.Fprintln(os.Stderr, "No packages found. This is probably a bug.")
 			}
 		} else {
-			if listCmdOptions.ListFormat == JSON {
+			if listCmdOptions.Output == OutputFormatJSON {
 				printPackageJSON(pkgs)
-			} else if listCmdOptions.ListFormat == YAML {
+			} else if listCmdOptions.Output == OutputFormatYAML {
 				printPackageYAML(pkgs)
 			} else {
 				printPackageTable(pkgs)
@@ -111,7 +87,7 @@ func init() {
 		"show the latest version of packages if available")
 	listCmd.PersistentFlags().BoolVarP(&listCmdOptions.More, "more", "m", false,
 		"show additional information about packages (like --show-description --show-latest)")
-	listCmd.PersistentFlags().VarP((&listCmdOptions.ListFormat), "output", "o", "output format (json, yaml, etc.)")
+	listCmdOptions.OutputOptions.AddFlagsToCommand(listCmd)
 
 	listCmd.MarkFlagsMutuallyExclusive("show-description", "more")
 	listCmd.MarkFlagsMutuallyExclusive("show-latest", "more")
@@ -124,10 +100,11 @@ func printPackageTable(packages []*list.PackageWithStatus) {
 	if listCmdOptions.ShowLatestVersion {
 		header = append(header, "LATEST VERSION")
 	}
+	header = append(header, "REPOSITORY")
 	if listCmdOptions.ShowDescription {
 		header = append(header, "DESCRIPTION")
 	}
-	err := cliutils.PrintPackageTable(os.Stdout,
+	err := cliutils.PrintTable(os.Stdout,
 		packages,
 		header,
 		func(pkg *list.PackageWithStatus) []string {
@@ -135,6 +112,19 @@ func printPackageTable(packages []*list.PackageWithStatus) {
 			if listCmdOptions.ShowLatestVersion {
 				row = append(row, pkg.LatestVersion)
 			}
+			s := make([]string, len(pkg.Repos))
+			if pkg.Package != nil {
+				for i, r := range pkg.Repos {
+					if pkg.Package.Spec.PackageInfo.RepositoryName == r {
+						s[i] = fmt.Sprintf("%v (used)", r)
+					} else {
+						s[i] = r
+					}
+				}
+			} else {
+				s = pkg.Repos
+			}
+			row = append(row, strings.Join(s, ", "))
 			if listCmdOptions.ShowDescription {
 				row = append(row, pkg.ShortDescription)
 			}

@@ -34,6 +34,7 @@ import (
 	"github.com/glasskube/glasskube/internal/manifest/result"
 	"github.com/glasskube/glasskube/internal/manifestvalues"
 	"github.com/glasskube/glasskube/internal/names"
+	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	"github.com/glasskube/glasskube/internal/telemetry"
 	"github.com/glasskube/glasskube/pkg/condition"
 	"go.uber.org/multierr"
@@ -55,12 +56,13 @@ type PackageReconciler struct {
 	client.Client
 	record.EventRecorder
 	*owners.OwnerManager
-	ValueResolver    *manifestvalues.Resolver
-	Scheme           *runtime.Scheme
-	ManifestAdapter  manifest.ManifestAdapter
-	HelmAdapter      manifest.ManifestAdapter
-	KustomizeAdapter manifest.ManifestAdapter
-	dependencyMgr    *dependency.DependendcyManager
+	RepoClientset     repoclient.RepoClientset
+	ValueResolver     *manifestvalues.Resolver
+	Scheme            *runtime.Scheme
+	ManifestAdapter   manifest.ManifestAdapter
+	HelmAdapter       manifest.ManifestAdapter
+	KustomizeAdapter  manifest.ManifestAdapter
+	DependencyManager *dependency.DependendcyManager
 }
 
 //+kubebuilder:rbac:groups=packages.glasskube.dev,resources=packages,verbs=get;list;watch;create;update;patch;delete
@@ -109,9 +111,6 @@ func (r *PackageReconciler) reconcilePackage(ctx context.Context, pkg v1alpha1.P
 func (r *PackageReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	if r.OwnerManager == nil {
 		r.OwnerManager = owners.NewOwnerManager(r.Scheme)
-	}
-	if r.dependencyMgr == nil {
-		r.dependencyMgr = dependency.NewDependencyManager(ctrladapter.NewPackageClientAdapter(r.Client))
 	}
 	if r.ValueResolver == nil {
 		r.ValueResolver = manifestvalues.NewResolver(
@@ -263,7 +262,7 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 	log.V(1).Info("ensuring dependencies", "dependencies", r.pi.Status.Manifest.Dependencies)
 
 	var failed []string
-	if result, err := r.dependencyMgr.Validate(ctx, r.pi.Status.Manifest, r.pkg.Spec.PackageInfo.Version); err != nil {
+	if result, err := r.DependencyManager.Validate(ctx, r.pi.Status.Manifest, r.pkg.Spec.PackageInfo.Version); err != nil {
 		r.setShouldUpdate(
 			conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.Status.Conditions,
 				condition.InstallationFailed, fmt.Sprintf("error validating dependencies: %v", err)))
@@ -280,14 +279,37 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 					Namespace: r.pkg.Namespace,
 				},
 			}
+
+			repositories, err := r.RepoClientset.Meta().GetReposForPackage(requirement.Name)
+			if err != nil {
+				log.Error(err, "could not find repos for package", "required", requirement.Name)
+				failed = append(failed, requirement.Name)
+				continue
+			}
+
+			var repositoryName string
+			switch len(repositories) {
+			case 0:
+				log.Error(err, "could not find package in any repo", "required", requirement.Name)
+				failed = append(failed, requirement.Name)
+				continue
+			case 1:
+				repositoryName = repositories[0].Name
+			default:
+				log.Error(err, "dependency in multiple repos is not supported yet", "required", requirement.Name)
+				failed = append(failed, requirement.Name)
+				continue
+			}
+
 			if _, err := controllerutil.CreateOrUpdate(ctx, r.Client, newPkg, func() error {
 				if err := r.SetOwner(r.pkg, newPkg, owners.BlockOwnerDeletion); err != nil {
 					return fmt.Errorf("unable to set ownerReference on required package: %w", err)
 				}
 				newPkg.Spec = packagesv1alpha1.PackageSpec{
 					PackageInfo: packagesv1alpha1.PackageInfoTemplate{
-						Name:    requirement.Name,
-						Version: requirement.Version,
+						Name:           requirement.Name,
+						Version:        requirement.Version,
+						RepositoryName: repositoryName,
 					},
 				}
 				return nil
@@ -390,9 +412,9 @@ func (r *PackageReconcilationContext) ensurePackageInfo(ctx context.Context) err
 			return fmt.Errorf("unable to set ownerReference on PackageInfo: %w", err)
 		}
 		packageInfo.Spec = packagesv1alpha1.PackageInfoSpec{
-			Name:          r.pkg.Spec.PackageInfo.Name,
-			Version:       r.pkg.Spec.PackageInfo.Version,
-			RepositoryUrl: r.pkg.Spec.PackageInfo.RepositoryUrl,
+			Name:           r.pkg.Spec.PackageInfo.Name,
+			Version:        r.pkg.Spec.PackageInfo.Version,
+			RepositoryName: r.pkg.Spec.PackageInfo.RepositoryName,
 		}
 		return nil
 	})

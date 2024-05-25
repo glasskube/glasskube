@@ -9,6 +9,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/repo"
@@ -24,7 +25,7 @@ import (
 var updateCmdOptions struct {
 	Version string
 	Yes     bool
-	Output  string
+	OutputOptions
 }
 
 var updateCmd = &cobra.Command{
@@ -34,9 +35,8 @@ var updateCmd = &cobra.Command{
 	ValidArgsFunction: completeInstalledPackageNames,
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
-		client := client.FromContext(ctx)
 		packageNames := args
-		updater := update.NewUpdater(client).
+		updater := update.NewUpdater(ctx).
 			WithStatusWriter(statuswriter.Spinner())
 
 		var tx *update.UpdateTransaction
@@ -105,9 +105,9 @@ func handleOutput(tx *update.UpdateTransaction) {
 	var outputData []byte
 	var err error
 	switch updateCmdOptions.Output {
-	case "json":
+	case OutputFormatJSON:
 		outputData, err = json.Marshal(tx)
-	case "yaml":
+	case OutputFormatYAML:
 		outputData, err = yaml.Marshal(tx)
 	default:
 		fmt.Fprintf(os.Stderr, "❌ unsupported output format: %v\n", updateCmdOptions.Output)
@@ -156,38 +156,39 @@ func completeUpgradablePackageVersions(
 	args []string,
 	toComplete string,
 ) ([]string, cobra.ShellCompDirective) {
-
 	dir := cobra.ShellCompDirectiveNoFileComp
-
-	config, _, err := kubeconfig.New(config.Kubeconfig)
-	if err != nil {
-		dir &= cobra.ShellCompDirectiveError
-		return nil, dir
-	}
-	client, err := client.New(config)
-	if err != nil {
-		dir &= cobra.ShellCompDirectiveError
-		return nil, dir
-	}
 	if len(args) != 1 {
 		return nil, dir
 	}
 	packageName := args[0]
-	var packageIndex repo.PackageIndex
-	if err := repo.FetchPackageIndex("", packageName, &packageIndex); err != nil {
-		return nil, cobra.ShellCompDirectiveError
+
+	config, rawConfig, err := kubeconfig.New(config.Kubeconfig)
+	if err != nil {
+		dir &= cobra.ShellCompDirectiveError
+		return nil, dir
 	}
+	ctx, err := clicontext.SetupContext(cmd.Context(), config, rawConfig)
+	if err != nil {
+		dir &= cobra.ShellCompDirectiveError
+		return nil, dir
+	}
+	client := cliutils.PackageClient(ctx)
+	repoClient := cliutils.RepositoryClientset(ctx)
+
 	var pkg v1alpha1.Package
 	if err := client.Packages().Get(cmd.Context(), packageName, &pkg); err != nil {
 		dir &= cobra.ShellCompDirectiveError
 		return nil, dir
 	}
+	var packageIndex repo.PackageIndex
+	if err := repoClient.ForPackage(pkg).FetchPackageIndex(packageName, &packageIndex); err != nil {
+		return nil, cobra.ShellCompDirectiveError
+	}
 	versions := make([]string, 0, len(packageIndex.Versions))
 	for _, version := range packageIndex.Versions {
-		if toComplete == "" || strings.HasPrefix(version.Version, toComplete) {
-			if semver.IsUpgradable(pkg.Spec.PackageInfo.Version, version.Version) {
-				versions = append(versions, version.Version)
-			}
+		if (toComplete == "" || strings.HasPrefix(version.Version, toComplete)) &&
+			semver.IsUpgradable(pkg.Spec.PackageInfo.Version, version.Version) {
+			versions = append(versions, version.Version)
 		}
 	}
 	return versions, dir
@@ -199,7 +200,6 @@ func init() {
 	_ = updateCmd.RegisterFlagCompletionFunc("version", completeUpgradablePackageVersions)
 	updateCmd.PersistentFlags().BoolVarP(&updateCmdOptions.Yes, "yes", "y", false,
 		"do not ask for any confirmation")
-	updateCmd.PersistentFlags().StringVarP(&updateCmdOptions.Output, "output", "o", "",
-		"output format (json|yaml)")
+	updateCmdOptions.OutputOptions.AddFlagsToCommand(updateCmd)
 	RootCmd.AddCommand(updateCmd)
 }

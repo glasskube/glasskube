@@ -1,5 +1,61 @@
 # Changelog
 
+## [0.6.0](https://github.com/glasskube/glasskube/compare/v0.5.1...v0.6.0) (2024-05-23)
+
+
+### Features
+
+* **ui:** show broken config references ([#496](https://github.com/glasskube/glasskube/issues/496)) ([7f77ff9](https://github.com/glasskube/glasskube/commit/7f77ff9b350b96ee8d02b0cfcbc0c46a2d9415d4))
+
+
+### Bug Fixes
+
+* **deps:** update dependency @easyops-cn/docusaurus-search-local to ^0.41.0 ([edca7ca](https://github.com/glasskube/glasskube/commit/edca7ca2ea75973d51a7dfe538df27c06ceb88ab))
+* **deps:** update dependency @fortawesome/react-fontawesome to v0.2.2 ([195a210](https://github.com/glasskube/glasskube/commit/195a2107db6894e35e8894620e2313e96c2bdda9))
+* **ui:** use correct repository on details page ([#684](https://github.com/glasskube/glasskube/issues/684)) ([86b4e8b](https://github.com/glasskube/glasskube/commit/86b4e8b6a36614a7bbc6562f02293da10f5e47bb))
+
+## [0.5.1](https://github.com/glasskube/glasskube/compare/v0.5.0...v0.5.1) (2024-05-22)
+
+
+### Bug Fixes
+
+* create a new restmapper after applying a crd ([7c1bbf0](https://github.com/glasskube/glasskube/commit/7c1bbf01554a26f0b54a4047cb9b1b09f21f51b2))
+* set correct API version to make bootstrap work ([16dce6d](https://github.com/glasskube/glasskube/commit/16dce6d45b6545843b4b7e5aa77ea9931dcfb7bf))
+
+## [0.5.0](https://github.com/glasskube/glasskube/compare/v0.4.1...v0.5.0) (2024-05-22)
+
+
+### Features
+
+* add support for custom package repositories ([#618](https://github.com/glasskube/glasskube/issues/618)) ([cd2931d](https://github.com/glasskube/glasskube/commit/cd2931d71943eca41b39b959b8b50ef48d2eb380))
+* **cli:** add `--output` option for `glasskube list` ([#638](https://github.com/glasskube/glasskube/issues/638)) ([9758cf6](https://github.com/glasskube/glasskube/commit/9758cf6dfa678e24963b432be6d152bb843cb94e))
+* **ui:** show uninstalling button if a package is currently being uninstalled ([#456](https://github.com/glasskube/glasskube/issues/456)) ([af42b03](https://github.com/glasskube/glasskube/commit/af42b036ce6f646dad5bf36e2cc22097ef7ea25d))
+
+
+### Bug Fixes
+
+* **deps:** update dependency @fortawesome/react-fontawesome to v0.2.1 ([dd8a41d](https://github.com/glasskube/glasskube/commit/dd8a41dd252054ada2a9e5d8bbcce8a7fa278dcd))
+* **deps:** update kubernetes packages to v0.30.1 ([18a84cb](https://github.com/glasskube/glasskube/commit/18a84cb3150249e6924eea0f09ade59bb092e56a))
+* **deps:** update module github.com/go-logr/logr to v1.4.2 ([ea59508](https://github.com/glasskube/glasskube/commit/ea59508e8e1900b76466f02452337a302fd2b64c))
+* **deps:** update module github.com/onsi/ginkgo/v2 to v2.18.0 ([b49f58c](https://github.com/glasskube/glasskube/commit/b49f58ce728c6e6c4694146220d69db7f79955de))
+* **deps:** update module github.com/schollz/progressbar/v3 to v3.14.3 ([cc1ea16](https://github.com/glasskube/glasskube/commit/cc1ea16da9c3b8e4dd2f53466a3b60b0989039fa))
+
+
+### Other
+
+* **deps:** update actions/checkout digest to a5ac7e5 ([151f31d](https://github.com/glasskube/glasskube/commit/151f31dc3c0ad6f023c1b20eff09c128e3cce7ff))
+* **deps:** update dependency esbuild to v0.21.3 ([65f4fbf](https://github.com/glasskube/glasskube/commit/65f4fbf300aba1ef7ad7396b63ea75ff4f4eecf2))
+
+
+### Docs
+
+* added dependencies installation to CONTRIBUTING.md ([56d103f](https://github.com/glasskube/glasskube/commit/56d103fa9b3ea5b36deb642ff829237688d3188a))
+* update architecture diagram to conform with configurable repositories ([880cd29](https://github.com/glasskube/glasskube/commit/880cd2930c69137aa30f9097c74c013d4fae8fe9))
+* **website:** add multi repo design proposal ([be653c4](https://github.com/glasskube/glasskube/commit/be653c4c76634901fb8c7e41a1e1630b52e19f58))
+* **website:** added devops blogpost ([ab67565](https://github.com/glasskube/glasskube/commit/ab675655cc3173e86bb31837591820cb9c0470f6))
+* **website:** fix giscus integration for guides ([da30108](https://github.com/glasskube/glasskube/commit/da30108d42431ed96845d69483b3f026f4342e66))
+* **website:** update --dry-run flag section ([0229804](https://github.com/glasskube/glasskube/commit/0229804de5e70ca5641725db292c4c677f0fea7a))
+
 ## [0.4.1](https://github.com/glasskube/glasskube/compare/v0.4.0...v0.4.1) (2024-05-15)
 
 

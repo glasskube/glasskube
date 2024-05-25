@@ -8,9 +8,51 @@ import (
 	"github.com/glasskube/glasskube/internal/repo/types"
 )
 
+type FakeClientset struct {
+	Client *FakeClient
+}
+
+// Default implements client.RepoClientset.
+func (f *FakeClientset) Default() client.RepoClient {
+	return f.Client
+}
+
+// Meta implements client.RepoClientset.
+func (f *FakeClientset) Meta() client.RepoMetaclient {
+	return f.Client
+}
+
+// ForRepo implements client.RepoClientset.
+func (f *FakeClientset) ForRepo(repo v1alpha1.PackageRepository) client.RepoClient {
+	return f.Client
+}
+
+// ForRepoWithName implements client.RepoClientset.
+func (f *FakeClientset) ForRepoWithName(name string) client.RepoClient {
+	return f.Client
+}
+
+// ForPackage implements client.RepoClientset.
+func (f *FakeClientset) ForPackage(pkg v1alpha1.Package) client.RepoClient {
+	return f.Client
+}
+
+var _ client.RepoClientset = &FakeClientset{}
+
 // FakeClient is a mock implementation of RepoClient for use in tests
 type FakeClient struct {
-	Packages map[string]map[string]*v1alpha1.PackageManifest
+	Packages            map[string]map[string]*v1alpha1.PackageManifest
+	PackageRepositories []v1alpha1.PackageRepository
+}
+
+// FetchMetaIndex implements client.RepoMetaclient.
+func (f *FakeClient) FetchMetaIndex(target *types.MetaIndex) error {
+	panic("unimplemented")
+}
+
+// GetReposForPackage implements client.RepoAggregator.
+func (f *FakeClient) GetReposForPackage(name string) ([]v1alpha1.PackageRepository, error) {
+	return f.PackageRepositories, nil
 }
 
 func (f *FakeClient) AddPackage(name, version string, manifest *v1alpha1.PackageManifest) {
@@ -30,7 +72,9 @@ func (f *FakeClient) Clear() {
 var _ client.RepoClient = &FakeClient{}
 
 // FetchLatestPackageManifest implements client.RepoClient.
-func (f *FakeClient) FetchLatestPackageManifest(repoURL string, name string, target *v1alpha1.PackageManifest) (version string, err error) {
+func (f *FakeClient) FetchLatestPackageManifest(name string, target *v1alpha1.PackageManifest) (
+	version string, err error,
+) {
 	if versions, ok := f.Packages[name]; ok {
 		for v, m := range versions {
 			*target = *m
@@ -41,7 +85,7 @@ func (f *FakeClient) FetchLatestPackageManifest(repoURL string, name string, tar
 }
 
 // FetchPackageIndex implements client.RepoClient.
-func (f *FakeClient) FetchPackageIndex(repoURL string, name string, target *types.PackageIndex) error {
+func (f *FakeClient) FetchPackageIndex(name string, target *types.PackageIndex) error {
 	if versions, ok := f.Packages[name]; ok {
 		var result types.PackageIndex
 		for v := range versions {
@@ -55,7 +99,7 @@ func (f *FakeClient) FetchPackageIndex(repoURL string, name string, target *type
 }
 
 // FetchPackageManifest implements client.RepoClient.
-func (f *FakeClient) FetchPackageManifest(repoURL string, name string, version string, target *v1alpha1.PackageManifest) error {
+func (f *FakeClient) FetchPackageManifest(name string, version string, target *v1alpha1.PackageManifest) error {
 	if versions, ok := f.Packages[name]; ok {
 		if manifest, ok := versions[version]; ok {
 			*target = *manifest
@@ -66,7 +110,7 @@ func (f *FakeClient) FetchPackageManifest(repoURL string, name string, version s
 }
 
 // FetchPackageRepoIndex implements client.RepoClient.
-func (f *FakeClient) FetchPackageRepoIndex(repoURL string, target *types.PackageRepoIndex) error {
+func (f *FakeClient) FetchPackageRepoIndex(target *types.PackageRepoIndex) error {
 	var result types.PackageRepoIndex
 	for pkg, versions := range f.Packages {
 		item := types.PackageRepoIndexItem{Name: pkg}
@@ -80,7 +124,7 @@ func (f *FakeClient) FetchPackageRepoIndex(repoURL string, target *types.Package
 }
 
 // GetLatestVersion implements client.RepoClient.
-func (f *FakeClient) GetLatestVersion(repoURL string, pkgName string) (string, error) {
+func (f *FakeClient) GetLatestVersion(pkgName string) (string, error) {
 	if versions, ok := f.Packages[pkgName]; ok {
 		for v := range versions {
 			return v, nil
@@ -90,6 +134,6 @@ func (f *FakeClient) GetLatestVersion(repoURL string, pkgName string) (string, e
 }
 
 // GetPackageManifestURL implements client.RepoClient.
-func (f *FakeClient) GetPackageManifestURL(repoURL string, name string, version string) (string, error) {
+func (f *FakeClient) GetPackageManifestURL(name string, version string) (string, error) {
 	return "fake url", nil
 }

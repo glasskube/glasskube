@@ -1,23 +1,25 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
 	"github.com/fatih/color"
 	"github.com/glasskube/glasskube/api/v1alpha1"
-	clientadapter "github.com/glasskube/glasskube/internal/adapter/goclient"
 	"github.com/glasskube/glasskube/internal/cliutils"
-	"github.com/glasskube/glasskube/internal/manifestvalues"
 	"github.com/glasskube/glasskube/internal/manifestvalues/cli"
 	"github.com/glasskube/glasskube/internal/manifestvalues/flags"
-	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/manifest"
 	"github.com/spf13/cobra"
-	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/yaml"
 )
 
-var configureCmdOptions = struct{ flags.ValuesOptions }{
+var configureCmdOptions = struct {
+	flags.ValuesOptions
+	OutputOptions
+}{
 	ValuesOptions: flags.NewOptions(flags.WithKeepOldValuesFlag),
 }
 
@@ -33,12 +35,8 @@ var configureCmd = &cobra.Command{
 func runConfigure(cmd *cobra.Command, args []string) {
 	bold := color.New(color.Bold).SprintFunc()
 	ctx := cmd.Context()
-	pkgClient := client.FromContext(ctx)
-	k8sClient := kubernetes.NewForConfigOrDie(client.ConfigFromContext(ctx))
-	valueResolver := manifestvalues.NewResolver(
-		clientadapter.NewPackageClientAdapter(pkgClient),
-		clientadapter.NewKubernetesClientAdapter(*k8sClient),
-	)
+	pkgClient := cliutils.PackageClient(ctx)
+	valueResolver := cliutils.ValueResolver(ctx)
 	pkgName := args[0]
 	var pkg v1alpha1.Package
 
@@ -73,7 +71,7 @@ func runConfigure(cmd *cobra.Command, args []string) {
 	}
 
 	if !cliutils.YesNoPrompt("Continue?", true) {
-		cancel(ctx)
+		cancel()
 	}
 
 	if err := pkgClient.Packages().Get(ctx, pkgName, &pkg); err != nil {
@@ -87,9 +85,32 @@ func runConfigure(cmd *cobra.Command, args []string) {
 	} else {
 		fmt.Fprintln(os.Stderr, "✅ configuration changed")
 	}
+
+	if configureCmdOptions.Output != "" {
+		if gvks, _, err := scheme.Scheme.ObjectKinds(&pkg); err == nil && len(gvks) == 1 {
+			pkg.SetGroupVersionKind(gvks[0])
+		}
+		var output []byte
+		var err error
+		switch configureCmdOptions.Output {
+		case OutputFormatJSON:
+			output, err = json.MarshalIndent(pkg, "", "  ")
+		case OutputFormatYAML:
+			output, err = yaml.Marshal(pkg)
+		default:
+			fmt.Fprintf(os.Stderr, "❌ invalid output format: %s\n", configureCmdOptions.Output)
+			cliutils.ExitWithError()
+		}
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "❌ error marshalling output: %v\n", err)
+			cliutils.ExitWithError()
+		}
+		fmt.Println(string(output))
+	}
 }
 
 func init() {
 	configureCmdOptions.ValuesOptions.AddFlagsToCommand(configureCmd)
+	configureCmdOptions.OutputOptions.AddFlagsToCommand(configureCmd)
 	RootCmd.AddCommand(configureCmd)
 }

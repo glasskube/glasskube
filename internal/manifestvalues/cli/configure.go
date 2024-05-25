@@ -3,7 +3,6 @@ package cli
 import (
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/fatih/color"
@@ -175,57 +174,27 @@ func getReferenceValue() (*v1alpha1.ValueReference, error) {
 
 func getObjectKeyValueSource() *v1alpha1.ObjectKeyValueSource {
 	var ref v1alpha1.ObjectKeyValueSource
-	ref.Namespace = getInputStr("namespace")
-	ref.Name = getInputStr("name")
-	ref.Key = getInputStr("key")
+	ref.Namespace = cliutils.GetInputStr("namespace")
+	ref.Name = cliutils.GetInputStr("name")
+	ref.Key = cliutils.GetInputStr("key")
 	return &ref
 }
 
 func getPackageValueSource() *v1alpha1.PackageValueSource {
 	var ref v1alpha1.PackageValueSource
-	ref.Name = getInputStr("name")
-	ref.Value = getInputStr("value")
+	ref.Name = cliutils.GetInputStr("name")
+	ref.Value = cliutils.GetInputStr("value")
 	return &ref
 }
 
 func getInput(t v1alpha1.ValueType) string {
-	return getInputStr(string(t))
-}
-
-func getInputStr(s string) (input string) {
-	fmt.Fprintf(os.Stderr, "%v> ", s)
-	fmt.Scanln(&input)
-	return
+	return cliutils.GetInputStr(string(t))
 }
 
 func getOption(options []string) (string, error) {
-	return getOptionWithDefault(options, nil)
+	return cliutils.GetOption(string(v1alpha1.ValueTypeOptions), options)
 }
 
 func getOptionWithDefault(options []string, defaultOption *string) (string, error) {
-	printOptions(options, defaultOption)
-	iStr := getInput(v1alpha1.ValueTypeOptions)
-	if len(iStr) == 0 && defaultOption != nil {
-		return *defaultOption, nil
-	} else if i, err := strconv.Atoi(iStr); err != nil {
-		return "", err
-	} else {
-		i-- // index is entered with offset 1
-		if 0 <= i && i < len(options) {
-			return options[i], nil
-		} else {
-			return "", fmt.Errorf("%v is not a valid option", i+1)
-		}
-	}
-}
-
-func printOptions(options []string, defaultOption *string) {
-	msg := "Enter the number of one of the following"
-	if defaultOption != nil {
-		msg += fmt.Sprintf(" (default: %v)", *defaultOption)
-	}
-	fmt.Fprintln(os.Stderr, msg+":")
-	for i, opt := range options {
-		fmt.Fprintf(os.Stderr, "%v) %v\n", i+1, opt)
-	}
+	return cliutils.GetOptionWithDefault(string(v1alpha1.ValueTypeOptions), options, defaultOption)
 }

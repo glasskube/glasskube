@@ -11,43 +11,47 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
 	"syscall"
 
+	"github.com/glasskube/glasskube/internal/repo/types"
+
+	"github.com/glasskube/glasskube/internal/util"
+
 	"github.com/Masterminds/semver/v3"
-	"github.com/glasskube/glasskube/internal/manifestvalues"
-	"github.com/glasskube/glasskube/internal/telemetry"
-	"k8s.io/client-go/kubernetes"
-
-	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
-
+	"github.com/glasskube/glasskube/api/v1alpha1"
 	clientadapter "github.com/glasskube/glasskube/internal/adapter/goclient"
 	"github.com/glasskube/glasskube/internal/clientutils"
+	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/dependency"
-
-	"github.com/glasskube/glasskube/pkg/update"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/tools/cache"
-
-	"github.com/glasskube/glasskube/api/v1alpha1"
-	"github.com/glasskube/glasskube/internal/cliutils"
+	"github.com/glasskube/glasskube/internal/manifestvalues"
 	"github.com/glasskube/glasskube/internal/repo"
+	repoclient "github.com/glasskube/glasskube/internal/repo/client"
+	"github.com/glasskube/glasskube/internal/telemetry"
+	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
 	"github.com/glasskube/glasskube/internal/web/handler"
 	"github.com/glasskube/glasskube/pkg/bootstrap"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/describe"
 	"github.com/glasskube/glasskube/pkg/install"
 	"github.com/glasskube/glasskube/pkg/list"
+	"github.com/glasskube/glasskube/pkg/manifest"
 	"github.com/glasskube/glasskube/pkg/open"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/glasskube/glasskube/pkg/uninstall"
+	"github.com/glasskube/glasskube/pkg/update"
 	"github.com/gorilla/mux"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
 )
@@ -77,6 +81,7 @@ func NewServer(options ServerOptions) *server {
 		configLoader:       &defaultConfigLoader{options.Kubeconfig},
 		forwarders:         make(map[string]*open.OpenResult),
 		updateTransactions: make(map[int]update.UpdateTransaction),
+		templates:          templates{},
 	}
 	return &server
 }
@@ -88,6 +93,8 @@ type server struct {
 	restConfig            *rest.Config
 	rawConfig             *api.Config
 	pkgClient             client.PackageV1Alpha1Client
+	repoClientset         repoclient.RepoClientset
+	k8sClient             *kubernetes.Clientset
 	sseHub                *SSEHub
 	packageStore          cache.Store
 	packageController     cache.Controller
@@ -99,6 +106,7 @@ type server struct {
 	updateTransactions    map[int]update.UpdateTransaction
 	valueResolver         *manifestvalues.Resolver
 	isBootstrapped        bool
+	templates             templates
 }
 
 func (s *server) RestConfig() *rest.Config {
@@ -113,14 +121,22 @@ func (s *server) Client() client.PackageV1Alpha1Client {
 	return s.pkgClient
 }
 
+func (s *server) K8sClient() *kubernetes.Clientset {
+	return s.k8sClient
+}
+
+func (s *server) RepoClient() repoclient.RepoClientset {
+	return s.repoClientset
+}
+
 func (s *server) Start(ctx context.Context) error {
 	if s.listener != nil {
 		return errors.New("server is already listening")
 	}
 
-	parseTemplates()
+	s.templates.parseTemplates()
 	if config.IsDevBuild() {
-		if err := watchTemplates(); err != nil {
+		if err := s.templates.watchTemplates(); err != nil {
 			fmt.Fprintf(os.Stderr, "templates will not be parsed after changes: %v\n", err)
 		}
 	}
@@ -153,6 +169,7 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle("/packages/{pkgName}/discussion", s.requireReady(s.packageDiscussion))
 	router.Handle("/packages/{pkgName}/configure", s.requireReady(s.installOrConfigurePackage))
 	router.Handle("/packages/{pkgName}/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
+	router.Handle("/settings", s.requireReady(s.settingsPage))
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/packages", http.StatusFound) })
 	http.Handle("/", s.enrichContext(router))
 
@@ -193,6 +210,7 @@ func (s *server) Start(ctx context.Context) error {
 }
 
 func (s *server) updateModal(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	pkgName := r.FormValue("packageName")
 	pkgs := make([]string, 0, 1)
 	if pkgName != "" {
@@ -200,8 +218,8 @@ func (s *server) updateModal(w http.ResponseWriter, r *http.Request) {
 	}
 
 	updates := make([]map[string]any, 0)
-	updater := update.NewUpdater(s.pkgClient).WithStatusWriter(statuswriter.Stderr())
-	ut, err := updater.Prepare(r.Context(), pkgs)
+	updater := update.NewUpdater(ctx).WithStatusWriter(statuswriter.Stderr())
+	ut, err := updater.Prepare(ctx, pkgs)
 	if err != nil {
 		s.respondAlertAndLog(w, err, "An error occurred preparing update of "+pkgName, "danger")
 		return
@@ -228,7 +246,7 @@ func (s *server) updateModal(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	err = pkgUpdateModalTmpl.Execute(w, map[string]any{
+	err = s.templates.pkgUpdateModalTmpl.Execute(w, map[string]any{
 		"UpdateTransactionId": utId,
 		"Updates":             updates,
 		"PackageName":         pkgName,
@@ -238,7 +256,7 @@ func (s *server) updateModal(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	updater := update.NewUpdater(s.pkgClient).WithStatusWriter(statuswriter.Stderr())
+	updater := update.NewUpdater(ctx).WithStatusWriter(statuswriter.Stderr())
 	s.updateMutex.Lock()
 	defer s.updateMutex.Unlock()
 	utIdStr := r.FormValue("updateTransactionId")
@@ -270,7 +288,7 @@ func (s *server) uninstallModal(w http.ResponseWriter, r *http.Request) {
 			err = fmt.Errorf("%v cannot be uninstalled: %w", pkgName, err1)
 		}
 	}
-	err = pkgUninstallModalTmpl.Execute(w, map[string]any{
+	err = s.templates.pkgUninstallModalTmpl.Execute(w, map[string]any{
 		"PackageName": pkgName,
 		"Pruned":      pruned,
 		"Err":         err,
@@ -314,10 +332,11 @@ func (s *server) open(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) packages(w http.ResponseWriter, r *http.Request) {
-	packages, err := list.GetPackagesWithStatus(s.pkgClient, r.Context(), list.ListOptions{IncludePackageInfos: true})
-	if err != nil {
-		err = fmt.Errorf("could not load packages: %w\n", err)
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+	ctx := r.Context()
+	packages, listErr := list.NewLister(ctx).GetPackagesWithStatus(ctx, list.ListOptions{IncludePackageInfos: true})
+	if listErr != nil && len(packages) == 0 {
+		listErr = fmt.Errorf("could not load packages: %w", listErr)
+		fmt.Fprintf(os.Stderr, "%v\n", listErr)
 	}
 
 	// Call isUpdateAvailable for each installed package.
@@ -328,58 +347,106 @@ func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 		packageUpdateAvailable[pkg.Name] = pkg.Package != nil && s.isUpdateAvailable(r.Context(), pkg.Name)
 	}
 
-	err = pkgsPageTmpl.Execute(w, s.enrichWithErrorAndWarnings(r.Context(), map[string]any{
+	tmplErr := s.templates.pkgsPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
 		"Packages":               packages,
 		"PackageUpdateAvailable": packageUpdateAvailable,
 		"UpdatesAvailable":       s.isUpdateAvailable(r.Context()),
-	}, err))
-	checkTmplError(err, "packages")
+	}, listErr))
+	checkTmplError(tmplErr, "packages")
 }
 
 func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	pkgName := mux.Vars(r)["pkgName"]
+	repositoryName := r.FormValue("repositoryName")
 	selectedVersion := r.FormValue("selectedVersion")
-	pkg, status, manifest, _, err := describe.DescribePackage(r.Context(), pkgName)
-	autoUpdate := clientutils.AutoUpdateString(pkg, "Disabled")
-	if err != nil {
-		err = fmt.Errorf("An error occurred fetching package details of %v: %w\n", pkgName, err)
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+
+	pkg, manifest, err := describe.DescribeInstalledPackage(ctx, pkgName)
+	if err != nil && !apierrors.IsNotFound(err) {
+		s.respondAlertAndLog(w, err,
+			fmt.Sprintf("An error occurred fetching package details of installed package %v", pkgName),
+			"danger")
+		return
+	} else if pkg != nil {
+		repositoryName = pkg.Spec.PackageInfo.RepositoryName
+	}
+
+	var repos []v1alpha1.PackageRepository
+	if repos, err = s.repoClientset.Meta().GetReposForPackage(pkgName); err != nil {
+		fmt.Fprintf(os.Stderr, "error getting repos for package; %v", err)
+	} else if repositoryName == "" && pkg == nil {
+		if len(repos) == 0 {
+			s.respondAlertAndLog(w, fmt.Errorf("%v not found in any repository", pkgName), "", "danger")
+			return
+		}
+		for _, r := range repos {
+			repositoryName = r.Name
+			if r.IsDefaultRepository() {
+				break
+			}
+		}
 	}
 
 	var idx repo.PackageIndex
-	if err := repo.FetchPackageIndex("", pkgName, &idx); err != nil {
-		s.respondAlertAndLog(w, err, "An error occurred fetching versions of "+pkgName, "danger")
+	if err := s.repoClientset.ForRepoWithName(repositoryName).FetchPackageIndex(pkgName, &idx); err != nil {
+		s.respondAlertAndLog(w, err,
+			fmt.Sprintf("An error occurred fetching package index of %v in repository %v", pkgName, repositoryName),
+			"danger")
 		return
 	}
+	latestVersion := idx.LatestVersion
+
 	if selectedVersion == "" {
-		selectedVersion = idx.LatestVersion
+		selectedVersion = latestVersion
+	} else if !slices.ContainsFunc(idx.Versions, func(item types.PackageIndexItem) bool {
+		return item.Version == selectedVersion
+	}) {
+		selectedVersion = latestVersion
 	}
-	if selectedVersion != idx.LatestVersion {
-		var mf v1alpha1.PackageManifest
-		if err := repo.FetchPackageManifest("", pkgName, selectedVersion, &mf); err != nil {
-			s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred fetching manifest of %v in version %v", pkgName, selectedVersion), "danger")
+
+	if manifest == nil {
+		manifest = &v1alpha1.PackageManifest{}
+		if err := s.repoClientset.ForRepoWithName(repositoryName).
+			FetchPackageManifest(pkgName, selectedVersion, manifest); err != nil {
+			s.respondAlertAndLog(w, err,
+				fmt.Sprintf("An error occurred fetching manifest of %v in version %v in repository %v",
+					pkgName, selectedVersion, repositoryName),
+				"danger")
 			return
 		}
-		manifest = &mf
 	}
 
 	res, err := s.dependencyMgr.Validate(r.Context(), manifest, selectedVersion)
 	if err != nil {
-		s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred validating dependencies of %v in version %v", pkgName, selectedVersion), "danger")
+		s.respondAlertAndLog(w, err,
+			fmt.Sprintf("An error occurred validating dependencies of %v in version %v", pkgName, selectedVersion),
+			"danger")
 		return
 	}
-	err = pkgPageTmpl.Execute(w, s.enrichWithErrorAndWarnings(r.Context(), map[string]any{
+
+	valueErrors := make(map[string]error)
+	if pkg != nil {
+		for key, v := range pkg.Spec.Values {
+			if _, err := s.valueResolver.ResolveValue(r.Context(), v); err != nil {
+				valueErrors[key] = util.GetRootCause(err)
+			}
+		}
+	}
+	err = s.templates.pkgPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
 		"Package":           pkg,
-		"Status":            status,
+		"Status":            client.GetStatusOrPending(pkg),
 		"Manifest":          manifest,
-		"LatestVersion":     idx.LatestVersion,
+		"LatestVersion":     latestVersion,
 		"UpdateAvailable":   pkg != nil && s.isUpdateAvailable(r.Context(), pkgName),
-		"AutoUpdate":        autoUpdate,
+		"AutoUpdate":        clientutils.AutoUpdateString(pkg, "Disabled"),
 		"ValidationResult":  res,
 		"ShowConflicts":     res.Status == dependency.ValidationResultStatusConflict,
 		"SelectedVersion":   selectedVersion,
 		"PackageIndex":      &idx,
+		"Repositories":      repos,
+		"RepositoryName":    repositoryName,
 		"ShowConfiguration": (pkg != nil && len(manifest.ValueDefinitions) > 0 && pkg.DeletionTimestamp.IsZero()) || pkg == nil,
+		"ValueErrors":       valueErrors,
 	}, err))
 	checkTmplError(err, fmt.Sprintf("package-detail (%s)", pkgName))
 }
@@ -392,25 +459,41 @@ func (s *server) packageDiscussion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	pkgName := mux.Vars(r)["pkgName"]
-	pkg, status, manifest, _, err := describe.DescribePackage(r.Context(), pkgName)
-	if err != nil {
-		err = fmt.Errorf("An error occurred fetching package details of %v: %w\n", pkgName, err)
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+	repositoryName := mux.Vars(r)["repositoryName"]
+	pkg, manifest, err := describe.DescribeInstalledPackage(r.Context(), pkgName)
+	if err != nil && !apierrors.IsNotFound(err) {
+		s.respondAlertAndLog(w, err,
+			fmt.Sprintf("An error occurred fetching installed package %v", pkgName), "danger")
+		return
+	} else if err != nil {
+		// implies that the package is not installed
+		err = nil
 	}
 
 	var idx repo.PackageIndex
-	if err := repo.FetchPackageIndex("", pkgName, &idx); err != nil {
+
+	if err := s.repoClientset.ForRepoWithName(repositoryName).FetchPackageIndex(pkgName, &idx); err != nil {
 		s.respondAlertAndLog(w, err, "An error occurred fetching versions of "+pkgName, "danger")
 		return
 	}
 
-	err = pkgDiscussionPageTmpl.Execute(w, s.enrichWithErrorAndWarnings(r.Context(), map[string]any{
+	if manifest == nil {
+		manifest = &v1alpha1.PackageManifest{}
+		if err := s.repoClientset.ForRepoWithName(repositoryName).
+			FetchPackageManifest(pkgName, idx.LatestVersion, manifest); err != nil {
+			s.respondAlertAndLog(w, err,
+				fmt.Sprintf("An error occurred fetching manifest of %v in version %v in repository %v",
+					pkgName, idx.LatestVersion, repositoryName), "danger")
+			return
+		}
+	}
+
+	err = s.templates.pkgDiscussionPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
 		"Package":         pkg,
-		"Status":          status,
+		"Status":          client.GetStatusOrPending(pkg),
 		"Manifest":        manifest,
 		"LatestVersion":   idx.LatestVersion,
 		"UpdateAvailable": pkg != nil && s.isUpdateAvailable(r.Context(), pkgName),
-		"PackageIndex":    &idx,
 	}, err))
 	checkTmplError(err, fmt.Sprintf("package-detail (%s)", pkgName))
 }
@@ -423,48 +506,84 @@ func (s *server) packageDiscussion(w http.ResponseWriter, r *http.Request) {
 // In either case, the parameters from the form are parsed and converted into ValueConfiguration objects, which are
 // being set in the packages spec.
 func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	pkgName := mux.Vars(r)["pkgName"]
+	repositoryName := r.FormValue("repositoryName")
 	selectedVersion := r.FormValue("selectedVersion")
 	enableAutoUpdate := r.FormValue("enableAutoUpdate")
-	pkg, _, manifest, _, err := describe.DescribePackage(r.Context(), pkgName)
-	if err != nil {
+	pkg := &v1alpha1.Package{}
+	var mf v1alpha1.PackageManifest
+	if err := s.pkgClient.Packages().Get(ctx, pkgName, pkg); err != nil && !apierrors.IsNotFound(err) {
 		s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred fetching package details of %v", pkgName), "danger")
 		return
-	} else if pkg == nil {
-		var mf v1alpha1.PackageManifest
-		if err := repo.FetchPackageManifest("", pkgName, selectedVersion, &mf); err != nil {
+	} else if err != nil {
+		pkg = nil
+	}
+
+	if pkg == nil {
+		var repoClient repoclient.RepoClient
+		if len(repositoryName) == 0 {
+			repos, err := s.repoClientset.Meta().GetReposForPackage(pkgName)
+			if err != nil {
+				s.respondAlertAndLog(w, err, "", "danger")
+				return
+			}
+			switch len(repos) {
+			case 0:
+				// TODO: show error in UI
+				fmt.Fprintf(os.Stderr, "package not found in any repository")
+				return
+			case 1:
+				repositoryName = repos[0].Name
+				repoClient = s.repoClientset.ForRepo(repos[0])
+			default:
+				// TODO: show error in UI
+				fmt.Fprintf(os.Stderr, "package found in multiple repositories")
+				return
+			}
+		} else {
+			repoClient = s.repoClientset.ForRepoWithName(repositoryName)
+		}
+		if err := repoClient.FetchPackageManifest(pkgName, selectedVersion, &mf); err != nil {
 			s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred fetching manifest of %v in version %v", pkgName, selectedVersion), "danger")
 			return
 		}
-		manifest = &mf
+	} else {
+		if mf1, err := manifest.GetInstalledManifestForPackage(ctx, *pkg); err != nil {
+			s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred fetching package details of %v", pkgName), "danger")
+			return
+		} else {
+			mf = *mf1
+		}
 	}
 
-	if values, err := extractValues(r, manifest); err != nil {
+	if values, err := extractValues(r, &mf); err != nil {
 		s.respondAlertAndLog(w, err, "An error occurred parsing the form", "danger")
 		return
 	} else if pkg == nil {
 		pkg = client.PackageBuilder(pkgName).
 			WithVersion(selectedVersion).
+			WithRepositoryName(repositoryName).
 			WithAutoUpdates(strings.ToLower(enableAutoUpdate) == "on").
 			WithValues(values).
 			Build()
 		err := install.NewInstaller(s.pkgClient).
 			WithStatusWriter(statuswriter.Stderr()).
-			Install(r.Context(), pkg)
+			Install(ctx, pkg)
 		if err != nil {
 			s.respondAlertAndLog(w, err, "An error occurred installing "+pkgName, "danger")
 			return
 		}
 	} else {
 		pkg.Spec.Values = values
-		if err := s.pkgClient.Packages().Update(r.Context(), pkg); err != nil {
+		if err := s.pkgClient.Packages().Update(ctx, pkg); err != nil {
 			s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred updating package %v", pkgName), "danger")
 			return
 		}
-		if _, err := s.valueResolver.Resolve(r.Context(), values); err != nil {
+		if _, err := s.valueResolver.Resolve(ctx, values); err != nil {
 			s.respondAlertAndLog(w, err, "Some values could not be resolved: ", "warning")
 		} else {
-			err := alertTmpl.Execute(w, map[string]any{
+			err := s.templates.alertTmpl.Execute(w, map[string]any{
 				"Message":     "Configuration updated successfully",
 				"Dismissible": true,
 				"Type":        "success",
@@ -483,20 +602,36 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 // reference, and the actual input field(s).
 func (s *server) packageConfigurationInput(w http.ResponseWriter, r *http.Request) {
 	pkgName := mux.Vars(r)["pkgName"]
-	pkg, _, manifest, _, err := describe.DescribePackage(r.Context(), pkgName)
-	if err != nil {
-		err = fmt.Errorf("An error occurred fetching package details of %v: %w\n", pkgName, err)
+	selectedVersion := r.FormValue("selectedVersion")
+	repositoryName := r.FormValue("repositoryName")
+	pkg, manifest, err := describe.DescribeInstalledPackage(r.Context(), pkgName)
+	if err != nil && !apierrors.IsNotFound(err) {
+		err = fmt.Errorf("an error occurred fetching package details of %v: %w", pkgName, err)
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		return
 	}
+
+	if manifest == nil {
+		manifest = &v1alpha1.PackageManifest{}
+		if err := s.repoClientset.ForRepoWithName(repositoryName).
+			FetchPackageManifest(pkgName, selectedVersion, manifest); err != nil {
+			// TODO check error handling again?
+			s.respondAlertAndLog(w, err,
+				fmt.Sprintf("An error occurred fetching manifest of %v in version %v", pkgName, selectedVersion),
+				"danger")
+			return
+		}
+	}
+
 	valueName := mux.Vars(r)["valueName"]
 	refKind := r.URL.Query().Get("refKind")
 	if valueDefinition, ok := manifest.ValueDefinitions[valueName]; ok {
-		input := pkg_config_input.ForPkgConfigInput(pkg, pkgName, valueName, valueDefinition, &pkg_config_input.PkgConfigInputRenderOptions{
-			Autofocus:      true,
-			DesiredRefKind: &refKind,
-		})
-		err = pkgConfigInput.Execute(w, input)
+		input := pkg_config_input.ForPkgConfigInput(pkg, repositoryName, selectedVersion, pkgName, valueName, valueDefinition,
+			nil, &pkg_config_input.PkgConfigInputRenderOptions{
+				Autofocus:      true,
+				DesiredRefKind: &refKind,
+			})
+		err = s.templates.pkgConfigInput.Execute(w, input)
 		checkTmplError(err, fmt.Sprintf("package config input (%s, %s)", pkgName, valueName))
 	}
 }
@@ -507,7 +642,7 @@ func (s *server) supportPage(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/bootstrap", http.StatusFound)
 			return
 		}
-		err := supportPageTmpl.Execute(w, &map[string]any{
+		err := s.templates.supportPageTmpl.Execute(w, &map[string]any{
 			"CurrentContext":            "",
 			"KubeconfigDefaultLocation": clientcmd.RecommendedHomeFile,
 			"Err":                       err,
@@ -524,10 +659,10 @@ func (s *server) bootstrapPage(w http.ResponseWriter, r *http.Request) {
 		client := bootstrap.NewBootstrapClient(s.restConfig)
 		if err := client.Bootstrap(ctx, bootstrap.DefaultOptions()); err != nil {
 			fmt.Fprintf(os.Stderr, "\nAn error occurred during bootstrap:\n%v\n", err)
-			err := bootstrapPageTmpl.ExecuteTemplate(w, "bootstrap-failure", nil)
+			err := s.templates.bootstrapPageTmpl.ExecuteTemplate(w, "bootstrap-failure", nil)
 			checkTmplError(err, "bootstrap-failure")
 		} else {
-			err := bootstrapPageTmpl.ExecuteTemplate(w, "bootstrap-success", nil)
+			err := s.templates.bootstrapPageTmpl.ExecuteTemplate(w, "bootstrap-success", nil)
 			checkTmplError(err, "bootstrap-success")
 		}
 	} else {
@@ -538,7 +673,7 @@ func (s *server) bootstrapPage(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}
-		tplErr := bootstrapPageTmpl.Execute(w, &map[string]any{
+		tplErr := s.templates.bootstrapPageTmpl.Execute(w, &map[string]any{
 			"CurrentContext": s.rawConfig.CurrentContext,
 			"Err":            err,
 		})
@@ -571,7 +706,7 @@ func (s *server) kubeconfigPage(w http.ResponseWriter, r *http.Request) {
 	if s.rawConfig != nil {
 		currentContext = s.rawConfig.CurrentContext
 	}
-	tplErr := kubeconfigPageTmpl.Execute(w, map[string]any{
+	tplErr := s.templates.kubeconfigPageTmpl.Execute(w, map[string]any{
 		"CurrentContext":            currentContext,
 		"ConfigErr":                 configErr,
 		"KubeconfigDefaultLocation": clientcmd.RecommendedHomeFile,
@@ -580,10 +715,26 @@ func (s *server) kubeconfigPage(w http.ResponseWriter, r *http.Request) {
 	checkTmplError(tplErr, "kubeconfig")
 }
 
-func (s *server) enrichWithErrorAndWarnings(ctx context.Context, data map[string]any, err error) map[string]any {
+func (s *server) settingsPage(w http.ResponseWriter, r *http.Request) {
+	var repos v1alpha1.PackageRepositoryList
+	if err := s.pkgClient.PackageRepositories().GetAll(r.Context(), &repos); err != nil {
+		s.respondAlertAndLog(w, err, "Failed to fetch repositories", "danger")
+		return
+	}
+
+	tmplErr := s.templates.settingsPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
+		"Repositories": repos.Items,
+	}, nil))
+	checkTmplError(tmplErr, "settings")
+}
+
+func (s *server) enrichPage(r *http.Request, data map[string]any, err error) map[string]any {
+	if pathParts := strings.Split(r.URL.Path, "/"); len(pathParts) >= 2 {
+		data["NavbarActiveItem"] = pathParts[1]
+	}
 	data["Error"] = err
 	data["CurrentContext"] = s.rawConfig.CurrentContext
-	operatorVersion, clientVersion, err := s.getGlasskubeVersions(ctx)
+	operatorVersion, clientVersion, err := s.getGlasskubeVersions(r.Context())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to check for version mismatch: %v\n", err)
 	} else if operatorVersion != nil && clientVersion != nil && !operatorVersion.Equal(clientVersion) {
@@ -696,12 +847,20 @@ func (server *server) initKubeConfig() ServerConfigError {
 }
 
 func (server *server) initWhenBootstrapped(ctx context.Context) {
-	k8sclient := kubernetes.NewForConfigOrDie(server.restConfig)
+	server.k8sClient = kubernetes.NewForConfigOrDie(server.restConfig)
 	server.initCachedClient(context.WithoutCancel(ctx))
-	server.dependencyMgr = dependency.NewDependencyManager(clientadapter.NewPackageClientAdapter(server.pkgClient))
+	server.repoClientset = repoclient.NewClientset(
+		clientadapter.NewPackageClientAdapter(server.pkgClient),
+		clientadapter.NewKubernetesClientAdapter(server.k8sClient),
+	)
+	server.templates.repoClientset = server.repoClientset
+	server.dependencyMgr = dependency.NewDependencyManager(
+		clientadapter.NewPackageClientAdapter(server.pkgClient),
+		server.repoClientset,
+	)
 	server.valueResolver = manifestvalues.NewResolver(
 		clientadapter.NewPackageClientAdapter(server.pkgClient),
-		clientadapter.NewKubernetesClientAdapter(*k8sclient),
+		clientadapter.NewKubernetesClientAdapter(server.k8sClient),
 	)
 }
 
@@ -826,7 +985,7 @@ func (s *server) initPackageInfoStoreAndController(ctx context.Context) (cache.S
 }
 
 func (s *server) isUpdateAvailable(ctx context.Context, packages ...string) bool {
-	if tx, err := update.NewUpdater(s.pkgClient).Prepare(ctx, packages); err != nil {
+	if tx, err := update.NewUpdater(ctx).Prepare(ctx, packages); err != nil {
 		fmt.Fprintf(os.Stderr, "Error checking for updates: %v\n", err)
 		return false
 	} else {
@@ -846,7 +1005,7 @@ func (s *server) respondAlert(w http.ResponseWriter, message string, alertType s
 	w.Header().Add("Hx-Reselect", "div.alert") // overwrite any existing hx-select (which was a little intransparent sometimes)
 	w.Header().Add("Hx-Reswap", "afterbegin")
 	w.WriteHeader(http.StatusBadRequest)
-	err := alertTmpl.Execute(w, map[string]any{
+	err := s.templates.alertTmpl.Execute(w, map[string]any{
 		"Message":     message,
 		"Dismissible": true,
 		"Type":        alertType,

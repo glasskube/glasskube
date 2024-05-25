@@ -5,9 +5,8 @@ import (
 	"os"
 
 	"github.com/fatih/color"
-	clientadapter "github.com/glasskube/glasskube/internal/adapter/goclient"
+	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/cliutils"
-	"github.com/glasskube/glasskube/internal/dependency"
 	pkgClient "github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/glasskube/glasskube/pkg/uninstall"
@@ -20,17 +19,18 @@ var uninstallCmdOptions = struct {
 }{}
 
 var uninstallCmd = &cobra.Command{
-	Use:    "uninstall [package-name]",
-	Short:  "Uninstall a package",
-	Long:   `Uninstall a package.`,
-	Args:   cobra.ExactArgs(1),
-	PreRun: cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
+	Use:               "uninstall [package-name]",
+	Short:             "Uninstall a package",
+	Long:              `Uninstall a package.`,
+	Args:              cobra.ExactArgs(1),
+	ValidArgsFunction: completeInstalledPackageNames,
+	PreRun:            cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
 	Run: func(cmd *cobra.Command, args []string) {
 		pkgName := args[0]
 		ctx := cmd.Context()
-		currentContext := pkgClient.RawConfigFromContext(ctx).CurrentContext
-		client := pkgClient.FromContext(ctx)
-		dm := dependency.NewDependencyManager(clientadapter.NewPackageClientAdapter(client))
+		currentContext := clicontext.RawConfigFromContext(ctx).CurrentContext
+		client := clicontext.PackageClientFromContext(ctx)
+		dm := cliutils.DependencyManager(ctx)
 
 		if g, err := dm.NewGraph(ctx); err != nil {
 			fmt.Fprintf(os.Stderr, "❌ Error validating uninstall: %v\n", err)

@@ -8,11 +8,15 @@ import (
 	"path"
 	"reflect"
 
+	"github.com/glasskube/glasskube/pkg/condition"
+	"k8s.io/apimachinery/pkg/api/meta"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/yuin/goldmark"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/glasskube/glasskube/api/v1alpha1"
-	"github.com/glasskube/glasskube/internal/repo"
+	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	"github.com/glasskube/glasskube/internal/semver"
 	"github.com/glasskube/glasskube/internal/web/components/alert"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
@@ -22,7 +26,7 @@ import (
 	"go.uber.org/multierr"
 )
 
-var (
+type templates struct {
 	templateFuncs         template.FuncMap
 	baseTemplate          *template.Template
 	pkgsPageTmpl          *template.Template
@@ -31,17 +35,22 @@ var (
 	supportPageTmpl       *template.Template
 	bootstrapPageTmpl     *template.Template
 	kubeconfigPageTmpl    *template.Template
+	settingsPageTmpl      *template.Template
 	pkgUpdateModalTmpl    *template.Template
 	pkgConfigInput        *template.Template
 	pkgUninstallModalTmpl *template.Template
 	alertTmpl             *template.Template
-	templatesBaseDir      = "internal/web"
-	templatesDir          = "templates"
-	componentsDir         = path.Join(templatesDir, "components")
-	pagesDir              = path.Join(templatesDir, "pages")
+	repoClientset         repoclient.RepoClientset
+}
+
+var (
+	templatesBaseDir = "internal/web"
+	templatesDir     = "templates"
+	componentsDir    = path.Join(templatesDir, "components")
+	pagesDir         = path.Join(templatesDir, "pages")
 )
 
-func watchTemplates() error {
+func (t *templates) watchTemplates() error {
 	watcher, err := fsnotify.NewWatcher()
 	err = multierr.Combine(
 		err,
@@ -52,30 +61,27 @@ func watchTemplates() error {
 	if err == nil {
 		go func() {
 			for range watcher.Events {
-				parseTemplates()
+				t.parseTemplates()
 			}
 		}()
 	}
 	return err
 }
 
-func parseTemplates() {
-	templateFuncs = template.FuncMap{
+func (t *templates) parseTemplates() {
+	t.templateFuncs = template.FuncMap{
 		"ForPkgOverviewBtn": pkg_overview_btn.ForPkgOverviewBtn,
 		"ForPkgDetailBtns":  pkg_detail_btns.ForPkgDetailBtns,
 		"ForPkgUpdateAlert": pkg_update_alert.ForPkgUpdateAlert,
-		"PackageManifestUrl": func(pkgName string, pkg *v1alpha1.Package, latestVersion string) string {
-			var version string
-			if pkg != nil && pkg.Spec.PackageInfo.Version != "" {
-				version = pkg.Spec.PackageInfo.Version
-			} else {
-				version = latestVersion
+		"PackageManifestUrl": func(pkg *v1alpha1.Package) string {
+			if pkg != nil {
+				url, err := t.repoClientset.ForPackage(*pkg).
+					GetPackageManifestURL(pkg.Name, pkg.Spec.PackageInfo.Version)
+				if err == nil {
+					return url
+				}
 			}
-			if url, err := repo.GetPackageManifestURL("", pkgName, version); err != nil {
-				return ""
-			} else {
-				return url
-			}
+			return ""
 		},
 		"ForAlert":          alert.ForAlert,
 		"ForPkgConfigInput": pkg_config_input.ForPkgConfigInput,
@@ -104,35 +110,42 @@ func parseTemplates() {
 				return param
 			}
 		},
+		"UrlEscape": func(param string) string {
+			return template.URLQueryEscaper(param)
+		},
+		"IsRepoStatusReady": func(repo v1alpha1.PackageRepository) bool {
+			cond := meta.FindStatusCondition(repo.Status.Conditions, string(condition.Ready))
+			return cond != nil && cond.Status == v1.ConditionTrue
+		},
 	}
 
-	baseTemplate = template.Must(template.New("base.html").
-		Funcs(templateFuncs).
+	t.baseTemplate = template.Must(template.New("base.html").
+		Funcs(t.templateFuncs).
 		ParseFS(webFs, path.Join(templatesDir, "layout", "base.html")))
-	pkgsPageTmpl = pageTmpl("packages.html")
-	pkgPageTmpl = pageTmpl("package.html")
-	pkgDiscussionPageTmpl = pageTmpl("discussion.html")
-	supportPageTmpl = pageTmpl("support.html")
-	bootstrapPageTmpl = pageTmpl("bootstrap.html")
-	kubeconfigPageTmpl = pageTmpl("kubeconfig.html")
-	pkgUpdateModalTmpl = componentTmpl("pkg-update-modal", "pkg-update-modal.html")
-	pkgConfigInput = componentTmpl("pkg-config-input", "pkg-config-input.html")
-	pkgUninstallModalTmpl = componentTmpl("pkg-uninstall-modal", "pkg-uninstall-modal.html")
-	alertTmpl = componentTmpl("alert", "alert.html")
-	componentTmpl("version-mismatch-warning", "version-mismatch-warning.html")
+	t.pkgsPageTmpl = t.pageTmpl("packages.html")
+	t.pkgPageTmpl = t.pageTmpl("package.html")
+	t.pkgDiscussionPageTmpl = t.pageTmpl("discussion.html")
+	t.supportPageTmpl = t.pageTmpl("support.html")
+	t.bootstrapPageTmpl = t.pageTmpl("bootstrap.html")
+	t.kubeconfigPageTmpl = t.pageTmpl("kubeconfig.html")
+	t.settingsPageTmpl = t.pageTmpl("settings.html")
+	t.pkgUpdateModalTmpl = t.componentTmpl("pkg-update-modal", "pkg-update-modal.html")
+	t.pkgConfigInput = t.componentTmpl("pkg-config-input", "pkg-config-input.html")
+	t.pkgUninstallModalTmpl = t.componentTmpl("pkg-uninstall-modal", "pkg-uninstall-modal.html")
+	t.alertTmpl = t.componentTmpl("alert", "alert.html")
 }
 
-func pageTmpl(fileName string) *template.Template {
+func (t *templates) pageTmpl(fileName string) *template.Template {
 	return template.Must(
-		template.Must(baseTemplate.Clone()).ParseFS(
+		template.Must(t.baseTemplate.Clone()).ParseFS(
 			webFs,
 			path.Join(pagesDir, fileName),
 			path.Join(componentsDir, "*.html")))
 }
 
-func componentTmpl(id string, fileName string) *template.Template {
+func (t *templates) componentTmpl(id string, fileName string) *template.Template {
 	return template.Must(
-		template.New(id).Funcs(templateFuncs).ParseFS(
+		template.New(id).Funcs(t.templateFuncs).ParseFS(
 			webFs,
 			path.Join(componentsDir, fileName)))
 }

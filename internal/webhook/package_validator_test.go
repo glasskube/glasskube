@@ -19,19 +19,25 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-var fakeRepo = fakerepo.FakeClient{}
+var fakeRepoClient = fakerepo.FakeClient{
+	PackageRepositories: []v1alpha1.PackageRepository{{}},
+}
+var fakeRepoClientset = fakerepo.FakeClientset{Client: &fakeRepoClient}
 
 func newPackageValidatingWebhook(objects ...client.Object) *PackageValidatingWebhook {
 	fakeClient := fake.NewClientBuilder().
 		WithObjects(objects...).
+		WithObjects(&v1alpha1.PackageRepository{}).
 		Build()
 	ownerManager := owners.NewOwnerManager(scheme.Scheme)
 	return &PackageValidatingWebhook{
 		Client:       fakeClient,
 		OwnerManager: ownerManager,
-		DependendcyManager: dependency.NewDependencyManager(ctrladapter.NewPackageClientAdapter(fakeClient)).
-			WithRepo(&fakeRepo),
-		repo: &fakeRepo,
+		DependendcyManager: dependency.NewDependencyManager(
+			ctrladapter.NewPackageClientAdapter(fakeClient),
+			&fakeRepoClientset,
+		),
+		RepoClient: &fakeRepoClientset,
 	}
 }
 
@@ -102,7 +108,7 @@ var _ = Describe("PackageValidatingWebhook", Ordered, func() {
 	BeforeAll(func() {
 		err := v1alpha1.AddToScheme(scheme.Scheme)
 		Expect(err).NotTo(HaveOccurred())
-		fakeRepo.Packages = map[string]map[string]*v1alpha1.PackageManifest{
+		fakeRepoClient.Packages = map[string]map[string]*v1alpha1.PackageManifest{
 			"foo": {
 				"v1": foov1pi.Status.Manifest,
 				"v2": foov2pi.Status.Manifest,

@@ -1,0 +1,33 @@
+{{ define "content" }}
+  <div class="container-lg mt-2">
+    <div class="row p-3 col-lg-10 offset-lg-1">
+      <div>
+        <h2 class="text-reset">Package Repositories</h2>
+        <div class="alert alert-info" role="alert">
+          Please use the CLI to manage your repositories: <code>glasskube repo --help</code>.
+        </div>
+        <div class="row row-cols-1 g-2">
+          {{ range .Repositories }}
+            <div class="col">
+              <div class="card bg-body-secondary h-100 border-primary border-1">
+                <div class="card-body d-flex flex-row p-2">
+                  <div class="mx-1 align-self-center">
+                    {{ if IsRepoStatusReady . }}
+                      <i class="bi bi-circle-fill text-success"></i>
+                    {{ else }}
+                      <i class="bi bi-circle-fill text-danger"></i>
+                    {{ end }}
+                  </div>
+                  <div class="ms-2 d-flex flex-column">
+                    <span class="fw-semibold">{{ .Name }}</span>
+                    <span class="small lh-sm fw-normal">{{ .Spec.Url }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {{ end }}
+        </div>
+      </div>
+    </div>
+  </div>
+{{ end }}

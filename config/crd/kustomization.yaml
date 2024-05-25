@@ -4,6 +4,7 @@
 resources:
 - bases/packages.glasskube.dev_packages.yaml
 - bases/packages.glasskube.dev_packageinfos.yaml
+- bases/packages.glasskube.dev_packagerepositories.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patches:
@@ -17,6 +18,7 @@ patches:
 # patches here are for enabling the CA injection for each CRD
 #- path: patches/cainjection_in_packages.yaml
 #- path: patches/cainjection_in_packageinfos.yaml
+#- path: patches/cainjection_in_packagerepositories.yaml
 #+kubebuilder:scaffold:crdkustomizecainjectionpatch
 
 # [WEBHOOK] To enable webhook, uncomment the following section

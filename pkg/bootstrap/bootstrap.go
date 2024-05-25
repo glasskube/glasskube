@@ -2,11 +2,13 @@ package bootstrap
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/fatih/color"
+	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/constants"
@@ -14,6 +16,7 @@ import (
 	"github.com/glasskube/glasskube/internal/releaseinfo"
 	"github.com/glasskube/glasskube/internal/telemetry"
 	"github.com/glasskube/glasskube/internal/telemetry/annotations"
+	"github.com/glasskube/glasskube/internal/util"
 	"github.com/schollz/progressbar/v3"
 	"go.uber.org/multierr"
 	appsv1 "k8s.io/api/apps/v1"
@@ -36,15 +39,16 @@ type BootstrapClient struct {
 }
 
 type BootstrapOptions struct {
-	Type             BootstrapType
-	Url              string
-	Latest           bool
-	DisableTelemetry bool
-	Force            bool
+	Type                    BootstrapType
+	Url                     string
+	Latest                  bool
+	DisableTelemetry        bool
+	Force                   bool
+	CreateDefaultRepository bool
 }
 
 func DefaultOptions() BootstrapOptions {
-	return BootstrapOptions{Type: BootstrapTypeAio, Latest: config.IsDevBuild()}
+	return BootstrapOptions{Type: BootstrapTypeAio, Latest: config.IsDevBuild(), CreateDefaultRepository: true}
 }
 
 const installMessage = `
@@ -55,15 +59,22 @@ func NewBootstrapClient(config *rest.Config) *BootstrapClient {
 	return &BootstrapClient{clientConfig: config}
 }
 
-func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOptions) error {
-	telemetry.BootstrapAttempt()
-
+func (c *BootstrapClient) initRestMapper() error {
 	if discoveryClient, err := discovery.NewDiscoveryClientForConfig(c.clientConfig); err != nil {
 		return err
 	} else if groupResources, err := restmapper.GetAPIGroupResources(discoveryClient); err != nil {
 		return err
 	} else {
 		c.mapper = restmapper.NewDiscoveryRESTMapper(groupResources)
+		return nil
+	}
+}
+
+func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOptions) error {
+	telemetry.BootstrapAttempt()
+
+	if err := c.initRestMapper(); err != nil {
+		return err
 	}
 
 	if client, err := dynamic.NewForConfig(c.clientConfig); err != nil {
@@ -81,7 +92,7 @@ func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOption
 			if releaseInfo, err := releaseinfo.FetchLatestRelease(); err != nil {
 				if httperror.Is(err, http.StatusServiceUnavailable) || httperror.IsTimeoutError(err) {
 					telemetry.BootstrapFailure(time.Since(start))
-					return fmt.Errorf("Network connectivity error, check your network, cannot bootstrap")
+					return fmt.Errorf("network connectivity error, check your network: %w", err)
 				}
 				telemetry.BootstrapFailure(time.Since(start))
 				return fmt.Errorf("could not determine latest version: %w", err)
@@ -111,6 +122,10 @@ func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOption
 		} else {
 			statusMessage("Attempting to force bootstrap anyways (Force option is enabled)", true)
 		}
+	}
+
+	if options.CreateDefaultRepository {
+		manifests = append(manifests, defaultRepository())
 	}
 
 	statusMessage("Applying Glasskube manifests", true)
@@ -184,7 +199,7 @@ func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructure
 		gvk := obj.GroupVersionKind()
 		mapping, err := c.mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 		if err != nil {
-			return err
+			return fmt.Errorf("could not get restmapping for %v %v: %w", obj.GetKind(), obj.GetName(), err)
 		}
 
 		bar.Describe(fmt.Sprintf("Applying %v (%v)", obj.GetName(), obj.GetKind()))
@@ -210,6 +225,11 @@ func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructure
 		if obj.GetKind() == constants.Deployment {
 			checkWorkloads = append(checkWorkloads, &objs[i])
 			bar.ChangeMax(bar.GetMax() + 1)
+		} else if obj.GetKind() == "CustomResourceDefinition" {
+			// The RESTMapping must be re-created after applying a CRD, so we can create resources of that kind immediately.
+			if err := c.initRestMapper(); err != nil {
+				return err
+			}
 		}
 
 		_ = bar.Add(1)
@@ -231,6 +251,27 @@ func (c *BootstrapClient) handleTelemetry(disabled bool, elapsed time.Duration) 
 			"Run \"glasskube telemetry status\" for more info.", true)
 		telemetry.BootstrapSuccess(elapsed)
 	}
+}
+
+func defaultRepository() unstructured.Unstructured {
+	repo := v1alpha1.PackageRepository{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: v1alpha1.GroupVersion.String(),
+			Kind:       "PackageRepository",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "glasskube",
+		},
+		Spec: v1alpha1.PackageRepositorySpec{
+			Url: constants.DefaultRepoUrl,
+		},
+	}
+	repo.SetDefaultRepository()
+	var repoUnstructured unstructured.Unstructured
+	if err := json.Unmarshal(util.Must(json.Marshal(repo)), &repoUnstructured); err != nil {
+		panic(err)
+	}
+	return repoUnstructured
 }
 
 func (c *BootstrapClient) checkWorkloadReady(
