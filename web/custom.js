@@ -10,15 +10,17 @@
 })();
 
 (() => {
-  const dismissed = localStorage.getItem('cloud-info-dismissed');
+  const dismissed = sessionStorage.getItem('cloud-info-dismissed');
   if (!dismissed) {
     document.body
       .querySelector('#cloud-info')
       .classList.remove('visually-hidden');
   }
-  document.body.querySelector('#cloud-info').addEventListener('click', () => {
-    localStorage.setItem('cloud-info-dismissed', true);
-  });
+  document.body
+    .querySelector('#cloud-info-close')
+    .addEventListener('click', () => {
+      sessionStorage.setItem('cloud-info-dismissed', true);
+    });
 })();
 
 var sseOnline = true;
