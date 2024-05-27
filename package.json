@@ -25,6 +25,7 @@
       "prettier-plugin-go-template"
     ],
     "bracketSameLine": true,
+    "bracketSpacing": false,
     "singleQuote": true,
     "semi": true,
     "overrides": [

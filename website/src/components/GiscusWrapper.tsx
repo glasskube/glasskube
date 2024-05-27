@@ -1,9 +1,9 @@
-import React, { useEffect } from 'react';
+import React, {useEffect} from 'react';
 import Giscus from '@giscus/react';
-import { useColorMode } from '@docusaurus/theme-common';
+import {useColorMode} from '@docusaurus/theme-common';
 
-export default function GiscusWrapper({ category, categoryId }) {
-  const { colorMode } = useColorMode();
+export default function GiscusWrapper({category, categoryId}) {
+  const {colorMode} = useColorMode();
 
   const handleGiscusMessage = (ev) => {
     if (ev.origin !== 'https://giscus.app') return;
@@ -55,6 +55,6 @@ export default function GiscusWrapper({ category, categoryId }) {
 export function BlogDiscussion() {
   return <GiscusWrapper category="Blog" categoryId="DIC_kwDOLDumD84CfCte" />;
 }
-export function Discussion({ category, categoryId }) {
+export function Discussion({category, categoryId}) {
   return <GiscusWrapper category={category} categoryId={categoryId} />;
 }
