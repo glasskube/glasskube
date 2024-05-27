@@ -729,6 +729,7 @@ func (s *server) settingsPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) enrichPage(r *http.Request, data map[string]any, err error) map[string]any {
+	data["CloudId"] = telemetry.GetMachineId()
 	if pathParts := strings.Split(r.URL.Path, "/"); len(pathParts) >= 2 {
 		data["NavbarActiveItem"] = pathParts[1]
 	}

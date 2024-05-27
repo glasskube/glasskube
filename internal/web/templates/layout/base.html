@@ -66,6 +66,18 @@
       </div>
 
       <div id="error-container" class="container-lg mt-2">
+        <div
+          id="cloud-info"
+          hx-preserve="cloud-info"
+          class="alert alert-info alert-dismissible text-center visually-hidden"
+          role="alert">
+          🎉️ We are soon launching Glasskube Cloud!
+          <a class="text-reset" href="https://glasskube.cloud/signup.html?id={{ .CloudId }}" target="_blank"
+            >Sign Up here!</a
+          >
+          🥳
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
         {{ if .Error }}
           {{ template "alert" (ForAlert .Error "danger") }}
         {{ end }}

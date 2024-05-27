@@ -115,7 +115,7 @@ func ExitWithError() {
 
 func ForClient() *ClientTelemetry {
 	ct := ClientTelemetry{
-		machineId: getMachineId(),
+		machineId: GetMachineId(),
 		start:     time.Now(),
 	}
 	if ph, err := posthog.NewWithConfig(apiKey, posthog.Config{
@@ -138,7 +138,7 @@ func (t *ClientTelemetry) InitClient(config *rest.Config) {
 	}
 }
 
-func getMachineId() string {
+func GetMachineId() string {
 	id, err := machineid.ProtectedID("glasskube")
 	if err != nil {
 		return fmt.Sprintf("fallback-id-%v-%v", rand.Int(), err.Error())
