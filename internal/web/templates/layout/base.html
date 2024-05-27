@@ -45,11 +45,11 @@
 
         <div class="navbar-collapse">
           <ul class="navbar-nav ms-auto align-items-center gap-1">
-            {{ if .CurrentContext }}
-              <li class="nav-item">
-                <span class="nav-link">Context: {{ .CurrentContext }}</span>
-              </li>
-            {{ end }}
+            <li class="nav-item">
+              <a class="nav-link" href="https://glasskube.cloud/signup.html?id={{ .CloudId }}" target="_blank"
+                ><span class="bi bi-box-arrow-up-right me-1"></span>Glasskube Cloud</a
+              >
+            </li>
             <li class="nav-item">
               <a class="cta cta-sm text-white" href="https://github.com/glasskube/glasskube" target="_blank">
                 <span class="bi bi-github"></span>
@@ -71,12 +71,17 @@
           hx-preserve="cloud-info"
           class="alert alert-info alert-dismissible text-center visually-hidden"
           role="alert">
-          🎉️ We are soon launching Glasskube Cloud!
+          🎉️ Glasskube Cloud is launching soon! 😎
           <a class="text-reset" href="https://glasskube.cloud/signup.html?id={{ .CloudId }}" target="_blank"
-            >Sign Up here!</a
+            >Join the wait list to request early access.</a
           >
           🥳
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          <button
+            id="cloud-info-close"
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="alert"
+            aria-label="Close"></button>
         </div>
         {{ if .Error }}
           {{ template "alert" (ForAlert .Error "danger") }}
@@ -93,16 +98,28 @@
       <div class="modal-dialog" role="document"></div>
     </div>
     <footer class="footer py-3 mt-auto w-100 bg-secondary-subtle">
-      <div class="container text-center">
-        <span class="text-muted">Glasskube cluster version: {{ .VersionDetails.OperatorVersion }}</span>
-        <br />
-        <span class="text-muted">Glasskube version: {{ .VersionDetails.ClientVersion }}</span>
-        <br />
-        {{ if .VersionDetails.NeedsOperatorUpdate }}
-          <span class="text-danger">New version available! ({{ .VersionDetails.ClientVersion }})</span>
-        {{ else }}
-          <span class="text-success">Up to date</span>
-        {{ end }}
+      <div class="container">
+        <div class="row">
+          <div class="col-4 ">
+            <span class="text-muted text-wrap text-break">Context: {{ .CurrentContext }}</span>
+          </div>
+          <div class="col-4 text-center">
+            <span class="text-muted">Glasskube cluster version: {{ .VersionDetails.OperatorVersion }}</span>
+            <br />
+            <span class="text-muted">Glasskube version: {{ .VersionDetails.ClientVersion }}</span>
+            <br />
+            {{ if .VersionDetails.NeedsOperatorUpdate }}
+              <span class="text-danger">New version available! ({{ .VersionDetails.ClientVersion }})</span>
+            {{ else }}
+              <span class="text-success">Up to date</span>
+            {{ end }}
+          </div>
+          <div class="col-4 text-end">
+            <a class="nav-link" href="https://glasskube.cloud/signup.html?id={{ .CloudId }}" target="_blank"
+              ><span class="bi bi-box-arrow-up-right me-1"></span>Glasskube Cloud</a
+            >
+          </div>
+        </div>
       </div>
     </footer>
 
