@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -69,11 +70,12 @@ var updateCmd = &cobra.Command{
 				fmt.Fprintf(os.Stderr, "⛔ Update cancelled. No changes were made.\n")
 				cliutils.ExitSuccess()
 			}
-			if err := updater.Apply(ctx, tx); err != nil {
+			updatedPackages, err := updater.Apply(ctx, tx)
+			if err != nil {
 				fmt.Fprintf(os.Stderr, "❌ update failed: %v\n", err)
 				cliutils.ExitWithError()
 			}
-			handleOutput(tx)
+			handleOutput(updatedPackages)
 		}
 
 		fmt.Fprintf(os.Stderr, "✅ all packages up-to-date\n")
@@ -97,7 +99,7 @@ func printTransaction(tx update.UpdateTransaction) {
 	_ = w.Flush()
 }
 
-func handleOutput(tx *update.UpdateTransaction) {
+func handleOutput(pkgs []v1alpha1.Package) {
 	if updateCmdOptions.Output == "" {
 		return
 	}
@@ -106,9 +108,19 @@ func handleOutput(tx *update.UpdateTransaction) {
 	var err error
 	switch updateCmdOptions.Output {
 	case OutputFormatJSON:
-		outputData, err = json.Marshal(tx)
+		outputData, err = json.Marshal(pkgs)
 	case OutputFormatYAML:
-		outputData, err = yaml.Marshal(tx)
+		var buffer bytes.Buffer
+		for _, pkg := range pkgs {
+			data, err := yaml.Marshal(pkg)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "❌ failed to marshal output: %v\n", err)
+				cliutils.ExitWithError()
+			}
+			buffer.Write(data)
+			buffer.Write([]byte("---\n"))
+		}
+		outputData = buffer.Bytes()
 	default:
 		fmt.Fprintf(os.Stderr, "❌ unsupported output format: %v\n", updateCmdOptions.Output)
 		cliutils.ExitWithError()
