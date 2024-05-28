@@ -29,21 +29,22 @@ import (
 )
 
 type templates struct {
-	templateFuncs         template.FuncMap
-	baseTemplate          *template.Template
-	pkgsPageTmpl          *template.Template
-	pkgPageTmpl           *template.Template
-	pkgDiscussionPageTmpl *template.Template
-	supportPageTmpl       *template.Template
-	bootstrapPageTmpl     *template.Template
-	kubeconfigPageTmpl    *template.Template
-	settingsPageTmpl      *template.Template
-	pkgUpdateModalTmpl    *template.Template
-	pkgConfigInput        *template.Template
-	pkgUninstallModalTmpl *template.Template
-	alertTmpl             *template.Template
-	datalistTmpl          *template.Template
-	repoClientset         repoclient.RepoClientset
+	templateFuncs          template.FuncMap
+	baseTemplate           *template.Template
+	pkgsPageTmpl           *template.Template
+	pkgPageTmpl            *template.Template
+	pkgDiscussionPageTmpl  *template.Template
+	supportPageTmpl        *template.Template
+	bootstrapPageTmpl      *template.Template
+	kubeconfigPageTmpl     *template.Template
+	settingsPageTmpl       *template.Template
+	pkgUpdateModalTmpl     *template.Template
+	pkgConfigInput         *template.Template
+	pkgUninstallModalTmpl  *template.Template
+	alertTmpl              *template.Template
+	datalistTmpl           *template.Template
+	pkgDiscussionBadgeTmpl *template.Template
+	repoClientset          repoclient.RepoClientset
 }
 
 var (
@@ -138,6 +139,7 @@ func (t *templates) parseTemplates() {
 	t.pkgUninstallModalTmpl = t.componentTmpl("pkg-uninstall-modal")
 	t.alertTmpl = t.componentTmpl("alert")
 	t.datalistTmpl = t.componentTmpl("datalist")
+	t.pkgDiscussionBadgeTmpl = t.componentTmpl("discussion-badge")
 }
 
 func (t *templates) pageTmpl(fileName string) *template.Template {
