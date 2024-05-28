@@ -174,6 +174,7 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle("/packages/open", s.requireReady(s.open))
 	router.Handle("/packages/{pkgName}", s.requireReady(s.packageDetail))
 	router.Handle("/packages/{pkgName}/discussion", s.requireReady(s.packageDiscussion))
+	router.Handle("/packages/{pkgName}/discussion/badge", s.requireReady(s.discussionBadge))
 	router.Handle("/packages/{pkgName}/configure", s.requireReady(s.installOrConfigurePackage))
 	router.Handle("/packages/{pkgName}/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
 	router.Handle("/packages/{pkgName}/configuration/{valueName}/datalists/names", s.requireReady(s.namesDatalist))
@@ -396,6 +397,14 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	var usedRepo v1alpha1.PackageRepository
+	if err := s.pkgClient.PackageRepositories().Get(r.Context(), repositoryName, &usedRepo); err != nil {
+		s.respondAlertAndLog(w, err,
+			fmt.Sprintf("An error occurred fetching repository %v", repositoryName),
+			"danger")
+		return
+	}
+
 	var idx repo.PackageIndex
 	if err := s.repoClientset.ForRepoWithName(repositoryName).FetchPackageIndex(pkgName, &idx); err != nil {
 		s.respondAlertAndLog(w, err,
@@ -453,68 +462,22 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = s.templates.pkgPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
-		"Package":           pkg,
-		"Status":            client.GetStatusOrPending(pkg),
-		"Manifest":          manifest,
-		"LatestVersion":     latestVersion,
-		"UpdateAvailable":   pkg != nil && s.isUpdateAvailable(r.Context(), pkgName),
-		"AutoUpdate":        clientutils.AutoUpdateString(pkg, "Disabled"),
-		"ValidationResult":  res,
-		"ShowConflicts":     res.Status == dependency.ValidationResultStatusConflict,
-		"SelectedVersion":   selectedVersion,
-		"PackageIndex":      &idx,
-		"Repositories":      repos,
-		"RepositoryName":    repositoryName,
-		"ShowConfiguration": (pkg != nil && len(manifest.ValueDefinitions) > 0 && pkg.DeletionTimestamp.IsZero()) || pkg == nil,
-		"ValueErrors":       valueErrors,
-		"DatalistOptions":   datalistOptions,
-	}, err))
-	checkTmplError(err, fmt.Sprintf("package-detail (%s)", pkgName))
-}
-
-// packageDiscussion is a full page for showing various discussions, reactions, etc.
-func (s *server) packageDiscussion(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodPost {
-		githubUrl := r.FormValue("githubUrl")
-		telemetry.SetUserProperty("github_url", githubUrl)
-		return
-	}
-	pkgName := mux.Vars(r)["pkgName"]
-	repositoryName := mux.Vars(r)["repositoryName"]
-	pkg, manifest, err := describe.DescribeInstalledPackage(r.Context(), pkgName)
-	if err != nil && !apierrors.IsNotFound(err) {
-		s.respondAlertAndLog(w, err,
-			fmt.Sprintf("An error occurred fetching installed package %v", pkgName), "danger")
-		return
-	} else if err != nil {
-		// implies that the package is not installed
-		err = nil
-	}
-
-	var idx repo.PackageIndex
-
-	if err := s.repoClientset.ForRepoWithName(repositoryName).FetchPackageIndex(pkgName, &idx); err != nil {
-		s.respondAlertAndLog(w, err, "An error occurred fetching versions of "+pkgName, "danger")
-		return
-	}
-
-	if manifest == nil {
-		manifest = &v1alpha1.PackageManifest{}
-		if err := s.repoClientset.ForRepoWithName(repositoryName).
-			FetchPackageManifest(pkgName, idx.LatestVersion, manifest); err != nil {
-			s.respondAlertAndLog(w, err,
-				fmt.Sprintf("An error occurred fetching manifest of %v in version %v in repository %v",
-					pkgName, idx.LatestVersion, repositoryName), "danger")
-			return
-		}
-	}
-
-	err = s.templates.pkgDiscussionPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
-		"Package":         pkg,
-		"Status":          client.GetStatusOrPending(pkg),
-		"Manifest":        manifest,
-		"LatestVersion":   idx.LatestVersion,
-		"UpdateAvailable": pkg != nil && s.isUpdateAvailable(r.Context(), pkgName),
+		"Package":            pkg,
+		"Status":             client.GetStatusOrPending(pkg),
+		"Manifest":           manifest,
+		"LatestVersion":      latestVersion,
+		"UpdateAvailable":    pkg != nil && s.isUpdateAvailable(r.Context(), pkgName),
+		"AutoUpdate":         clientutils.AutoUpdateString(pkg, "Disabled"),
+		"ValidationResult":   res,
+		"ShowConflicts":      res.Status == dependency.ValidationResultStatusConflict,
+		"SelectedVersion":    selectedVersion,
+		"PackageIndex":       &idx,
+		"Repositories":       repos,
+		"RepositoryName":     repositoryName,
+		"ShowConfiguration":  (pkg != nil && len(manifest.ValueDefinitions) > 0 && pkg.DeletionTimestamp.IsZero()) || pkg == nil,
+		"ValueErrors":        valueErrors,
+		"DatalistOptions":    datalistOptions,
+		"ShowDiscussionLink": usedRepo.IsGlasskubeRepo(),
 	}, err))
 	checkTmplError(err, fmt.Sprintf("package-detail (%s)", pkgName))
 }
