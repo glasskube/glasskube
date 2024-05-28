@@ -50,4 +50,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&config.Kubeconfig, "kubeconfig", "",
 		fmt.Sprintf("path to the kubeconfig file, whose current-context will be used (defaults to %v)",
 			clientcmd.RecommendedHomeFile))
+	RootCmd.PersistentFlags().BoolVar(&config.NonInteractive, "non-interactive", config.NonInteractive,
+		"run in non-interactive mode. "+
+			"If interactivity would be required, the command will terminate with a non-zero exit code.")
 }
