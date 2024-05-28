@@ -674,6 +674,7 @@ func (s *server) bootstrapPage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		tplErr := s.templates.bootstrapPageTmpl.Execute(w, &map[string]any{
+			"CloudId":        telemetry.GetMachineId(),
 			"CurrentContext": s.rawConfig.CurrentContext,
 			"Err":            err,
 		})
@@ -707,6 +708,7 @@ func (s *server) kubeconfigPage(w http.ResponseWriter, r *http.Request) {
 		currentContext = s.rawConfig.CurrentContext
 	}
 	tplErr := s.templates.kubeconfigPageTmpl.Execute(w, map[string]any{
+		"CloudId":                   telemetry.GetMachineId(),
 		"CurrentContext":            currentContext,
 		"ConfigErr":                 configErr,
 		"KubeconfigDefaultLocation": clientcmd.RecommendedHomeFile,
