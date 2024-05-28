@@ -113,6 +113,7 @@ func main() {
 		Scheme:            mgr.GetScheme(),
 		HelmAdapter:       flux.NewAdapter(),
 		ManifestAdapter:   plain.NewAdapter(),
+		RepoClientset:     repoClient,
 		DependencyManager: dependencyManager,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Package")
