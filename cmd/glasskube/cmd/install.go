@@ -222,7 +222,7 @@ var installCmd = &cobra.Command{
 }
 
 func formatOutput(pkg *v1alpha1.Package, format OutputFormat) (string, error) {
-	if gvks, _, err := scheme.Scheme.ObjectKinds(&pkg); err == nil && len(gvks) == 1 {
+	if gvks, _, err := scheme.Scheme.ObjectKinds(pkg); err == nil && len(gvks) == 1 {
 		pkg.SetGroupVersionKind(gvks[0])
 	}
 	switch format {
