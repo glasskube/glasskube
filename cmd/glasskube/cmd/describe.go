@@ -145,7 +145,7 @@ func printEntrypoints(manifest *v1alpha1.PackageManifest) {
 }
 
 func entrypointsAsMap(manifest *v1alpha1.PackageManifest) []map[string]string {
-	var entrypoints []map[string]string
+	entrypoints := []map[string]string{}
 	for _, i := range manifest.Entrypoints {
 		entrypoint := make(map[string]string)
 		if i.Name != "" {
@@ -183,7 +183,7 @@ func printDependencies(manifest *v1alpha1.PackageManifest) {
 }
 
 func dependenciesAsMap(manifest *v1alpha1.PackageManifest) []map[string]string {
-	var dependencies []map[string]string
+	dependencies := []map[string]string{}
 	for _, dep := range manifest.Dependencies {
 		dependency := make(map[string]string)
 		dependency["Name"] = dep.Name
@@ -207,7 +207,7 @@ func printRepositories(pkg *v1alpha1.Package, repos []v1alpha1.PackageRepository
 }
 
 func repositoriesAsMap(pkg *v1alpha1.Package, repos []v1alpha1.PackageRepository) []map[string]string {
-	var repositories []map[string]string
+	repositories := []map[string]string{}
 	for _, repo := range repos {
 		repository := make(map[string]string)
 		repository["Name"] = repo.Name
@@ -244,7 +244,7 @@ func printReferences(ctx context.Context, pkg *v1alpha1.Package, manifest *v1alp
 }
 
 func referencesAsMap(ctx context.Context, pkg *v1alpha1.Package, manifest *v1alpha1.PackageManifest) []map[string]string {
-	var references []map[string]string
+	references := []map[string]string{}
 	for _, ref := range manifest.References {
 		reference := make(map[string]string)
 		reference["Label"] = ref.Label
@@ -361,7 +361,6 @@ func printJSON(ctx context.Context,
 		cliutils.ExitWithError()
 	}
 	fmt.Println(string(jsonOutput))
-	return
 }
 
 func printYAML(
@@ -388,7 +387,6 @@ func printYAML(
 		cliutils.ExitWithError()
 	}
 	fmt.Println(string(yamlOutput))
-	return
 }
 
 func init() {
