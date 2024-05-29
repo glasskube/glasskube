@@ -50,7 +50,11 @@ var uninstallCmd = &cobra.Command{
 			}
 		}
 
-		uninstaller := uninstall.NewUninstaller(client).WithStatusWriter(statuswriter.Spinner())
+		uninstaller := uninstall.NewUninstaller(client)
+		if !rootCmdOptions.NoProgress {
+			uninstaller.WithStatusWriter(statuswriter.Spinner())
+		}
+
 		pkg := pkgClient.NewPackage(pkgName, "")
 		if uninstallCmdOptions.NoWait {
 			if err := uninstaller.Uninstall(ctx, pkg); err != nil {

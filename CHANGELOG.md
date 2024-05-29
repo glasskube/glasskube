@@ -1,5 +1,43 @@
 # Changelog
 
+## [0.7.0](https://github.com/glasskube/glasskube/compare/v0.6.0...v0.7.0) (2024-05-28)
+
+
+### Features
+
+* **cli:** add `--output` support for `glasskube configure` ([#670](https://github.com/glasskube/glasskube/issues/670)) ([9b1a82d](https://github.com/glasskube/glasskube/commit/9b1a82d46fb22bcc7e4138c6136c31237afa838b))
+* **cli:** add flag to trigger non-interactive mode ([f0f54da](https://github.com/glasskube/glasskube/commit/f0f54dad95b4011c96938b5935f9b899c57be9ae))
+* **cli:** show uninstall status during package removal in list and describe commands ([#654](https://github.com/glasskube/glasskube/issues/654)) ([4347003](https://github.com/glasskube/glasskube/commit/4347003176fced705875b1e064a56801e9cdfb4d))
+* **ui:** add cloud signup ([b0987d1](https://github.com/glasskube/glasskube/commit/b0987d14a88213fae3384a69ed19e18253c7304a))
+* **ui:** autocomplete for reference inputs ([#495](https://github.com/glasskube/glasskube/issues/495)) ([fd72d1c](https://github.com/glasskube/glasskube/commit/fd72d1c78e4f2a8a8397f3825df2b91bd902014e))
+* **ui:** integrate cloud links into the layout ([1d24aaa](https://github.com/glasskube/glasskube/commit/1d24aaa32d783d2241067f68877f60054e9e28d3))
+
+
+### Bug Fixes
+
+* **deps:** update dependency @lottiefiles/react-lottie-player to v3.5.4 ([b6602e5](https://github.com/glasskube/glasskube/commit/b6602e57abbba2de5fae8a641c2ec26737fdb2f8))
+* **deps:** update module github.com/onsi/ginkgo/v2 to v2.19.0 ([3c15f65](https://github.com/glasskube/glasskube/commit/3c15f6504265ba811c27a2868929bbe0c421f77b))
+* **deps:** update module sigs.k8s.io/controller-runtime to v0.18.3 ([5e28e65](https://github.com/glasskube/glasskube/commit/5e28e652307a6384b52bdddd52f8109ae90d7c1c))
+* **package-operator:** add missing repoclient ([84f1bbf](https://github.com/glasskube/glasskube/commit/84f1bbf7304e3f339baa03064bff7249aaf58aa0))
+* **ui:** support cloud links in bootstrap/kubeconfig pages ([688d4fe](https://github.com/glasskube/glasskube/commit/688d4febf143c03e04d64399a4a7afbc4e02b0c6))
+
+
+### Other
+
+* **deps:** update dependency esbuild to v0.21.4 ([192dc89](https://github.com/glasskube/glasskube/commit/192dc89e9b8a234230ef2594947294704b9b2c54))
+* **deps:** update docker/login-action digest to 0d4c9c5 ([27acfd9](https://github.com/glasskube/glasskube/commit/27acfd97c75022a69621ea2a037cb6553e4c1230))
+* fix spacing in website ([29f6e91](https://github.com/glasskube/glasskube/commit/29f6e91e2c5502ef5da6485e064d589fc7af93ee))
+
+
+### Docs
+
+* include missing changes for multi-repo support ([fe80ada](https://github.com/glasskube/glasskube/commit/fe80adad370cbb1e93d70dc4c674aa69bd538e3b))
+
+
+### Refactoring
+
+* auto-update label to annotation ([02ccfb7](https://github.com/glasskube/glasskube/commit/02ccfb7cd3a706090974a81ac0d2d57e2e7cffab))
+
 ## [0.6.0](https://github.com/glasskube/glasskube/compare/v0.5.1...v0.6.0) (2024-05-23)
 
 

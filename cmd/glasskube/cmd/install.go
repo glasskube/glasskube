@@ -50,7 +50,12 @@ var installCmd = &cobra.Command{
 		dm := cliutils.DependencyManager(ctx)
 		valueResolver := cliutils.ValueResolver(ctx)
 		repoClientset := cliutils.RepositoryClientset(ctx)
-		installer := install.NewInstaller(pkgClient).WithStatusWriter(statuswriter.Spinner())
+		installer := install.NewInstaller(pkgClient)
+
+		if !rootCmdOptions.NoProgress {
+			installer.WithStatusWriter(statuswriter.Spinner())
+		}
+
 		bold := color.New(color.Bold).SprintFunc()
 		packageName := args[0]
 		pkgBuilder := client.PackageBuilder(packageName)
