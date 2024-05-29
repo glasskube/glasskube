@@ -243,7 +243,11 @@ func printReferences(ctx context.Context, pkg *v1alpha1.Package, manifest *v1alp
 	}
 }
 
-func referencesAsMap(ctx context.Context, pkg *v1alpha1.Package, manifest *v1alpha1.PackageManifest) []map[string]string {
+func referencesAsMap(
+	ctx context.Context,
+	pkg *v1alpha1.Package,
+	manifest *v1alpha1.PackageManifest,
+) []map[string]string {
 	references := []map[string]string{}
 	for _, ref := range manifest.References {
 		reference := make(map[string]string)
