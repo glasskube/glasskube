@@ -15,6 +15,7 @@ import (
 
 var rootCmdOptions struct {
 	SkipUpdateCheck bool
+	NoProgress      bool
 }
 
 var (
@@ -53,4 +54,6 @@ func init() {
 	RootCmd.PersistentFlags().BoolVar(&config.NonInteractive, "non-interactive", config.NonInteractive,
 		"run in non-interactive mode. "+
 			"If interactivity would be required, the command will terminate with a non-zero exit code.")
+	RootCmd.PersistentFlags().BoolVar(&rootCmdOptions.NoProgress, "no-progress", false,
+		"Prevent progress logging to the cli")
 }
