@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -23,9 +24,13 @@ import (
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/util"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/yaml"
 )
 
-var describeCmdOptions = struct{ repository string }{}
+var describeCmdOptions = struct {
+	repository string
+	OutputOptions
+}{}
 
 var describeCmd = &cobra.Command{
 	Use:               "describe [package-name]",
@@ -64,44 +69,50 @@ var describeCmd = &cobra.Command{
 
 		bold := color.New(color.Bold).SprintFunc()
 
-		fmt.Println(bold("Package:"), nameAndDescription(manifest))
-		fmt.Println(bold("Version:"), version(pkg, latestVersion))
-		fmt.Println(bold("Status: "), status(pkg))
-		if pkg != nil {
-			fmt.Println(bold("Auto-Update:"), clientutils.AutoUpdateString(pkg, "Disabled"))
-		}
+		if describeCmdOptions.Output == OutputFormatJSON {
+			printJSON(ctx, pkg, manifest, latestVersion, repos)
+		} else if describeCmdOptions.Output == OutputFormatYAML {
+			printYAML(ctx, pkg, manifest, latestVersion, repos)
+		} else {
+			fmt.Println(bold("Package:"), nameAndDescription(manifest))
+			fmt.Println(bold("Version:"), version(pkg, latestVersion))
+			fmt.Println(bold("Status: "), status(pkg))
+			if pkg != nil {
+				fmt.Println(bold("Auto-Update:"), clientutils.AutoUpdateString(pkg, "Disabled"))
+			}
 
-		if len(manifest.Entrypoints) > 0 {
+			if len(manifest.Entrypoints) > 0 {
+				fmt.Println()
+				fmt.Println(bold("Entrypoints:"))
+				printEntrypoints(manifest)
+			}
+
+			if len(manifest.Dependencies) > 0 {
+				fmt.Println()
+				fmt.Println(bold("Dependencies:"))
+				printDependencies(manifest)
+			}
+
 			fmt.Println()
-			fmt.Println(bold("Entrypoints:"))
-			printEntrypoints(manifest)
-		}
+			fmt.Println(bold("Package repositories:"))
+			printRepositories(pkg, repos)
 
-		if len(manifest.Dependencies) > 0 {
 			fmt.Println()
-			fmt.Println(bold("Dependencies:"))
-			printDependencies(manifest)
-		}
+			fmt.Printf("%v \n", bold("References:"))
+			printReferences(ctx, pkg, manifest)
 
-		fmt.Println()
-		fmt.Println(bold("Package repositories:"))
-		printRepositories(pkg, repos)
+			trimmedDescription := strings.TrimSpace(manifest.LongDescription)
+			if len(trimmedDescription) > 0 {
+				fmt.Println()
+				fmt.Println(bold("Long Description:"))
+				printMarkdown(os.Stdout, trimmedDescription)
+			}
 
-		fmt.Println()
-		fmt.Printf("%v \n", bold("References:"))
-		printReferences(ctx, pkg, manifest)
-
-		trimmedDescription := strings.TrimSpace(manifest.LongDescription)
-		if len(trimmedDescription) > 0 {
-			fmt.Println()
-			fmt.Println(bold("Long Description:"))
-			printMarkdown(os.Stdout, trimmedDescription)
-		}
-
-		if pkg != nil && len(pkg.Spec.Values) > 0 {
-			fmt.Println()
-			fmt.Println(bold("Configuration:"))
-			printValueConfigurations(os.Stdout, pkg.Spec.Values)
+			if pkg != nil && len(pkg.Spec.Values) > 0 {
+				fmt.Println()
+				fmt.Println(bold("Configuration:"))
+				printValueConfigurations(os.Stdout, pkg.Spec.Values)
+			}
 		}
 	},
 }
@@ -133,6 +144,34 @@ func printEntrypoints(manifest *v1alpha1.PackageManifest) {
 	}
 }
 
+func entrypointsAsMap(manifest *v1alpha1.PackageManifest) []map[string]string {
+	var entrypoints []map[string]string
+	for _, i := range manifest.Entrypoints {
+		entrypoint := make(map[string]string)
+		if i.Name != "" {
+			entrypoint["Name"] = i.Name
+		}
+		if i.ServiceName != "" {
+			entrypoint["Remote"] = fmt.Sprintf("%s:%v", i.ServiceName, i.Port)
+		}
+		var localUrl string
+		if i.Scheme != "" {
+			localUrl += i.Scheme + "://localhost:"
+		} else {
+			localUrl += "http://localhost:"
+		}
+		if i.LocalPort != 0 {
+			localUrl += fmt.Sprint(i.LocalPort)
+		} else {
+			localUrl += fmt.Sprint(i.Port)
+		}
+		localUrl += "/"
+		entrypoint["Local"] = localUrl
+		entrypoints = append(entrypoints, entrypoint)
+	}
+	return entrypoints
+}
+
 func printDependencies(manifest *v1alpha1.PackageManifest) {
 	for _, dep := range manifest.Dependencies {
 		fmt.Printf(" * %v", dep.Name)
@@ -141,6 +180,19 @@ func printDependencies(manifest *v1alpha1.PackageManifest) {
 		}
 		fmt.Println()
 	}
+}
+
+func dependenciesAsMap(manifest *v1alpha1.PackageManifest) []map[string]string {
+	var dependencies []map[string]string
+	for _, dep := range manifest.Dependencies {
+		dependency := make(map[string]string)
+		dependency["Name"] = dep.Name
+		if len(dep.Version) > 0 {
+			dependency["Version"] = dep.Version
+		}
+		dependencies = append(dependencies, dependency)
+	}
+	return dependencies
 }
 
 func printRepositories(pkg *v1alpha1.Package, repos []v1alpha1.PackageRepository) {
@@ -152,6 +204,21 @@ func printRepositories(pkg *v1alpha1.Package, repos []v1alpha1.PackageRepository
 			fmt.Fprintln(os.Stderr)
 		}
 	}
+}
+
+func repositoriesAsMap(pkg *v1alpha1.Package, repos []v1alpha1.PackageRepository) []map[string]string {
+	var repositories []map[string]string
+	for _, repo := range repos {
+		repository := make(map[string]string)
+		repository["Name"] = repo.Name
+		if isInstalledFrom(pkg, repo) {
+			repository["Installed"] = "true"
+		} else {
+			repository["Installed"] = "false"
+		}
+		repositories = append(repositories, repository)
+	}
+	return repositories
 }
 
 func isInstalledFrom(pkg *v1alpha1.Package, repo v1alpha1.PackageRepository) bool {
@@ -176,10 +243,39 @@ func printReferences(ctx context.Context, pkg *v1alpha1.Package, manifest *v1alp
 	}
 }
 
+func referencesAsMap(ctx context.Context, pkg *v1alpha1.Package, manifest *v1alpha1.PackageManifest) []map[string]string {
+	var references []map[string]string
+	for _, ref := range manifest.References {
+		reference := make(map[string]string)
+		reference["Label"] = ref.Label
+		reference["URL"] = ref.Url
+		references = append(references, reference)
+	}
+	if pkg != nil {
+		repo := cliutils.RepositoryClientset(ctx)
+		repoClient := repo.ForPackage(*pkg)
+		if url, err := repoClient.GetPackageManifestURL(manifest.Name, pkg.Spec.PackageInfo.Version); err == nil {
+			reference := make(map[string]string)
+			reference["Label"] = "Glasskube Package Manifest"
+			reference["URL"] = url
+			references = append(references, reference)
+		}
+	}
+	return references
+}
+
 func printValueConfigurations(w io.Writer, values map[string]v1alpha1.ValueConfiguration) {
 	for name, value := range values {
 		fmt.Fprintf(w, " * %v: %v\n", name, manifestvalues.ValueAsString(value))
 	}
+}
+
+func valueConfigurationsAsMap(values map[string]v1alpha1.ValueConfiguration) map[string]string {
+	configurations := make(map[string]string)
+	for name, value := range values {
+		configurations[name] = manifestvalues.ValueAsString(value)
+	}
+	return configurations
 }
 
 func printMarkdown(w io.Writer, text string) {
@@ -242,9 +338,62 @@ func nameAndDescription(manifest *v1alpha1.PackageManifest) string {
 	}
 	return bld.String()
 }
+func printJSON(ctx context.Context,
+	pkg *v1alpha1.Package,
+	manifest *v1alpha1.PackageManifest,
+	latestVersion string,
+	repos []v1alpha1.PackageRepository) {
+	output := map[string]interface{}{
+		"Package":         nameAndDescription(manifest),
+		"Version":         version(pkg, latestVersion),
+		"Status":          status(pkg),
+		"AutoUpdate":      clientutils.AutoUpdateString(pkg, "Disabled"),
+		"Entrypoints":     entrypointsAsMap(manifest),
+		"Dependencies":    dependenciesAsMap(manifest),
+		"Repositories":    repositoriesAsMap(pkg, repos),
+		"References":      referencesAsMap(ctx, pkg, manifest),
+		"LongDescription": strings.TrimSpace(manifest.LongDescription),
+		"Configuration":   valueConfigurationsAsMap(pkg.Spec.Values),
+	}
+	jsonOutput, err := json.MarshalIndent(output, "", "  ")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "❌ Could not marshal JSON output: %v\n", err)
+		cliutils.ExitWithError()
+	}
+	fmt.Println(string(jsonOutput))
+	return
+}
+
+func printYAML(
+	ctx context.Context,
+	pkg *v1alpha1.Package,
+	manifest *v1alpha1.PackageManifest,
+	latestVersion string,
+	repos []v1alpha1.PackageRepository) {
+	output := map[string]interface{}{
+		"Package":         nameAndDescription(manifest),
+		"Version":         version(pkg, latestVersion),
+		"Status":          status(pkg),
+		"AutoUpdate":      clientutils.AutoUpdateString(pkg, "Disabled"),
+		"Entrypoints":     entrypointsAsMap(manifest),
+		"Dependencies":    dependenciesAsMap(manifest),
+		"Repositories":    repositoriesAsMap(pkg, repos),
+		"References":      referencesAsMap(ctx, pkg, manifest),
+		"LongDescription": strings.TrimSpace(manifest.LongDescription),
+		"Configuration":   valueConfigurationsAsMap(pkg.Spec.Values),
+	}
+	yamlOutput, err := yaml.Marshal(output)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "❌ Could not marshal YAML output: %v\n", err)
+		cliutils.ExitWithError()
+	}
+	fmt.Println(string(yamlOutput))
+	return
+}
 
 func init() {
 	describeCmd.Flags().StringVar(&describeCmdOptions.repository, "repository", describeCmdOptions.repository,
 		"specify the name of the package repository used to use when the package is not installed")
 	RootCmd.AddCommand(describeCmd)
+	describeCmdOptions.OutputOptions.AddFlagsToCommand(describeCmd)
 }
