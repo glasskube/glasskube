@@ -24,6 +24,7 @@ import (
 	"github.com/glasskube/glasskube/pkg/install"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/spf13/cobra"
+	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/yaml"
 )
 
@@ -199,9 +200,9 @@ var installCmd = &cobra.Command{
 			if status != nil {
 				switch status.Status {
 				case string(condition.Ready):
-					fmt.Printf("✅ %v is now installed in %v.\n", packageName, config.CurrentContext)
+					fmt.Fprintf(os.Stderr, "✅ %v is now installed in %v.\n", packageName, config.CurrentContext)
 				default:
-					fmt.Printf("❌ %v installation has status %v, reason: %v\nMessage: %v\n",
+					fmt.Fprintf(os.Stderr, "❌ %v installation has status %v, reason: %v\nMessage: %v\n",
 						packageName, status.Status, status.Reason, status.Message)
 				}
 			} else {
@@ -221,6 +222,9 @@ var installCmd = &cobra.Command{
 }
 
 func formatOutput(pkg *v1alpha1.Package, format OutputFormat) (string, error) {
+	if gvks, _, err := scheme.Scheme.ObjectKinds(&pkg); err == nil && len(gvks) == 1 {
+		pkg.SetGroupVersionKind(gvks[0])
+	}
 	switch format {
 	case OutputFormatJSON:
 		jsonOutput, err := json.MarshalIndent(pkg, "", "  ")
