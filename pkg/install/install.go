@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/pkg/client"
@@ -15,10 +16,11 @@ import (
 type installer struct {
 	client client.PackageV1Alpha1Client
 	status statuswriter.StatusWriter
+	dryRun bool
 }
 
-func NewInstaller(pkgClient client.PackageV1Alpha1Client) *installer {
-	return &installer{client: pkgClient, status: statuswriter.Noop()}
+func NewInstaller(pkgClient client.PackageV1Alpha1Client, dryRun bool) *installer {
+	return &installer{client: pkgClient, status: statuswriter.Noop(), dryRun: dryRun}
 }
 
 func (obj *installer) WithStatusWriter(sw statuswriter.StatusWriter) *installer {
@@ -35,6 +37,14 @@ func (obj *installer) InstallBlocking(ctx context.Context, pkg *v1alpha1.Package
 	if err != nil {
 		return nil, err
 	}
+	if obj.dryRun {
+		time.Sleep(6 * time.Second)
+		return &client.PackageStatus{
+			Status:  "Ready",
+			Reason:  "DryRun",
+			Message: "This is a simulated dry run.",
+		}, nil
+	}
 	return obj.awaitInstall(ctx, pkg.GetUID())
 }
 
@@ -50,6 +60,11 @@ func (obj *installer) install(
 	ctx context.Context,
 	pkg *v1alpha1.Package,
 ) (*v1alpha1.Package, error) {
+	if obj.dryRun {
+		obj.status.SetStatus(fmt.Sprintf("Dry run: Simulating installation of %v...", pkg.Name))
+		time.Sleep(6 * time.Second)
+		return pkg, nil
+	}
 	obj.status.SetStatus(fmt.Sprintf("Installing %v...", pkg.Name))
 	err := obj.client.Packages().Create(ctx, pkg)
 	if err != nil {

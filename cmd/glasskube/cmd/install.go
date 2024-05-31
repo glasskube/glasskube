@@ -32,6 +32,7 @@ var installCmdOptions = struct {
 	EnableAutoUpdates bool
 	NoWait            bool
 	Yes               bool
+	DryRun            bool
 }{
 	ValuesOptions: flags.NewOptions(),
 }
@@ -50,7 +51,7 @@ var installCmd = &cobra.Command{
 		dm := cliutils.DependencyManager(ctx)
 		valueResolver := cliutils.ValueResolver(ctx)
 		repoClientset := cliutils.RepositoryClientset(ctx)
-		installer := install.NewInstaller(pkgClient)
+		installer := install.NewInstaller(pkgClient, installCmdOptions.DryRun)
 
 		if !rootCmdOptions.NoProgress {
 			installer.WithStatusWriter(statuswriter.Spinner())
@@ -279,6 +280,8 @@ func init() {
 	installCmd.PersistentFlags().StringVar(&installCmdOptions.Repository, "repository", installCmdOptions.Repository,
 		"specify the name of the package repository to install this package from")
 	installCmd.PersistentFlags().BoolVar(&installCmdOptions.NoWait, "no-wait", false, "perform non-blocking install")
+	installCmd.PersistentFlags().BoolVar(&installCmdOptions.DryRun, "dry-run", false,
+		"simulate the installation of package without actually installing it")
 	installCmd.PersistentFlags().BoolVarP(&installCmdOptions.Yes, "yes", "y", false, "do not ask for any confirmation")
 	installCmd.MarkFlagsMutuallyExclusive("version", "enable-auto-updates")
 	installCmdOptions.ValuesOptions.AddFlagsToCommand(installCmd)

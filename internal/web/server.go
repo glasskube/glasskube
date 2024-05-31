@@ -551,7 +551,7 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 			WithAutoUpdates(strings.ToLower(enableAutoUpdate) == "on").
 			WithValues(values).
 			Build()
-		err := install.NewInstaller(s.pkgClient).
+		err := install.NewInstaller(s.pkgClient, false).
 			WithStatusWriter(statuswriter.Stderr()).
 			Install(ctx, pkg)
 		if err != nil {
