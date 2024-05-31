@@ -176,6 +176,7 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle("/packages/{pkgName}/discussion", s.requireReady(s.packageDiscussion))
 	router.Handle("/packages/{pkgName}/discussion/badge", s.requireReady(s.discussionBadge))
 	router.Handle("/packages/{pkgName}/configure", s.requireReady(s.installOrConfigurePackage))
+	router.Handle("/packages/{pkgName}/configure/advanced", s.requireReady(s.advancedConfiguration))
 	router.Handle("/packages/{pkgName}/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
 	router.Handle("/packages/{pkgName}/configuration/{valueName}/datalists/names", s.requireReady(s.namesDatalist))
 	router.Handle("/packages/{pkgName}/configuration/{valueName}/datalists/keys", s.requireReady(s.keysDatalist))
@@ -566,6 +567,100 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 		}
 		if _, err := s.valueResolver.Resolve(ctx, values); err != nil {
 			s.respondAlertAndLog(w, err, "Some values could not be resolved: ", "warning")
+		} else {
+			err := s.templates.alertTmpl.Execute(w, map[string]any{
+				"Message":     "Configuration updated successfully",
+				"Dismissible": true,
+				"Type":        "success",
+			})
+			checkTmplError(err, "success")
+		}
+	}
+}
+
+// advancedConfiguration is a GET+POST endpoint which can be used for advanced package installation options, most notably
+// for changing the package repository and changing to a specific (maybe even lower than installed) version of the package.
+// It is only intended to be used for already installed packages, for new packages these options exist anyway and
+// should be available for every user.
+func (s *server) advancedConfiguration(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	pkgName := mux.Vars(r)["pkgName"]
+	repositoryName := r.FormValue("repositoryName")
+	selectedVersion := r.FormValue("selectedVersion")
+	pkg, manifest, err := describe.DescribeInstalledPackage(ctx, pkgName)
+	if err != nil && !apierrors.IsNotFound(err) {
+		s.respondAlertAndLog(w, err,
+			fmt.Sprintf("An error occurred fetching package details of installed package %v", pkgName),
+			"danger")
+		return
+	} else if pkg == nil {
+		s.respondAlertAndLog(w, err,
+			fmt.Sprintf("Package %v is not installed", pkgName),
+			"danger")
+		return
+	}
+	var repos []v1alpha1.PackageRepository
+	if repos, err = s.repoClientset.Meta().GetReposForPackage(pkgName); err != nil {
+		fmt.Fprintf(os.Stderr, "error getting repos for package; %v", err)
+	} else if repositoryName == "" {
+		if len(repos) == 0 {
+			s.respondAlertAndLog(w, fmt.Errorf("%v not found in any repository", pkgName), "", "danger")
+			return
+		}
+		for _, r := range repos {
+			repositoryName = r.Name
+			if r.IsDefaultRepository() {
+				break
+			}
+		}
+	}
+
+	if r.Method == http.MethodGet {
+		var idx repo.PackageIndex
+		if err := s.repoClientset.ForRepoWithName(repositoryName).FetchPackageIndex(pkgName, &idx); err != nil {
+			s.respondAlertAndLog(w, err,
+				fmt.Sprintf("An error occurred fetching package index of %v in repository %v", pkgName, repositoryName),
+				"danger")
+			return
+		}
+		latestVersion := idx.LatestVersion
+
+		if selectedVersion == "" {
+			selectedVersion = latestVersion
+		} else if !slices.ContainsFunc(idx.Versions, func(item types.PackageIndexItem) bool {
+			return item.Version == selectedVersion
+		}) {
+			selectedVersion = latestVersion
+		}
+
+		res, err := s.dependencyMgr.Validate(r.Context(), manifest, selectedVersion)
+		if err != nil {
+			s.respondAlertAndLog(w, err,
+				fmt.Sprintf("An error occurred validating dependencies of %v in version %v", pkgName, selectedVersion),
+				"danger")
+			return
+		}
+
+		err = s.templates.pkgConfigAdvancedTmpl.Execute(w, s.enrichPage(r, map[string]any{
+			"Status":           client.GetStatusOrPending(pkg),
+			"Manifest":         manifest,
+			"LatestVersion":    latestVersion,
+			"ValidationResult": res,
+			"ShowConflicts":    res.Status == dependency.ValidationResultStatusConflict,
+			"SelectedVersion":  selectedVersion,
+			"PackageIndex":     &idx,
+			"Repositories":     repos,
+			"RepositoryName":   repositoryName,
+		}, err))
+		checkTmplError(err, fmt.Sprintf("advanced-config (%s)", pkgName))
+	} else if r.Method == http.MethodPost {
+		pkg.Spec.PackageInfo.Version = selectedVersion
+		pkg.Spec.PackageInfo.RepositoryName = repositoryName
+		if err := s.pkgClient.Packages().Update(ctx, pkg); err != nil {
+			s.respondAlertAndLog(w, err,
+				fmt.Sprintf("An error occurred updating package %v to version %v in repo %v", pkgName, selectedVersion, repositoryName),
+				"danger")
+			return
 		} else {
 			err := s.templates.alertTmpl.Execute(w, map[string]any{
 				"Message":     "Configuration updated successfully",
