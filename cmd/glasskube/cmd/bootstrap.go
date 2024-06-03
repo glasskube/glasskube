@@ -44,8 +44,8 @@ var bootstrapCmd = &cobra.Command{
 		currentContext := clicontext.RawConfigFromContext(ctx).CurrentContext
 
 		if !bootstrapCmdOptions.yes {
-			confirmMessage := fmt.Sprintf("Glasskube will be installed in context [%s].\nContinue? ", currentContext)
-			if !cliutils.YesNoPrompt(confirmMessage, false) {
+			confirmMessage := fmt.Sprintf("Glasskube will be installed in context %s.\nContinue? ", currentContext)
+			if !cliutils.YesNoPrompt(confirmMessage, true) {
 				fmt.Println("Operation stopped")
 				cliutils.ExitWithError()
 			}
