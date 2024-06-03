@@ -3,8 +3,9 @@
 [![Docs](https://img.shields.io/badge/docs-glasskube.dev%2Fdocs-blue)](https://glasskube.dev/docs/?utm_source=github)
 [![](https://dcbadge.vercel.app/api/server/SxH6KUCGH7?style=flat)](https://discord.gg/SxH6KUCGH7)
 [![Downloads](https://img.shields.io/github/downloads/glasskube/glasskube/total)](https://github.com/glasskube/glasskube/releases)
-[![twitter](https://img.shields.io/twitter/follow/glasskube?style=flat)](https://x.com/intent/follow?screen_name=glasskube)
 [![CNCF Landscape](https://img.shields.io/badge/CNCF%20Landscape-5699C6)](https://landscape.cncf.io/?item=app-definition-and-development--application-definition-image-build--glasskube)
+[![Go Reference](https://pkg.go.dev/badge/github.com/glasskube/glasskube)](https://pkg.go.dev/github.com/glasskube/glasskube)
+[![Go Report Card](https://goreportcard.com/badge/github.com/glasskube/glasskube)](https://goreportcard.com/report/github.com/glasskube/glasskube)
 
 <br>
 <div align="center">
