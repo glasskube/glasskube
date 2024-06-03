@@ -40,6 +40,7 @@ type templates struct {
 	settingsPageTmpl       *template.Template
 	pkgUpdateModalTmpl     *template.Template
 	pkgConfigInput         *template.Template
+	pkgConfigAdvancedTmpl  *template.Template
 	pkgUninstallModalTmpl  *template.Template
 	alertTmpl              *template.Template
 	datalistTmpl           *template.Template
@@ -136,6 +137,7 @@ func (t *templates) parseTemplates() {
 	t.settingsPageTmpl = t.pageTmpl("settings.html")
 	t.pkgUpdateModalTmpl = t.componentTmpl("pkg-update-modal")
 	t.pkgConfigInput = t.componentTmpl("pkg-config-input", "datalist")
+	t.pkgConfigAdvancedTmpl = t.componentTmpl("pkg-config-advanced")
 	t.pkgUninstallModalTmpl = t.componentTmpl("pkg-uninstall-modal")
 	t.alertTmpl = t.componentTmpl("alert")
 	t.datalistTmpl = t.componentTmpl("datalist")

@@ -28,6 +28,39 @@
           {{ end }}
         </div>
       </div>
+      <div class="mt-2">
+        <h2 class="text-reset">Danger Zone</h2>
+        <div class="alert alert-warning" role="alert">
+          <div class="form-switch mb-2">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              role="switch"
+              name="enableAdvancedOptions"
+              id="enableAdvancedOptions" />
+            <label class="form-check-label mx-1 fw-semibold" for="enableAdvancedOptions">Advanced Options</label>
+          </div>
+          <p>Advanced options include package downgrades and changing the repository of an installed package.</p>
+          <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>
+          It is not recommended to use these except for testing / maintaining a Glasskube package. These should only
+          ever be used in dev/test environments, and never in production. <strong>Use at your own risk!</strong>
+        </div>
+        <div class="row row-cols-1 g-2"></div>
+      </div>
     </div>
   </div>
+
+  <script type="text/javascript">
+    (() => {
+      const enableAdvancedOptions = document.querySelector('#enableAdvancedOptions');
+      const key = 'advancedOptions_{{ .CurrentContext }}';
+      const advancedOptions = localStorage.getItem(key) === 'true'
+      if (advancedOptions) {
+        enableAdvancedOptions.checked = true;
+      }
+      document.querySelector('#enableAdvancedOptions').addEventListener('change', (evt) => {
+        localStorage.setItem(key, evt.target.checked);
+      });
+    })();
+  </script>
 {{ end }}
