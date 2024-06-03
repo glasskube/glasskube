@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/config"
@@ -20,6 +21,7 @@ type bootstrapOptions struct {
 	disableTelemetry        bool
 	force                   bool
 	createDefaultRepository bool
+	yes                     bool
 }
 
 var bootstrapCmdOptions = bootstrapOptions{
@@ -37,6 +39,17 @@ var bootstrapCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg, _ := cliutils.RequireConfig(config.Kubeconfig)
 		client := bootstrap.NewBootstrapClient(cfg)
+		ctx := cmd.Context()
+
+		currentContext := clicontext.RawConfigFromContext(ctx).CurrentContext
+
+		if !bootstrapCmdOptions.yes {
+			confirmMessage := fmt.Sprintf("Glasskube will be installed in context %s.\nContinue? ", currentContext)
+			if !cliutils.YesNoPrompt(confirmMessage, true) {
+				fmt.Println("Operation stopped")
+				cliutils.ExitWithError()
+			}
+		}
 
 		installedVersion, err := clientutils.GetPackageOperatorVersion(cmd.Context())
 		if err != nil {
@@ -96,6 +109,7 @@ func init() {
 	bootstrapCmd.Flags().BoolVar(&bootstrapCmdOptions.createDefaultRepository, "create-default-repository",
 		bootstrapCmdOptions.createDefaultRepository,
 		"Toggle creation of the default glasskube package repository")
+	bootstrapCmd.Flags().BoolVar(&bootstrapCmdOptions.yes, "yes", false, "Skip confirmation prompt")
 	bootstrapCmd.MarkFlagsMutuallyExclusive("url", "type")
 	bootstrapCmd.MarkFlagsMutuallyExclusive("url", "latest")
 }
