@@ -385,7 +385,7 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 	var repos []v1alpha1.PackageRepository
 	if repos, err = s.repoClientset.Meta().GetReposForPackage(pkgName); err != nil {
 		fmt.Fprintf(os.Stderr, "error getting repos for package; %v", err)
-	} else if repositoryName == "" && pkg == nil {
+	} else if repositoryName == "" {
 		if len(repos) == 0 {
 			s.respondAlertAndLog(w, fmt.Errorf("%v not found in any repository", pkgName), "", "danger")
 			return
@@ -598,6 +598,8 @@ func (s *server) advancedConfiguration(w http.ResponseWriter, r *http.Request) {
 			fmt.Sprintf("Package %v is not installed", pkgName),
 			"danger")
 		return
+	} else if repositoryName == "" {
+		repositoryName = pkg.Spec.PackageInfo.RepositoryName
 	}
 	var repos []v1alpha1.PackageRepository
 	if repos, err = s.repoClientset.Meta().GetReposForPackage(pkgName); err != nil {
@@ -655,7 +657,9 @@ func (s *server) advancedConfiguration(w http.ResponseWriter, r *http.Request) {
 		checkTmplError(err, fmt.Sprintf("advanced-config (%s)", pkgName))
 	} else if r.Method == http.MethodPost {
 		pkg.Spec.PackageInfo.Version = selectedVersion
-		pkg.Spec.PackageInfo.RepositoryName = repositoryName
+		if repositoryName != "" {
+			pkg.Spec.PackageInfo.RepositoryName = repositoryName
+		}
 		if err := s.pkgClient.Packages().Update(ctx, pkg); err != nil {
 			s.respondAlertAndLog(w, err,
 				fmt.Sprintf("An error occurred updating package %v to version %v in repo %v", pkgName, selectedVersion, repositoryName),
