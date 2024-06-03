@@ -62,10 +62,10 @@ var repoListCmd = &cobra.Command{
 				return []string{
 					repo.Name,
 					repo.Spec.Url,
+					isDefRepo,
 					authType,
 					status,
 					message,
-					isDefRepo,
 				}
 			})
 
