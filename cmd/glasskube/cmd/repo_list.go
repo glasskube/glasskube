@@ -32,7 +32,7 @@ var repoListCmd = &cobra.Command{
 		util.SortBy(repos.Items, func(repo v1alpha1.PackageRepository) string { return repo.Name })
 
 		_ = cliutils.PrintTable(os.Stdout, repos.Items,
-			[]string{"NAME", "URL", "AUTHENTICATION", "STATUS", "MESSAGE", "DEFAULT"},
+			[]string{"NAME", "URL", "DEFAULT", "AUTHENTICATION", "STATUS", "MESSAGE"},
 			func(repo v1alpha1.PackageRepository) []string {
 				condition := meta.FindStatusCondition(repo.Status.Conditions, string(condition.Ready))
 				authType := "None"
