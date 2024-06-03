@@ -23,6 +23,7 @@ import (
 	"github.com/glasskube/glasskube/pkg/install"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var installCmdOptions = struct {
@@ -51,7 +52,7 @@ var installCmd = &cobra.Command{
 		dm := cliutils.DependencyManager(ctx)
 		valueResolver := cliutils.ValueResolver(ctx)
 		repoClientset := cliutils.RepositoryClientset(ctx)
-		installer := install.NewInstaller(pkgClient, installCmdOptions.DryRun)
+		installer := install.NewInstaller(pkgClient)
 
 		if !rootCmdOptions.NoProgress {
 			installer.WithStatusWriter(statuswriter.Spinner())
@@ -178,8 +179,13 @@ var installCmd = &cobra.Command{
 			cancel()
 		}
 
+		opts := metav1.CreateOptions{}
+		if installCmdOptions.DryRun {
+			opts.DryRun = []string{metav1.DryRunAll}
+		}
+
 		if installCmdOptions.NoWait {
-			if err := installer.Install(ctx, pkg); err != nil {
+			if err := installer.Install(ctx, pkg, opts); err != nil {
 				fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
 				cliutils.ExitWithError()
 			}
@@ -188,7 +194,7 @@ var installCmd = &cobra.Command{
 					"💡 Run \"glasskube describe %v\" to get the current status",
 				packageName, packageName)
 		} else {
-			status, err := installer.InstallBlocking(ctx, pkg)
+			status, err := installer.InstallBlocking(ctx, pkg, opts)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
 				cliutils.ExitWithError()

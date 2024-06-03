@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 )
@@ -16,11 +16,10 @@ import (
 type installer struct {
 	client client.PackageV1Alpha1Client
 	status statuswriter.StatusWriter
-	dryRun bool
 }
 
-func NewInstaller(pkgClient client.PackageV1Alpha1Client, dryRun bool) *installer {
-	return &installer{client: pkgClient, status: statuswriter.Noop(), dryRun: dryRun}
+func NewInstaller(pkgClient client.PackageV1Alpha1Client) *installer {
+	return &installer{client: pkgClient, status: statuswriter.Noop()}
 }
 
 func (obj *installer) WithStatusWriter(sw statuswriter.StatusWriter) *installer {
@@ -30,43 +29,33 @@ func (obj *installer) WithStatusWriter(sw statuswriter.StatusWriter) *installer 
 
 // InstallBlocking creates a new v1alpha1.Package custom resource in the cluster and waits until
 // the package has either status Ready or Failed.
-func (obj *installer) InstallBlocking(ctx context.Context, pkg *v1alpha1.Package) (*client.PackageStatus, error) {
+func (obj *installer) InstallBlocking(ctx context.Context, pkg *v1alpha1.Package,
+	opts metav1.CreateOptions) (*client.PackageStatus, error) {
 	obj.status.Start()
 	defer obj.status.Stop()
-	pkg, err := obj.install(ctx, pkg)
+	pkg, err := obj.install(ctx, pkg, opts)
 	if err != nil {
 		return nil, err
-	}
-	if obj.dryRun {
-		time.Sleep(6 * time.Second)
-		return &client.PackageStatus{
-			Status:  "Ready",
-			Reason:  "DryRun",
-			Message: "This is a simulated dry run.",
-		}, nil
 	}
 	return obj.awaitInstall(ctx, pkg.GetUID())
 }
 
 // Install creates a new v1alpha1.Package custom resource in the cluster.
-func (obj *installer) Install(ctx context.Context, pkg *v1alpha1.Package) error {
+func (obj *installer) Install(ctx context.Context, pkg *v1alpha1.Package,
+	opts metav1.CreateOptions) error {
 	obj.status.Start()
 	defer obj.status.Stop()
-	_, err := obj.install(ctx, pkg)
+	_, err := obj.install(ctx, pkg, opts)
 	return err
 }
 
 func (obj *installer) install(
 	ctx context.Context,
 	pkg *v1alpha1.Package,
+	opts metav1.CreateOptions,
 ) (*v1alpha1.Package, error) {
-	if obj.dryRun {
-		obj.status.SetStatus(fmt.Sprintf("Dry run: Simulating installation of %v...", pkg.Name))
-		time.Sleep(6 * time.Second)
-		return pkg, nil
-	}
 	obj.status.SetStatus(fmt.Sprintf("Installing %v...", pkg.Name))
-	err := obj.client.Packages().Create(ctx, pkg)
+	err := obj.client.Packages().Create(ctx, pkg, opts)
 	if err != nil {
 		return nil, err
 	}
