@@ -108,13 +108,6 @@ func (c *defaultClient) fetchYAMLOrJSON(url string, target any) error {
 		}
 	}
 
-	if cached.updated.Add(c.maxCacheAge).After(time.Now()) {
-		if c.debug {
-			fmt.Fprintln(os.Stderr, "cache hit", url)
-		}
-		return yaml.Unmarshal(cached.bytes, target)
-	}
-
 	cached.mutex.Lock()
 	defer cached.mutex.Unlock()
 
