@@ -21,7 +21,7 @@
                   <div class="ms-2 d-flex flex-column">
                     <span class="fw-semibold">
                       {{ .Name }}
-                      {{ if IsRepoStatusReady . }}
+                      {{ if .IsDefaultRepository }}
                         <span class="badge bg-primary">Default</span>
                       {{ end }}
                     </span>

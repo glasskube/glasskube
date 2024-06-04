@@ -123,9 +123,6 @@ func (t *templates) parseTemplates() {
 			cond := meta.FindStatusCondition(repo.Status.Conditions, string(condition.Ready))
 			return cond != nil && cond.Status == v1.ConditionTrue
 		},
-		"IsDefaultRepository": func(repo v1alpha1.PackageRepository) bool {
-			return repo.IsDefaultRepository()
-		},
 	}
 
 	t.baseTemplate = template.Must(template.New("base.html").
