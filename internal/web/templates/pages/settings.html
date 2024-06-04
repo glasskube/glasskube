@@ -19,7 +19,12 @@
                     {{ end }}
                   </div>
                   <div class="ms-2 d-flex flex-column">
-                    <span class="fw-semibold">{{ .Name }}</span>
+                    <span class="fw-semibold">
+                      {{ .Name }}
+                      {{ if .IsDefaultRepository }}
+                        <span class="badge bg-primary">Default</span>
+                      {{ end }}
+                    </span>
                     <span class="small lh-sm fw-normal">{{ .Spec.Url }}</span>
                   </div>
                 </div>
