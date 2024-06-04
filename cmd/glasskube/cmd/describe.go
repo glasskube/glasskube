@@ -144,34 +144,6 @@ func printEntrypoints(manifest *v1alpha1.PackageManifest) {
 	}
 }
 
-func entrypointsAsMap(manifest *v1alpha1.PackageManifest) []map[string]string {
-	entrypoints := []map[string]string{}
-	for _, i := range manifest.Entrypoints {
-		entrypoint := make(map[string]string)
-		if i.Name != "" {
-			entrypoint["Name"] = i.Name
-		}
-		if i.ServiceName != "" {
-			entrypoint["Remote"] = fmt.Sprintf("%s:%v", i.ServiceName, i.Port)
-		}
-		var localUrl string
-		if i.Scheme != "" {
-			localUrl += i.Scheme + "://localhost:"
-		} else {
-			localUrl += "http://localhost:"
-		}
-		if i.LocalPort != 0 {
-			localUrl += fmt.Sprint(i.LocalPort)
-		} else {
-			localUrl += fmt.Sprint(i.Port)
-		}
-		localUrl += "/"
-		entrypoint["Local"] = localUrl
-		entrypoints = append(entrypoints, entrypoint)
-	}
-	return entrypoints
-}
-
 func printDependencies(manifest *v1alpha1.PackageManifest) {
 	for _, dep := range manifest.Dependencies {
 		fmt.Printf(" * %v", dep.Name)
@@ -182,27 +154,14 @@ func printDependencies(manifest *v1alpha1.PackageManifest) {
 	}
 }
 
-func dependenciesAsMap(manifest *v1alpha1.PackageManifest) []map[string]string {
-	dependencies := []map[string]string{}
-	for _, dep := range manifest.Dependencies {
-		dependency := make(map[string]string)
-		dependency["Name"] = dep.Name
-		if len(dep.Version) > 0 {
-			dependency["Version"] = dep.Version
-		}
-		dependencies = append(dependencies, dependency)
-	}
-	return dependencies
-}
-
 func printRepositories(pkg *v1alpha1.Package, repos []v1alpha1.PackageRepository) {
 	for _, repo := range repos {
 		fmt.Fprintf(os.Stderr, " * %v", repo.Name)
 		if isInstalledFrom(pkg, repo) {
 			fmt.Fprintln(os.Stderr, " (installed)")
-		} else {
-			fmt.Fprintln(os.Stderr)
+			return
 		}
+		fmt.Fprintln(os.Stderr)
 	}
 }
 
@@ -210,11 +169,11 @@ func repositoriesAsMap(pkg *v1alpha1.Package, repos []v1alpha1.PackageRepository
 	repositories := []map[string]string{}
 	for _, repo := range repos {
 		repository := make(map[string]string)
-		repository["Name"] = repo.Name
+		repository["name"] = repo.Name
 		if isInstalledFrom(pkg, repo) {
-			repository["Installed"] = "true"
+			repository["installed"] = "true"
 		} else {
-			repository["Installed"] = "false"
+			repository["installed"] = "false"
 		}
 		repositories = append(repositories, repository)
 	}
@@ -251,8 +210,8 @@ func referencesAsMap(
 	references := []map[string]string{}
 	for _, ref := range manifest.References {
 		reference := make(map[string]string)
-		reference["Label"] = ref.Label
-		reference["URL"] = ref.Url
+		reference["label"] = ref.Label
+		reference["url"] = ref.Url
 		references = append(references, reference)
 	}
 	if pkg != nil {
@@ -303,14 +262,14 @@ func status(pkg *v1alpha1.Package) string {
 	if pkgStatus != nil {
 		switch pkgStatus.Status {
 		case string(condition.Ready):
-			return color.GreenString(pkgStatus.Status)
+			return pkgStatus.Status
 		case string(condition.Failed):
-			return color.RedString(pkgStatus.Status)
+			return pkgStatus.Status
 		default:
 			return pkgStatus.Status
 		}
 	} else {
-		return color.New(color.Faint).Sprint("Not installed")
+		return "Not installed"
 	}
 }
 
@@ -342,23 +301,46 @@ func nameAndDescription(manifest *v1alpha1.PackageManifest) string {
 	}
 	return bld.String()
 }
+
+func versions(pkg *v1alpha1.Package) string {
+	if pkg != nil {
+		return pkg.Status.Version
+	}
+	return ""
+}
+
+func isLatestVersionUpgradable(pkg *v1alpha1.Package, latestVersion string) bool {
+	if pkg != nil {
+		return semver.IsUpgradable(pkg.Spec.PackageInfo.Version, latestVersion)
+	}
+	return false
+}
+
+func createOutputStructure(ctx context.Context, pkg *v1alpha1.Package, manifest *v1alpha1.PackageManifest, latestVersion string, repos []v1alpha1.PackageRepository) map[string]interface{} {
+	return map[string]interface{}{
+		"packageName":      manifest.Name,
+		"shortDescription": manifest.ShortDescription,
+		"version":          versions(pkg),
+		"desiredVersion":   pkg.Spec.PackageInfo.Version,
+		"latestVersion":    latestVersion,
+		"status":           status(pkg),
+		"autoUpdate":       clientutils.AutoUpdateString(pkg, "Disabled"),
+		"entrypoints":      manifest.Entrypoints,
+		"dependencies":     manifest.Dependencies,
+		"repositories":     repositoriesAsMap(pkg, repos),
+		"references":       referencesAsMap(ctx, pkg, manifest),
+		"longDescription":  strings.TrimSpace(manifest.LongDescription),
+		"configuration":    pkg.Spec.Values,
+		"isUpgradable":     isLatestVersionUpgradable(pkg, latestVersion),
+	}
+}
+
 func printJSON(ctx context.Context,
 	pkg *v1alpha1.Package,
 	manifest *v1alpha1.PackageManifest,
 	latestVersion string,
 	repos []v1alpha1.PackageRepository) {
-	output := map[string]interface{}{
-		"Package":         nameAndDescription(manifest),
-		"Version":         version(pkg, latestVersion),
-		"Status":          status(pkg),
-		"AutoUpdate":      clientutils.AutoUpdateString(pkg, "Disabled"),
-		"Entrypoints":     entrypointsAsMap(manifest),
-		"Dependencies":    dependenciesAsMap(manifest),
-		"Repositories":    repositoriesAsMap(pkg, repos),
-		"References":      referencesAsMap(ctx, pkg, manifest),
-		"LongDescription": strings.TrimSpace(manifest.LongDescription),
-		"Configuration":   valueConfigurationsAsMap(pkg.Spec.Values),
-	}
+	output := createOutputStructure(ctx, pkg, manifest, latestVersion, repos)
 	jsonOutput, err := json.MarshalIndent(output, "", "  ")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "❌ Could not marshal JSON output: %v\n", err)
@@ -367,24 +349,12 @@ func printJSON(ctx context.Context,
 	fmt.Println(string(jsonOutput))
 }
 
-func printYAML(
-	ctx context.Context,
+func printYAML(ctx context.Context,
 	pkg *v1alpha1.Package,
 	manifest *v1alpha1.PackageManifest,
 	latestVersion string,
 	repos []v1alpha1.PackageRepository) {
-	output := map[string]interface{}{
-		"Package":         nameAndDescription(manifest),
-		"Version":         version(pkg, latestVersion),
-		"Status":          status(pkg),
-		"AutoUpdate":      clientutils.AutoUpdateString(pkg, "Disabled"),
-		"Entrypoints":     entrypointsAsMap(manifest),
-		"Dependencies":    dependenciesAsMap(manifest),
-		"Repositories":    repositoriesAsMap(pkg, repos),
-		"References":      referencesAsMap(ctx, pkg, manifest),
-		"LongDescription": strings.TrimSpace(manifest.LongDescription),
-		"Configuration":   valueConfigurationsAsMap(pkg.Spec.Values),
-	}
+	output := createOutputStructure(ctx, pkg, manifest, latestVersion, repos)
 	yamlOutput, err := yaml.Marshal(output)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "❌ Could not marshal YAML output: %v\n", err)
