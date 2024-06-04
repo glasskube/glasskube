@@ -308,7 +308,13 @@ func isLatestVersionUpgradable(pkg *v1alpha1.Package, latestVersion string) bool
 	return false
 }
 
-func createOutputStructure(ctx context.Context, pkg *v1alpha1.Package, manifest *v1alpha1.PackageManifest, latestVersion string, repos []v1alpha1.PackageRepository) map[string]interface{} {
+func createOutputStructure(
+	ctx context.Context,
+	pkg *v1alpha1.Package,
+	manifest *v1alpha1.PackageManifest,
+	latestVersion string,
+	repos []v1alpha1.PackageRepository,
+) map[string]interface{} {
 	return map[string]interface{}{
 		"packageName":      manifest.Name,
 		"shortDescription": manifest.ShortDescription,
