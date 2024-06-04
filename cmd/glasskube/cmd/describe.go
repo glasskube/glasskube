@@ -233,14 +233,6 @@ func printValueConfigurations(w io.Writer, values map[string]v1alpha1.ValueConfi
 	}
 }
 
-func valueConfigurationsAsMap(values map[string]v1alpha1.ValueConfiguration) map[string]string {
-	configurations := make(map[string]string)
-	for name, value := range values {
-		configurations[name] = manifestvalues.ValueAsString(value)
-	}
-	return configurations
-}
-
 func printMarkdown(w io.Writer, text string) {
 	md := goldmark.New(
 		goldmark.WithRenderer(renderer.NewRenderer(
