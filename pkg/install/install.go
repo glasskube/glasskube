@@ -33,6 +33,10 @@ func (obj *installer) InstallBlocking(ctx context.Context, pkg *v1alpha1.Package
 	opts metav1.CreateOptions) (*client.PackageStatus, error) {
 	obj.status.Start()
 	defer obj.status.Stop()
+	if isDryRun(opts) {
+		_, err := obj.install(ctx, pkg, opts)
+		return nil, err
+	}
 	pkg, err := obj.install(ctx, pkg, opts)
 	if err != nil {
 		return nil, err
@@ -80,4 +84,13 @@ func (obj *installer) awaitInstall(ctx context.Context, pkgUID types.UID) (*clie
 		}
 	}
 	return nil, errors.New("failed to confirm package installation status")
+}
+
+func isDryRun(opts metav1.CreateOptions) bool {
+	for _, option := range opts.DryRun {
+		if option == metav1.DryRunAll {
+			return true
+		}
+	}
+	return false
 }
