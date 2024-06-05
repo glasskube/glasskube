@@ -219,8 +219,8 @@ func referencesAsMap(
 		repoClient := repo.ForPackage(*pkg)
 		if url, err := repoClient.GetPackageManifestURL(manifest.Name, pkg.Spec.PackageInfo.Version); err == nil {
 			reference := make(map[string]string)
-			reference["Label"] = "Glasskube Package Manifest"
-			reference["URL"] = url
+			reference["label"] = "Glasskube Package Manifest"
+			reference["url"] = url
 			references = append(references, reference)
 		}
 	}
@@ -319,7 +319,7 @@ func createOutputStructure(
 		"packageName":      manifest.Name,
 		"shortDescription": manifest.ShortDescription,
 		"latestVersion":    latestVersion,
-		"status":           status(pkg),
+		"status":           "Not Installed",
 		"entrypoints":      manifest.Entrypoints,
 		"dependencies":     manifest.Dependencies,
 		"longDescription":  strings.TrimSpace(manifest.LongDescription),
@@ -333,6 +333,7 @@ func createOutputStructure(
 		data["repositories"] = repositoriesAsMap(pkg, repos)
 		data["references"] = referencesAsMap(ctx, pkg, manifest)
 		data["isUpgradable"] = isLatestVersionUpgradable(pkg, latestVersion)
+		data["status"] = client.GetStatusOrPending(pkg).Status
 	}
 	return data
 }
