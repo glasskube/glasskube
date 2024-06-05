@@ -289,6 +289,7 @@ func init() {
 	installCmd.PersistentFlags().BoolVar(&installCmdOptions.DryRun, "dry-run", false,
 		"simulate the installation of package without actually installing it")
 	installCmd.PersistentFlags().BoolVarP(&installCmdOptions.Yes, "yes", "y", false, "do not ask for any confirmation")
+	installCmd.MarkFlagsMutuallyExclusive("no-wait", "dry-run")
 	installCmd.MarkFlagsMutuallyExclusive("version", "enable-auto-updates")
 	installCmdOptions.ValuesOptions.AddFlagsToCommand(installCmd)
 	RootCmd.AddCommand(installCmd)
