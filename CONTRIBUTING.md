@@ -12,7 +12,7 @@ There are many types of issues you can take on when contributing to the Glasskub
 ### Let's find the perfect open issue for you!
 
 - If you are new to the project, please check out the [good first issue](https://github.com/glasskube/glasskube/labels/good%20first%20issue) label.
-- If you are ready to make a big impact on the project, check out the [current milestone](https://github.com/glasskube/glasskube/milestones) that is being worked on and filter the issues by `"help-wanted"`, these issues are the ones that will make it into the next official release.
+- If you are ready to make a big impact on the project, or are already a seasoned contributor, check out our [unassigned `"help wanted"` issues](https://github.com/glasskube/glasskube/issues?q=is%3Aopen+label%3A%22help+wanted%22+no%3Aassignee+-label%3A%22good+first+issue%22).
 - If you are looking for something specific to work on, check out our [open issues](https://github.com/glasskube/glasskube/issues?q=is%3Aissue+is%3Aopen+no%3Aassignee+-label%3Aneeds-triage) and filter against the available tags such as `component: cli`, `component: ui` `component: repo`, `documentation`.
 - If you have an idea for a new feature, please open an issue, and we can discuss it.
 - We are also happy to help you find something to work on. Just reach out to us.
@@ -24,7 +24,7 @@ There are many types of issues you can take on when contributing to the Glasskub
 
 ### Discuss issues
 
-- If you have a way of approaching an issue that is outside of the scope of the issues description, propose and discuss your solution in the issue itself.
+- If you have a way of approaching an issue that is outside the scope of the issues description, propose and discuss your solution in the issue itself.
 - If you are unsure about something, don't hesitate to ask the community.
 
 ## 🚨 Contributing best practices
