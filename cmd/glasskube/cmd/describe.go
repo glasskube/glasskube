@@ -315,22 +315,26 @@ func createOutputStructure(
 	latestVersion string,
 	repos []v1alpha1.PackageRepository,
 ) map[string]interface{} {
-	return map[string]interface{}{
+	data := map[string]interface{}{
 		"packageName":      manifest.Name,
 		"shortDescription": manifest.ShortDescription,
-		"version":          versions(pkg),
-		"desiredVersion":   pkg.Spec.PackageInfo.Version,
 		"latestVersion":    latestVersion,
 		"status":           status(pkg),
-		"autoUpdate":       clientutils.AutoUpdateString(pkg, "Disabled"),
 		"entrypoints":      manifest.Entrypoints,
 		"dependencies":     manifest.Dependencies,
-		"repositories":     repositoriesAsMap(pkg, repos),
-		"references":       referencesAsMap(ctx, pkg, manifest),
 		"longDescription":  strings.TrimSpace(manifest.LongDescription),
-		"configuration":    pkg.Spec.Values,
-		"isUpgradable":     isLatestVersionUpgradable(pkg, latestVersion),
 	}
+	if pkg != nil {
+		data["desiredVersion"] = pkg.Spec.PackageInfo.Version
+		data["configuration"] = pkg.Spec.Values
+		data["version"] = versions(pkg)
+		data["repositories"] = repositoriesAsMap(pkg, repos)
+		data["autoUpdate"] = clientutils.AutoUpdateString(pkg, "Disabled")
+		data["repositories"] = repositoriesAsMap(pkg, repos)
+		data["references"] = referencesAsMap(ctx, pkg, manifest)
+		data["isUpgradable"] = isLatestVersionUpgradable(pkg, latestVersion)
+	}
+	return data
 }
 
 func printJSON(ctx context.Context,
