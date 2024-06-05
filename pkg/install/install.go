@@ -7,6 +7,7 @@ import (
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/pkg/client"
+	"github.com/glasskube/glasskube/pkg/condition"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -35,7 +36,14 @@ func (obj *installer) InstallBlocking(ctx context.Context, pkg *v1alpha1.Package
 	defer obj.status.Stop()
 	if isDryRun(opts) {
 		_, err := obj.install(ctx, pkg, opts)
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
+		return &client.PackageStatus{
+			Status:  string(condition.Ready),
+			Reason:  "DryRun",
+			Message: "Dry run - package simulated as installed and ready.",
+		}, nil
 	}
 	pkg, err := obj.install(ctx, pkg, opts)
 	if err != nil {
