@@ -17,7 +17,7 @@
     "@commitlint/cli": "19.3.0",
     "@commitlint/config-conventional": "19.2.2",
     "esbuild": "0.21.4",
-    "prettier": "3.3.0",
+    "prettier": "3.3.1",
     "prettier-plugin-go-template": "0.0.15"
   },
   "prettier": {
