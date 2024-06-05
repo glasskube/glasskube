@@ -20,6 +20,7 @@ import (
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/glasskube/glasskube/pkg/update"
 	"github.com/spf13/cobra"
+	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/yaml"
 )
 
@@ -106,6 +107,14 @@ func handleOutput(pkgs []v1alpha1.Package) {
 
 	var outputData []byte
 	var err error
+	for i := range pkgs {
+		if gvks, _, err := scheme.Scheme.ObjectKinds(&pkgs[i]); err == nil && len(gvks) == 1 {
+			pkgs[i].SetGroupVersionKind(gvks[0])
+		} else {
+			fmt.Fprintf(os.Stderr, "❌ failed to set GVK for package: %v\n", err)
+			cliutils.ExitWithError()
+		}
+	}
 	switch updateCmdOptions.Output {
 	case OutputFormatJSON:
 		outputData, err = json.Marshal(pkgs)
