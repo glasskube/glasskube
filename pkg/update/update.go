@@ -176,22 +176,24 @@ outer:
 	return &tx, nil
 }
 
-func (c *updater) Apply(ctx context.Context, tx *UpdateTransaction) error {
+func (c *updater) Apply(ctx context.Context, tx *UpdateTransaction) ([]v1alpha1.Package, error) {
 	c.status.Start()
 	defer c.status.Stop()
+	var updatedPackages []v1alpha1.Package
 	for _, item := range tx.Items {
 		if item.UpdateRequired() {
 			c.status.SetStatus(fmt.Sprintf("Updating %v", item.Package.Name))
 			if err := c.UpdatePackage(ctx, &item.Package, item.Version); err != nil {
-				return fmt.Errorf("could not update package %v: %w", item.Package.Name, err)
+				return nil, fmt.Errorf("could not update package %v: %w", item.Package.Name, err)
 			}
 			c.status.SetStatus(fmt.Sprintf("Checking %v", item.Package.Name))
 			if err := c.awaitUpdate(ctx, &item.Package); err != nil {
-				return fmt.Errorf("package update for %v failed: %w", item.Package.Name, err)
+				return nil, fmt.Errorf("package update for %v failed: %w", item.Package.Name, err)
 			}
+			updatedPackages = append(updatedPackages, item.Package)
 		}
 	}
-	return nil
+	return updatedPackages, nil
 }
 
 func (c *updater) UpdatePackage(ctx context.Context, pkg *v1alpha1.Package, version string) error {

@@ -277,7 +277,7 @@ func (s *server) update(w http.ResponseWriter, r *http.Request) {
 	} else if ut, ok := s.updateTransactions[utId]; !ok {
 		s.respondAlert(w, fmt.Sprintf("Failed to find UpdateTransaction with ID %d", utId), "danger")
 		return
-	} else if err = updater.Apply(ctx, &ut); err != nil {
+	} else if _, err := updater.Apply(ctx, &ut); err != nil {
 		delete(s.updateTransactions, utId)
 		s.respondAlertAndLog(w, err, "An error occurred during the update", "danger")
 		return
