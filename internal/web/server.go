@@ -4,6 +4,7 @@ import (
 	"context"
 	"embed"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"io/fs"
@@ -16,6 +17,8 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+
+	"k8s.io/klog/v2"
 
 	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
 
@@ -77,6 +80,7 @@ type ServerOptions struct {
 	Host       string
 	Port       int32
 	Kubeconfig string
+	LogLevel   int
 }
 
 func NewServer(options ServerOptions) *server {
@@ -132,9 +136,21 @@ func (s *server) RepoClient() repoclient.RepoClientset {
 	return s.repoClientset
 }
 
+func initLogging(level int) {
+	klog.InitFlags(nil)
+	_ = flag.Set("v", strconv.Itoa(level))
+	flag.Parse()
+}
+
 func (s *server) Start(ctx context.Context) error {
 	if s.listener != nil {
 		return errors.New("server is already listening")
+	}
+
+	if s.LogLevel != 0 {
+		initLogging(s.LogLevel)
+	} else if config.IsDevBuild() {
+		initLogging(5)
 	}
 
 	s.templates.parseTemplates()

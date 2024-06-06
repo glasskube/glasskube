@@ -12,7 +12,8 @@ import (
 )
 
 var serveCmdOptions struct {
-	port int
+	port     int
+	logLevel int
 }
 
 var serveCmd = &cobra.Command{
@@ -26,6 +27,7 @@ var serveCmd = &cobra.Command{
 			Host:       "localhost",
 			Port:       int32(serveCmdOptions.port),
 			Kubeconfig: config.Kubeconfig,
+			LogLevel:   serveCmdOptions.logLevel,
 		}
 		server := web.NewServer(options)
 		if err := server.Start(cmd.Context()); err != nil {
@@ -37,5 +39,7 @@ var serveCmd = &cobra.Command{
 
 func init() {
 	serveCmd.Flags().IntVarP(&serveCmdOptions.port, "port", "p", 8580, "Port for the webserver")
+	serveCmd.Flags().IntVarP(&serveCmdOptions.logLevel, "log-level", "l", 0,
+		"Level for additional logging, where 0 is the least verbose")
 	RootCmd.AddCommand(serveCmd)
 }
