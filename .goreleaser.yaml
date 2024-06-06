@@ -48,7 +48,7 @@ dockers:
       - "ghcr.io/glasskube/package-operator:{{.Tag}}-amd64"
       - "ghcr.io/glasskube/package-operator:latest-amd64"
     use: buildx
-    dockerfile: release.Dockerfile
+    dockerfile: package-operator.Dockerfile
     build_flag_templates:
       - "--pull"
       - "--platform=linux/amd64"
@@ -65,7 +65,7 @@ dockers:
       - "ghcr.io/glasskube/package-operator:{{.Tag}}-arm64"
       - "ghcr.io/glasskube/package-operator:latest-arm64"
     use: buildx
-    dockerfile: release.Dockerfile
+    dockerfile: package-operator.Dockerfile
     build_flag_templates:
       - "--pull"
       - "--platform=linux/arm64"
@@ -73,6 +73,41 @@ dockers:
       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
       - "--label=org.opencontainers.image.version={{.Version}}"
       - '--label=org.opencontainers.image.title="Glasskube package-operator"'
+      - "--label=org.opencontainers.image.vendor=Glasskube"
+      - "--label=org.opencontainers.image.licenses=Apache-2.0"
+      - "--label=org.opencontainers.image.source=https://github.com/glasskube/glasskube/"
+      - "--label=org.opencontainers.image.url=https://glasskube.dev/"
+      - "--label=org.opencontainers.image.documentation=https://glasskube.dev/docs/"
+    goarch: arm64
+  - image_templates:
+      - "ghcr.io/glasskube/glasskube:{{.Tag}}-amd64"
+      - "ghcr.io/glasskube/glasskube:latest-amd64"
+    use: buildx
+    dockerfile: glasskube.Dockerfile
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - '--label=org.opencontainers.image.title="Glasskube CLI"'
+      - "--label=org.opencontainers.image.vendor=Glasskube"
+      - "--label=org.opencontainers.image.licenses=Apache-2.0"
+      - "--label=org.opencontainers.image.source=https://github.com/glasskube/glasskube/"
+      - "--label=org.opencontainers.image.url=https://glasskube.dev/"
+      - "--label=org.opencontainers.image.documentation=https://glasskube.dev/docs/"
+  - image_templates:
+      - "ghcr.io/glasskube/glasskube:{{.Tag}}-arm64"
+      - "ghcr.io/glasskube/glasskube:latest-arm64"
+    use: buildx
+    dockerfile: glasskube.Dockerfile
+    build_flag_templates:
+      - "--pull"
+      - "--platform=linux/arm64"
+      - "--label=org.opencontainers.image.created={{.Date}}"
+      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+      - "--label=org.opencontainers.image.version={{.Version}}"
+      - '--label=org.opencontainers.image.title="Glasskube CLI"'
       - "--label=org.opencontainers.image.vendor=Glasskube"
       - "--label=org.opencontainers.image.licenses=Apache-2.0"
       - "--label=org.opencontainers.image.source=https://github.com/glasskube/glasskube/"
@@ -89,6 +124,14 @@ docker_manifests:
     image_templates:
       - "ghcr.io/glasskube/package-operator:latest-amd64"
       - "ghcr.io/glasskube/package-operator:latest-arm64"
+  - name_template: "ghcr.io/glasskube/glasskube:{{.Tag}}"
+    image_templates:
+      - "ghcr.io/glasskube/glasskube:{{.Tag}}-amd64"
+      - "ghcr.io/glasskube/glasskube:{{.Tag}}-arm64"
+  - name_template: "ghcr.io/glasskube/glasskube:latest"
+    image_templates:
+      - "ghcr.io/glasskube/glasskube:latest-amd64"
+      - "ghcr.io/glasskube/glasskube:latest-arm64"
 
 nfpms:
   - file_name_template: "{{ .ProjectName }}_{{ .Tag }}_{{ .Arch }}"
