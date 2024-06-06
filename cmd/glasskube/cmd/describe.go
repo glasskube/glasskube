@@ -165,13 +165,13 @@ func printRepositories(pkg *v1alpha1.Package, repos []v1alpha1.PackageRepository
 	}
 }
 
-func repositoriesAsMap(pkg *v1alpha1.Package, repos []v1alpha1.PackageRepository) []map[string]string {
-	repositories := []map[string]string{}
+func repositoriesAsMap(pkg *v1alpha1.Package, repos []v1alpha1.PackageRepository) []map[string]any {
+	repositories := make([]map[string]any, 0, len(repos))
 	for _, repo := range repos {
-		repository := make(map[string]string)
-		repository["name"] = repo.Name
-		repository["installed"] = fmt.Sprintf("%t", isInstalledFrom(pkg, repo))
-		repositories = append(repositories, repository)
+		repositories = append(repositories, map[string]any{
+			"name":      repo.Name,
+			"installed": isInstalledFrom(pkg, repo),
+		})
 	}
 	return repositories
 }
