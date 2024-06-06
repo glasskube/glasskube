@@ -11,7 +11,11 @@ type PackageV1Alpha1Client interface {
 	Packages() PackageInterface
 	PackageInfos() PackageInfoInterface
 	PackageRepositories() PackageRepositoryInterface
-	WithStores(packageStore cache.Store, packageInfoStore cache.Store) PackageV1Alpha1Client
+	WithStores(
+		packageStore cache.Store,
+		packageInfoStore cache.Store,
+		packageRepositoryStore cache.Store,
+	) PackageV1Alpha1Client
 }
 
 type baseClient struct {
@@ -32,8 +36,17 @@ func (c *baseClient) PackageRepositories() PackageRepositoryInterface {
 	return &packageRepositoryClient{restClient: c.restClient}
 }
 
-func (c *baseClient) WithStores(packageStore cache.Store, packageInfoStore cache.Store) PackageV1Alpha1Client {
-	return &packageCacheClient{PackageV1Alpha1Client: c, packageStore: packageStore, packageInfoStore: packageInfoStore}
+func (c *baseClient) WithStores(
+	packageStore cache.Store,
+	packageInfoStore cache.Store,
+	packageRepositoryStore cache.Store,
+) PackageV1Alpha1Client {
+	return &packageCacheClient{
+		PackageV1Alpha1Client:  c,
+		packageStore:           packageStore,
+		packageInfoStore:       packageInfoStore,
+		packageRepositoryStore: packageRepositoryStore,
+	}
 }
 
 func New(cfg *rest.Config) (PackageV1Alpha1Client, error) {

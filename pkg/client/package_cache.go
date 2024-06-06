@@ -11,8 +11,9 @@ import (
 
 type packageCacheClient struct {
 	PackageV1Alpha1Client
-	packageStore     cache.Store
-	packageInfoStore cache.Store
+	packageStore           cache.Store
+	packageInfoStore       cache.Store
+	packageRepositoryStore cache.Store
 }
 
 func (c *packageCacheClient) Packages() PackageInterface {
@@ -29,6 +30,16 @@ func (c *packageCacheClient) PackageInfos() PackageInfoInterface {
 	return &cachedPackageInfoClient{
 		PackageInfoInterface: c.PackageV1Alpha1Client.PackageInfos(),
 		store:                c.packageInfoStore,
+	}
+}
+
+func (c *packageCacheClient) PackageRepositories() PackageRepositoryInterface {
+	if c.packageRepositoryStore == nil {
+		return c.PackageV1Alpha1Client.PackageRepositories()
+	}
+	return &cachedPackageRepositoryClient{
+		PackageRepositoryInterface: c.PackageV1Alpha1Client.PackageRepositories(),
+		store:                      c.packageRepositoryStore,
 	}
 }
 
