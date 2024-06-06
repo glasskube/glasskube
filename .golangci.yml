@@ -16,6 +16,9 @@ issues:
       linters:
         - dupl
         - lll
+    - path: "pkg/client/(.+)_cache.go"
+      linters:
+        - dupl
 linters:
   enable:
     - dupl
