@@ -6,7 +6,17 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/glasskube/glasskube/internal/config"
 )
+
+// InteractivityEnabledOrFail checks whether config.NonInteractive is set and immediately aborts if it is not.
+func InteractivityEnabledOrFail() {
+	if config.NonInteractive {
+		fmt.Fprintln(os.Stderr, "\n❌ Interactivity was requested in non-interactive mode")
+		ExitWithError()
+	}
+}
 
 func YesNoPrompt(label string, defaultChoice bool) bool {
 	choices := "Y/n"
@@ -18,6 +28,7 @@ func YesNoPrompt(label string, defaultChoice bool) bool {
 	var s string
 	for {
 		fmt.Fprintf(os.Stderr, "%s (%s) ", label, choices)
+		InteractivityEnabledOrFail()
 		s, _ = r.ReadString('\n')
 		s = strings.TrimSpace(s)
 		if s == "" {
@@ -35,6 +46,7 @@ func YesNoPrompt(label string, defaultChoice bool) bool {
 
 func GetInputStr(label string) (input string) {
 	fmt.Fprintf(os.Stderr, "%v> ", label)
+	InteractivityEnabledOrFail()
 	fmt.Scanln(&input)
 	return
 }

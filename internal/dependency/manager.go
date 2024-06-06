@@ -43,9 +43,12 @@ func (dm *DependendcyManager) Validate(
 		return nil, err
 	}
 
-	// We can not call validate the graph here, because the initial graph, representing the current cluster state, may
+	// We do not check the validation error here, because the initial graph, representing the current cluster state, may
 	// actually be invalid. This is because we let the operator create/update dependencies which can only happen after
 	// a package is already created.
+	// We need this error though in order to check later whether a dependency error was introduced by the action that
+	// is currently validated or existed before.
+	errBefore := g.Validate()
 
 	if err := dm.add(g, *manifest, version); err != nil {
 		return nil, err
@@ -59,10 +62,12 @@ func (dm *DependendcyManager) Validate(
 
 	var conflicts []Conflict
 	for _, err := range multierr.Errors(g.Validate()) {
-		if conflict, err := errorToConflict(err); err != nil {
-			return nil, err
-		} else {
-			conflicts = append(conflicts, *conflict)
+		if isErrNew(err, errBefore) {
+			if conflict, err := errorToConflict(err); err != nil {
+				return nil, err
+			} else {
+				conflicts = append(conflicts, *conflict)
+			}
 		}
 	}
 
@@ -167,6 +172,20 @@ func errorToConflict(err error) (*Conflict, error) {
 	} else {
 		return nil, err
 	}
+}
+
+func isErrNew(errCurrent error, errBefore error) bool {
+	if errCurrentDep := (&graph.DependencyError{}); errors.As(errCurrent, &errCurrentDep) {
+		for _, err := range multierr.Errors(errBefore) {
+			if errBeforeDep := (&graph.DependencyError{}); errors.As(err, &errBeforeDep) &&
+				errBeforeDep.Name == errCurrentDep.Name &&
+				errBeforeDep.Dependency == errCurrentDep.Dependency {
+				return false
+			}
+
+		}
+	}
+	return true
 }
 
 // getVersions is a utility to get all versions for a package from repoAdapter and also parse them

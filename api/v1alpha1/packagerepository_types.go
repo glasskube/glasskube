@@ -17,6 +17,9 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"strings"
+
+	"github.com/glasskube/glasskube/internal/constants"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -91,6 +94,10 @@ func (repo *PackageRepository) SetDefaultRepositoryBool(value bool) {
 	} else {
 		delete(repo.Annotations, defaultRepositoryAnnotation)
 	}
+}
+
+func (repo *PackageRepository) IsGlasskubeRepo() bool {
+	return strings.HasPrefix(repo.Spec.Url, constants.DefaultRepoUrl)
 }
 
 //+kubebuilder:object:root=true

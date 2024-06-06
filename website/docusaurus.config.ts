@@ -119,9 +119,8 @@ const config: Config = {
       },
     },
     announcementBar: {
-      id: 'announcementBar-0', // Increment on change
-      // content: '⭐️ If you like <code>glasskube</code>, give it a star on <a target="_blank" rel="noopener noreferrer" href="https://github.com/glasskube/glasskube">GitHub</a> and follow us on <a target="_blank" rel="noopener noreferrer" href="https://x.com/glasskube">X</a> ⭐️',
-      content: `🎉️ <a target="_blank" href="https://github.com/glasskube/glasskube"><code>glasskube/glasskube</code></a> Beta is launching on <a target="_blank" rel="noopener noreferrer" href="https://www.producthunt.com/posts/glasskube">Producthunt</a> 🥳️`,
+      id: 'announcementBar-1', // Increment on change
+      content: `🎉️ Glasskube Cloud is launching soon! 😎 <a target="_blank" href="https://glasskube.cloud/signup.html?id=" id="banner-cloud-link">Join the wait list to request early access.</a> 🥳️`,
       isCloseable: false,
     },
     image:
@@ -145,13 +144,13 @@ const config: Config = {
           label: 'Guides',
           activeBaseRegex: `/guides/`,
         },
-        { to: '/blog', label: 'Blog', position: 'left' },
-        { to: '/roadmap', label: 'Roadmap', position: 'left' },
-        { to: '/packages', label: 'Packages', position: 'left' },
+        {to: '/blog', label: 'Blog', position: 'left'},
+        {to: '/roadmap', label: 'Roadmap', position: 'left'},
+        {to: '/packages', label: 'Packages', position: 'left'},
         {
           type: 'custom-wrapper',
           position: 'right',
-        }
+        },
       ],
     },
     footer: {
@@ -235,6 +234,7 @@ const config: Config = {
       jsLoader: 'matomo.js',
     },
   } satisfies Preset.ThemeConfig,
+  clientModules: ['src/theme/cloud-banner.js'],
 };
 
 export default config;

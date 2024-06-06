@@ -3,8 +3,9 @@
 [![Docs](https://img.shields.io/badge/docs-glasskube.dev%2Fdocs-blue)](https://glasskube.dev/docs/?utm_source=github)
 [![](https://dcbadge.vercel.app/api/server/SxH6KUCGH7?style=flat)](https://discord.gg/SxH6KUCGH7)
 [![Downloads](https://img.shields.io/github/downloads/glasskube/glasskube/total)](https://github.com/glasskube/glasskube/releases)
-[![twitter](https://img.shields.io/twitter/follow/glasskube?style=flat)](https://x.com/intent/follow?screen_name=glasskube)
 [![CNCF Landscape](https://img.shields.io/badge/CNCF%20Landscape-5699C6)](https://landscape.cncf.io/?item=app-definition-and-development--application-definition-image-build--glasskube)
+[![Go Reference](https://pkg.go.dev/badge/github.com/glasskube/glasskube)](https://pkg.go.dev/github.com/glasskube/glasskube)
+[![Go Report Card](https://goreportcard.com/badge/github.com/glasskube/glasskube)](https://goreportcard.com/report/github.com/glasskube/glasskube)
 
 <br>
 <div align="center">
@@ -95,7 +96,7 @@ You can install Glasskube via [Homebrew](https://brew.sh/):
 brew install glasskube/tap/glasskube
 ```
 
-For other installation options check out our [install guide](https://glasskube.dev/docs/getting-started/install).
+For other installation options check out our [installation guide](https://glasskube.dev/docs/getting-started/install).
 
 Once the CLI is installed, the first step is to install the necessary components in your cluster. To do that, run
 ```sh
@@ -113,15 +114,20 @@ Congratulations, you can now explore and install all our available packages! �
 
 ## 📦 Supported Packages
 
-- Cert Manager [`cert-manager/cert-manager`](https://github.com/cert-manager/cert-manager)
-- Cyclops [`cyclops-ui/cyclops`](https://github.com/cyclops-ui/cyclops)
-- Ingress-NGINX Controller [`kubernetes/ingress-nginx`](https://github.com/kubernetes/ingress-nginx)
-- Keptn [`keptn/lifecycle-toolkit`](https://github.com/keptn/lifecycle-toolkit)
+Glasskube already supports a wide range of packages, including, but not limited to:
+
 - Kubernetes Dashboard [`kubernetes/dashboard`](https://github.com/kubernetes/dashboard)
+- Cert Manager [`cert-manager/cert-manager`](https://github.com/cert-manager/cert-manager)
+- Ingress-NGINX Controller [`kubernetes/ingress-nginx`](https://github.com/kubernetes/ingress-nginx)
+- Kube Prometheus Stack [`prometheus-operator/kube-prometheus`](https://github.com/prometheus-operator/kube-prometheus)
+- Cloud Native PG [`cloudnative-pg/cloudnative-pg`](https://github.com/cloudnative-pg/cloudnative-pg)
+
+You can find all supported and planned packages on [glasskube.dev/packages](https://glasskube.dev/packages/).
 
 ### Coming Soon
 
-In the next versions you will be able to install more packages like the [Kube-Prometheus-Stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack), [Velero](https://github.com/vmware-tanzu/velero) and the [CloudNativePG](https://github.com/cloudnative-pg/cloudnative-pg). With v1.0.0 you will also be able to install apps like [GitLab](https://gitlab.com/gitlab-org/gitlab), [Keycloak](https://github.com/keycloak/keycloak) or [Hashicorp Vault](https://github.com/hashicorp/vault) with the [Glasskube Apps Operator](https://github.com/glasskube/operator/). You can find the full list and release schedule in our [roadmap](https://glasskube.dev/roadmap/#packages-and-apps-schedule?utm_source=github)
+With v1.0.0 you will also be able to install apps like [GitLab](https://gitlab.com/gitlab-org/gitlab), [Keycloak](https://github.com/keycloak/keycloak) or [Hashicorp Vault](https://github.com/hashicorp/vault) with the [Glasskube Apps Operator](https://github.com/glasskube/operator/).
+You can find the full list and release schedule in our [roadmap](https://glasskube.dev/roadmap/#packages-and-apps-schedule?utm_source=github)
 
 > Can't find a package or want your app included in the list? We are always adding new supported packages & apps,
 > so just join us on [Discord](https://discord.gg/SxH6KUCGH7) or open up a new issue and let us know what is missing!
@@ -131,6 +137,7 @@ In the next versions you will be able to install more packages like the [Kube-Pr
 ![cast](https://github.com/glasskube/glasskube/assets/16959694/f8b936ca-7b58-4e2b-8845-17da089f2384)
 
 ## Architecture Diagram
+
 ```mermaid
 ---
 title: glasskube install [package]
@@ -171,7 +178,7 @@ Your feedback is invaluable to us as we continue to improve Glasskube. If you'd 
 
 ## 🤩 Thanks to all our Contributors
 
-Thanks to everyone, that is supporting this project. We are thankful, for evey contribution, no matter its size!
+Thanks to everyone, that is supporting this project. We are thankful, for every contribution, no matter its size!
 
 <a href="https://github.com/glasskube/glasskube/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=glasskube/glasskube" />

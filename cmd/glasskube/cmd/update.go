@@ -38,8 +38,11 @@ var updateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 		packageNames := args
-		updater := update.NewUpdater(ctx).
-			WithStatusWriter(statuswriter.Spinner())
+
+		updater := update.NewUpdater(ctx)
+		if !rootCmdOptions.NoProgress {
+			updater.WithStatusWriter(statuswriter.Spinner())
+		}
 
 		var tx *update.UpdateTransaction
 		var err error

@@ -17,6 +17,11 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
+
+	"k8s.io/client-go/informers"
+	corev1 "k8s.io/client-go/listers/core/v1"
+
 	"github.com/glasskube/glasskube/internal/repo/types"
 
 	"github.com/glasskube/glasskube/internal/util"
@@ -32,7 +37,6 @@ import (
 	"github.com/glasskube/glasskube/internal/repo"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	"github.com/glasskube/glasskube/internal/telemetry"
-	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
 	"github.com/glasskube/glasskube/internal/web/handler"
 	"github.com/glasskube/glasskube/pkg/bootstrap"
 	"github.com/glasskube/glasskube/pkg/client"
@@ -100,6 +104,9 @@ type server struct {
 	packageController     cache.Controller
 	packageInfoStore      cache.Store
 	packageInfoController cache.Controller
+	namespaceLister       *corev1.NamespaceLister
+	configMapLister       *corev1.ConfigMapLister
+	secretLister          *corev1.SecretLister
 	forwarders            map[string]*open.OpenResult
 	dependencyMgr         *dependency.DependendcyManager
 	updateMutex           sync.Mutex
@@ -167,8 +174,12 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle("/packages/open", s.requireReady(s.open))
 	router.Handle("/packages/{pkgName}", s.requireReady(s.packageDetail))
 	router.Handle("/packages/{pkgName}/discussion", s.requireReady(s.packageDiscussion))
+	router.Handle("/packages/{pkgName}/discussion/badge", s.requireReady(s.discussionBadge))
 	router.Handle("/packages/{pkgName}/configure", s.requireReady(s.installOrConfigurePackage))
+	router.Handle("/packages/{pkgName}/configure/advanced", s.requireReady(s.advancedConfiguration))
 	router.Handle("/packages/{pkgName}/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
+	router.Handle("/packages/{pkgName}/configuration/{valueName}/datalists/names", s.requireReady(s.namesDatalist))
+	router.Handle("/packages/{pkgName}/configuration/{valueName}/datalists/keys", s.requireReady(s.keysDatalist))
 	router.Handle("/settings", s.requireReady(s.settingsPage))
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/packages", http.StatusFound) })
 	http.Handle("/", s.enrichContext(router))
@@ -374,7 +385,7 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 	var repos []v1alpha1.PackageRepository
 	if repos, err = s.repoClientset.Meta().GetReposForPackage(pkgName); err != nil {
 		fmt.Fprintf(os.Stderr, "error getting repos for package; %v", err)
-	} else if repositoryName == "" && pkg == nil {
+	} else if repositoryName == "" {
 		if len(repos) == 0 {
 			s.respondAlertAndLog(w, fmt.Errorf("%v not found in any repository", pkgName), "", "danger")
 			return
@@ -385,6 +396,14 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 		}
+	}
+
+	var usedRepo v1alpha1.PackageRepository
+	if err := s.pkgClient.PackageRepositories().Get(r.Context(), repositoryName, &usedRepo); err != nil {
+		s.respondAlertAndLog(w, err,
+			fmt.Sprintf("An error occurred fetching repository %v", repositoryName),
+			"danger")
+		return
 	}
 
 	var idx repo.PackageIndex
@@ -425,75 +444,41 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	valueErrors := make(map[string]error)
+	datalistOptions := make(map[string]*pkg_config_input.PkgConfigInputDatalistOptions)
 	if pkg != nil {
+		nsOptions, _ := s.getNamespaceOptions()
+		pkgsOptions, _ := s.getPackagesOptions(r.Context())
 		for key, v := range pkg.Spec.Values {
 			if _, err := s.valueResolver.ResolveValue(r.Context(), v); err != nil {
 				valueErrors[key] = util.GetRootCause(err)
 			}
+			if v.ValueFrom != nil {
+				options, err := s.getDatalistOptions(r.Context(), v.ValueFrom, nsOptions, pkgsOptions)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "%v\n", err)
+				}
+				datalistOptions[key] = options
+			}
 		}
 	}
+
 	err = s.templates.pkgPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
-		"Package":           pkg,
-		"Status":            client.GetStatusOrPending(pkg),
-		"Manifest":          manifest,
-		"LatestVersion":     latestVersion,
-		"UpdateAvailable":   pkg != nil && s.isUpdateAvailable(r.Context(), pkgName),
-		"AutoUpdate":        clientutils.AutoUpdateString(pkg, "Disabled"),
-		"ValidationResult":  res,
-		"ShowConflicts":     res.Status == dependency.ValidationResultStatusConflict,
-		"SelectedVersion":   selectedVersion,
-		"PackageIndex":      &idx,
-		"Repositories":      repos,
-		"RepositoryName":    repositoryName,
-		"ShowConfiguration": (pkg != nil && len(manifest.ValueDefinitions) > 0 && pkg.DeletionTimestamp.IsZero()) || pkg == nil,
-		"ValueErrors":       valueErrors,
-	}, err))
-	checkTmplError(err, fmt.Sprintf("package-detail (%s)", pkgName))
-}
-
-// packageDiscussion is a full page for showing various discussions, reactions, etc.
-func (s *server) packageDiscussion(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodPost {
-		githubUrl := r.FormValue("githubUrl")
-		telemetry.SetUserProperty("github_url", githubUrl)
-		return
-	}
-	pkgName := mux.Vars(r)["pkgName"]
-	repositoryName := mux.Vars(r)["repositoryName"]
-	pkg, manifest, err := describe.DescribeInstalledPackage(r.Context(), pkgName)
-	if err != nil && !apierrors.IsNotFound(err) {
-		s.respondAlertAndLog(w, err,
-			fmt.Sprintf("An error occurred fetching installed package %v", pkgName), "danger")
-		return
-	} else if err != nil {
-		// implies that the package is not installed
-		err = nil
-	}
-
-	var idx repo.PackageIndex
-
-	if err := s.repoClientset.ForRepoWithName(repositoryName).FetchPackageIndex(pkgName, &idx); err != nil {
-		s.respondAlertAndLog(w, err, "An error occurred fetching versions of "+pkgName, "danger")
-		return
-	}
-
-	if manifest == nil {
-		manifest = &v1alpha1.PackageManifest{}
-		if err := s.repoClientset.ForRepoWithName(repositoryName).
-			FetchPackageManifest(pkgName, idx.LatestVersion, manifest); err != nil {
-			s.respondAlertAndLog(w, err,
-				fmt.Sprintf("An error occurred fetching manifest of %v in version %v in repository %v",
-					pkgName, idx.LatestVersion, repositoryName), "danger")
-			return
-		}
-	}
-
-	err = s.templates.pkgDiscussionPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
-		"Package":         pkg,
-		"Status":          client.GetStatusOrPending(pkg),
-		"Manifest":        manifest,
-		"LatestVersion":   idx.LatestVersion,
-		"UpdateAvailable": pkg != nil && s.isUpdateAvailable(r.Context(), pkgName),
+		"Package":            pkg,
+		"Status":             client.GetStatusOrPending(pkg),
+		"Manifest":           manifest,
+		"LatestVersion":      latestVersion,
+		"UpdateAvailable":    pkg != nil && s.isUpdateAvailable(r.Context(), pkgName),
+		"AutoUpdate":         clientutils.AutoUpdateString(pkg, "Disabled"),
+		"ValidationResult":   res,
+		"ShowConflicts":      res.Status == dependency.ValidationResultStatusConflict,
+		"SelectedVersion":    selectedVersion,
+		"PackageIndex":       &idx,
+		"Repositories":       repos,
+		"RepositoryName":     repositoryName,
+		"ShowConfiguration":  (pkg != nil && len(manifest.ValueDefinitions) > 0 && pkg.DeletionTimestamp.IsZero()) || pkg == nil,
+		"ValueErrors":        valueErrors,
+		"DatalistOptions":    datalistOptions,
+		"ShowDiscussionLink": usedRepo.IsGlasskubeRepo(),
 	}, err))
 	checkTmplError(err, fmt.Sprintf("package-detail (%s)", pkgName))
 }
@@ -593,46 +578,101 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-// packageConfigurationInput is a GET endpoint, which returns an html snippet containing an input container.
-// The endpoint requires the pkgName query parameter to be set, as well as the valueName query parameter (which holds
-// the name of the desired value according to the package value definitions).
-// An optional query parameter refKind can be passed to request the snippet in a certain variant, where the accepted
-// refKind values are: ConfigMap, Secret, Package. If no refKind is given, the "regular" input is returned.
-// In any case, the input container consists of a button where the user can change the type of reference or remove the
-// reference, and the actual input field(s).
-func (s *server) packageConfigurationInput(w http.ResponseWriter, r *http.Request) {
+// advancedConfiguration is a GET+POST endpoint which can be used for advanced package installation options, most notably
+// for changing the package repository and changing to a specific (maybe even lower than installed) version of the package.
+// It is only intended to be used for already installed packages, for new packages these options exist anyway and
+// should be available for every user.
+func (s *server) advancedConfiguration(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	pkgName := mux.Vars(r)["pkgName"]
-	selectedVersion := r.FormValue("selectedVersion")
 	repositoryName := r.FormValue("repositoryName")
-	pkg, manifest, err := describe.DescribeInstalledPackage(r.Context(), pkgName)
+	selectedVersion := r.FormValue("selectedVersion")
+	pkg, manifest, err := describe.DescribeInstalledPackage(ctx, pkgName)
 	if err != nil && !apierrors.IsNotFound(err) {
-		err = fmt.Errorf("an error occurred fetching package details of %v: %w", pkgName, err)
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+		s.respondAlertAndLog(w, err,
+			fmt.Sprintf("An error occurred fetching package details of installed package %v", pkgName),
+			"danger")
 		return
+	} else if pkg == nil {
+		s.respondAlertAndLog(w, err,
+			fmt.Sprintf("Package %v is not installed", pkgName),
+			"danger")
+		return
+	} else if repositoryName == "" {
+		repositoryName = pkg.Spec.PackageInfo.RepositoryName
 	}
-
-	if manifest == nil {
-		manifest = &v1alpha1.PackageManifest{}
-		if err := s.repoClientset.ForRepoWithName(repositoryName).
-			FetchPackageManifest(pkgName, selectedVersion, manifest); err != nil {
-			// TODO check error handling again?
-			s.respondAlertAndLog(w, err,
-				fmt.Sprintf("An error occurred fetching manifest of %v in version %v", pkgName, selectedVersion),
-				"danger")
+	var repos []v1alpha1.PackageRepository
+	if repos, err = s.repoClientset.Meta().GetReposForPackage(pkgName); err != nil {
+		fmt.Fprintf(os.Stderr, "error getting repos for package; %v", err)
+	} else if repositoryName == "" {
+		if len(repos) == 0 {
+			s.respondAlertAndLog(w, fmt.Errorf("%v not found in any repository", pkgName), "", "danger")
 			return
+		}
+		for _, r := range repos {
+			repositoryName = r.Name
+			if r.IsDefaultRepository() {
+				break
+			}
 		}
 	}
 
-	valueName := mux.Vars(r)["valueName"]
-	refKind := r.URL.Query().Get("refKind")
-	if valueDefinition, ok := manifest.ValueDefinitions[valueName]; ok {
-		input := pkg_config_input.ForPkgConfigInput(pkg, repositoryName, selectedVersion, pkgName, valueName, valueDefinition,
-			nil, &pkg_config_input.PkgConfigInputRenderOptions{
-				Autofocus:      true,
-				DesiredRefKind: &refKind,
+	if r.Method == http.MethodGet {
+		var idx repo.PackageIndex
+		if err := s.repoClientset.ForRepoWithName(repositoryName).FetchPackageIndex(pkgName, &idx); err != nil {
+			s.respondAlertAndLog(w, err,
+				fmt.Sprintf("An error occurred fetching package index of %v in repository %v", pkgName, repositoryName),
+				"danger")
+			return
+		}
+		latestVersion := idx.LatestVersion
+
+		if selectedVersion == "" {
+			selectedVersion = latestVersion
+		} else if !slices.ContainsFunc(idx.Versions, func(item types.PackageIndexItem) bool {
+			return item.Version == selectedVersion
+		}) {
+			selectedVersion = latestVersion
+		}
+
+		res, err := s.dependencyMgr.Validate(r.Context(), manifest, selectedVersion)
+		if err != nil {
+			s.respondAlertAndLog(w, err,
+				fmt.Sprintf("An error occurred validating dependencies of %v in version %v", pkgName, selectedVersion),
+				"danger")
+			return
+		}
+
+		err = s.templates.pkgConfigAdvancedTmpl.Execute(w, s.enrichPage(r, map[string]any{
+			"Status":           client.GetStatusOrPending(pkg),
+			"Manifest":         manifest,
+			"LatestVersion":    latestVersion,
+			"ValidationResult": res,
+			"ShowConflicts":    res.Status == dependency.ValidationResultStatusConflict,
+			"SelectedVersion":  selectedVersion,
+			"PackageIndex":     &idx,
+			"Repositories":     repos,
+			"RepositoryName":   repositoryName,
+		}, err))
+		checkTmplError(err, fmt.Sprintf("advanced-config (%s)", pkgName))
+	} else if r.Method == http.MethodPost {
+		pkg.Spec.PackageInfo.Version = selectedVersion
+		if repositoryName != "" {
+			pkg.Spec.PackageInfo.RepositoryName = repositoryName
+		}
+		if err := s.pkgClient.Packages().Update(ctx, pkg); err != nil {
+			s.respondAlertAndLog(w, err,
+				fmt.Sprintf("An error occurred updating package %v to version %v in repo %v", pkgName, selectedVersion, repositoryName),
+				"danger")
+			return
+		} else {
+			err := s.templates.alertTmpl.Execute(w, map[string]any{
+				"Message":     "Configuration updated successfully",
+				"Dismissible": true,
+				"Type":        "success",
 			})
-		err = s.templates.pkgConfigInput.Execute(w, input)
-		checkTmplError(err, fmt.Sprintf("package config input (%s, %s)", pkgName, valueName))
+			checkTmplError(err, "success")
+		}
 	}
 }
 
@@ -674,6 +714,7 @@ func (s *server) bootstrapPage(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		tplErr := s.templates.bootstrapPageTmpl.Execute(w, &map[string]any{
+			"CloudId":        telemetry.GetMachineId(),
 			"CurrentContext": s.rawConfig.CurrentContext,
 			"Err":            err,
 		})
@@ -707,6 +748,7 @@ func (s *server) kubeconfigPage(w http.ResponseWriter, r *http.Request) {
 		currentContext = s.rawConfig.CurrentContext
 	}
 	tplErr := s.templates.kubeconfigPageTmpl.Execute(w, map[string]any{
+		"CloudId":                   telemetry.GetMachineId(),
 		"CurrentContext":            currentContext,
 		"ConfigErr":                 configErr,
 		"KubeconfigDefaultLocation": clientcmd.RecommendedHomeFile,
@@ -729,6 +771,7 @@ func (s *server) settingsPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) enrichPage(r *http.Request, data map[string]any, err error) map[string]any {
+	data["CloudId"] = telemetry.GetMachineId()
 	if pathParts := strings.Split(r.URL.Path, "/"); len(pathParts) >= 2 {
 		data["NavbarActiveItem"] = pathParts[1]
 	}
@@ -862,6 +905,15 @@ func (server *server) initWhenBootstrapped(ctx context.Context) {
 		clientadapter.NewPackageClientAdapter(server.pkgClient),
 		clientadapter.NewKubernetesClientAdapter(server.k8sClient),
 	)
+	factory := informers.NewSharedInformerFactory(server.k8sClient, 0)
+	c := make(chan struct{})
+	namespaceLister := factory.Core().V1().Namespaces().Lister()
+	server.namespaceLister = &namespaceLister
+	configMapLister := factory.Core().V1().ConfigMaps().Lister()
+	server.configMapLister = &configMapLister
+	secretLister := factory.Core().V1().Secrets().Lister()
+	server.secretLister = &secretLister
+	factory.Start(c)
 }
 
 func (server *server) initCachedClient(ctx context.Context) {
