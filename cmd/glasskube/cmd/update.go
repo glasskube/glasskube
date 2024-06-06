@@ -117,7 +117,7 @@ func handleOutput(pkgs []v1alpha1.Package) {
 	}
 	switch updateCmdOptions.Output {
 	case OutputFormatJSON:
-		outputData, err = json.Marshal(pkgs)
+		outputData, err = json.MarshalIndent(pkgs, "", "  ")
 	case OutputFormatYAML:
 		var buffer bytes.Buffer
 		if len(pkgs) > 1 {
