@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -24,6 +25,8 @@ import (
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/yaml"
 )
 
 var installCmdOptions = struct {
@@ -34,8 +37,10 @@ var installCmdOptions = struct {
 	NoWait            bool
 	Yes               bool
 	DryRun            bool
+	OutputOptions
 }{
 	ValuesOptions: flags.NewOptions(),
+	OutputOptions: OutputOptions{},
 }
 
 var installCmd = &cobra.Command{
@@ -202,9 +207,9 @@ var installCmd = &cobra.Command{
 			if status != nil {
 				switch status.Status {
 				case string(condition.Ready):
-					fmt.Printf("✅ %v is now installed in %v.\n", packageName, config.CurrentContext)
+					fmt.Fprintf(os.Stderr, "✅ %v is now installed in %v.\n", packageName, config.CurrentContext)
 				default:
-					fmt.Printf("❌ %v installation has status %v, reason: %v\nMessage: %v\n",
+					fmt.Fprintf(os.Stderr, "❌ %v installation has status %v, reason: %v\nMessage: %v\n",
 						packageName, status.Status, status.Reason, status.Message)
 				}
 			} else {
@@ -212,7 +217,37 @@ var installCmd = &cobra.Command{
 				cliutils.ExitWithError()
 			}
 		}
+		if installCmdOptions.OutputOptions.Output != "" {
+			output, err := formatOutput(pkg, installCmdOptions.OutputOptions.Output)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "❗ Error: %v\n", err)
+				cliutils.ExitWithError()
+			}
+			fmt.Println(output)
+		}
 	},
+}
+
+func formatOutput(pkg *v1alpha1.Package, format OutputFormat) (string, error) {
+	if gvks, _, err := scheme.Scheme.ObjectKinds(pkg); err == nil && len(gvks) == 1 {
+		pkg.SetGroupVersionKind(gvks[0])
+	}
+	switch format {
+	case OutputFormatJSON:
+		jsonOutput, err := json.MarshalIndent(pkg, "", "  ")
+		if err != nil {
+			return "", err
+		}
+		return string(jsonOutput), nil
+	case OutputFormatYAML:
+		yamlOutput, err := yaml.Marshal(pkg)
+		if err != nil {
+			return "", err
+		}
+		return string(yamlOutput), nil
+	default:
+		return "", fmt.Errorf("invalid output format: %s", format)
+	}
 }
 
 func cancel() {
@@ -292,5 +327,6 @@ func init() {
 	installCmd.MarkFlagsMutuallyExclusive("no-wait", "dry-run")
 	installCmd.MarkFlagsMutuallyExclusive("version", "enable-auto-updates")
 	installCmdOptions.ValuesOptions.AddFlagsToCommand(installCmd)
+	installCmdOptions.OutputOptions.AddFlagsToCommand(installCmd)
 	RootCmd.AddCommand(installCmd)
 }

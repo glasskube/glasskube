@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"slices"
@@ -18,11 +20,14 @@ import (
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/glasskube/glasskube/pkg/update"
 	"github.com/spf13/cobra"
+	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/yaml"
 )
 
 var updateCmdOptions struct {
 	Version string
 	Yes     bool
+	OutputOptions
 }
 
 var updateCmd = &cobra.Command{
@@ -69,10 +74,12 @@ var updateCmd = &cobra.Command{
 				fmt.Fprintf(os.Stderr, "⛔ Update cancelled. No changes were made.\n")
 				cliutils.ExitSuccess()
 			}
-			if err := updater.Apply(ctx, tx); err != nil {
+			updatedPackages, err := updater.Apply(ctx, tx)
+			if err != nil {
 				fmt.Fprintf(os.Stderr, "❌ update failed: %v\n", err)
 				cliutils.ExitWithError()
 			}
+			handleOutput(updatedPackages)
 		}
 
 		fmt.Fprintf(os.Stderr, "✅ all packages up-to-date\n")
@@ -94,6 +101,52 @@ func printTransaction(tx update.UpdateTransaction) {
 		fmt.Fprintf(w, "%v:\t-\t-> %v\n", req.Name, req.Version)
 	}
 	_ = w.Flush()
+}
+
+func handleOutput(pkgs []v1alpha1.Package) {
+	if updateCmdOptions.Output == "" {
+		return
+	}
+
+	var outputData []byte
+	var err error
+	for i := range pkgs {
+		if gvks, _, err := scheme.Scheme.ObjectKinds(&pkgs[i]); err == nil && len(gvks) == 1 {
+			pkgs[i].SetGroupVersionKind(gvks[0])
+		} else {
+			fmt.Fprintf(os.Stderr, "❌ failed to set GVK for package: %v\n", err)
+			cliutils.ExitWithError()
+		}
+	}
+	switch updateCmdOptions.Output {
+	case OutputFormatJSON:
+		outputData, err = json.MarshalIndent(pkgs, "", "  ")
+	case OutputFormatYAML:
+		var buffer bytes.Buffer
+		l := len(pkgs)
+		for _, pkg := range pkgs {
+			data, err := yaml.Marshal(pkg)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "❌ failed to marshal output: %v\n", err)
+				cliutils.ExitWithError()
+			}
+			if l > 1 {
+				buffer.WriteString("---\n")
+			}
+			buffer.Write(data)
+		}
+		outputData = buffer.Bytes()
+	default:
+		fmt.Fprintf(os.Stderr, "❌ unsupported output format: %v\n", updateCmdOptions.Output)
+		cliutils.ExitWithError()
+	}
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "❌ failed to marshal output: %v\n", err)
+		cliutils.ExitWithError()
+	}
+
+	fmt.Fprintln(os.Stdout, string(outputData))
 }
 
 func completeInstalledPackageNames(
@@ -174,5 +227,6 @@ func init() {
 	_ = updateCmd.RegisterFlagCompletionFunc("version", completeUpgradablePackageVersions)
 	updateCmd.PersistentFlags().BoolVarP(&updateCmdOptions.Yes, "yes", "y", false,
 		"do not ask for any confirmation")
+	updateCmdOptions.OutputOptions.AddFlagsToCommand(updateCmd)
 	RootCmd.AddCommand(updateCmd)
 }

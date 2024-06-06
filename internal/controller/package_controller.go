@@ -344,10 +344,14 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 			Namespace: r.pkg.Namespace,
 			Name:      dep.Name,
 		}, &requiredPkg); err != nil {
-			message := fmt.Sprintf("failed to get required package %v: %v", dep.Name, err)
-			r.setShouldUpdate(
-				conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.Status.Conditions, condition.InstallationFailed, message))
-			return false
+			if apierrors.IsNotFound(err) {
+				waitingFor = append(waitingFor, dep.Name)
+			} else {
+				message := fmt.Sprintf("failed to get required package %v: %v", dep.Name, err)
+				r.setShouldUpdate(
+					conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.Status.Conditions, condition.InstallationFailed, message))
+				return false
+			}
 		} else {
 			// if the required package already exists, we set the owner reference if
 			// * there already exists another package owner reference (i.e. it has been installed as dependency of another package)

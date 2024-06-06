@@ -12,7 +12,7 @@ There are many types of issues you can take on when contributing to the Glasskub
 ### Let's find the perfect open issue for you!
 
 - If you are new to the project, please check out the [good first issue](https://github.com/glasskube/glasskube/labels/good%20first%20issue) label.
-- If you are ready to make a big impact on the project, check out the [current milestone](https://github.com/glasskube/glasskube/milestones) that is being worked on and filter the issues by `"help-wanted"`, these issues are the ones that will make it into the next official release.
+- If you are ready to make a big impact on the project, or are already a seasoned contributor, check out our [unassigned `"help wanted"` issues](https://github.com/glasskube/glasskube/issues?q=is%3Aopen+label%3A%22help+wanted%22+no%3Aassignee+-label%3A%22good+first+issue%22).
 - If you are looking for something specific to work on, check out our [open issues](https://github.com/glasskube/glasskube/issues?q=is%3Aissue+is%3Aopen+no%3Aassignee+-label%3Aneeds-triage) and filter against the available tags such as `component: cli`, `component: ui` `component: repo`, `documentation`.
 - If you have an idea for a new feature, please open an issue, and we can discuss it.
 - We are also happy to help you find something to work on. Just reach out to us.
@@ -24,7 +24,7 @@ There are many types of issues you can take on when contributing to the Glasskub
 
 ### Discuss issues
 
-- If you have a way of approaching an issue that is outside of the scope of the issues description, propose and discuss your solution in the issue itself.
+- If you have a way of approaching an issue that is outside the scope of the issues description, propose and discuss your solution in the issue itself.
 - If you are unsure about something, don't hesitate to ask the community.
 
 ## 🚨 Contributing best practices
@@ -248,18 +248,19 @@ We are aware that the developer experience for the web part could be improved, e
 
 Sometimes it's necessary to develop and test new features and their different edge cases, and the official package repository does not include these cases yet.
 
-In this case, you can host your own repository locally and change the package repository URL in the code.
+In this case, you can host your own repository locally and add it to the list of repositories in your cluster.
 
 1. Clone the [packages repository](https://github.com/glasskube/packages).
 2. Make your changes locally and host it, e.g. with [caddy](https://caddyserver.com/docs/command-line): `caddy file-server --root . --listen :9684` from the root directory of the packages project.
-3. In `internal/repo/interface.go`, change the repository URL to `http://localhost:9684/packages`.
+3. Run `glasskube repo add local http://localhost:9684` to add this repository with the name `local`. 
 4. Make sure to restart your applications (operator, CLI, UI), such that the local repository is being used everywhere.
-
-We do not have a command line option yet to change the repository URL, so for now the code change is necessary.
 
 Also note that some of the information in the repository is redundant by design, to reduce the amount of queries against the repo.
 For example, the `index.yaml` contains a `latestVersion` for each package, but the `latestVersion` is also defined in each package index file.
 Please make sure to have consistent and valid state in your local repo.
+
+Also please be aware of the package repo cache: When changing something in the repo, you might want to restart the applications again (otherwise you might have to wait up to 5 minutes).
+There is no option yet to override the cache time, but you could locally change it in `internal/repo/client/clientset.go:NewClientset`. 
 
 ## Testing
 

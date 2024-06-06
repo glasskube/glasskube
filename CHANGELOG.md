@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.8.0](https://github.com/glasskube/glasskube/compare/v0.7.0...v0.8.0) (2024-06-04)
+
+
+### Features
+
+* --output support for glasskube install ([#696](https://github.com/glasskube/glasskube/issues/696)) ([f91ac9c](https://github.com/glasskube/glasskube/commit/f91ac9ce0f4577b9f86e3dec6b6b83f19197b6c3))
+* add --no-progress cli flag (glasskube[#709](https://github.com/glasskube/glasskube/issues/709)) ([7592f39](https://github.com/glasskube/glasskube/commit/7592f39162dffe461ee56cb8cca5c6530d91fdb2))
+* **cli:** add a "default" column to the `glasskube repo list` command ([#738](https://github.com/glasskube/glasskube/issues/738)) ([1046690](https://github.com/glasskube/glasskube/commit/1046690eb979953177c2ea5292dc1997399eb546))
+* **cli:** bootstrap command will ask for user confirmation ([#719](https://github.com/glasskube/glasskube/issues/719)) ([23c988b](https://github.com/glasskube/glasskube/commit/23c988b5e1755a98733865b1b90599a7c20c6dd0))
+* **ui:** add default repository indicator on settings page ([#733](https://github.com/glasskube/glasskube/issues/733)) ([#740](https://github.com/glasskube/glasskube/issues/740)) ([b97f427](https://github.com/glasskube/glasskube/commit/b97f427124be5e405b0f5d045526db9470a9664d))
+* **ui:** add support for advanced options ([#716](https://github.com/glasskube/glasskube/issues/716)) ([#726](https://github.com/glasskube/glasskube/issues/726)) ([ac0ee1b](https://github.com/glasskube/glasskube/commit/ac0ee1b2d65d75898284d9ffd0add78ac94db893))
+* **ui:** show reaction count on package detail page ([#207](https://github.com/glasskube/glasskube/issues/207)) ([5d02ac2](https://github.com/glasskube/glasskube/commit/5d02ac22fcc08af3d0988c88c4d220c6447957f2))
+
+
+### Bug Fixes
+
+* add checking if error is new in dependency validation ([#737](https://github.com/glasskube/glasskube/issues/737)) ([fcf21ca](https://github.com/glasskube/glasskube/commit/fcf21cae05a325f28c67cc04439214520222ba7f))
+* **deps:** update dependency @easyops-cn/docusaurus-search-local to ^0.42.0 ([e53ed41](https://github.com/glasskube/glasskube/commit/e53ed41b1a7b78f38070c21d4607f92d807a120a))
+* **deps:** update dependency @easyops-cn/docusaurus-search-local to v0.41.1 ([13e72b9](https://github.com/glasskube/glasskube/commit/13e72b9c487850279cffcf0d1bc6f976bb47725e))
+* **deps:** update docusaurus monorepo to v3.4.0 ([bac7028](https://github.com/glasskube/glasskube/commit/bac7028b0ea5d47b89a25e3d6912e6f96040dbb9))
+* **package-operator:** mark dependency as "waitingFor" if not found ([#739](https://github.com/glasskube/glasskube/issues/739)) ([c38aacb](https://github.com/glasskube/glasskube/commit/c38aacb2919d8d812d425b02364f4608ff074a3e))
+* remove optimistic cache check to prevent data race ([298e8f5](https://github.com/glasskube/glasskube/commit/298e8f5832887a8154f09ef3bef0fb6ba40c6d2d))
+
+
+### Other
+
+* **deps:** update dependency prettier to v3.3.0 ([d6afad0](https://github.com/glasskube/glasskube/commit/d6afad092b08b22c8ad118a772786d3b54a745ba))
+
+
+### Docs
+
+* add Go Reference and Go Report card badges ([d7ff2d8](https://github.com/glasskube/glasskube/commit/d7ff2d8833b6aefc1817e49a13df90462dfb80f3))
+
 ## [0.7.0](https://github.com/glasskube/glasskube/compare/v0.6.0...v0.7.0) (2024-05-28)
 
 
