@@ -120,19 +120,17 @@ func handleOutput(pkgs []v1alpha1.Package) {
 		outputData, err = json.MarshalIndent(pkgs, "", "  ")
 	case OutputFormatYAML:
 		var buffer bytes.Buffer
-		if len(pkgs) > 1 {
-			buffer.Write([]byte("---\n"))
-		}
-		for i, pkg := range pkgs {
+		l := len(pkgs)
+		for _, pkg := range pkgs {
 			data, err := yaml.Marshal(pkg)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "❌ failed to marshal output: %v\n", err)
 				cliutils.ExitWithError()
 			}
-			buffer.Write(data)
-			if i < len(pkgs)-1 {
-				buffer.Write([]byte("---\n"))
+			if l > 1 {
+				buffer.WriteString("---\n")
 			}
+			buffer.Write(data)
 		}
 		outputData = buffer.Bytes()
 	default:
