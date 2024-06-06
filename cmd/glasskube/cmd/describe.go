@@ -170,11 +170,7 @@ func repositoriesAsMap(pkg *v1alpha1.Package, repos []v1alpha1.PackageRepository
 	for _, repo := range repos {
 		repository := make(map[string]string)
 		repository["name"] = repo.Name
-		if isInstalledFrom(pkg, repo) {
-			repository["installed"] = "true"
-		} else {
-			repository["installed"] = "false"
-		}
+		repository["installed"] = fmt.Sprintf("%t", isInstalledFrom(pkg, repo))
 		repositories = append(repositories, repository)
 	}
 	return repositories
@@ -254,14 +250,14 @@ func status(pkg *v1alpha1.Package) string {
 	if pkgStatus != nil {
 		switch pkgStatus.Status {
 		case string(condition.Ready):
-			return pkgStatus.Status
+			return color.GreenString(pkgStatus.Status)
 		case string(condition.Failed):
-			return pkgStatus.Status
+			return color.RedString(pkgStatus.Status)
 		default:
 			return pkgStatus.Status
 		}
 	} else {
-		return "Not installed"
+		return color.New(color.Faint).Sprint("Not installed")
 	}
 }
 
