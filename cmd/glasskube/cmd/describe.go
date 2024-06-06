@@ -290,20 +290,6 @@ func nameAndDescription(manifest *v1alpha1.PackageManifest) string {
 	return bld.String()
 }
 
-func versions(pkg *v1alpha1.Package) string {
-	if pkg != nil {
-		return pkg.Status.Version
-	}
-	return ""
-}
-
-func isLatestVersionUpgradable(pkg *v1alpha1.Package, latestVersion string) bool {
-	if pkg != nil {
-		return semver.IsUpgradable(pkg.Spec.PackageInfo.Version, latestVersion)
-	}
-	return false
-}
-
 func createOutputStructure(
 	ctx context.Context,
 	pkg *v1alpha1.Package,
@@ -324,10 +310,10 @@ func createOutputStructure(
 	if pkg != nil {
 		data["desiredVersion"] = pkg.Spec.PackageInfo.Version
 		data["configuration"] = pkg.Spec.Values
-		data["version"] = versions(pkg)
+		data["version"] = pkg.Status.Version
 		data["autoUpdate"] = clientutils.AutoUpdateString(pkg, "Disabled")
 		data["references"] = referencesAsMap(ctx, pkg, manifest)
-		data["isUpgradable"] = isLatestVersionUpgradable(pkg, latestVersion)
+		data["isUpgradable"] = semver.IsUpgradable(pkg.Spec.PackageInfo.Version, latestVersion)
 		data["status"] = client.GetStatusOrPending(pkg).Status
 	}
 	return data
