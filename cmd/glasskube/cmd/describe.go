@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -23,9 +24,13 @@ import (
 	"github.com/yuin/goldmark/renderer"
 	"github.com/yuin/goldmark/util"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/yaml"
 )
 
-var describeCmdOptions = struct{ repository string }{}
+var describeCmdOptions = struct {
+	repository string
+	OutputOptions
+}{}
 
 var describeCmd = &cobra.Command{
 	Use:               "describe [package-name]",
@@ -64,44 +69,50 @@ var describeCmd = &cobra.Command{
 
 		bold := color.New(color.Bold).SprintFunc()
 
-		fmt.Println(bold("Package:"), nameAndDescription(manifest))
-		fmt.Println(bold("Version:"), version(pkg, latestVersion))
-		fmt.Println(bold("Status: "), status(pkg))
-		if pkg != nil {
-			fmt.Println(bold("Auto-Update:"), clientutils.AutoUpdateString(pkg, "Disabled"))
-		}
+		if describeCmdOptions.Output == OutputFormatJSON {
+			printJSON(ctx, pkg, manifest, latestVersion, repos)
+		} else if describeCmdOptions.Output == OutputFormatYAML {
+			printYAML(ctx, pkg, manifest, latestVersion, repos)
+		} else {
+			fmt.Println(bold("Package:"), nameAndDescription(manifest))
+			fmt.Println(bold("Version:"), version(pkg, latestVersion))
+			fmt.Println(bold("Status: "), status(pkg))
+			if pkg != nil {
+				fmt.Println(bold("Auto-Update:"), clientutils.AutoUpdateString(pkg, "Disabled"))
+			}
 
-		if len(manifest.Entrypoints) > 0 {
+			if len(manifest.Entrypoints) > 0 {
+				fmt.Println()
+				fmt.Println(bold("Entrypoints:"))
+				printEntrypoints(manifest)
+			}
+
+			if len(manifest.Dependencies) > 0 {
+				fmt.Println()
+				fmt.Println(bold("Dependencies:"))
+				printDependencies(manifest)
+			}
+
 			fmt.Println()
-			fmt.Println(bold("Entrypoints:"))
-			printEntrypoints(manifest)
-		}
+			fmt.Println(bold("Package repositories:"))
+			printRepositories(pkg, repos)
 
-		if len(manifest.Dependencies) > 0 {
 			fmt.Println()
-			fmt.Println(bold("Dependencies:"))
-			printDependencies(manifest)
-		}
+			fmt.Printf("%v \n", bold("References:"))
+			printReferences(ctx, pkg, manifest)
 
-		fmt.Println()
-		fmt.Println(bold("Package repositories:"))
-		printRepositories(pkg, repos)
+			trimmedDescription := strings.TrimSpace(manifest.LongDescription)
+			if len(trimmedDescription) > 0 {
+				fmt.Println()
+				fmt.Println(bold("Long Description:"))
+				printMarkdown(os.Stdout, trimmedDescription)
+			}
 
-		fmt.Println()
-		fmt.Printf("%v \n", bold("References:"))
-		printReferences(ctx, pkg, manifest)
-
-		trimmedDescription := strings.TrimSpace(manifest.LongDescription)
-		if len(trimmedDescription) > 0 {
-			fmt.Println()
-			fmt.Println(bold("Long Description:"))
-			printMarkdown(os.Stdout, trimmedDescription)
-		}
-
-		if pkg != nil && len(pkg.Spec.Values) > 0 {
-			fmt.Println()
-			fmt.Println(bold("Configuration:"))
-			printValueConfigurations(os.Stdout, pkg.Spec.Values)
+			if pkg != nil && len(pkg.Spec.Values) > 0 {
+				fmt.Println()
+				fmt.Println(bold("Configuration:"))
+				printValueConfigurations(os.Stdout, pkg.Spec.Values)
+			}
 		}
 	},
 }
@@ -154,6 +165,17 @@ func printRepositories(pkg *v1alpha1.Package, repos []v1alpha1.PackageRepository
 	}
 }
 
+func repositoriesAsMap(pkg *v1alpha1.Package, repos []v1alpha1.PackageRepository) []map[string]any {
+	repositories := make([]map[string]any, 0, len(repos))
+	for _, repo := range repos {
+		repositories = append(repositories, map[string]any{
+			"name":      repo.Name,
+			"installed": isInstalledFrom(pkg, repo),
+		})
+	}
+	return repositories
+}
+
 func isInstalledFrom(pkg *v1alpha1.Package, repo v1alpha1.PackageRepository) bool {
 	return pkg != nil &&
 		(repo.Name == pkg.Spec.PackageInfo.RepositoryName ||
@@ -174,6 +196,31 @@ func printReferences(ctx context.Context, pkg *v1alpha1.Package, manifest *v1alp
 	for _, ref := range manifest.References {
 		fmt.Printf(" * %v: %v\n", ref.Label, ref.Url)
 	}
+}
+
+func referencesAsMap(
+	ctx context.Context,
+	pkg *v1alpha1.Package,
+	manifest *v1alpha1.PackageManifest,
+) []map[string]string {
+	references := []map[string]string{}
+	for _, ref := range manifest.References {
+		reference := make(map[string]string)
+		reference["label"] = ref.Label
+		reference["url"] = ref.Url
+		references = append(references, reference)
+	}
+	if pkg != nil {
+		repo := cliutils.RepositoryClientset(ctx)
+		repoClient := repo.ForPackage(*pkg)
+		if url, err := repoClient.GetPackageManifestURL(manifest.Name, pkg.Spec.PackageInfo.Version); err == nil {
+			reference := make(map[string]string)
+			reference["label"] = "Glasskube Package Manifest"
+			reference["url"] = url
+			references = append(references, reference)
+		}
+	}
+	return references
 }
 
 func printValueConfigurations(w io.Writer, values map[string]v1alpha1.ValueConfiguration) {
@@ -243,8 +290,66 @@ func nameAndDescription(manifest *v1alpha1.PackageManifest) string {
 	return bld.String()
 }
 
+func createOutputStructure(
+	ctx context.Context,
+	pkg *v1alpha1.Package,
+	manifest *v1alpha1.PackageManifest,
+	latestVersion string,
+	repos []v1alpha1.PackageRepository,
+) map[string]interface{} {
+	data := map[string]interface{}{
+		"packageName":      manifest.Name,
+		"shortDescription": manifest.ShortDescription,
+		"latestVersion":    latestVersion,
+		"status":           "Not Installed",
+		"entrypoints":      manifest.Entrypoints,
+		"dependencies":     manifest.Dependencies,
+		"longDescription":  strings.TrimSpace(manifest.LongDescription),
+		"repositories":     repositoriesAsMap(pkg, repos),
+		"references":       referencesAsMap(ctx, pkg, manifest),
+	}
+	if pkg != nil {
+		data["desiredVersion"] = pkg.Spec.PackageInfo.Version
+		data["configuration"] = pkg.Spec.Values
+		data["version"] = pkg.Status.Version
+		data["autoUpdate"] = clientutils.AutoUpdateString(pkg, "Disabled")
+		data["isUpgradable"] = semver.IsUpgradable(pkg.Spec.PackageInfo.Version, latestVersion)
+		data["status"] = client.GetStatusOrPending(pkg).Status
+	}
+	return data
+}
+
+func printJSON(ctx context.Context,
+	pkg *v1alpha1.Package,
+	manifest *v1alpha1.PackageManifest,
+	latestVersion string,
+	repos []v1alpha1.PackageRepository) {
+	output := createOutputStructure(ctx, pkg, manifest, latestVersion, repos)
+	jsonOutput, err := json.MarshalIndent(output, "", "  ")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "❌ Could not marshal JSON output: %v\n", err)
+		cliutils.ExitWithError()
+	}
+	fmt.Println(string(jsonOutput))
+}
+
+func printYAML(ctx context.Context,
+	pkg *v1alpha1.Package,
+	manifest *v1alpha1.PackageManifest,
+	latestVersion string,
+	repos []v1alpha1.PackageRepository) {
+	output := createOutputStructure(ctx, pkg, manifest, latestVersion, repos)
+	yamlOutput, err := yaml.Marshal(output)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "❌ Could not marshal YAML output: %v\n", err)
+		cliutils.ExitWithError()
+	}
+	fmt.Println(string(yamlOutput))
+}
+
 func init() {
 	describeCmd.Flags().StringVar(&describeCmdOptions.repository, "repository", describeCmdOptions.repository,
 		"specify the name of the package repository used to use when the package is not installed")
 	RootCmd.AddCommand(describeCmd)
+	describeCmdOptions.OutputOptions.AddFlagsToCommand(describeCmd)
 }
