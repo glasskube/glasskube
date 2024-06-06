@@ -73,7 +73,7 @@ type PackageRepository struct {
 	Status PackageRepositoryStatus `json:"status,omitempty"`
 }
 
-var (
+const (
 	defaultRepositoryAnnotation = "packages.glasskube.dev/default-repository"
 )
 
