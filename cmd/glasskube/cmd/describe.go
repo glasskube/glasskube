@@ -306,13 +306,13 @@ func createOutputStructure(
 		"dependencies":     manifest.Dependencies,
 		"longDescription":  strings.TrimSpace(manifest.LongDescription),
 		"repositories":     repositoriesAsMap(pkg, repos),
+		"references":       referencesAsMap(ctx, pkg, manifest),
 	}
 	if pkg != nil {
 		data["desiredVersion"] = pkg.Spec.PackageInfo.Version
 		data["configuration"] = pkg.Spec.Values
 		data["version"] = pkg.Status.Version
 		data["autoUpdate"] = clientutils.AutoUpdateString(pkg, "Disabled")
-		data["references"] = referencesAsMap(ctx, pkg, manifest)
 		data["isUpgradable"] = semver.IsUpgradable(pkg.Spec.PackageInfo.Version, latestVersion)
 		data["status"] = client.GetStatusOrPending(pkg).Status
 	}
