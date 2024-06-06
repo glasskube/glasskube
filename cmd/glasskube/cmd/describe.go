@@ -159,9 +159,9 @@ func printRepositories(pkg *v1alpha1.Package, repos []v1alpha1.PackageRepository
 		fmt.Fprintf(os.Stderr, " * %v", repo.Name)
 		if isInstalledFrom(pkg, repo) {
 			fmt.Fprintln(os.Stderr, " (installed)")
-			return
+		} else {
+			fmt.Fprintln(os.Stderr)
 		}
-		fmt.Fprintln(os.Stderr)
 	}
 }
 
