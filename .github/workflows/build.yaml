@@ -7,6 +7,11 @@ on:
   pull_request:
     paths-ignore:
       - website/**
+  merge_group:
+    types:
+      - checks_requested
+    paths-ignore:
+      - website/**
 
 jobs:
   build:
