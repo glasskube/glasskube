@@ -7,7 +7,9 @@ import (
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/pkg/client"
+	"github.com/glasskube/glasskube/pkg/condition"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/watch"
 )
@@ -28,10 +30,22 @@ func (obj *installer) WithStatusWriter(sw statuswriter.StatusWriter) *installer 
 
 // InstallBlocking creates a new v1alpha1.Package custom resource in the cluster and waits until
 // the package has either status Ready or Failed.
-func (obj *installer) InstallBlocking(ctx context.Context, pkg *v1alpha1.Package) (*client.PackageStatus, error) {
+func (obj *installer) InstallBlocking(ctx context.Context, pkg *v1alpha1.Package,
+	opts metav1.CreateOptions) (*client.PackageStatus, error) {
 	obj.status.Start()
 	defer obj.status.Stop()
-	pkg, err := obj.install(ctx, pkg)
+	if isDryRun(opts) {
+		_, err := obj.install(ctx, pkg, opts)
+		if err != nil {
+			return nil, err
+		}
+		return &client.PackageStatus{
+			Status:  string(condition.Ready),
+			Reason:  "DryRun",
+			Message: "Dry run - package simulated as installed and ready.",
+		}, nil
+	}
+	pkg, err := obj.install(ctx, pkg, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -39,19 +53,21 @@ func (obj *installer) InstallBlocking(ctx context.Context, pkg *v1alpha1.Package
 }
 
 // Install creates a new v1alpha1.Package custom resource in the cluster.
-func (obj *installer) Install(ctx context.Context, pkg *v1alpha1.Package) error {
+func (obj *installer) Install(ctx context.Context, pkg *v1alpha1.Package,
+	opts metav1.CreateOptions) error {
 	obj.status.Start()
 	defer obj.status.Stop()
-	_, err := obj.install(ctx, pkg)
+	_, err := obj.install(ctx, pkg, opts)
 	return err
 }
 
 func (obj *installer) install(
 	ctx context.Context,
 	pkg *v1alpha1.Package,
+	opts metav1.CreateOptions,
 ) (*v1alpha1.Package, error) {
 	obj.status.SetStatus(fmt.Sprintf("Installing %v...", pkg.Name))
-	err := obj.client.Packages().Create(ctx, pkg)
+	err := obj.client.Packages().Create(ctx, pkg, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -76,4 +92,13 @@ func (obj *installer) awaitInstall(ctx context.Context, pkgUID types.UID) (*clie
 		}
 	}
 	return nil, errors.New("failed to confirm package installation status")
+}
+
+func isDryRun(opts metav1.CreateOptions) bool {
+	for _, option := range opts.DryRun {
+		if option == metav1.DryRunAll {
+			return true
+		}
+	}
+	return false
 }

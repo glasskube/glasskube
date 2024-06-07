@@ -16,9 +16,10 @@ type packageClient struct {
 	restClient rest.Interface
 }
 
-func (c *packageClient) Create(ctx context.Context, pkg *v1alpha1.Package) error {
+func (c *packageClient) Create(ctx context.Context, pkg *v1alpha1.Package, opts metav1.CreateOptions) error {
 	return c.restClient.Post().
 		Resource(packageGVR.Resource).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(pkg).Do(ctx).Into(pkg)
 }
 
