@@ -568,9 +568,10 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 			WithAutoUpdates(strings.ToLower(enableAutoUpdate) == "on").
 			WithValues(values).
 			Build()
+		opts := metav1.CreateOptions{}
 		err := install.NewInstaller(s.pkgClient).
 			WithStatusWriter(statuswriter.Stderr()).
-			Install(ctx, pkg)
+			Install(ctx, pkg, opts)
 		if err != nil {
 			s.respondAlertAndLog(w, err, "An error occurred installing "+pkgName, "danger")
 			return

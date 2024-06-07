@@ -24,6 +24,7 @@ import (
 	"github.com/glasskube/glasskube/pkg/install"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/yaml"
 )
@@ -35,6 +36,7 @@ var installCmdOptions = struct {
 	EnableAutoUpdates bool
 	NoWait            bool
 	Yes               bool
+	DryRun            bool
 	OutputOptions
 }{
 	ValuesOptions: flags.NewOptions(),
@@ -182,8 +184,13 @@ var installCmd = &cobra.Command{
 			cancel()
 		}
 
+		opts := metav1.CreateOptions{}
+		if installCmdOptions.DryRun {
+			opts.DryRun = []string{metav1.DryRunAll}
+		}
+
 		if installCmdOptions.NoWait {
-			if err := installer.Install(ctx, pkg); err != nil {
+			if err := installer.Install(ctx, pkg, opts); err != nil {
 				fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
 				cliutils.ExitWithError()
 			}
@@ -192,7 +199,7 @@ var installCmd = &cobra.Command{
 					"💡 Run \"glasskube describe %v\" to get the current status",
 				packageName, packageName)
 		} else {
-			status, err := installer.InstallBlocking(ctx, pkg)
+			status, err := installer.InstallBlocking(ctx, pkg, opts)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
 				cliutils.ExitWithError()
@@ -314,7 +321,10 @@ func init() {
 	installCmd.PersistentFlags().StringVar(&installCmdOptions.Repository, "repository", installCmdOptions.Repository,
 		"specify the name of the package repository to install this package from")
 	installCmd.PersistentFlags().BoolVar(&installCmdOptions.NoWait, "no-wait", false, "perform non-blocking install")
+	installCmd.PersistentFlags().BoolVar(&installCmdOptions.DryRun, "dry-run", false,
+		"simulate the installation of package without actually installing it")
 	installCmd.PersistentFlags().BoolVarP(&installCmdOptions.Yes, "yes", "y", false, "do not ask for any confirmation")
+	installCmd.MarkFlagsMutuallyExclusive("no-wait", "dry-run")
 	installCmd.MarkFlagsMutuallyExclusive("version", "enable-auto-updates")
 	installCmdOptions.ValuesOptions.AddFlagsToCommand(installCmd)
 	installCmdOptions.OutputOptions.AddFlagsToCommand(installCmd)
