@@ -1,4 +1,4 @@
-name: Website
+name: Build Website
 
 on:
   push:
@@ -18,7 +18,7 @@ on:
       - website/**
 
 jobs:
-  website:
+  build:
     runs-on: ubuntu-latest
     defaults:
       run:

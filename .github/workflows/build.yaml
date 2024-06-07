@@ -1,4 +1,4 @@
-name: Build
+name: Build Go Project
 
 on:
   push:
@@ -16,7 +16,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: make all
     steps:
       - name: Checkout
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
