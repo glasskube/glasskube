@@ -7,17 +7,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-type PackageV1Alpha1Client interface {
-	Packages() PackageInterface
-	PackageInfos() PackageInfoInterface
-	PackageRepositories() PackageRepositoryInterface
-	WithStores(
-		packageStore cache.Store,
-		packageInfoStore cache.Store,
-		packageRepositoryStore cache.Store,
-	) PackageV1Alpha1Client
-}
-
 type baseClient struct {
 	restClient rest.Interface
 }
@@ -41,7 +30,7 @@ func (c *baseClient) WithStores(
 	packageInfoStore cache.Store,
 	packageRepositoryStore cache.Store,
 ) PackageV1Alpha1Client {
-	return &packageCacheClient{
+	return &cacheClientset{
 		PackageV1Alpha1Client:  c,
 		packageStore:           packageStore,
 		packageInfoStore:       packageInfoStore,

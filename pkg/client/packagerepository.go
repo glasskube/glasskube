@@ -12,15 +12,6 @@ import (
 
 var packageRepositoryGVR = v1alpha1.GroupVersion.WithResource("packagerepositories")
 
-type PackageRepositoryInterface interface {
-	Create(ctx context.Context, obj *v1alpha1.PackageRepository) error
-	Update(ctx context.Context, obj *v1alpha1.PackageRepository) error
-	Get(ctx context.Context, name string, obj *v1alpha1.PackageRepository) error
-	GetAll(ctx context.Context, obj *v1alpha1.PackageRepositoryList) error
-	Watch(ctx context.Context) (watch.Interface, error)
-	Delete(ctx context.Context, obj *v1alpha1.PackageRepository, options metav1.DeleteOptions) error
-}
-
 type packageRepositoryClient struct {
 	restClient rest.Interface
 }
