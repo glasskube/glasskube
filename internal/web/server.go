@@ -77,10 +77,11 @@ func init() {
 }
 
 type ServerOptions struct {
-	Host       string
-	Port       int32
-	Kubeconfig string
-	LogLevel   int
+	Host               string
+	Port               int32
+	Kubeconfig         string
+	LogLevel           int
+	SkipOpeningBrowser bool
 }
 
 func NewServer(options ServerOptions) *server {
@@ -221,7 +222,9 @@ func (s *server) Start(ctx context.Context) error {
 	}
 
 	fmt.Printf("glasskube UI is available at http://%v\n", bindAddr)
-	_ = cliutils.OpenInBrowser("http://" + bindAddr)
+	if !s.SkipOpeningBrowser {
+		_ = cliutils.OpenInBrowser("http://" + bindAddr)
+	}
 
 	go s.sseHub.Run()
 	server := &http.Server{}
