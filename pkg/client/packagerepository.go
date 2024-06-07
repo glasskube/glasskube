@@ -12,23 +12,19 @@ import (
 
 var packageRepositoryGVR = v1alpha1.GroupVersion.WithResource("packagerepositories")
 
-type PackageRepositoryInterface interface {
-	Create(ctx context.Context, obj *v1alpha1.PackageRepository) error
-	Update(ctx context.Context, obj *v1alpha1.PackageRepository) error
-	Get(ctx context.Context, name string, obj *v1alpha1.PackageRepository) error
-	GetAll(ctx context.Context, obj *v1alpha1.PackageRepositoryList) error
-	Watch(ctx context.Context) (watch.Interface, error)
-	Delete(ctx context.Context, obj *v1alpha1.PackageRepository, options metav1.DeleteOptions) error
-}
-
 type packageRepositoryClient struct {
 	restClient rest.Interface
 }
 
 // Create implements PackageRepositoryInterface.
-func (c *packageRepositoryClient) Create(ctx context.Context, obj *v1alpha1.PackageRepository) error {
+func (c *packageRepositoryClient) Create(
+	ctx context.Context,
+	obj *v1alpha1.PackageRepository,
+	opts metav1.CreateOptions,
+) error {
 	return c.restClient.Post().
 		Resource(packageRepositoryGVR.Resource).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(obj).Do(ctx).Into(obj)
 }
 

@@ -86,7 +86,7 @@ var repoAddCmd = &cobra.Command{
 		if repoAddCmdOptions.Default {
 			repo.SetDefaultRepository()
 		}
-		if err := client.PackageRepositories().Create(ctx, &repo); err != nil {
+		if err := client.PackageRepositories().Create(ctx, &repo, metav1.CreateOptions{}); err != nil {
 			fmt.Fprintf(os.Stderr, "❌ error creating package repository: %v\n", err)
 			cliutils.ExitWithError()
 		}
