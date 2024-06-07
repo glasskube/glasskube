@@ -14,8 +14,8 @@ import (
 )
 
 var uninstallCmdOptions = struct {
-	ForceUninstall bool
-	NoWait         bool
+	NoWait bool
+	Yes    bool
 }{}
 
 var uninstallCmd = &cobra.Command{
@@ -43,7 +43,7 @@ var uninstallCmd = &cobra.Command{
 				cliutils.ExitWithError()
 			} else {
 				showUninstallDetails(currentContext, pkgName, pruned)
-				if !uninstallCmdOptions.ForceUninstall && !cliutils.YesNoPrompt("Do you want to continue?", false) {
+				if !uninstallCmdOptions.Yes && !cliutils.YesNoPrompt("Do you want to continue?", false) {
 					fmt.Println("❌ Uninstallation cancelled.")
 					cliutils.ExitSuccess()
 				}
@@ -84,8 +84,9 @@ func showUninstallDetails(context, name string, pruned []string) {
 }
 
 func init() {
-	uninstallCmd.PersistentFlags().BoolVar(&uninstallCmdOptions.ForceUninstall, "force", false,
-		"skip the confirmation question and uninstall right away")
-	uninstallCmd.PersistentFlags().BoolVar(&uninstallCmdOptions.NoWait, "no-wait", false, "perform non-blocking uninstall")
+	uninstallCmd.PersistentFlags().BoolVar(&uninstallCmdOptions.NoWait, "no-wait", false,
+		"perform non-blocking uninstall")
+	uninstallCmd.PersistentFlags().BoolVarP(&uninstallCmdOptions.Yes, "yes", "y", false,
+		"do not ask for any confirmation")
 	RootCmd.AddCommand(uninstallCmd)
 }
