@@ -13,9 +13,9 @@
                 <div class="card-body d-flex flex-row p-2">
                   <div class="mx-1 align-self-center">
                     {{ if IsRepoStatusReady . }}
-                      <i class="bi bi-circle-fill text-success"></i>
+                      <i class="bi bi-circle-fill text-success" title="Ready"></i>
                     {{ else }}
-                      <i class="bi bi-circle-fill text-danger"></i>
+                      <i class="bi bi-circle-fill text-danger" title="Not Ready"></i>
                     {{ end }}
                   </div>
                   <div class="ms-2 d-flex flex-column">
