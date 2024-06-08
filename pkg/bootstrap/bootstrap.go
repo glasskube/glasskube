@@ -145,7 +145,9 @@ func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOption
 
 	statusMessage(fmt.Sprintf("Glasskube successfully installed! (took %v)", elapsed.Round(time.Second)), true)
 	if output != "" {
-		convertAndPrintManifests(manifests, output)
+		if err := convertAndPrintManifests(manifests, output); err != nil {
+			return err
+		}
 	}
 	return nil
 }
