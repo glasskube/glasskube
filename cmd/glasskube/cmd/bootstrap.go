@@ -22,6 +22,7 @@ type bootstrapOptions struct {
 	force                   bool
 	createDefaultRepository bool
 	yes                     bool
+	OutputOptions
 }
 
 var bootstrapCmdOptions = bootstrapOptions{
@@ -78,10 +79,10 @@ var bootstrapCmd = &cobra.Command{
 			}
 
 		}
-
-		if err := client.Bootstrap(cmd.Context(), bootstrapCmdOptions.asBootstrapOptions()); err != nil {
+		if err := client.Bootstrap(cmd.Context(), bootstrapCmdOptions.asBootstrapOptions(), bootstrapCmdOptions.Output.String()); err != nil {
 			fmt.Fprintf(os.Stderr, "\nAn error occurred during bootstrap:\n%v\n", err)
 			cliutils.ExitWithError()
+
 		}
 	},
 }
@@ -103,6 +104,7 @@ func init() {
 	bootstrapCmd.Flags().VarP(&bootstrapCmdOptions.bootstrapType, "type", "t", `Type of manifest to use for bootstrapping`)
 	bootstrapCmd.Flags().BoolVar(&bootstrapCmdOptions.latest, "latest", config.IsDevBuild(),
 		"Fetch and bootstrap the latest version")
+	bootstrapCmdOptions.OutputOptions.AddFlagsToCommand(bootstrapCmd)
 	bootstrapCmd.Flags().BoolVarP(&bootstrapCmdOptions.force, "force", "f", bootstrapCmdOptions.force,
 		"Do not bail out if pre-checks fail")
 	bootstrapCmd.Flags().BoolVar(&bootstrapCmdOptions.disableTelemetry, "disable-telemetry", false, "Disable telemetry")

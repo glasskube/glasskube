@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
+
+	js "k8s.io/apimachinery/pkg/runtime/serializer/json"
 
 	"github.com/fatih/color"
 	"github.com/glasskube/glasskube/api/v1alpha1"
@@ -24,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
@@ -70,7 +74,7 @@ func (c *BootstrapClient) initRestMapper() error {
 	}
 }
 
-func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOptions) error {
+func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOptions, output string) error {
 	telemetry.BootstrapAttempt()
 
 	if err := c.initRestMapper(); err != nil {
@@ -140,6 +144,42 @@ func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOption
 	c.handleTelemetry(options.DisableTelemetry, elapsed)
 
 	statusMessage(fmt.Sprintf("Glasskube successfully installed! (took %v)", elapsed.Round(time.Second)), true)
+	if output != "" {
+		convertAndPrintManifests(manifests, output)
+	}
+	return nil
+}
+
+func convertAndPrintManifests(
+	objs []unstructured.Unstructured,
+	output string,
+) error {
+	scheme := runtime.NewScheme()
+	var opt bool
+	var div string
+	switch output {
+	case "json":
+		opt = false
+		div = ","
+	case "yaml":
+		opt = true
+		div = "---"
+	}
+	serializer := js.NewSerializerWithOptions(
+		js.DefaultMetaFactory, scheme, scheme,
+		js.SerializerOptions{Yaml: opt, Pretty: true, Strict: true},
+	)
+
+	for _, obj := range objs {
+		runtimeObj := &unstructured.Unstructured{}
+		obj.DeepCopyInto(runtimeObj)
+
+		if err := serializer.Encode(runtimeObj, os.Stdout); err != nil {
+			return fmt.Errorf("failed to serialize object %v: %v", obj.GetName(), err)
+		}
+		fmt.Println(div)
+	}
+
 	return nil
 }
 
