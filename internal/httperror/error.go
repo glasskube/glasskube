@@ -24,8 +24,8 @@ func (err statusError) Unwrap() error {
 	return StatusError
 }
 
-func IsErrorResponse(respose *http.Response) bool {
-	return respose.StatusCode >= 400
+func IsErrorResponse(response *http.Response) bool {
+	return response.StatusCode >= 400
 }
 
 func CheckResponse(response *http.Response, err error) (*http.Response, error) {
@@ -39,10 +39,9 @@ func CheckResponse(response *http.Response, err error) (*http.Response, error) {
 }
 
 func Is(err error, code int) bool {
-	var statusErr statusError
+	var statusErr *statusError
 	if errors.As(err, &statusErr) {
 		return statusErr.code == code
-
 	}
 	return false
 }
