@@ -131,7 +131,7 @@ git rebase upstream/main
 
 **Now, your local 'github_userName/XXXX' branch is up-to-date with everything modified upstream!**
 
-- Now it's time to create a pull request back to the upstream repository and follow the [pull request template](.github/pull_request_template.md) guidelines.
+- Now it's time to create a pull request back to the upstream repository and follow the [pull request template](.github/PULL_REQUEST_TEMPLATE.md) guidelines.
 - Wait for a review and address any comments.
 
 ## Opening PRs 📩
