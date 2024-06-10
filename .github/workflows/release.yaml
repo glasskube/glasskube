@@ -25,7 +25,7 @@ jobs:
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
       - name: Release Please
         id: release-please
-        uses: googleapis/release-please-action@f3969c04a4ec81d7a9aa4010d84ae6a7602f86a7 # v4.1.1
+        uses: googleapis/release-please-action@7987652d64b4581673a76e33ad5e98e3dd56832f # v4.1.3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
