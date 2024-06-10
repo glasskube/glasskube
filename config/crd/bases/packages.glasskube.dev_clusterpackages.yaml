@@ -4,16 +4,14 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.14.0
-  name: packages.packages.glasskube.dev
+  name: clusterpackages.packages.glasskube.dev
 spec:
   group: packages.glasskube.dev
   names:
-    kind: Package
-    listKind: PackageList
-    plural: packages
-    shortNames:
-    - pkg
-    singular: package
+    kind: ClusterPackage
+    listKind: ClusterPackageList
+    plural: clusterpackages
+    singular: clusterpackage
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -26,7 +24,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: Package is the Schema for the packages API
+        description: ClusterPackage is the Schema for the clusterpackages API
         properties:
           apiVersion:
             description: |-

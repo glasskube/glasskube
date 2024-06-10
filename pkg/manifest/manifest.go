@@ -25,7 +25,7 @@ func GetInstalledManifest(ctx context.Context, pkgName string) (*v1alpha1.Packag
 func GetInstalledManifestForPackage(ctx context.Context, pkg v1alpha1.Package) (*v1alpha1.PackageManifest, error) {
 	pkgClient := cliutils.PackageClient(ctx)
 	var packageInfo v1alpha1.PackageInfo
-	if err := pkgClient.PackageInfos().Get(ctx, names.PackageInfoName(pkg), &packageInfo); err != nil {
+	if err := pkgClient.PackageInfos().Get(ctx, names.PackageInfoName(&pkg), &packageInfo); err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil, fmt.Errorf("%w: %w", ErrPackageNoManifest, err)
 		} else {

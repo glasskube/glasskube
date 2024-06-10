@@ -23,14 +23,28 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+// ClusterPackageSpec defines the desired state of ClusterPackage
+type ClusterPackageSpec struct {
+	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+
+	// Foo is an example field of ClusterPackage. Edit clusterpackage_types.go to remove/update
+	Foo string `json:"foo,omitempty"`
+}
+
+// ClusterPackageStatus defines the observed state of ClusterPackage
+type ClusterPackageStatus struct {
+	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+}
+
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
-//+kubebuilder:resource:scope=Namespaced,shortName=pkg
 //+kubebuilder:printcolumn:name=Desired version,type=string,JSONPath=".spec.packageInfo.version"
 //+kubebuilder:printcolumn:name=Installed version,type=string,JSONPath=".status.version"
 
-// Package is the Schema for the packages API
-type Package struct {
+// ClusterPackage is the Schema for the clusterpackages API
+type ClusterPackage struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
@@ -39,32 +53,34 @@ type Package struct {
 }
 
 // GetSpec implements PackageCommon.
-func (pkg *Package) GetSpec() *PackageSpec {
+func (pkg *ClusterPackage) GetSpec() *PackageSpec {
 	return &pkg.Spec
 }
 
 // GetStatus implements PackageCommon.
-func (pkg *Package) GetStatus() *PackageStatus {
-	return &pkg.Status
+func (in *ClusterPackage) GetStatus() *PackageStatus {
+	return &in.Status
 }
 
-func (pkg *Package) AutoUpdatesEnabled() bool {
-	return autoUpdatesEnabled(pkg.ObjectMeta)
+// AutoUpdatesEnabled implements AutoUpdates.
+func (in *ClusterPackage) AutoUpdatesEnabled() bool {
+	return autoUpdatesEnabled(in.ObjectMeta)
 }
 
-func (pkg *Package) SetAutoUpdatesEnabled(enabled bool) {
-	setAutoUpdatesEnabled(&pkg.ObjectMeta, enabled)
+// SetAutoUpdatesEnabled implements AutoUpdates.
+func (in *ClusterPackage) SetAutoUpdatesEnabled(enabled bool) {
+	setAutoUpdatesEnabled(&in.ObjectMeta, enabled)
 }
 
 //+kubebuilder:object:root=true
 
-// PackageList contains a list of Package
-type PackageList struct {
+// ClusterPackageList contains a list of ClusterPackage
+type ClusterPackageList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Package `json:"items"`
+	Items           []ClusterPackage `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Package{}, &PackageList{})
+	SchemeBuilder.Register(&ClusterPackage{}, &ClusterPackageList{})
 }

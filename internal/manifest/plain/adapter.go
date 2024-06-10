@@ -6,6 +6,7 @@ import (
 
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clientutils"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/controller/owners"
 	ownerutils "github.com/glasskube/glasskube/internal/controller/owners/utils"
 	"github.com/glasskube/glasskube/internal/manifest"
@@ -49,13 +50,13 @@ func (a *Adapter) ControllerInit(builder *builder.Builder, client client.Client,
 // Reconcile implements manifest.ManifestAdapter.
 func (a *Adapter) Reconcile(
 	ctx context.Context,
-	pkg *packagesv1alpha1.Package,
+	pkg ctrlpkg.PackageCommon,
 	manifest *packagesv1alpha1.PackageManifest,
 	patches manifestvalues.TargetPatches,
 ) (*result.ReconcileResult, error) {
 	var allOwned []packagesv1alpha1.OwnedResourceRef
 	for _, m := range manifest.Manifests {
-		if owned, err := a.reconcilePlainManifest(ctx, *pkg, *manifest, m, patches); err != nil {
+		if owned, err := a.reconcilePlainManifest(ctx, pkg, *manifest, m, patches); err != nil {
 			return nil, err
 		} else {
 			allOwned = append(allOwned, owned...)
@@ -66,7 +67,7 @@ func (a *Adapter) Reconcile(
 
 func (r *Adapter) reconcilePlainManifest(
 	ctx context.Context,
-	pkg packagesv1alpha1.Package,
+	pkg ctrlpkg.PackageCommon,
 	pkgManifest packagesv1alpha1.PackageManifest,
 	manifest packagesv1alpha1.PlainManifest,
 	patches manifestvalues.TargetPatches,
@@ -134,7 +135,7 @@ func (r *Adapter) reconcilePlainManifest(
 
 	// Apply any modifications before changing anything on the cluster
 	for _, obj := range objectsToApply {
-		if err := r.SetOwnerIfManagedOrNotExists(r.Client, ctx, &pkg, obj); err != nil {
+		if err := r.SetOwnerIfManagedOrNotExists(r.Client, ctx, pkg, obj); err != nil {
 			return nil, err
 		}
 		if err := patches.ApplyToResource(obj); err != nil {

@@ -20,5 +20,9 @@ resources:
 # default, aiding admins in cluster management. Those roles are
 # not used by the Project itself. You can comment the following lines
 # if you do not want those helpers be installed with your Project.
+- clusterpackage_editor_role.yaml
+- clusterpackage_viewer_role.yaml
 - packagerepository_editor_role.yaml
 - packagerepository_viewer_role.yaml
+
+

@@ -3,9 +3,10 @@ package names
 import (
 	"fmt"
 
-	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 )
 
-func PackageInfoName(pkg v1alpha1.Package) string {
-	return escapeResourceName(fmt.Sprintf("%v--%v", pkg.Spec.PackageInfo.Name, pkg.Spec.PackageInfo.Version))
+func PackageInfoName(pkg ctrlpkg.PackageCommon) string {
+	spec := pkg.GetSpec()
+	return escapeResourceName(fmt.Sprintf("%v--%v", spec.PackageInfo.Name, spec.PackageInfo.Version))
 }

@@ -109,10 +109,10 @@ func (l *lister) fetchRepoAndInstalled(ctx context.Context, options ListOptions)
 	result := make([]result, len(index.Packages))
 	for i, indexPackage := range index.Packages {
 		result[i].IndexItem = &index.Packages[i]
-		for j, clusterPackage := range packages.Items {
-			if indexPackage.Name == clusterPackage.Name {
+		for j, pkg := range packages.Items {
+			if indexPackage.Name == pkg.Name {
 				result[i].Package = &packages.Items[j]
-				packageInfoName := names.PackageInfoName(clusterPackage)
+				packageInfoName := names.PackageInfoName(&pkg)
 				for k, packageInfo := range packageInfos.Items {
 					if packageInfo.Name == packageInfoName {
 						result[i].PackageInfo = &packageInfos.Items[k]

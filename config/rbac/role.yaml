@@ -34,6 +34,32 @@ rules:
 - apiGroups:
   - packages.glasskube.dev
   resources:
+  - clusterpackages
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - packages.glasskube.dev
+  resources:
+  - clusterpackages/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - packages.glasskube.dev
+  resources:
+  - clusterpackages/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - packages.glasskube.dev
+  resources:
   - packageinfos
   verbs:
   - create

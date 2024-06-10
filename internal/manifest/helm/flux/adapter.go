@@ -9,6 +9,7 @@ import (
 	helmv1beta2 "github.com/fluxcd/helm-controller/api/v2beta2"
 	sourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/controller/labels"
 	"github.com/glasskube/glasskube/internal/controller/owners"
 	"github.com/glasskube/glasskube/internal/controller/owners/utils"
@@ -54,7 +55,7 @@ func (a *FluxHelmAdapter) ControllerInit(buildr *builder.Builder, client client.
 
 func (a *FluxHelmAdapter) Reconcile(
 	ctx context.Context,
-	pkg *packagesv1alpha1.Package,
+	pkg ctrlpkg.PackageCommon,
 	manifest *packagesv1alpha1.PackageManifest,
 	patches manifestvalues.TargetPatches,
 ) (*result.ReconcileResult, error) {
@@ -89,7 +90,7 @@ func (a *FluxHelmAdapter) Reconcile(
 
 func (a *FluxHelmAdapter) ensureNamespace(
 	ctx context.Context,
-	pkg *packagesv1alpha1.Package,
+	pkg ctrlpkg.PackageCommon,
 	manifest *packagesv1alpha1.PackageManifest,
 ) (*corev1.Namespace, error) {
 	namespace := corev1.Namespace{
@@ -115,7 +116,7 @@ func (a *FluxHelmAdapter) ensureNamespace(
 
 func (a *FluxHelmAdapter) ensureHelmRepository(
 	ctx context.Context,
-	pkg *packagesv1alpha1.Package,
+	pkg ctrlpkg.PackageCommon,
 	manifest *packagesv1alpha1.PackageManifest,
 ) (*sourcev1beta2.HelmRepository, error) {
 	helmRepository := sourcev1beta2.HelmRepository{
@@ -141,7 +142,7 @@ func (a *FluxHelmAdapter) ensureHelmRepository(
 
 func (a *FluxHelmAdapter) ensureHelmRelease(
 	ctx context.Context,
-	pkg *packagesv1alpha1.Package,
+	pkg ctrlpkg.PackageCommon,
 	manifest *packagesv1alpha1.PackageManifest,
 	patches manifestvalues.TargetPatches,
 ) (*helmv1beta2.HelmRelease, error) {

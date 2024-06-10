@@ -99,7 +99,7 @@ func (dm *DependendcyManager) NewGraph(ctx context.Context) (*graph.DependencyGr
 			// A package that is currently being deleted is added to the graph, but in a state representing
 			// "not installed"
 			installedVersion = ""
-		} else if pi, err := dm.pkgClient.GetPackageInfo(ctx, names.PackageInfoName(pkg)); err != nil {
+		} else if pi, err := dm.pkgClient.GetPackageInfo(ctx, names.PackageInfoName(&pkg)); err != nil {
 			return nil, err
 		} else if pi.Status.Manifest != nil {
 			deps = pi.Status.Manifest.Dependencies

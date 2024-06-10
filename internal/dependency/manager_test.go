@@ -91,7 +91,7 @@ func createPackageAndInfo(name string, version string, installed bool) (*v1alpha
 
 	pkgi := v1alpha1.PackageInfo{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: names.PackageInfoName(pkg),
+			Name: names.PackageInfoName(&pkg),
 		},
 		Spec: v1alpha1.PackageInfoSpec{
 			Name:    name,

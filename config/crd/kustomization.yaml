@@ -5,6 +5,7 @@ resources:
 - bases/packages.glasskube.dev_packages.yaml
 - bases/packages.glasskube.dev_packageinfos.yaml
 - bases/packages.glasskube.dev_packagerepositories.yaml
+- bases/packages.glasskube.dev_clusterpackages.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patches:
@@ -19,6 +20,7 @@ patches:
 #- path: patches/cainjection_in_packages.yaml
 #- path: patches/cainjection_in_packageinfos.yaml
 #- path: patches/cainjection_in_packagerepositories.yaml
+#- path: patches/cainjection_in_clusterpackages.yaml
 #+kubebuilder:scaffold:crdkustomizecainjectionpatch
 
 # [WEBHOOK] To enable webhook, uncomment the following section
