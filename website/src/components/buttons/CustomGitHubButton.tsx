@@ -1,11 +1,11 @@
-import React, { FC } from 'react';
+import React, {FC} from 'react';
 import GitHubButton from 'react-github-btn';
 
 interface CustomGitHubButtonProps {
   href: string;
 }
 
-const CustomGitHubButton: FC<CustomGitHubButtonProps> = ({ href, ...props }) => (
+const CustomGitHubButton: FC<CustomGitHubButtonProps> = ({href, ...props}) => (
   <GitHubButton
     href={href}
     data-color-scheme="no-preference: light; light: light; dark: light;"

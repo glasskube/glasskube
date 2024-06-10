@@ -5,8 +5,8 @@ import type * as Preset from '@docusaurus/preset-classic';
 import {EnumChangefreq} from 'sitemap';
 
 const config: Config = {
-  title: 'Glasskube.dev',
-  tagline: '🧊 The next generation Package Manager for Kubernetes 📦',
+  title: 'Glasskube',
+  tagline: 'The next generation Package Manager for Kubernetes',
   favicon: 'img/favicon.png',
   trailingSlash: true,
 
@@ -110,7 +110,7 @@ const config: Config = {
   },
   themeConfig: {
     colorMode: {
-      respectPrefersColorScheme: true,
+      defaultMode: 'dark',
     },
     docs: {
       sidebar: {
@@ -147,6 +147,10 @@ const config: Config = {
         {to: '/blog', label: 'Blog', position: 'left'},
         {to: '/roadmap', label: 'Roadmap', position: 'left'},
         {to: '/packages', label: 'Packages', position: 'left'},
+        {
+          type: 'search',
+          position: 'left',
+        },
         {
           type: 'custom-wrapper',
           position: 'right',
@@ -215,8 +219,12 @@ const config: Config = {
               to: '/blog',
             },
             {
-              label: 'Contact / Book appointment',
+              label: 'Talk to founders',
               href: 'https://cal.glasskube.eu/team/founder/30min',
+            },
+            {
+              label: 'Signup for the wait list',
+              href: 'https://glasskube.cloud/',
             },
           ],
         },
