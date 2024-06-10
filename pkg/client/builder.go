@@ -54,10 +54,6 @@ func (b *packageBuilder) Build() *v1alpha1.Package {
 			Values: b.values,
 		},
 	}
-	if b.autoUpdate {
-		pkg.SetAnnotations(map[string]string{
-			"packages.glasskube.dev/auto-update": "true",
-		})
-	}
+	pkg.SetAutoUpdatesEnabled(b.autoUpdate)
 	return &pkg
 }
