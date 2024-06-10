@@ -18,7 +18,7 @@ var autoUpdateEnabledDisabledOptions = struct{ Yes, All bool }{}
 
 var autoUpdateEnableCmd = &cobra.Command{
 	Use:               "enable [...package]",
-	Short:             "enable automatic updates for packages",
+	Short:             "Enable automatic updates for packages",
 	PreRun:            cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
 	ValidArgsFunction: completeInstalledPackageNames,
 	Run: runAutoUpdateEnableOrDisable(true,
@@ -27,7 +27,7 @@ var autoUpdateEnableCmd = &cobra.Command{
 
 var autoUpdateDisableCmd = &cobra.Command{
 	Use:               "disable [...package]",
-	Short:             "disable automatic updates for packages",
+	Short:             "Disable automatic updates for packages",
 	PreRun:            cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
 	ValidArgsFunction: completeInstalledPackageNames,
 	Run: runAutoUpdateEnableOrDisable(false,
@@ -92,7 +92,7 @@ func runAutoUpdateEnableOrDisable(enabled bool, confirmMsg, successMsg string) f
 
 var autoUpdateCmd = &cobra.Command{
 	Use:   "auto-update",
-	Short: "update autopilote for packages where automatic updates are enabled",
+	Short: "Update autopilot for packages where automatic updates are enabled",
 	Args:  cobra.NoArgs,
 	PreRun: cliutils.RunAll(
 		func(c *cobra.Command, s []string) { config.NonInteractive = true },
