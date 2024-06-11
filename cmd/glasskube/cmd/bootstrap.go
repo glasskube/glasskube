@@ -12,6 +12,9 @@ import (
 	"github.com/glasskube/glasskube/internal/util"
 	"github.com/glasskube/glasskube/pkg/bootstrap"
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	js "k8s.io/apimachinery/pkg/runtime/serializer/json"
 )
 
 type bootstrapOptions struct {
@@ -79,14 +82,17 @@ var bootstrapCmd = &cobra.Command{
 			}
 
 		}
-		if err := client.Bootstrap(
+		manifests, err := client.Bootstrap(
 			cmd.Context(),
 			bootstrapCmdOptions.asBootstrapOptions(),
-			bootstrapCmdOptions.Output.String(),
-		); err != nil {
+		)
+		if err != nil {
 			fmt.Fprintf(os.Stderr, "\nAn error occurred during bootstrap:\n%v\n", err)
 			cliutils.ExitWithError()
-
+		}
+		if err := bootstrapCmdOptions.printBootsrap(manifests, bootstrapCmdOptions.Output); err != nil {
+			fmt.Fprintf(os.Stderr, "\n Error occured in printing : %v\n", err)
+			cliutils.ExitWithError()
 		}
 	},
 }
@@ -100,6 +106,48 @@ func (o bootstrapOptions) asBootstrapOptions() bootstrap.BootstrapOptions {
 		Force:                   o.force,
 		CreateDefaultRepository: o.createDefaultRepository,
 	}
+}
+
+func (o bootstrapOptions) printBootsrap(manifests []unstructured.Unstructured, output OutputFormat) error {
+	if o.Output != "" {
+		if err := convertAndPrintManifests(manifests, output); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func convertAndPrintManifests(
+	objs []unstructured.Unstructured,
+	output OutputFormat,
+) error {
+	scheme := runtime.NewScheme()
+	var opt bool
+	var div string
+	switch output {
+	case "json":
+		opt = false
+		div = ","
+	case "yaml":
+		opt = true
+		div = "---"
+	}
+	serializer := js.NewSerializerWithOptions(
+		js.DefaultMetaFactory, scheme, scheme,
+		js.SerializerOptions{Yaml: opt, Pretty: true, Strict: true},
+	)
+
+	for _, obj := range objs {
+		runtimeObj := &unstructured.Unstructured{}
+		obj.DeepCopyInto(runtimeObj)
+
+		if err := serializer.Encode(runtimeObj, os.Stdout); err != nil {
+			return fmt.Errorf("failed to serialize object %v: %v", obj.GetName(), err)
+		}
+		fmt.Println(div)
+	}
+
+	return nil
 }
 
 func init() {
