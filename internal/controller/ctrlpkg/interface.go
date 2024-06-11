@@ -14,4 +14,5 @@ type Package interface {
 	SetAutoUpdatesEnabled(enabled bool)
 	GetSpec() *v1alpha1.PackageSpec
 	GetStatus() *v1alpha1.PackageStatus
+	IsNamespaceScoped() bool
 }

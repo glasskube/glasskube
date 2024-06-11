@@ -61,14 +61,16 @@ func (a *FluxHelmAdapter) Reconcile(
 ) (*result.ReconcileResult, error) {
 	log := ctrl.LoggerFrom(ctx)
 	var ownedResources []packagesv1alpha1.OwnedResourceRef
-	if namespace, err := a.ensureNamespace(ctx, pkg, manifest); err != nil {
-		return nil, err
-	} else {
-		if _, err := utils.AddOwnedResourceRef(a.Scheme(), &ownedResources, namespace); err != nil {
-			log.Error(err, "could not add Namespace to ownedResources")
-		}
-		if namespace.Status.Phase == corev1.NamespaceTerminating {
-			return result.Waiting("Namespace is still terminating", ownedResources), nil
+	if !pkg.IsNamespaceScoped() {
+		if namespace, err := a.ensureNamespace(ctx, pkg, manifest); err != nil {
+			return nil, err
+		} else {
+			if _, err := utils.AddOwnedResourceRef(a.Scheme(), &ownedResources, namespace); err != nil {
+				log.Error(err, "could not add Namespace to ownedResources")
+			}
+			if namespace.Status.Phase == corev1.NamespaceTerminating {
+				return result.Waiting("Namespace is still terminating", ownedResources), nil
+			}
 		}
 	}
 	if helmRepository, err := a.ensureHelmRepository(ctx, pkg, manifest); err != nil {
@@ -119,10 +121,16 @@ func (a *FluxHelmAdapter) ensureHelmRepository(
 	pkg ctrlpkg.Package,
 	manifest *packagesv1alpha1.PackageManifest,
 ) (*sourcev1beta2.HelmRepository, error) {
+	var namespace string
+	if pkg.IsNamespaceScoped() {
+		namespace = pkg.GetNamespace()
+	} else {
+		namespace = manifest.DefaultNamespace
+	}
 	helmRepository := sourcev1beta2.HelmRepository{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      manifest.Name,
-			Namespace: manifest.DefaultNamespace,
+			Namespace: namespace,
 		},
 	}
 	log := ctrl.LoggerFrom(ctx).WithValues("HelmRepository", helmRepository.Name)
@@ -146,10 +154,16 @@ func (a *FluxHelmAdapter) ensureHelmRelease(
 	manifest *packagesv1alpha1.PackageManifest,
 	patches manifestvalues.TargetPatches,
 ) (*helmv1beta2.HelmRelease, error) {
+	var namespace string
+	if pkg.IsNamespaceScoped() {
+		namespace = pkg.GetNamespace()
+	} else {
+		namespace = manifest.DefaultNamespace
+	}
 	helmRelease := helmv1beta2.HelmRelease{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      manifest.Name,
-			Namespace: manifest.DefaultNamespace,
+			Namespace: namespace,
 		},
 	}
 	log := ctrl.LoggerFrom(ctx).WithValues("HelmRelease", helmRelease.Name)

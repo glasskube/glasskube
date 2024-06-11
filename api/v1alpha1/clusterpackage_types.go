@@ -57,6 +57,10 @@ func (in *ClusterPackage) SetAutoUpdatesEnabled(enabled bool) {
 	setAutoUpdatesEnabled(&in.ObjectMeta, enabled)
 }
 
+func (pkg *ClusterPackage) IsNamespaceScoped() bool {
+	return false
+}
+
 //+kubebuilder:object:root=true
 
 // ClusterPackageList contains a list of ClusterPackage

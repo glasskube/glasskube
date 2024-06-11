@@ -86,48 +86,58 @@ func (r *Adapter) reconcilePlainManifest(
 
 	log.V(1).Info("fetched "+manifest.Url, "objectCount", len(objectsToApply))
 
-	// Determine the name of the default namespace. The more specific name takes precedence
-	defaultNamespaceName := pkgManifest.DefaultNamespace
-	if len(manifest.DefaultNamespace) > 0 {
-		defaultNamespaceName = manifest.DefaultNamespace
-	}
-
-	if len(defaultNamespaceName) > 0 {
-		defaultNamespaceRequired := false
-		defaultNamespaceInList := false
-
-		// Determine if the default namespace is needed (at least one resource would be created in the default namespace)
-		// and set the namespace property to the default namespace for all objects that are known to be namespaced and do
-		// not have an explicit namespace.
-		// Also, determine if a namespace resource with the default namespace name already exists in the list.
+	if pkg.IsNamespaceScoped() {
 		for _, obj := range objectsToApply {
-			if obj.GetObjectKind().GroupVersionKind() == r.namespaceGVK && obj.GetName() == defaultNamespaceName {
-				defaultNamespaceInList = true
-			} else {
-				if isNamespaced, err := r.IsObjectNamespaced(obj); err != nil {
-					// It can not be determined whether this obj kind is namespaced.
-					// This can happen if the obj kind is a CRD or some other type that the client does not know.
-					// TODO: Should we assume it is namespaced or not? Or just throw an error?
-					return nil, err
-				} else if isNamespaced {
-					if obj.GetNamespace() == "" {
-						obj.SetNamespace(defaultNamespaceName)
-					}
+			if isNamespaced, err := r.IsObjectNamespaced(obj); err != nil {
+				return nil, err
+			} else if isNamespaced {
+				obj.SetNamespace(pkg.GetNamespace())
+			}
+		}
+	} else {
+		// Determine the name of the default namespace. The more specific name takes precedence
+		defaultNamespaceName := pkgManifest.DefaultNamespace
+		if len(manifest.DefaultNamespace) > 0 {
+			defaultNamespaceName = manifest.DefaultNamespace
+		}
 
-					if obj.GetNamespace() == defaultNamespaceName {
-						defaultNamespaceRequired = true
+		if len(defaultNamespaceName) > 0 {
+			defaultNamespaceRequired := false
+			defaultNamespaceInList := false
+
+			// Determine if the default namespace is needed (at least one resource would be created in the default namespace)
+			// and set the namespace property to the default namespace for all objects that are known to be namespaced and do
+			// not have an explicit namespace.
+			// Also, determine if a namespace resource with the default namespace name already exists in the list.
+			for _, obj := range objectsToApply {
+				if obj.GetObjectKind().GroupVersionKind() == r.namespaceGVK && obj.GetName() == defaultNamespaceName {
+					defaultNamespaceInList = true
+				} else {
+					if isNamespaced, err := r.IsObjectNamespaced(obj); err != nil {
+						// It can not be determined whether this obj kind is namespaced.
+						// This can happen if the obj kind is a CRD or some other type that the client does not know.
+						// TODO: Should we assume it is namespaced or not? Or just throw an error?
+						return nil, err
+					} else if isNamespaced {
+						if obj.GetNamespace() == "" {
+							obj.SetNamespace(defaultNamespaceName)
+						}
+
+						if obj.GetNamespace() == defaultNamespaceName {
+							defaultNamespaceRequired = true
+						}
 					}
 				}
 			}
-		}
 
-		if defaultNamespaceRequired && !defaultNamespaceInList {
-			defaultNamespace := corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: defaultNamespaceName}}
-			// It is necessary to set the GVK manually on this namespace.
-			// This could be because we use SSA here.
-			// TODO: Find out why!
-			defaultNamespace.SetGroupVersionKind(r.namespaceGVK)
-			objectsToApply = append([]client.Object{&defaultNamespace}, objectsToApply...)
+			if defaultNamespaceRequired && !defaultNamespaceInList {
+				defaultNamespace := corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: defaultNamespaceName}}
+				// It is necessary to set the GVK manually on this namespace.
+				// This could be because we use SSA here.
+				// TODO: Find out why!
+				defaultNamespace.SetGroupVersionKind(r.namespaceGVK)
+				objectsToApply = append([]client.Object{&defaultNamespace}, objectsToApply...)
+			}
 		}
 	}
 

@@ -56,6 +56,10 @@ func (pkg *Package) SetAutoUpdatesEnabled(enabled bool) {
 	setAutoUpdatesEnabled(&pkg.ObjectMeta, enabled)
 }
 
+func (pkg *Package) IsNamespaceScoped() bool {
+	return true
+}
+
 //+kubebuilder:object:root=true
 
 // PackageList contains a list of Package
