@@ -3,6 +3,7 @@ import Heading from '@theme/Heading';
 import styles from './styles.module.css';
 import React from 'react';
 import ThemedImage from '@theme/ThemedImage';
+import Link from '@docusaurus/Link';
 
 type ScreenshotItem = {
   title: string;
@@ -17,7 +18,8 @@ const ScreenshotList: ScreenshotItem[] = [
     title: 'Focus on simplicity and reliability',
     description: (
       <>
-        After installation, use `glasskube serve` to browse and find all your favorite packages in one place.
+        After <Link href={'/docs/getting-started/install/'}>installation</Link>, use <code>glasskube serve</code> to
+        browse and find all your favorite packages in one place.
         You do not need to look for a Helm repository to find a specific package.
       </>
     ),
@@ -29,9 +31,10 @@ const ScreenshotList: ScreenshotItem[] = [
     title: 'Package configurations',
     description: (
       <>
-        Configure packages with typesafe input values via the UI and with an interactive questioner via the cli.
+        <Link href={'/docs/design/package-config/'}>Configure packages</Link> with typesafe input values via the UI and
+        with an interactive questioner via the cli.
         Your also able to inject values from other packages, ConfigMaps and Secrets.
-        Say Good-Bye to un-typed and un-documented `values.yaml` files.
+        Say Good-Bye to un-typed and un-documented <code>values.yaml</code> files.
       </>
     ),
     screenshotAltText: 'Glasskube package configuration page',
@@ -42,8 +45,8 @@ const ScreenshotList: ScreenshotItem[] = [
     title: 'Dependency Management',
     description: (
       <>
-        Glasskube packages are dependency aware, so they can be used and referenced by multiple other packages.
-        They will also get installed in the correct namespace.
+        Glasskube <Link href={'/docs/design/dependency-management/'}>packages are dependency aware</Link>, so they can be used
+        and referenced by multiple other packages. They will also get installed in the correct namespace.
         This is how umbrella charts should have worked from the beginning.
       </>
     ),
@@ -96,7 +99,7 @@ function Screenshot(item: ScreenshotItem) {
     <>
       <div className={clsx('col col--3')}>
         <div className={styles.sticky}>
-          <Heading as="h3">{item.title}</Heading>
+          <Heading as="h3" className={styles.borderLeft}>{item.title}</Heading>
           <p>{item.description}</p>
         </div>
       </div>

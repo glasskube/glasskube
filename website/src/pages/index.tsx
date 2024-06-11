@@ -63,8 +63,7 @@ function HomepageHeader() {
           </div>
         </div>
         <div className="row row--no-gutters">
-          <div className={clsx('col', styles.heroCol)}>
-            <Heading as="h1" className="hero__title">
+          <div className={clsx('col', styles.heroCol, styles.typewriter)}>
               <pre>
                 <Typewriter
                   onInit={(typewriter) => {
@@ -88,7 +87,6 @@ function HomepageHeader() {
                   }}
                 />
               </pre>
-            </Heading>
           </div>
         </div>
 

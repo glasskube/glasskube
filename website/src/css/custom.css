@@ -178,3 +178,20 @@ div[class^='announcementBar_'] {
   -webkit-mask-composite: xor;
   mask-composite: exclude;
 }
+
+h1 {
+  background: linear-gradient(60deg, var(--glasskube-main-3), var(--glasskube-pink));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+h2 {
+  padding-bottom: 5px;
+}
+
+[data-theme='dark'] {
+  h2 {
+    text-shadow:  0 0 5px var(--glasskube-pink);
+  }
+}
+

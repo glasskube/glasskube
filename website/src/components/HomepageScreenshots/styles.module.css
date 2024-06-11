@@ -1,35 +1,14 @@
+.borderLeft {
+  border-left: var(--glasskube-main-3) 4px solid;
+  padding-left: 1rem;
+}
+
 .screenshots {
   display: flex;
   align-items: center;
   padding: 2rem 0;
   width: 100%;
 }
-
-.iconHeight {
-  height: 128px;
-}
-
-.iconBorder {
-  position: relative;
-  padding: 2rem;
-}
-
-.iconBorder::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 16px;
-  border-bottom-left-radius: 0px;
-  border-bottom-right-radius: 0px;
-  border: 3px solid transparent;
-  background: linear-gradient(to right, var(--glasskube-main-3), var(--glasskube-pink)) border-box;
-  -webkit-mask: /*4*/ linear-gradient(#fff 0 0) padding-box,
-  linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  border-bottom: none;
-}
-
 
 .sticky {
   margin-top: 70px;

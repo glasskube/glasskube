@@ -9,7 +9,7 @@ const SignupForWaitlistButton: FC<SignupForWaitlistButtonProps> = ({additionalCl
   <Link
     className={`button button--accent ${additionalClassNames}`}
     to="https://glasskube.cloud/">
-    Signup for the wait list
+    Glasskube Cloud signup
   </Link>
 );
 

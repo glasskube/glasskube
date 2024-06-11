@@ -14,9 +14,6 @@
   text-align: center;
   margin-top: 6rem;
   font-size: 4rem;
-  background: linear-gradient(60deg, var(--glasskube-main-3), var(--glasskube-pink));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
 
 .heroCol {
@@ -48,6 +45,11 @@
     align-items: center;
     justify-content: center;
   }
+}
+
+.typewriter {
+  font-size: 1.5rem;
+  color: var(--glasskube-main-light);
 }
 
 .twitterButton,
@@ -117,4 +119,20 @@
 
 .producthunt {
   margin-top: 20px;
+}
+
+@media (min-width: 997px) {
+  .buttons {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+  }
+
+  h2 {
+    font-size: 2rem;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+  }
 }
