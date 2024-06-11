@@ -267,8 +267,8 @@ func (s *server) getNamespaceOptions() ([]string, error) {
 }
 
 func (s *server) getPackagesOptions(ctx context.Context) ([]string, error) {
-	var packages v1alpha1.PackageList
-	if err := s.pkgClient.Packages().GetAll(ctx, &packages); err != nil {
+	var packages v1alpha1.ClusterPackageList
+	if err := s.pkgClient.ClusterPackages().GetAll(ctx, &packages); err != nil {
 		return nil, err
 	} else {
 		options := make([]string, 0)

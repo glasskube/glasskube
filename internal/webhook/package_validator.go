@@ -87,12 +87,12 @@ func (p *PackageValidatingWebhook) ValidateUpdate(ctx context.Context, oldObj ru
 // deleted because the dependant is not deleted.
 func (p *PackageValidatingWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
 	log := ctrl.LoggerFrom(ctx)
-	if pkg, ok := obj.(*v1alpha1.Package); ok {
-		log.Info("validate delete", "name", pkg.Name)
+	if pkg, ok := obj.(ctrlpkg.Package); ok {
+		log.Info("validate delete", "name", pkg.GetName())
 		if g, err := p.NewGraph(ctx); err != nil {
 			return nil, err
 		} else {
-			if _, err := g.ValidateDelete(pkg.Name); err != nil {
+			if _, err := g.ValidateDelete(pkg.GetName()); err != nil {
 				for _, err1 := range multierr.Errors(err) {
 					if !errors.Is(err1, &graph.DependencyError{}) {
 						return nil, err1

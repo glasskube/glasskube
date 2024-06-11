@@ -9,8 +9,8 @@ import (
 
 type PackageClientAdapter interface {
 	GetPackageInfo(ctx context.Context, pkgInfoName string) (*v1alpha1.PackageInfo, error)
-	ListPackages(ctx context.Context) (*v1alpha1.PackageList, error)
-	GetPackage(ctx context.Context, name string) (*v1alpha1.Package, error)
+	ListPackages(ctx context.Context) (*v1alpha1.ClusterPackageList, error)
+	GetPackage(ctx context.Context, name string) (*v1alpha1.ClusterPackage, error)
 	ListPackageRepositories(ctx context.Context) (*v1alpha1.PackageRepositoryList, error)
 	GetPackageRepository(ctx context.Context, name string) (*v1alpha1.PackageRepository, error)
 }

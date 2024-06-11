@@ -42,7 +42,7 @@ func newPackageValidatingWebhook(objects ...client.Object) *PackageValidatingWeb
 }
 
 var (
-	foov1pkg = v1alpha1.Package{
+	foov1pkg = v1alpha1.ClusterPackage{
 		ObjectMeta: v1.ObjectMeta{Name: "foo"},
 		Spec:       v1alpha1.PackageSpec{PackageInfo: v1alpha1.PackageInfoTemplate{Name: "foo", Version: "v1"}},
 		Status:     v1alpha1.PackageStatus{OwnedPackageInfos: []v1alpha1.OwnedResourceRef{{Name: "foo--v1"}}}}
@@ -51,7 +51,7 @@ var (
 		Spec:       v1alpha1.PackageInfoSpec{Name: "foo", Version: "v1"},
 		Status: v1alpha1.PackageInfoStatus{
 			Manifest: &v1alpha1.PackageManifest{Name: "foo", Dependencies: []v1alpha1.Dependency{{Name: "bar", Version: "v1"}}}}}
-	foov2pkg = v1alpha1.Package{
+	foov2pkg = v1alpha1.ClusterPackage{
 		ObjectMeta: v1.ObjectMeta{Name: "foo"},
 		Spec:       v1alpha1.PackageSpec{PackageInfo: v1alpha1.PackageInfoTemplate{Name: "foo", Version: "v2"}},
 		Status:     v1alpha1.PackageStatus{OwnedPackageInfos: []v1alpha1.OwnedResourceRef{{Name: "foo--v2"}}}}
@@ -60,7 +60,7 @@ var (
 		Spec:       v1alpha1.PackageInfoSpec{Name: "foo", Version: "v2"},
 		Status: v1alpha1.PackageInfoStatus{
 			Manifest: &v1alpha1.PackageManifest{Name: "foo", Dependencies: []v1alpha1.Dependency{{Name: "bar", Version: "v2"}}}}}
-	barv1pkg = v1alpha1.Package{
+	barv1pkg = v1alpha1.ClusterPackage{
 		ObjectMeta: v1.ObjectMeta{Name: "bar"},
 		Spec:       v1alpha1.PackageSpec{PackageInfo: v1alpha1.PackageInfoTemplate{Name: "bar", Version: "v1"}},
 		Status:     v1alpha1.PackageStatus{OwnedPackageInfos: []v1alpha1.OwnedResourceRef{{Name: "bar--v1"}}}}
@@ -68,7 +68,7 @@ var (
 		ObjectMeta: v1.ObjectMeta{Name: "bar--v1"},
 		Spec:       v1alpha1.PackageInfoSpec{Name: "bar", Version: "v1"},
 		Status:     v1alpha1.PackageInfoStatus{Manifest: &v1alpha1.PackageManifest{Name: "bar"}}}
-	barv2pkg = v1alpha1.Package{
+	barv2pkg = v1alpha1.ClusterPackage{
 		ObjectMeta: v1.ObjectMeta{Name: "bar"},
 		Spec:       v1alpha1.PackageSpec{PackageInfo: v1alpha1.PackageInfoTemplate{Name: "bar", Version: "v2"}},
 		Status:     v1alpha1.PackageStatus{OwnedPackageInfos: []v1alpha1.OwnedResourceRef{{Name: "bar--v2"}}}}
@@ -76,7 +76,7 @@ var (
 		ObjectMeta: v1.ObjectMeta{Name: "bar--v2"},
 		Spec:       v1alpha1.PackageInfoSpec{Name: "bar", Version: "v2"},
 		Status:     v1alpha1.PackageInfoStatus{Manifest: &v1alpha1.PackageManifest{Name: "bar"}}}
-	bazv1pkg = v1alpha1.Package{
+	bazv1pkg = v1alpha1.ClusterPackage{
 		ObjectMeta: v1.ObjectMeta{Name: "baz"},
 		Spec:       v1alpha1.PackageSpec{PackageInfo: v1alpha1.PackageInfoTemplate{Name: "baz", Version: "v1"}},
 		Status:     v1alpha1.PackageStatus{OwnedPackageInfos: []v1alpha1.OwnedResourceRef{{Name: "baz--v1"}}}}
@@ -85,7 +85,7 @@ var (
 		Spec:       v1alpha1.PackageInfoSpec{Name: "baz", Version: "v1"},
 		Status: v1alpha1.PackageInfoStatus{
 			Manifest: &v1alpha1.PackageManifest{Name: "baz", Dependencies: []v1alpha1.Dependency{{Name: "foo", Version: "v1"}}}}}
-	bazv2pkg = v1alpha1.Package{
+	bazv2pkg = v1alpha1.ClusterPackage{
 		ObjectMeta: v1.ObjectMeta{Name: "baz"},
 		Spec:       v1alpha1.PackageSpec{PackageInfo: v1alpha1.PackageInfoTemplate{Name: "baz", Version: "v2"}},
 		Status:     v1alpha1.PackageStatus{OwnedPackageInfos: []v1alpha1.OwnedResourceRef{{Name: "baz--v2"}}}}
@@ -94,7 +94,7 @@ var (
 		Spec:       v1alpha1.PackageInfoSpec{Name: "baz", Version: "v1"},
 		Status: v1alpha1.PackageInfoStatus{
 			Manifest: &v1alpha1.PackageManifest{Name: "baz", Dependencies: []v1alpha1.Dependency{{Name: "foo", Version: "v2"}}}}}
-	notExistsPkg = v1alpha1.Package{
+	notExistsPkg = v1alpha1.ClusterPackage{
 		ObjectMeta: v1.ObjectMeta{Name: "doesnotexist"},
 		Spec:       v1alpha1.PackageSpec{PackageInfo: v1alpha1.PackageInfoTemplate{Name: "doesnotexist", Version: "v1"}}}
 )

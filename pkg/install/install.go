@@ -30,7 +30,7 @@ func (obj *installer) WithStatusWriter(sw statuswriter.StatusWriter) *installer 
 
 // InstallBlocking creates a new v1alpha1.Package custom resource in the cluster and waits until
 // the package has either status Ready or Failed.
-func (obj *installer) InstallBlocking(ctx context.Context, pkg *v1alpha1.Package,
+func (obj *installer) InstallBlocking(ctx context.Context, pkg *v1alpha1.ClusterPackage,
 	opts metav1.CreateOptions) (*client.PackageStatus, error) {
 	obj.status.Start()
 	defer obj.status.Stop()
@@ -53,7 +53,7 @@ func (obj *installer) InstallBlocking(ctx context.Context, pkg *v1alpha1.Package
 }
 
 // Install creates a new v1alpha1.Package custom resource in the cluster.
-func (obj *installer) Install(ctx context.Context, pkg *v1alpha1.Package,
+func (obj *installer) Install(ctx context.Context, pkg *v1alpha1.ClusterPackage,
 	opts metav1.CreateOptions) error {
 	obj.status.Start()
 	defer obj.status.Stop()
@@ -63,11 +63,11 @@ func (obj *installer) Install(ctx context.Context, pkg *v1alpha1.Package,
 
 func (obj *installer) install(
 	ctx context.Context,
-	pkg *v1alpha1.Package,
+	pkg *v1alpha1.ClusterPackage,
 	opts metav1.CreateOptions,
-) (*v1alpha1.Package, error) {
+) (*v1alpha1.ClusterPackage, error) {
 	obj.status.SetStatus(fmt.Sprintf("Installing %v...", pkg.Name))
-	err := obj.client.Packages().Create(ctx, pkg, opts)
+	err := obj.client.ClusterPackages().Create(ctx, pkg, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func (obj *installer) install(
 }
 
 func (obj *installer) awaitInstall(ctx context.Context, pkgUID types.UID) (*client.PackageStatus, error) {
-	watcher, err := obj.client.Packages().Watch(ctx)
+	watcher, err := obj.client.ClusterPackages().Watch(ctx)
 	if err != nil {
 		return nil, err
 	}

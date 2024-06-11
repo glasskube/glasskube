@@ -7,32 +7,32 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-type baseClient struct {
+type baseClientset struct {
 	restClient rest.Interface
 }
 
-func (c *baseClient) Packages() PackageInterface {
-	return &packageClient{
+func (c *baseClientset) ClusterPackages() ClusterPackageInterface {
+	return &clusterPackageClient{
 		restClient: c.restClient,
 	}
 }
 
-func (c *baseClient) PackageInfos() PackageInfoInterface {
+func (c *baseClientset) PackageInfos() PackageInfoInterface {
 	return &packageInfoClient{restClient: c.restClient}
 }
 
-func (c *baseClient) PackageRepositories() PackageRepositoryInterface {
+func (c *baseClientset) PackageRepositories() PackageRepositoryInterface {
 	return &packageRepositoryClient{restClient: c.restClient}
 }
 
-func (c *baseClient) WithStores(
-	packageStore cache.Store,
+func (c *baseClientset) WithStores(
+	clusterPackageStore cache.Store,
 	packageInfoStore cache.Store,
 	packageRepositoryStore cache.Store,
 ) PackageV1Alpha1Client {
 	return &cacheClientset{
 		PackageV1Alpha1Client:  c,
-		packageStore:           packageStore,
+		clusterPackageStore:    clusterPackageStore,
 		packageInfoStore:       packageInfoStore,
 		packageRepositoryStore: packageRepositoryStore,
 	}
@@ -47,7 +47,7 @@ func New(cfg *rest.Config) (PackageV1Alpha1Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &baseClient{restClient: restClient}, err
+	return &baseClientset{restClient: restClient}, err
 }
 
 func NewOrDie(cfg *rest.Config) PackageV1Alpha1Client {

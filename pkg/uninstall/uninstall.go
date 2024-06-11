@@ -30,7 +30,7 @@ func (obj *uninstaller) WithStatusWriter(sw statuswriter.StatusWriter) *uninstal
 
 // UninstallBlocking deletes the v1alpha1.Package custom resource from the
 // cluster and waits until the package is fully deleted.
-func (obj *uninstaller) UninstallBlocking(ctx context.Context, pkg *v1alpha1.Package) error {
+func (obj *uninstaller) UninstallBlocking(ctx context.Context, pkg *v1alpha1.ClusterPackage) error {
 	obj.status.Start()
 	defer obj.status.Stop()
 	err := obj.delete(ctx, pkg)
@@ -41,19 +41,20 @@ func (obj *uninstaller) UninstallBlocking(ctx context.Context, pkg *v1alpha1.Pac
 }
 
 // Uninstall deletes the v1alpha1.Package custom resource from the cluster.
-func (obj *uninstaller) Uninstall(ctx context.Context, pkg *v1alpha1.Package) error {
+func (obj *uninstaller) Uninstall(ctx context.Context, pkg *v1alpha1.ClusterPackage) error {
 	obj.status.Start()
 	defer obj.status.Stop()
 	return obj.delete(ctx, pkg)
 }
 
-func (obj *uninstaller) delete(ctx context.Context, pkg *v1alpha1.Package) error {
+func (obj *uninstaller) delete(ctx context.Context, pkg *v1alpha1.ClusterPackage) error {
 	obj.status.SetStatus(fmt.Sprintf("Uninstalling %v...", pkg.Name))
-	return obj.client.Packages().Delete(ctx, pkg, metav1.DeleteOptions{PropagationPolicy: &deletePropagationForeground})
+	return obj.client.ClusterPackages().
+		Delete(ctx, pkg, metav1.DeleteOptions{PropagationPolicy: &deletePropagationForeground})
 }
 
 func (obj *uninstaller) awaitDeletion(ctx context.Context, name string) error {
-	watcher, err := obj.client.Packages().Watch(ctx)
+	watcher, err := obj.client.ClusterPackages().Watch(ctx)
 	if err != nil {
 		return err
 	}

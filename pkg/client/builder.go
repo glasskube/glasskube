@@ -11,7 +11,7 @@ type packageBuilder struct {
 	values                        map[string]v1alpha1.ValueConfiguration
 }
 
-func PackageBuilder(name string) *packageBuilder {
+func ClusterPackageBuilder(name string) *packageBuilder {
 	return &packageBuilder{
 		name:   name,
 		values: make(map[string]v1alpha1.ValueConfiguration),
@@ -40,8 +40,8 @@ func (b *packageBuilder) WithValues(values map[string]v1alpha1.ValueConfiguratio
 	return b
 }
 
-func (b *packageBuilder) Build() *v1alpha1.Package {
-	pkg := v1alpha1.Package{
+func (b *packageBuilder) Build() *v1alpha1.ClusterPackage {
+	pkg := v1alpha1.ClusterPackage{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: b.name,
 		},

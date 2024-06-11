@@ -103,7 +103,7 @@ func printTransaction(tx update.UpdateTransaction) {
 	_ = w.Flush()
 }
 
-func handleOutput(pkgs []v1alpha1.Package) {
+func handleOutput(pkgs []v1alpha1.ClusterPackage) {
 	if updateCmdOptions.Output == "" {
 		return
 	}
@@ -165,8 +165,8 @@ func completeInstalledPackageNames(
 		dir &= cobra.ShellCompDirectiveError
 		return
 	}
-	var packageList v1alpha1.PackageList
-	if err := client.Packages().GetAll(cmd.Context(), &packageList); err != nil {
+	var packageList v1alpha1.ClusterPackageList
+	if err := client.ClusterPackages().GetAll(cmd.Context(), &packageList); err != nil {
 		dir &= cobra.ShellCompDirectiveError
 		return
 	}
@@ -202,8 +202,8 @@ func completeUpgradablePackageVersions(
 	client := cliutils.PackageClient(ctx)
 	repoClient := cliutils.RepositoryClientset(ctx)
 
-	var pkg v1alpha1.Package
-	if err := client.Packages().Get(cmd.Context(), packageName, &pkg); err != nil {
+	var pkg v1alpha1.ClusterPackage
+	if err := client.ClusterPackages().Get(cmd.Context(), packageName, &pkg); err != nil {
 		dir &= cobra.ShellCompDirectiveError
 		return nil, dir
 	}

@@ -20,7 +20,7 @@ var fakeRepo = &fake.FakeClient{
 }
 
 type testClientAdapter struct {
-	packages     []v1alpha1.Package
+	packages     []v1alpha1.ClusterPackage
 	packageInfos []v1alpha1.PackageInfo
 }
 
@@ -33,12 +33,12 @@ func (a *testClientAdapter) GetPackageInfo(ctx context.Context, pkgInfoName stri
 	return nil, errors.NewNotFound(schema.GroupResource{}, pkgInfoName)
 }
 
-func (a *testClientAdapter) ListPackages(ctx context.Context) (*v1alpha1.PackageList, error) {
-	return &v1alpha1.PackageList{Items: a.packages}, nil
+func (a *testClientAdapter) ListPackages(ctx context.Context) (*v1alpha1.ClusterPackageList, error) {
+	return &v1alpha1.ClusterPackageList{Items: a.packages}, nil
 }
 
 // GetPackage implements adapter.PackageClientAdapter.
-func (a *testClientAdapter) GetPackage(ctx context.Context, name string) (*v1alpha1.Package, error) {
+func (a *testClientAdapter) GetPackage(ctx context.Context, name string) (*v1alpha1.ClusterPackage, error) {
 	panic("unimplemented")
 }
 
@@ -66,17 +66,17 @@ var dm *DependendcyManager
 // Package d (name "D") is the dependency (such that P depends on D) or does not exist, and Packages x (name "X") and
 // y (name "Y") are additional optional packages having a dependency on D. For tests where P has multiple dependencies,
 // we additionally use Package e (name "E").
-var d, e, p, x, y *v1alpha1.Package
+var d, e, p, x, y *v1alpha1.ClusterPackage
 
 // di, ei, pi, xi, yi are the corresponding PackageInfo's to the package d, p, x, y
 var di, ei, pi, xi, yi *v1alpha1.PackageInfo
 
-func createPackageAndInfo(name string, version string, installed bool) (*v1alpha1.Package, *v1alpha1.PackageInfo) {
+func createPackageAndInfo(name string, version string, installed bool) (*v1alpha1.ClusterPackage, *v1alpha1.PackageInfo) {
 	manifest := v1alpha1.PackageManifest{
 		Name: name,
 	}
 	fakeRepo.AddPackage(name, version, &manifest)
-	pkg := v1alpha1.Package{
+	pkg := v1alpha1.ClusterPackage{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},

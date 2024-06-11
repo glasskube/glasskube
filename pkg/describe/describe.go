@@ -11,17 +11,17 @@ import (
 )
 
 func DescribeInstalledPackage(ctx context.Context, pkgName string) (
-	*v1alpha1.Package, *v1alpha1.PackageManifest, error) {
+	*v1alpha1.ClusterPackage, *v1alpha1.PackageManifest, error) {
 
 	pkgClient := cliutils.PackageClient(ctx)
 	repoClient := cliutils.RepositoryClientset(ctx)
-	var pkg v1alpha1.Package
-	err := pkgClient.Packages().Get(ctx, pkgName, &pkg)
+	var pkg v1alpha1.ClusterPackage
+	err := pkgClient.ClusterPackages().Get(ctx, pkgName, &pkg)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	if installedManifest, err := manifest.GetInstalledManifestForPackage(ctx, pkg); err == nil {
+	if installedManifest, err := manifest.GetInstalledManifestForPackage(ctx, &pkg); err == nil {
 		return &pkg, installedManifest, nil
 	} else if !errors.Is(err, manifest.ErrPackageNoManifest) {
 		return nil, nil, err

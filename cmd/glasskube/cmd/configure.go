@@ -38,9 +38,9 @@ func runConfigure(cmd *cobra.Command, args []string) {
 	pkgClient := cliutils.PackageClient(ctx)
 	valueResolver := cliutils.ValueResolver(ctx)
 	pkgName := args[0]
-	var pkg v1alpha1.Package
+	var pkg v1alpha1.ClusterPackage
 
-	if err := pkgClient.Packages().Get(ctx, pkgName, &pkg); err != nil {
+	if err := pkgClient.ClusterPackages().Get(ctx, pkgName, &pkg); err != nil {
 		fmt.Fprintf(os.Stderr, "❌ error getting package: %v\n", err)
 		cliutils.ExitWithError()
 	}
@@ -53,7 +53,7 @@ func runConfigure(cmd *cobra.Command, args []string) {
 			pkg.Spec.Values = values
 		}
 	} else {
-		if pkgManifest, err := manifest.GetInstalledManifestForPackage(ctx, pkg); err != nil {
+		if pkgManifest, err := manifest.GetInstalledManifestForPackage(ctx, &pkg); err != nil {
 			fmt.Fprintf(os.Stderr, "❌ error getting installed manifest: %v\n", err)
 			cliutils.ExitWithError()
 		} else if values, err := cli.Configure(*pkgManifest, pkg.Spec.Values); err != nil {
@@ -74,12 +74,12 @@ func runConfigure(cmd *cobra.Command, args []string) {
 		cancel()
 	}
 
-	if err := pkgClient.Packages().Get(ctx, pkgName, &pkg); err != nil {
+	if err := pkgClient.ClusterPackages().Get(ctx, pkgName, &pkg); err != nil {
 		// Don't exit, we can still try to call update ...
 		fmt.Fprintf(os.Stderr, "⚠️  error fetching package: %v\n", err)
 	}
 
-	if err := pkgClient.Packages().Update(ctx, &pkg); err != nil {
+	if err := pkgClient.ClusterPackages().Update(ctx, &pkg); err != nil {
 		fmt.Fprintf(os.Stderr, "❌ error updating package: %v\n", err)
 		cliutils.ExitWithError()
 	} else {

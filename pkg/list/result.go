@@ -7,7 +7,7 @@ import (
 
 type result struct {
 	IndexItem    *types.MetaIndexItem
-	Package      *v1alpha1.Package
+	Package      *v1alpha1.ClusterPackage
 	PackageInfo  *v1alpha1.PackageInfo
 	Repositories []*v1alpha1.PackageRepository
 }
