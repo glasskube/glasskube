@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -13,8 +14,7 @@ import (
 	"github.com/glasskube/glasskube/pkg/bootstrap"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
-	js "k8s.io/apimachinery/pkg/runtime/serializer/json"
+	"sigs.k8s.io/yaml"
 )
 
 type bootstrapOptions struct {
@@ -90,8 +90,11 @@ var bootstrapCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "\nAn error occurred during bootstrap:\n%v\n", err)
 			cliutils.ExitWithError()
 		}
-		if err := bootstrapCmdOptions.printBootsrap(manifests, bootstrapCmdOptions.Output); err != nil {
-			fmt.Fprintf(os.Stderr, "\n Error occured in printing : %v\n", err)
+		if err := bootstrapCmdOptions.printBootsrap(
+			manifests,
+			bootstrapCmdOptions.Output,
+		); err != nil {
+			fmt.Fprintf(os.Stderr, "\nAn error occured in printing : %v\n", err)
 			cliutils.ExitWithError()
 		}
 	},
@@ -121,32 +124,32 @@ func convertAndPrintManifests(
 	objs []unstructured.Unstructured,
 	output OutputFormat,
 ) error {
-	scheme := runtime.NewScheme()
-	var opt bool
-	var div string
 	switch output {
-	case "json":
-		opt = false
-		div = ","
-	case "yaml":
-		opt = true
-		div = "---"
-	}
-	serializer := js.NewSerializerWithOptions(
-		js.DefaultMetaFactory, scheme, scheme,
-		js.SerializerOptions{Yaml: opt, Pretty: true, Strict: true},
-	)
-
-	for _, obj := range objs {
-		runtimeObj := &unstructured.Unstructured{}
-		obj.DeepCopyInto(runtimeObj)
-
-		if err := serializer.Encode(runtimeObj, os.Stdout); err != nil {
-			return fmt.Errorf("failed to serialize object %v: %v", obj.GetName(), err)
+	case OutputFormatJSON:
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "    ")
+		err := enc.Encode(objs)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error marshaling data to JSON: %v\n", err)
+			cliutils.ExitWithError()
 		}
-		fmt.Println(div)
-	}
+	case OutputFormatYAML:
+		for i, obj := range objs {
+			yamlData, err := yaml.Marshal(obj)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "error marshaling data to YAML: %v\n", err)
+				cliutils.ExitWithError()
+			}
 
+			if i > 0 {
+				fmt.Println("---")
+			}
+
+			fmt.Println(string(yamlData))
+		}
+	default:
+		return fmt.Errorf("unsupported output format: %v", output)
+	}
 	return nil
 }
 
