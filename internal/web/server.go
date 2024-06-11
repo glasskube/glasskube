@@ -98,27 +98,23 @@ func NewServer(options ServerOptions) *server {
 type server struct {
 	ServerOptions
 	configLoader
-	listener              net.Listener
-	restConfig            *rest.Config
-	rawConfig             *api.Config
-	pkgClient             client.PackageV1Alpha1Client
-	repoClientset         repoclient.RepoClientset
-	k8sClient             *kubernetes.Clientset
-	sseHub                *SSEHub
-	packageStore          cache.Store
-	packageController     cache.Controller
-	packageInfoStore      cache.Store
-	packageInfoController cache.Controller
-	namespaceLister       *corev1.NamespaceLister
-	configMapLister       *corev1.ConfigMapLister
-	secretLister          *corev1.SecretLister
-	forwarders            map[string]*open.OpenResult
-	dependencyMgr         *dependency.DependendcyManager
-	updateMutex           sync.Mutex
-	updateTransactions    map[int]update.UpdateTransaction
-	valueResolver         *manifestvalues.Resolver
-	isBootstrapped        bool
-	templates             templates
+	listener           net.Listener
+	restConfig         *rest.Config
+	rawConfig          *api.Config
+	pkgClient          client.PackageV1Alpha1Client
+	repoClientset      repoclient.RepoClientset
+	k8sClient          *kubernetes.Clientset
+	sseHub             *SSEHub
+	namespaceLister    *corev1.NamespaceLister
+	configMapLister    *corev1.ConfigMapLister
+	secretLister       *corev1.SecretLister
+	forwarders         map[string]*open.OpenResult
+	dependencyMgr      *dependency.DependendcyManager
+	updateMutex        sync.Mutex
+	updateTransactions map[int]update.UpdateTransaction
+	valueResolver      *manifestvalues.Resolver
+	isBootstrapped     bool
+	templates          templates
 }
 
 func (s *server) RestConfig() *rest.Config {
@@ -937,11 +933,13 @@ func (server *server) initWhenBootstrapped(ctx context.Context) {
 }
 
 func (server *server) initCachedClient(ctx context.Context) {
-	server.packageStore, server.packageController = server.initPackageStoreAndController(ctx)
-	server.packageInfoStore, server.packageInfoController = server.initPackageInfoStoreAndController(ctx)
-	go server.packageController.Run(ctx.Done())
-	go server.packageInfoController.Run(ctx.Done())
-	server.pkgClient = server.pkgClient.WithStores(server.packageStore, server.packageInfoStore)
+	packageStore, packageController := server.initPackageStoreAndController(ctx)
+	packageInfoStore, packageInfoController := server.initPackageInfoStoreAndController(ctx)
+	packageRepoStore, packageRepoController := server.initPackageRepoStoreAndController(ctx)
+	go packageController.Run(ctx.Done())
+	go packageInfoController.Run(ctx.Done())
+	go packageRepoController.Run(ctx.Done())
+	server.pkgClient = server.pkgClient.WithStores(packageStore, packageInfoStore, packageRepoStore)
 }
 
 func (s *server) enrichContext(h http.Handler) http.Handler {
@@ -1053,6 +1051,25 @@ func (s *server) initPackageInfoStoreAndController(ctx context.Context) (cache.S
 		&v1alpha1.PackageInfo{},
 		0,
 		cache.ResourceEventHandlerFuncs{},
+	)
+}
+
+func (s *server) initPackageRepoStoreAndController(ctx context.Context) (cache.Store, cache.Controller) {
+	pkgClient := s.pkgClient
+	return cache.NewInformer(
+		&cache.ListWatch{
+			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+				var repositoryList v1alpha1.PackageRepositoryList
+				err := pkgClient.PackageRepositories().GetAll(ctx, &repositoryList)
+				return &repositoryList, err
+			},
+			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+				return pkgClient.PackageRepositories().Watch(ctx)
+			},
+		},
+		&v1alpha1.PackageRepository{},
+		0,
+		cache.ResourceEventHandlerFuncs{}, // TODO we might also want to update here?
 	)
 }
 
