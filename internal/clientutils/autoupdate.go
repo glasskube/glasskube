@@ -13,11 +13,3 @@ func AutoUpdateString(pkg *v1alpha1.Package, disabledStr string) string {
 	}
 	return ""
 }
-
-func IsAutoUpdateEnabled(pkg *v1alpha1.Package) bool {
-	if pkg != nil && pkg.Annotations != nil && pkg.Annotations["packages.glasskube.dev/auto-update"] != "" {
-		autoUpdateBool, _ := strconv.ParseBool(pkg.Annotations["packages.glasskube.dev/auto-update"])
-		return autoUpdateBool
-	}
-	return false
-}
