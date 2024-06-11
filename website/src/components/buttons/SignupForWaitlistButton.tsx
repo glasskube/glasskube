@@ -8,7 +8,11 @@ interface SignupForWaitlistButtonProps {
 
 function posthogId() {
   if (ExecutionEnvironment.canUseDOM && window['posthog']) {
-    return '/signup.html?id=' + window.posthog.get_distinct_id();
+    try {
+      return '/signup.html?id=' + window.posthog.get_distinct_id();
+    } catch (e) {
+      // no id
+    }
   }
   return '';
 }
