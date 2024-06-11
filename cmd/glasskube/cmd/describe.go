@@ -186,7 +186,7 @@ func printReferences(ctx context.Context, pkg *v1alpha1.Package, manifest *v1alp
 	repo := cliutils.RepositoryClientset(ctx)
 	var repoClient repoclient.RepoClient
 	if pkg != nil {
-		repoClient = repo.ForPackage(*pkg)
+		repoClient = repo.ForPackage(pkg)
 		if url, err := repoClient.GetPackageManifestURL(manifest.Name, pkg.Spec.PackageInfo.Version); err != nil {
 			fmt.Fprintf(os.Stderr, "❌ Could not get package manifest url: %v\n", err)
 		} else {
@@ -212,7 +212,7 @@ func referencesAsMap(
 	}
 	if pkg != nil {
 		repo := cliutils.RepositoryClientset(ctx)
-		repoClient := repo.ForPackage(*pkg)
+		repoClient := repo.ForPackage(pkg)
 		if url, err := repoClient.GetPackageManifestURL(manifest.Name, pkg.Spec.PackageInfo.Version); err == nil {
 			reference := make(map[string]string)
 			reference["label"] = "Glasskube Package Manifest"

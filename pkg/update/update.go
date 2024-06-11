@@ -90,7 +90,7 @@ func (c *updater) PrepareForVersion(
 	var tx UpdateTransaction
 	item := updateTransactionItem{Package: pkg, Version: pkgVersion}
 	var manifest v1alpha1.PackageManifest
-	if err := c.repoClient.ForPackage(pkg).FetchPackageManifest(pkg.Name, pkgVersion, &manifest); err != nil {
+	if err := c.repoClient.ForPackage(&pkg).FetchPackageManifest(pkg.Name, pkgVersion, &manifest); err != nil {
 		return nil, err
 	} else if result, err := c.dm.Validate(ctx, &manifest, pkgVersion); err != nil {
 		return nil, err
@@ -132,7 +132,7 @@ func (c *updater) Prepare(ctx context.Context, packageNames []string) (*UpdateTr
 	var tx UpdateTransaction
 outer:
 	for _, pkg := range packagesToUpdate {
-		repoClient := c.repoClient.ForPackage(pkg)
+		repoClient := c.repoClient.ForPackage(&pkg)
 		var index repo.PackageRepoIndex
 		if err := repoClient.FetchPackageRepoIndex(&index); err != nil {
 			return nil, fmt.Errorf("failed to fetch index: %v", err)

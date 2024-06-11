@@ -79,7 +79,7 @@ func (r *PackageReconcilerCommon) InitAdapters(builder *builder.Builder) error {
 	return nil
 }
 
-func (r *PackageReconcilerCommon) reconcile(ctx context.Context, pkg ctrlpkg.PackageCommon) (ctrl.Result, error) {
+func (r *PackageReconcilerCommon) reconcile(ctx context.Context, pkg ctrlpkg.Package) (ctrl.Result, error) {
 	prc := &PackageReconcilationContext{PackageReconcilerCommon: r, pkg: pkg}
 	log := ctrl.LoggerFrom(ctx)
 	if err := prc.ensurePackageInfo(ctx); err != nil {
@@ -104,7 +104,7 @@ func (r *PackageReconcilerCommon) reconcile(ctx context.Context, pkg ctrlpkg.Pac
 
 type PackageReconcilationContext struct {
 	*PackageReconcilerCommon
-	pkg                   ctrlpkg.PackageCommon
+	pkg                   ctrlpkg.Package
 	pi                    *v1alpha1.PackageInfo
 	isSuccess             bool
 	shouldUpdateStatus    bool

@@ -80,7 +80,7 @@ func (t *templates) parseTemplates() {
 		"ForPkgUpdateAlert": pkg_update_alert.ForPkgUpdateAlert,
 		"PackageManifestUrl": func(pkg *v1alpha1.Package) string {
 			if pkg != nil {
-				url, err := t.repoClientset.ForPackage(*pkg).
+				url, err := t.repoClientset.ForPackage(pkg).
 					GetPackageManifestURL(pkg.Name, pkg.Spec.PackageInfo.Version)
 				if err == nil {
 					return url

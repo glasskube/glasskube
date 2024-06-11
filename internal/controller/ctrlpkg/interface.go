@@ -6,7 +6,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-type PackageCommon interface {
+// Package may represent a v1alpha1.Package or v1alpha1.ClusterPackage
+type Package interface {
 	metav1.Object
 	runtime.Object
 	AutoUpdatesEnabled() bool

@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/repo/client"
 	"github.com/glasskube/glasskube/internal/repo/types"
 )
@@ -33,7 +34,7 @@ func (f *FakeClientset) ForRepoWithName(name string) client.RepoClient {
 }
 
 // ForPackage implements client.RepoClientset.
-func (f *FakeClientset) ForPackage(pkg v1alpha1.Package) client.RepoClient {
+func (f *FakeClientset) ForPackage(pkg ctrlpkg.Package) client.RepoClient {
 	return f.Client
 }
 

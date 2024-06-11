@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"go.uber.org/multierr"
 )
 
@@ -161,9 +162,9 @@ func targetsForResolvedValues(values map[string]string) map[string]validationTar
 	return result
 }
 
-func targetsForPackage(pkg *v1alpha1.Package) map[string]validationTarget {
+func targetsForPackage(pkg ctrlpkg.Package) map[string]validationTarget {
 	result := make(map[string]validationTarget)
-	for name, value := range pkg.Spec.Values {
+	for name, value := range pkg.GetSpec().Values {
 		if value.Value != nil {
 			result[name] = acutalValue(*value.Value)
 		} else {
@@ -182,6 +183,6 @@ func ValidateResolvedValues(manifest v1alpha1.PackageManifest, values map[string
 // Reference values are **not resolved**, so constraint validation is skipped for
 // these values. If instead you want to validate **all** values, please resolve all
 // references first, using a Resolver instance, and then use ValidateResolvedValues.
-func ValidatePackage(manifest v1alpha1.PackageManifest, pkg *v1alpha1.Package) error {
+func ValidatePackage(manifest v1alpha1.PackageManifest, pkg ctrlpkg.Package) error {
 	return validate(manifest, targetsForPackage(pkg))
 }

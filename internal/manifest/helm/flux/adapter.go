@@ -55,7 +55,7 @@ func (a *FluxHelmAdapter) ControllerInit(buildr *builder.Builder, client client.
 
 func (a *FluxHelmAdapter) Reconcile(
 	ctx context.Context,
-	pkg ctrlpkg.PackageCommon,
+	pkg ctrlpkg.Package,
 	manifest *packagesv1alpha1.PackageManifest,
 	patches manifestvalues.TargetPatches,
 ) (*result.ReconcileResult, error) {
@@ -90,7 +90,7 @@ func (a *FluxHelmAdapter) Reconcile(
 
 func (a *FluxHelmAdapter) ensureNamespace(
 	ctx context.Context,
-	pkg ctrlpkg.PackageCommon,
+	pkg ctrlpkg.Package,
 	manifest *packagesv1alpha1.PackageManifest,
 ) (*corev1.Namespace, error) {
 	namespace := corev1.Namespace{
@@ -116,7 +116,7 @@ func (a *FluxHelmAdapter) ensureNamespace(
 
 func (a *FluxHelmAdapter) ensureHelmRepository(
 	ctx context.Context,
-	pkg ctrlpkg.PackageCommon,
+	pkg ctrlpkg.Package,
 	manifest *packagesv1alpha1.PackageManifest,
 ) (*sourcev1beta2.HelmRepository, error) {
 	helmRepository := sourcev1beta2.HelmRepository{
@@ -142,7 +142,7 @@ func (a *FluxHelmAdapter) ensureHelmRepository(
 
 func (a *FluxHelmAdapter) ensureHelmRelease(
 	ctx context.Context,
-	pkg ctrlpkg.PackageCommon,
+	pkg ctrlpkg.Package,
 	manifest *packagesv1alpha1.PackageManifest,
 	patches manifestvalues.TargetPatches,
 ) (*helmv1beta2.HelmRelease, error) {

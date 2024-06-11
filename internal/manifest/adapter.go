@@ -15,7 +15,7 @@ import (
 type ManifestAdapter interface {
 	ControllerInit(builder *builder.Builder, client client.Client, scheme *runtime.Scheme) error
 	Reconcile(ctx context.Context,
-		pkg ctrlpkg.PackageCommon,
+		pkg ctrlpkg.Package,
 		manifest *packagesv1alpha1.PackageManifest,
 		patches manifestvalues.TargetPatches,
 	) (*result.ReconcileResult, error)

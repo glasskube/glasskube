@@ -6,7 +6,7 @@ import (
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 )
 
-func PackageInfoName(pkg ctrlpkg.PackageCommon) string {
+func PackageInfoName(pkg ctrlpkg.Package) string {
 	spec := pkg.GetSpec()
 	return escapeResourceName(fmt.Sprintf("%v--%v", spec.PackageInfo.Name, spec.PackageInfo.Version))
 }

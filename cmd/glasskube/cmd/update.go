@@ -208,7 +208,7 @@ func completeUpgradablePackageVersions(
 		return nil, dir
 	}
 	var packageIndex repo.PackageIndex
-	if err := repoClient.ForPackage(pkg).FetchPackageIndex(packageName, &packageIndex); err != nil {
+	if err := repoClient.ForPackage(&pkg).FetchPackageIndex(packageName, &packageIndex); err != nil {
 		return nil, cobra.ShellCompDirectiveError
 	}
 	versions := make([]string, 0, len(packageIndex.Versions))

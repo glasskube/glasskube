@@ -11,6 +11,7 @@ import (
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/adapter"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -43,8 +44,8 @@ func NewClientsetWithMaxCacheAge(pkgClient adapter.PackageClientAdapter, k8sClie
 }
 
 // ForPackage implements RepoClientset.
-func (d *defaultClientset) ForPackage(pkg v1alpha1.Package) RepoClient {
-	return d.ForRepoWithName(pkg.Spec.PackageInfo.RepositoryName)
+func (d *defaultClientset) ForPackage(pkg ctrlpkg.Package) RepoClient {
+	return d.ForRepoWithName(pkg.GetSpec().PackageInfo.RepositoryName)
 }
 
 // ForRepo implements RepoClientset.

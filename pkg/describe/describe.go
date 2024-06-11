@@ -29,7 +29,7 @@ func DescribeInstalledPackage(ctx context.Context, pkgName string) (
 
 	// pkg is installed, but has either no manifest or owned package info (yet): use manifest in this version from repo
 	var packageManifest v1alpha1.PackageManifest
-	err = repoClient.ForPackage(pkg).FetchPackageManifest(pkgName, pkg.Spec.PackageInfo.Version, &packageManifest)
+	err = repoClient.ForPackage(&pkg).FetchPackageManifest(pkgName, pkg.Spec.PackageInfo.Version, &packageManifest)
 	if err != nil {
 		return nil, nil, err
 	} else {

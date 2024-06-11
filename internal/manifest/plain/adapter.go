@@ -50,7 +50,7 @@ func (a *Adapter) ControllerInit(builder *builder.Builder, client client.Client,
 // Reconcile implements manifest.ManifestAdapter.
 func (a *Adapter) Reconcile(
 	ctx context.Context,
-	pkg ctrlpkg.PackageCommon,
+	pkg ctrlpkg.Package,
 	manifest *packagesv1alpha1.PackageManifest,
 	patches manifestvalues.TargetPatches,
 ) (*result.ReconcileResult, error) {
@@ -67,7 +67,7 @@ func (a *Adapter) Reconcile(
 
 func (r *Adapter) reconcilePlainManifest(
 	ctx context.Context,
-	pkg ctrlpkg.PackageCommon,
+	pkg ctrlpkg.Package,
 	pkgManifest packagesv1alpha1.PackageManifest,
 	manifest packagesv1alpha1.PlainManifest,
 	patches manifestvalues.TargetPatches,

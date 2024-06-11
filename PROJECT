@@ -46,4 +46,7 @@ resources:
   kind: ClusterPackage
   path: github.com/glasskube/glasskube/api/v1alpha1
   version: v1alpha1
+  webhooks:
+    validation: true
+    webhookVersion: v1
 version: "3"
