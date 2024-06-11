@@ -27,7 +27,7 @@ jobs:
         id: release-please
         uses: googleapis/release-please-action@7987652d64b4581673a76e33ad5e98e3dd56832f # v4.1.3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GLASSKUBE_BOT_SECRET }}
 
   goreleaser:
     permissions:

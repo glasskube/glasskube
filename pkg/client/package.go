@@ -12,15 +12,6 @@ import (
 
 var packageGVR = v1alpha1.GroupVersion.WithResource("packages")
 
-type PackageInterface interface {
-	Create(ctx context.Context, p *v1alpha1.Package, opts metav1.CreateOptions) error
-	Update(ctx context.Context, p *v1alpha1.Package) error
-	Get(ctx context.Context, pkgName string, p *v1alpha1.Package) error
-	GetAll(ctx context.Context, result *v1alpha1.PackageList) error
-	Watch(ctx context.Context) (watch.Interface, error)
-	Delete(ctx context.Context, pkg *v1alpha1.Package, options metav1.DeleteOptions) error
-}
-
 type packageClient struct {
 	restClient rest.Interface
 }
