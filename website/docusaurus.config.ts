@@ -120,7 +120,7 @@ const config: Config = {
     },
     announcementBar: {
       id: 'announcementBar-1', // Increment on change
-      content: `🎉️ Glasskube Cloud is launching soon! 😎 <a target="_blank" href="https://glasskube.cloud/signup.html?id=" id="banner-cloud-link">Join the wait list to request early access.</a> 🥳️`,
+      content: `🧊 Glasskube is fully open-source! 😎 <a target="_blank" href="https://github.com/glasskube/glasskube/">Star us on GitHub</a> 🌟`,
       isCloseable: false,
     },
     image:
@@ -242,7 +242,6 @@ const config: Config = {
       jsLoader: 'matomo.js',
     },
   } satisfies Preset.ThemeConfig,
-  clientModules: ['src/theme/cloud-banner.js'],
 };
 
 export default config;
