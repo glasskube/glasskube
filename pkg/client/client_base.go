@@ -11,6 +11,14 @@ type baseClientset struct {
 	restClient rest.Interface
 }
 
+// Packages implements PackageV1Alpha1Client.
+func (c *baseClientset) Packages(namespace string) PackageInterface {
+	return &packageClient{
+		restClient: c.restClient,
+		ns:         namespace,
+	}
+}
+
 func (c *baseClientset) ClusterPackages() ClusterPackageInterface {
 	return &clusterPackageClient{
 		restClient: c.restClient,
