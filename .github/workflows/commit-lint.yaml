@@ -1,10 +1,12 @@
-name: Check commit message format
+name: Lint commits
 
 on:
-  pull_request:
+  merge_group:
+    types:
+      - checks_requested
 
 jobs:
-  commit-lint:
+  semantic-message:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
@@ -19,4 +21,4 @@ jobs:
         run: npm ci
       - name: Validate PR commits with commitlint
         run: |
-          npx commitlint --from ${{ github.event.pull_request.head.sha }}~${{ github.event.pull_request.commits }} --to ${{ github.event.pull_request.head.sha }} --verbose
+          npx commitlint --from "$(git rev-parse origin/main)" --verbose
