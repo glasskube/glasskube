@@ -137,6 +137,17 @@ spec:
                 type: string
               manifest:
                 properties:
+                  components:
+                    items:
+                      properties:
+                        name:
+                          type: string
+                        version:
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    type: array
                   defaultNamespace:
                     description: DefaultNamespace to install the package. May be overridden.
                     type: string
@@ -241,6 +252,12 @@ spec:
                       - url
                       type: object
                     type: array
+                  scope:
+                    description: Scope is optional (default is Cluster)
+                    enum:
+                    - Cluster
+                    - Namespaced
+                    type: string
                   shortDescription:
                     type: string
                   valueDefinitions:
@@ -344,6 +361,9 @@ spec:
                 required:
                 - name
                 type: object
+                x-kubernetes-validations:
+                - message: Components are only allowed for Namespaced packages
+                  rule: self.scope == 'Namespaced' || !has(self.components)
               version:
                 type: string
             type: object

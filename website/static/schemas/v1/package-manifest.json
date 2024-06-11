@@ -90,6 +90,12 @@
         "url"
       ]
     },
+    "PackageScope": {
+      "enum": [
+        "Cluster",
+        "Namespaced"
+      ]
+    },
     "PartialJsonPatch": {
       "properties": {
         "op": {
@@ -266,6 +272,9 @@
     }
   },
   "properties": {
+    "scope": {
+      "$ref": "#/$defs/PackageScope"
+    },
     "name": {
       "type": "string"
     },
@@ -313,6 +322,12 @@
       "type": "array"
     },
     "dependencies": {
+      "items": {
+        "$ref": "#/$defs/Dependency"
+      },
+      "type": "array"
+    },
+    "components": {
       "items": {
         "$ref": "#/$defs/Dependency"
       },

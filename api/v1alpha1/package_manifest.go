@@ -16,6 +16,11 @@ limitations under the License.
 
 package v1alpha1
 
+import (
+	"github.com/invopop/jsonschema"
+	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+)
+
 type HelmManifest struct {
 	// RepositoryUrl is the remote URL of the helm repository. This is the same URL you would use
 	// if you use "helm repo add ...".
@@ -63,7 +68,27 @@ type Dependency struct {
 	Version string `json:"version,omitempty"`
 }
 
+// +kubebuilder:validation:Enum=Cluster;Namespaced
+type PackageScope string
+
+const (
+	ScopeCluster    PackageScope = PackageScope(apiextv1.ClusterScoped)
+	ScopeNamespaced PackageScope = PackageScope(apiextv1.NamespaceScoped)
+)
+
+func (PackageScope) JSONSchema() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Enum: []any{
+			ScopeCluster,
+			ScopeNamespaced,
+		},
+	}
+}
+
+// +kubebuilder:validation:XValidation:message="Components are only allowed for Namespaced packages",rule="self.scope == 'Namespaced' || !has(self.components)"
 type PackageManifest struct {
+	// Scope is optional (default is Cluster)
+	Scope            *PackageScope      `json:"scope,omitempty"`
 	Name             string             `json:"name" jsonschema:"required"`
 	ShortDescription string             `json:"shortDescription,omitempty"`
 	LongDescription  string             `json:"longDescription,omitempty"`
@@ -79,4 +104,5 @@ type PackageManifest struct {
 	DefaultNamespace string              `json:"defaultNamespace,omitempty" jsonschema:"required"`
 	Entrypoints      []PackageEntrypoint `json:"entrypoints,omitempty"`
 	Dependencies     []Dependency        `json:"dependencies,omitempty"`
+	Components       []Dependency        `json:"components,omitempty"`
 }
