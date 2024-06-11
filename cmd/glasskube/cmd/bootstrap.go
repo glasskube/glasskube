@@ -90,7 +90,7 @@ var bootstrapCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "\nAn error occurred during bootstrap:\n%v\n", err)
 			cliutils.ExitWithError()
 		}
-		if err := bootstrapCmdOptions.printBootsrap(
+		if err := printBootsrap(
 			manifests,
 			bootstrapCmdOptions.Output,
 		); err != nil {
@@ -111,8 +111,8 @@ func (o bootstrapOptions) asBootstrapOptions() bootstrap.BootstrapOptions {
 	}
 }
 
-func (o bootstrapOptions) printBootsrap(manifests []unstructured.Unstructured, output OutputFormat) error {
-	if o.Output != "" {
+func printBootsrap(manifests []unstructured.Unstructured, output OutputFormat) error {
+	if output != "" {
 		if err := convertAndPrintManifests(manifests, output); err != nil {
 			return err
 		}
