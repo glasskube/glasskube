@@ -31,7 +31,7 @@ function HomepageHeader() {
         <div className="row row--no-gutters">
           <div className={clsx('col', styles.heroCol)}>
             <div className={styles.buttons}>
-              <TalkToFoundersButton additionalClassNames={'button--lg'}/>
+              <TalkToFoundersButton additionalClassNames={'button--lg light'}/>
               <SignupForWaitlistButton additionalClassNames={'button--lg'}/>
             </div>
             <div className={styles.producthunt}>

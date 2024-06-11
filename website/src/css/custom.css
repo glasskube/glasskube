@@ -124,8 +124,14 @@ div[class^='announcementBar_'] {
   }
 }
 
+a.button--outline.light, .light {
+  color: var(--glasskube-main-light);
+}
+
+
 .typewriter-command {
   color: var(--glasskube-main-4);
+
 }
 
 .typewriter-argument {
@@ -159,7 +165,7 @@ div[class^='announcementBar_'] {
 
 .button.button--accent {
   background-color: var(--glasskube-pink);
-  color: var(--ifm-navbar-link-color);
+  color: var(--glasskube-main-light);
 }
 
 .button.button--outline {
