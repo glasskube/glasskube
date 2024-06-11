@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"strconv"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -86,6 +88,32 @@ type Package struct {
 
 	Spec   PackageSpec   `json:"spec,omitempty"`
 	Status PackageStatus `json:"status,omitempty"`
+}
+
+const (
+	autoUpdateAnnotation = "packages.glasskube.dev/auto-update"
+)
+
+func (pkg *Package) AutoUpdatesEnabled() bool {
+	if pkg.Annotations == nil {
+		return false
+	} else if enabledStr, ok := pkg.Annotations[autoUpdateAnnotation]; !ok {
+		return false
+	} else {
+		enabled, _ := strconv.ParseBool(enabledStr)
+		return enabled
+	}
+}
+
+func (pkg *Package) SetAutoUpdatesEnabled(enabled bool) {
+	if pkg.Annotations == nil {
+		pkg.Annotations = make(map[string]string)
+	}
+	if enabled {
+		pkg.Annotations[autoUpdateAnnotation] = strconv.FormatBool(true)
+	} else {
+		delete(pkg.Annotations, autoUpdateAnnotation)
+	}
 }
 
 //+kubebuilder:object:root=true

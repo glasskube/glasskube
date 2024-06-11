@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/glasskube/glasskube/internal/giscus"
+	"github.com/glasskube/glasskube/internal/httperror"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/repo"
@@ -69,7 +70,9 @@ func (s *server) discussionBadge(w http.ResponseWriter, r *http.Request) {
 
 	var totalCount int
 	if counts, err := giscus.Client().GetCountsFor(pkgName); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to get discussion counts from giscus: %v\n", err)
+		if !httperror.IsNotFound(err) {
+			fmt.Fprintf(os.Stderr, "failed to get discussion counts from giscus: %v\n", err)
+		}
 	} else {
 		totalCount = counts.ReactionCount + counts.TotalCommentCount + counts.TotalReplyCount
 	}
