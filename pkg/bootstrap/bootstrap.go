@@ -70,7 +70,10 @@ func (c *BootstrapClient) initRestMapper() error {
 	}
 }
 
-func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOptions) ([]unstructured.Unstructured, error) {
+func (c *BootstrapClient) Bootstrap(
+	ctx context.Context,
+	options BootstrapOptions,
+) ([]unstructured.Unstructured, error) {
 	telemetry.BootstrapAttempt()
 
 	if err := c.initRestMapper(); err != nil {
