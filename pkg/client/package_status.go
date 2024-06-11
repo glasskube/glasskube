@@ -1,6 +1,8 @@
 package client
 
 import (
+	"reflect"
+
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/pkg/condition"
@@ -27,7 +29,7 @@ func GetStatus(status *v1alpha1.PackageStatus) *PackageStatus {
 }
 
 func GetStatusOrPending(pkg ctrlpkg.Package) *PackageStatus {
-	if pkg != nil {
+	if !reflect.ValueOf(pkg).IsNil() {
 		if !pkg.GetDeletionTimestamp().IsZero() {
 			return NewUninstallingStatus()
 		}
