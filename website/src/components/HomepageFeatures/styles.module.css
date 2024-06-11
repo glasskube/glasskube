@@ -21,8 +21,8 @@
   border-radius: 16px 16px 0 0;
   border: 3px solid transparent;
   background: linear-gradient(to right, var(--glasskube-main-3), var(--glasskube-pink)) border-box;
-  -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask-composite: xor;
   mask-composite: exclude;
   border-bottom: none;
 }
