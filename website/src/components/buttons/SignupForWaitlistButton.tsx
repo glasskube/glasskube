@@ -1,12 +1,13 @@
 import React, {FC} from 'react';
 import Link from '@docusaurus/Link';
+import ExecutionEnvironment from '@docusaurus/ExecutionEnvironment';
 
 interface SignupForWaitlistButtonProps {
   additionalClassNames: string;
 }
 
 function posthogId() {
-  if (window['posthog']) {
+  if (ExecutionEnvironment.canUseDOM && window['posthog']) {
     return '/signup.html?id=' + window.posthog.get_distinct_id();
   }
   return '';
