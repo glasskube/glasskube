@@ -70,8 +70,8 @@ const ScreenshotList: ScreenshotItem[] = [
     title: 'Reactions and comments',
     description: (
       <>
-        Discuss and upvote your favorit Kubernetes package on <a
-        href="https://github.com/glasskube/glasskube/discussions/categories/packages">GitHub</a> or right inside
+        Discuss and upvote your favorit Kubernetes package on <Link
+        href="https://github.com/glasskube/glasskube/discussions/categories/packages">GitHub</Link> or right inside
         the Glasskube UI.
       </>
     ),
@@ -83,8 +83,9 @@ const ScreenshotList: ScreenshotItem[] = [
     title: 'Multiple Repositories and private packages',
     description: (
       <>
-        Use multiple repositories and publish your own private packages. This could be your companies Internal services
-        packages, so all developers will have the up-to-date and easily configured internal services.
+        Use <Link href={'/docs/design/repositories/'}>multiple repositories</Link> and publish your own private packages.
+        This could be your companies Internal services packages, so all developers will have the up-to-date and
+        easily configured internal services.
       </>
     ),
     screenshotAltText: 'Glasskube settings page',
