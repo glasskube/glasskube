@@ -97,6 +97,7 @@
     <div class="modal" id="modal-container" tabindex="-1" style="display: none" aria-hidden="false">
       <div class="modal-dialog" role="document"></div>
     </div>
+
     <footer class="footer py-3 mt-auto w-100 bg-secondary-subtle">
       <div class="container">
         <div class="row">
@@ -115,13 +116,18 @@
             {{ end }}
           </div>
           <div class="col-4 text-end">
-            <a class="nav-link" href="https://glasskube.cloud/signup.html?id={{ .CloudId }}" target="_blank"
-              ><span class="bi bi-box-arrow-up-right me-1"></span>Glasskube Cloud</a
-            >
+            <a class="nav-link" href="https://glasskube.cloud/signup.html?id={{ .CloudId }}" target="_blank">
+              <span class="bi bi-box-arrow-up-right me-1"></span>Glasskube Cloud
+            </a>
+            <br />
+            <a class="nav-link" href="https://discord.gg/SxH6KUCGH7" target="_blank">
+              <span class="bi bi-box-arrow-up-right me-1"></span>Glasskube Discord
+            </a>
           </div>
         </div>
       </div>
     </footer>
+    
 
     <script src="/static/bundle/custom.min.js?v={{ .CacheBustingString }}"></script>
   </body>
