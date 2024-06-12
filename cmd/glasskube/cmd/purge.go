@@ -10,6 +10,7 @@ import (
 	"github.com/glasskube/glasskube/internal/util"
 	"github.com/glasskube/glasskube/pkg/bootstrap"
 	"github.com/glasskube/glasskube/pkg/purge"
+	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/spf13/cobra"
 )
 
@@ -28,8 +29,10 @@ var purgeCmd = &cobra.Command{
 	PreRun: cliutils.SetupClientContext(false, util.Pointer(true)),
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg, _ := cliutils.RequireConfig(config.Kubeconfig)
-		client := purge.NewPurgeClient(cfg)
+		client := purge.NewPurger(cfg)
 		ctx := cmd.Context()
+
+		client.WithStatusWriter(statuswriter.Spinner())
 
 		currentContext := clicontext.RawConfigFromContext(ctx).CurrentContext
 
@@ -47,8 +50,7 @@ var purgeCmd = &cobra.Command{
 			cliutils.ExitWithError()
 		}
 
-		purgeOpts := purge.DefaultPurgeOptions()
-		if err := client.Purge(ctx, purgeOpts); err != nil {
+		if err := client.Purge(ctx); err != nil {
 			fmt.Fprintf(os.Stderr, "\nAn error occurred during purge:\n%v\n", err)
 			cliutils.ExitWithError()
 		}
