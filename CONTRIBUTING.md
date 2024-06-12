@@ -109,14 +109,15 @@ For more details, please refer to the [Conventional Commits](https://www.convent
 
 Glasskube has an active community of contributors, with new PRs being created and merged almost every day.
 This means that the upstream repository might change during the time between you creating your fork and your PR being accepted.
-The easiest way to incorporate these changes into your fork is by synchronizing your fork via the GitHub UI and then merging your forks (now up to date) `main` branch into your feature branch:
-
-Visit your fork in a browser, open the "Sync fork" dropdown and press the big "Update branch" button. Then open your local project in a terminal and run
+To do this without any special tooling, first, add the upstream repository as a remote, then merge the main branch into your feature branch:
 
 ```sh
-git fetch --all
-git merge origin/main
+git remote add upstream git@github.com:glasskube/glasskube.git
+git fetch upstream
+git merge upstream/main
 ```
+
+For more information, check out the [official documentation](https://docs.github.com/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork).
 
 **Now, your feature branch is up-to-date with everything modified upstream!**
 
