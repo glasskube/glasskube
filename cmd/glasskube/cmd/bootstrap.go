@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -12,6 +13,8 @@ import (
 	"github.com/glasskube/glasskube/internal/util"
 	"github.com/glasskube/glasskube/pkg/bootstrap"
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/yaml"
 )
 
 type bootstrapOptions struct {
@@ -22,6 +25,7 @@ type bootstrapOptions struct {
 	force                   bool
 	createDefaultRepository bool
 	yes                     bool
+	OutputOptions
 }
 
 var bootstrapCmdOptions = bootstrapOptions{
@@ -78,9 +82,19 @@ var bootstrapCmd = &cobra.Command{
 			}
 
 		}
-
-		if err := client.Bootstrap(cmd.Context(), bootstrapCmdOptions.asBootstrapOptions()); err != nil {
+		manifests, err := client.Bootstrap(
+			cmd.Context(),
+			bootstrapCmdOptions.asBootstrapOptions(),
+		)
+		if err != nil {
 			fmt.Fprintf(os.Stderr, "\nAn error occurred during bootstrap:\n%v\n", err)
+			cliutils.ExitWithError()
+		}
+		if err := printBootsrap(
+			manifests,
+			bootstrapCmdOptions.Output,
+		); err != nil {
+			fmt.Fprintf(os.Stderr, "\nAn error occurred in printing : %v\n", err)
 			cliutils.ExitWithError()
 		}
 	},
@@ -97,12 +111,55 @@ func (o bootstrapOptions) asBootstrapOptions() bootstrap.BootstrapOptions {
 	}
 }
 
+func printBootsrap(manifests []unstructured.Unstructured, output OutputFormat) error {
+	if output != "" {
+		if err := convertAndPrintManifests(manifests, output); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func convertAndPrintManifests(
+	objs []unstructured.Unstructured,
+	output OutputFormat,
+) error {
+	switch output {
+	case OutputFormatJSON:
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "    ")
+		err := enc.Encode(objs)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error marshaling data to JSON: %v\n", err)
+			cliutils.ExitWithError()
+		}
+	case OutputFormatYAML:
+		for i, obj := range objs {
+			yamlData, err := yaml.Marshal(&obj)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "error marshaling data to YAML: %v\n", err)
+				cliutils.ExitWithError()
+			}
+
+			if i > 0 {
+				fmt.Println("---")
+			}
+
+			fmt.Println(string(yamlData))
+		}
+	default:
+		return fmt.Errorf("unsupported output format: %v", output)
+	}
+	return nil
+}
+
 func init() {
 	RootCmd.AddCommand(bootstrapCmd)
 	bootstrapCmd.Flags().StringVarP(&bootstrapCmdOptions.url, "url", "u", "", "URL to fetch the Glasskube operator from")
 	bootstrapCmd.Flags().VarP(&bootstrapCmdOptions.bootstrapType, "type", "t", `Type of manifest to use for bootstrapping`)
 	bootstrapCmd.Flags().BoolVar(&bootstrapCmdOptions.latest, "latest", config.IsDevBuild(),
 		"Fetch and bootstrap the latest version")
+	bootstrapCmdOptions.OutputOptions.AddFlagsToCommand(bootstrapCmd)
 	bootstrapCmd.Flags().BoolVarP(&bootstrapCmdOptions.force, "force", "f", bootstrapCmdOptions.force,
 		"Do not bail out if pre-checks fail")
 	bootstrapCmd.Flags().BoolVar(&bootstrapCmdOptions.disableTelemetry, "disable-telemetry", false, "Disable telemetry")
