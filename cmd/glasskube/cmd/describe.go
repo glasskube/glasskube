@@ -312,7 +312,7 @@ func createOutputStructure(
 		data["desiredVersion"] = pkg.Spec.PackageInfo.Version
 		data["configuration"] = pkg.Spec.Values
 		data["version"] = pkg.Status.Version
-		data["autoUpdate"] = clientutils.AutoUpdateString(pkg, "Disabled")
+		data["autoUpdate"] = pkg.AutoUpdatesEnabled()
 		data["isUpgradable"] = semver.IsUpgradable(pkg.Spec.PackageInfo.Version, latestVersion)
 		data["status"] = client.GetStatusOrPending(pkg).Status
 	}
