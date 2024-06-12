@@ -15,4 +15,5 @@ type Package interface {
 	GetSpec() *v1alpha1.PackageSpec
 	GetStatus() *v1alpha1.PackageStatus
 	IsNamespaceScoped() bool
+	IsNil() bool
 }

@@ -37,28 +37,28 @@ type ClusterPackage struct {
 	Status PackageStatus `json:"status,omitempty"`
 }
 
-// GetSpec implements PackageCommon.
 func (pkg *ClusterPackage) GetSpec() *PackageSpec {
 	return &pkg.Spec
 }
 
-// GetStatus implements PackageCommon.
 func (in *ClusterPackage) GetStatus() *PackageStatus {
 	return &in.Status
 }
 
-// AutoUpdatesEnabled implements AutoUpdates.
 func (in *ClusterPackage) AutoUpdatesEnabled() bool {
 	return autoUpdatesEnabled(in.ObjectMeta)
 }
 
-// SetAutoUpdatesEnabled implements AutoUpdates.
 func (in *ClusterPackage) SetAutoUpdatesEnabled(enabled bool) {
 	setAutoUpdatesEnabled(&in.ObjectMeta, enabled)
 }
 
 func (pkg *ClusterPackage) IsNamespaceScoped() bool {
 	return false
+}
+
+func (pkg *ClusterPackage) IsNil() bool {
+	return pkg == nil
 }
 
 //+kubebuilder:object:root=true

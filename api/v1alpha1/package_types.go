@@ -38,12 +38,10 @@ type Package struct {
 	Status PackageStatus `json:"status,omitempty"`
 }
 
-// GetSpec implements PackageCommon.
 func (pkg *Package) GetSpec() *PackageSpec {
 	return &pkg.Spec
 }
 
-// GetStatus implements PackageCommon.
 func (pkg *Package) GetStatus() *PackageStatus {
 	return &pkg.Status
 }
@@ -58,6 +56,10 @@ func (pkg *Package) SetAutoUpdatesEnabled(enabled bool) {
 
 func (pkg *Package) IsNamespaceScoped() bool {
 	return true
+}
+
+func (pkg *Package) IsNil() bool {
+	return pkg == nil
 }
 
 //+kubebuilder:object:root=true

@@ -77,7 +77,7 @@ func (t *templates) parseTemplates() {
 		"ForPkgDetailBtns":  pkg_detail_btns.ForPkgDetailBtns,
 		"ForPkgUpdateAlert": pkg_update_alert.ForPkgUpdateAlert,
 		"PackageManifestUrl": func(pkg ctrlpkg.Package) string {
-			if !reflect.ValueOf(pkg).IsNil() {
+			if !pkg.IsNil() {
 				url, err := t.repoClientset.ForPackage(pkg).
 					GetPackageManifestURL(pkg.GetName(), pkg.GetSpec().PackageInfo.Version)
 				if err == nil {
