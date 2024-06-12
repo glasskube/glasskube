@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/fatih/color"
@@ -86,7 +87,7 @@ func (c *BootstrapClient) Bootstrap(
 		c.client = client
 	}
 
-	fmt.Println(installMessage)
+	fmt.Fprintln(os.Stderr, installMessage)
 	start := time.Now()
 
 	if options.Url == "" {
@@ -359,9 +360,9 @@ func (c *BootstrapClient) checkWorkloadReady(
 func statusMessage(input string, success bool) {
 	if success {
 		green := color.New(color.FgGreen).SprintFunc()
-		fmt.Println(green("* " + input))
+		fmt.Fprintln(os.Stderr, green("* "+input))
 	} else {
 		red := color.New(color.FgRed).SprintFunc()
-		fmt.Println(red("* " + input))
+		fmt.Fprintln(os.Stderr, red("* "+input))
 	}
 }

@@ -135,7 +135,7 @@ func convertAndPrintManifests(
 		}
 	case OutputFormatYAML:
 		for i, obj := range objs {
-			yamlData, err := yaml.Marshal(obj)
+			yamlData, err := yaml.Marshal(&obj)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "error marshaling data to YAML: %v\n", err)
 				cliutils.ExitWithError()
