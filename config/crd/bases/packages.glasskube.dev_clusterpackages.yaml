@@ -11,8 +11,10 @@ spec:
     kind: ClusterPackage
     listKind: ClusterPackageList
     plural: clusterpackages
+    shortNames:
+    - clpkg
     singular: clusterpackage
-  scope: Namespaced
+  scope: Cluster
   versions:
   - additionalPrinterColumns:
     - jsonPath: .spec.packageInfo.version

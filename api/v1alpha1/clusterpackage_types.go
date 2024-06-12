@@ -25,6 +25,7 @@ import (
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:resource:scope=Cluster,shortName=clpkg
 //+kubebuilder:printcolumn:name=Desired version,type=string,JSONPath=".spec.packageInfo.version"
 //+kubebuilder:printcolumn:name=Installed version,type=string,JSONPath=".status.version"
 
