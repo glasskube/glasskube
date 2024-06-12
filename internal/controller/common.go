@@ -221,7 +221,7 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 				// Only direct dependencies should be touched in the context of the reconciliation of a package.
 				continue
 			}
-			newPkg := &packagesv1alpha1.Package{
+			newPkg := &packagesv1alpha1.ClusterPackage{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      requirement.Name,
 					Namespace: r.pkg.GetNamespace(),
@@ -287,7 +287,7 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 	var waitingFor []string
 	// if all requirements fulfilled, status can be checked
 	for _, dep := range r.pi.Status.Manifest.Dependencies {
-		var requiredPkg packagesv1alpha1.Package
+		var requiredPkg packagesv1alpha1.ClusterPackage
 		if err := r.Get(ctx, types.NamespacedName{
 			Name:      dep.Name,
 			Namespace: r.pkg.GetNamespace(),

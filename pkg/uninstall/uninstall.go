@@ -60,7 +60,7 @@ func (obj *uninstaller) awaitDeletion(ctx context.Context, name string) error {
 	}
 	defer watcher.Stop()
 	for event := range watcher.ResultChan() {
-		if pkg, ok := event.Object.(*v1alpha1.Package); ok && pkg.Name == name {
+		if pkg, ok := event.Object.(*v1alpha1.ClusterPackage); ok && pkg.Name == name {
 			if event.Type == watch.Deleted {
 				return nil // Package deletion confirmed
 			}

@@ -81,7 +81,7 @@ func (obj *installer) awaitInstall(ctx context.Context, pkgUID types.UID) (*clie
 	}
 	defer watcher.Stop()
 	for event := range watcher.ResultChan() {
-		if obj, ok := event.Object.(*v1alpha1.Package); ok && obj.GetUID() == pkgUID {
+		if obj, ok := event.Object.(*v1alpha1.ClusterPackage); ok && obj.GetUID() == pkgUID {
 			if event.Type == watch.Added || event.Type == watch.Modified {
 				if status := client.GetStatus(&obj.Status); status != nil {
 					return status, nil

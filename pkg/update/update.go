@@ -208,7 +208,7 @@ func (c *updater) awaitUpdate(ctx context.Context, pkg *v1alpha1.ClusterPackage)
 	}
 	defer watcher.Stop()
 	for event := range watcher.ResultChan() {
-		if eventPkg, ok := event.Object.(*v1alpha1.Package); ok && eventPkg.GetUID() == pkg.GetUID() {
+		if eventPkg, ok := event.Object.(*v1alpha1.ClusterPackage); ok && eventPkg.GetUID() == pkg.GetUID() {
 			if eventPkg.Status.Version == eventPkg.Spec.PackageInfo.Version {
 				return nil
 			}

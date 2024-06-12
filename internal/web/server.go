@@ -18,17 +18,6 @@ import (
 	"sync"
 	"syscall"
 
-	"k8s.io/klog/v2"
-
-	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
-
-	"k8s.io/client-go/informers"
-	corev1 "k8s.io/client-go/listers/core/v1"
-
-	"github.com/glasskube/glasskube/internal/repo/types"
-
-	"github.com/glasskube/glasskube/internal/util"
-
 	"github.com/Masterminds/semver/v3"
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	clientadapter "github.com/glasskube/glasskube/internal/adapter/goclient"
@@ -39,7 +28,10 @@ import (
 	"github.com/glasskube/glasskube/internal/manifestvalues"
 	"github.com/glasskube/glasskube/internal/repo"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
+	"github.com/glasskube/glasskube/internal/repo/types"
 	"github.com/glasskube/glasskube/internal/telemetry"
+	"github.com/glasskube/glasskube/internal/util"
+	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
 	"github.com/glasskube/glasskube/internal/web/handler"
 	"github.com/glasskube/glasskube/pkg/bootstrap"
 	"github.com/glasskube/glasskube/pkg/client"
@@ -56,11 +48,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
+	corev1 "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
+	"k8s.io/klog/v2"
 )
 
 //go:embed root
@@ -194,7 +189,9 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle("/packages/{pkgName}/configuration/{valueName}/datalists/names", s.requireReady(s.namesDatalist))
 	router.Handle("/packages/{pkgName}/configuration/{valueName}/datalists/keys", s.requireReady(s.keysDatalist))
 	router.Handle("/settings", s.requireReady(s.settingsPage))
-	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/packages", http.StatusFound) })
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/packages", http.StatusFound)
+	})
 	http.Handle("/", s.enrichContext(router))
 
 	bindAddr := fmt.Sprintf("%v:%d", s.Host, s.Port)

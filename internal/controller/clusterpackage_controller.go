@@ -70,7 +70,7 @@ func (r *ClusterPackageReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ClusterPackageReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	if bld, err := r.baseSetup(mgr, &v1alpha1.Package{}); err != nil {
+	if bld, err := r.baseSetup(mgr, &v1alpha1.ClusterPackage{}); err != nil {
 		return err
 	} else {
 		return bld.Complete(r)
