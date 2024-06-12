@@ -16,7 +16,12 @@ import (
 )
 
 var (
-	serviceName, secretName, webhookConfigName, webhookName, namespace, certDir string
+	serviceName       = "glasskube-webhook-service"
+	secretName        = "glasskube-webhook-tls"
+	webhookConfigName = "glasskube-validating-webhook-configuration"
+	namespace         = "glasskube-system"
+	certDir           = ""
+	webhookNames      = []string{"vpackage.kb.io", "vclusterpackage.kb.io"}
 
 	log logr.Logger
 
@@ -33,17 +38,17 @@ func init() {
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 	log = ctrl.Log.WithName("cert-manager")
 
-	cmd.Flags().StringVar(&certDir, "cert-dir", "",
+	cmd.Flags().StringVar(&certDir, "cert-dir", certDir,
 		"directory for certificates (optional)")
-	cmd.Flags().StringVar(&serviceName, "service-name", "glasskube-webhook-service",
+	cmd.Flags().StringVar(&serviceName, "service-name", serviceName,
 		"name of the webhook service")
-	cmd.Flags().StringVar(&secretName, "secret-name", "glasskube-webhook-tls",
+	cmd.Flags().StringVar(&secretName, "secret-name", secretName,
 		"name of the webhook TLS secret")
-	cmd.Flags().StringVar(&webhookConfigName, "webhook-config-name", "glasskube-validating-webhook-configuration",
+	cmd.Flags().StringVar(&webhookConfigName, "webhook-config-name", webhookConfigName,
 		"name of the ValidatingWebhookConfiguration to patch")
-	cmd.Flags().StringVar(&webhookName, "webhook-name", "vpackage.kb.io",
+	cmd.Flags().StringArrayVar(&webhookNames, "webhook-name", webhookNames,
 		"name of the webhook to patch")
-	cmd.Flags().StringVar(&namespace, "namespace", "glasskube-system",
+	cmd.Flags().StringVar(&namespace, "namespace", namespace,
 		"namespace of the webhook service and TLS secret")
 }
 
@@ -95,10 +100,16 @@ func run(ctx context.Context) {
 		os.Exit(1)
 	}
 
-	webhookConfig := arv1ac.ValidatingWebhookConfiguration(webhookConfigName).WithWebhooks(
-		arv1ac.ValidatingWebhook().WithName(webhookName).
-			WithClientConfig(arv1ac.WebhookClientConfig().WithCABundle(caEnc.Cert...)),
-	)
+	webhookConfig := arv1ac.ValidatingWebhookConfiguration(webhookConfigName)
+	for _, name := range webhookNames {
+		webhookConfig.WithWebhooks(
+			arv1ac.ValidatingWebhook().
+				WithName(name).
+				WithClientConfig(arv1ac.WebhookClientConfig().
+					WithCABundle(caEnc.Cert...),
+				),
+		)
+	}
 
 	if _, err := client.AdmissionregistrationV1().ValidatingWebhookConfigurations().
 		Apply(ctx, webhookConfig, applyOptions); err != nil {
