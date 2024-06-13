@@ -85,7 +85,6 @@ func (PackageScope) JSONSchema() *jsonschema.Schema {
 	}
 }
 
-// +kubebuilder:validation:XValidation:message="Components are only allowed for Namespaced packages",rule="self.scope == 'Namespaced' || !has(self.components)"
 type PackageManifest struct {
 	// Scope is optional (default is Cluster)
 	Scope            *PackageScope      `json:"scope,omitempty"`
