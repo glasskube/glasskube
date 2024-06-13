@@ -111,7 +111,8 @@ func (s *server) packageConfigurationInput(w http.ResponseWriter, r *http.Reques
 	pkgName := mux.Vars(r)["pkgName"]
 	selectedVersion := r.FormValue("selectedVersion")
 	repositoryName := r.FormValue("repositoryName")
-	pkg, manifest, err := describe.DescribeInstalledPackage(r.Context(), pkgName)
+	// TODO
+	pkg, manifest, err := describe.DescribeInstalledClusterPackage(r.Context(), pkgName)
 	if err != nil && !errors.IsNotFound(err) {
 		err = fmt.Errorf("an error occurred fetching package details of %v: %w", pkgName, err)
 		fmt.Fprintf(os.Stderr, "%v\n", err)

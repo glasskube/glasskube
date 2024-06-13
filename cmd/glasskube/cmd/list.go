@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
+
 	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/semver"
@@ -15,11 +17,13 @@ import (
 )
 
 type ListCmdOptions struct {
-	ListInstalledOnly bool
-	ListOutdatedOnly  bool
-	ShowDescription   bool
-	ShowLatestVersion bool
-	More              bool
+	ListClusterPackagesOnly bool
+	ListPackagesOnly        bool
+	ListInstalledOnly       bool
+	ListOutdatedOnly        bool
+	ShowDescription         bool
+	ShowLatestVersion       bool
+	More                    bool
 	OutputOptions
 }
 
@@ -45,57 +49,88 @@ var listCmd = &cobra.Command{
 			listCmdOptions.ShowLatestVersion = true
 			listCmdOptions.ShowDescription = true
 		}
-		pkgs, err := list.NewLister(ctx).GetPackagesWithStatus(ctx, listCmdOptions.toListOptions())
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "❗ An error occurred listing packages: %v\n", err)
-			if len(pkgs) == 0 {
-				cliutils.ExitWithError()
-			} else {
-				fmt.Fprint(os.Stderr, "⚠️  The table shown below may be incomplete due to the error above.\n\n")
-			}
+		lister := list.NewListerWithRepoCache(ctx)
+		scopeGiven := listCmdOptions.ListPackagesOnly || listCmdOptions.ListClusterPackagesOnly
+		var clPkgs []*list.PackageWithStatus
+		var pkgs []*list.PackagesWithStatus
+		var err error
+		if listCmdOptions.ListClusterPackagesOnly || !scopeGiven {
+			clPkgs, err = lister.GetClusterPackagesWithStatus(ctx, listCmdOptions.toListOptions())
+			handleListErr(len(clPkgs), err, "clusterpackages")
 		}
-		if len(pkgs) == 0 {
-			if listCmdOptions.ListOutdatedOnly {
-				fmt.Fprintln(os.Stderr, "All installed packages are up-to-date.")
-			} else if listCmdOptions.ListInstalledOnly {
-				fmt.Fprintln(os.Stderr, "There are currently no packages installed in your cluster.\n"+
-					"Run \"glasskube help install\" to get started.")
-			} else {
-				fmt.Fprintln(os.Stderr, "No packages found. This is probably a bug.")
-			}
-		} else {
+		if listCmdOptions.ListPackagesOnly || !scopeGiven {
+			pkgs, err = lister.GetPackagesWithStatus(ctx, listCmdOptions.toListOptions())
+			handleListErr(len(pkgs), err, "packages")
+		}
+		noPkgs := len(pkgs) == 0 && !listCmdOptions.ListClusterPackagesOnly
+		noClPkgs := len(clPkgs) == 0 && !listCmdOptions.ListPackagesOnly
+		if noPkgs {
+			handleEmptyList("packages")
+		} else if len(pkgs) > 0 {
+			printPackageTable(pkgs)
+			fmt.Fprintln(os.Stderr, "")
+		}
+		if noClPkgs {
+			handleEmptyList("clusterpackages")
+		} else if len(clPkgs) > 0 {
 			if listCmdOptions.Output == OutputFormatJSON {
-				printPackageJSON(pkgs)
+				printPackageJSON(clPkgs)
 			} else if listCmdOptions.Output == OutputFormatYAML {
-				printPackageYAML(pkgs)
+				printPackageYAML(clPkgs)
 			} else {
-				printPackageTable(pkgs)
+				printClusterPackageTable(clPkgs)
 			}
 		}
-
 	},
 }
 
 func init() {
+	listCmd.PersistentFlags().BoolVarP(&listCmdOptions.ListClusterPackagesOnly, "clusterpackages", "c", false,
+		"list only clusterpackages")
+	listCmd.PersistentFlags().BoolVarP(&listCmdOptions.ListPackagesOnly, "packages", "p", false,
+		"list only packages")
 	listCmd.PersistentFlags().BoolVarP(&listCmdOptions.ListInstalledOnly, "installed", "i", false,
-		"list only installed packages")
+		"list only installed (cluster-)packages")
 	listCmd.PersistentFlags().BoolVar(&listCmdOptions.ListOutdatedOnly, "outdated", false,
-		"list only outdated packages")
+		"list only outdated (cluster-)packages")
 	listCmd.PersistentFlags().BoolVar(&listCmdOptions.ShowDescription, "show-description", false,
-		"show the package description")
+		"show the (cluster-)package description")
 	listCmd.PersistentFlags().BoolVar(&listCmdOptions.ShowLatestVersion, "show-latest", false,
-		"show the latest version of packages if available")
+		"show the latest version of (cluster-)packages if available")
 	listCmd.PersistentFlags().BoolVarP(&listCmdOptions.More, "more", "m", false,
-		"show additional information about packages (like --show-description --show-latest)")
+		"show additional information about (cluster-)packages (like --show-description --show-latest)")
 	listCmdOptions.OutputOptions.AddFlagsToCommand(listCmd)
 
 	listCmd.MarkFlagsMutuallyExclusive("show-description", "more")
 	listCmd.MarkFlagsMutuallyExclusive("show-latest", "more")
+	listCmd.MarkFlagsMutuallyExclusive("clusterpackages", "packages")
 
 	RootCmd.AddCommand(listCmd)
 }
 
-func printPackageTable(packages []*list.PackageWithStatus) {
+func handleListErr(listLen int, err error, resource string) {
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "❗ An error occurred listing %s: %v\n", resource, err)
+		if listLen == 0 {
+			cliutils.ExitWithError()
+		} else {
+			fmt.Fprint(os.Stderr, "⚠️  The table shown below may be incomplete due to the error above.\n\n")
+		}
+	}
+}
+
+func handleEmptyList(resource string) {
+	if listCmdOptions.ListOutdatedOnly {
+		fmt.Fprintf(os.Stderr, "All installed %s are up-to-date.\n", resource)
+	} else if listCmdOptions.ListInstalledOnly {
+		fmt.Fprintf(os.Stderr, "There are currently no %s installed in your cluster.\n"+
+			"Run \"glasskube help install\" to get started.\n", resource)
+	} else {
+		fmt.Fprintf(os.Stderr, "No %s found. This is probably a bug.\n", resource)
+	}
+}
+
+func printClusterPackageTable(packages []*list.PackageWithStatus) {
 	header := []string{"NAME", "STATUS", "VERSION", "AUTO-UPDATE"}
 	if listCmdOptions.ShowLatestVersion {
 		header = append(header, "LATEST VERSION")
@@ -104,18 +139,68 @@ func printPackageTable(packages []*list.PackageWithStatus) {
 	if listCmdOptions.ShowDescription {
 		header = append(header, "DESCRIPTION")
 	}
+
 	err := cliutils.PrintTable(os.Stdout,
 		packages,
 		header,
 		func(pkg *list.PackageWithStatus) []string {
-			row := []string{pkg.Name, statusString(*pkg), versionString(*pkg), clientutils.AutoUpdateString(pkg.Package, "")}
+			row := []string{pkg.Name, statusString(*pkg), versionString(*pkg),
+				clientutils.AutoUpdateString(pkg.ClusterPackage, "")}
+			if listCmdOptions.ShowLatestVersion {
+				row = append(row, pkg.LatestVersion)
+			}
+			s := make([]string, len(pkg.Repos))
+			if pkg.ClusterPackage != nil {
+				for i, r := range pkg.Repos {
+					if pkg.ClusterPackage.GetSpec().PackageInfo.RepositoryName == r {
+						s[i] = fmt.Sprintf("%v (used)", r)
+					} else {
+						s[i] = r
+					}
+				}
+			} else {
+				s = pkg.Repos
+			}
+			row = append(row, strings.Join(s, ", "))
+			if listCmdOptions.ShowDescription {
+				row = append(row, pkg.ShortDescription)
+			}
+			return row
+		})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "There was an error displaying the clusterpackage table:\n%v\n(This is a bug)\n", err)
+		cliutils.ExitWithError()
+	}
+}
+
+func printPackageTable(packages []*list.PackagesWithStatus) {
+	header := []string{"PACKAGENAME", "NAMESPACE", "NAME", "STATUS", "VERSION", "AUTO-UPDATE"}
+	if listCmdOptions.ShowLatestVersion {
+		header = append(header, "LATEST VERSION")
+	}
+	header = append(header, "REPOSITORY")
+	if listCmdOptions.ShowDescription {
+		header = append(header, "DESCRIPTION")
+	}
+
+	var flattenedPkgs []*list.PackageWithStatus
+	for _, pkgs := range packages {
+		flattenedPkgs = append(flattenedPkgs, pkgs.Packages...)
+	}
+
+	err := cliutils.PrintTable(os.Stdout,
+		flattenedPkgs,
+		header,
+		func(pkg *list.PackageWithStatus) []string {
+			row := []string{pkg.Name, pkg.Package.Namespace, pkg.Package.Name, statusString(*pkg), versionString(*pkg),
+				clientutils.AutoUpdateString(pkg.Package, "")}
 			if listCmdOptions.ShowLatestVersion {
 				row = append(row, pkg.LatestVersion)
 			}
 			s := make([]string, len(pkg.Repos))
 			if pkg.Package != nil {
 				for i, r := range pkg.Repos {
-					if pkg.Package.Spec.PackageInfo.RepositoryName == r {
+					if pkg.Package.GetSpec().PackageInfo.RepositoryName == r {
 						s[i] = fmt.Sprintf("%v (used)", r)
 					} else {
 						s[i] = r
@@ -172,9 +257,15 @@ func statusString(pkg list.PackageWithStatus) string {
 }
 
 func versionString(pkg list.PackageWithStatus) string {
-	if pkg.Package != nil {
-		specVersion := pkg.Package.Spec.PackageInfo.Version
-		statusVersion := pkg.Package.Status.Version
+	var p ctrlpkg.Package
+	if pkg.ClusterPackage != nil {
+		p = pkg.ClusterPackage
+	} else if pkg.Package != nil {
+		p = pkg.Package
+	}
+	if pkg.ClusterPackage != nil || pkg.Package != nil {
+		specVersion := p.GetSpec().PackageInfo.Version
+		statusVersion := p.GetStatus().Version
 		repoVersion := pkg.LatestVersion
 
 		if statusVersion != "" {

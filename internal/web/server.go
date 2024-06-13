@@ -174,23 +174,47 @@ func (s *server) Start(ctx context.Context) error {
 	router.HandleFunc("/kubeconfig", s.kubeconfigPage)
 	router.Handle("/bootstrap", s.requireKubeconfig(s.bootstrapPage))
 	router.Handle("/kubeconfig/persist", s.requireKubeconfig(s.persistKubeconfig))
+	// overview pages
 	router.Handle("/packages", s.requireReady(s.packages))
+	router.Handle("/clusterpackages", s.requireReady(s.clusterPackages))
+	// TODO how to handle updates? packages + clusterpackages all in one modal?
+	// TODO or one modal per type? or change modal to a page and show two sections?
 	router.Handle("/packages/update", s.requireReady(s.update))
 	router.Handle("/packages/update/modal", s.requireReady(s.updateModal))
+	// uninstall endpoints
 	router.Handle("/packages/uninstall", s.requireReady(s.uninstall))
+	router.Handle("/clusterpackages/uninstall", s.requireReady(s.uninstall))
 	router.Handle("/packages/uninstall/modal", s.requireReady(s.uninstallModal))
+	router.Handle("/clusterpackages/uninstall/modal", s.requireReady(s.uninstallModal))
+	// open endpoints
 	router.Handle("/packages/open", s.requireReady(s.open))
-	router.Handle("/packages/{pkgName}", s.requireReady(s.packageDetail))
-	router.Handle("/packages/{pkgName}/discussion", s.requireReady(s.packageDiscussion))
-	router.Handle("/packages/{pkgName}/discussion/badge", s.requireReady(s.discussionBadge))
-	router.Handle("/packages/{pkgName}/configure", s.requireReady(s.installOrConfigurePackage))
-	router.Handle("/packages/{pkgName}/configure/advanced", s.requireReady(s.advancedConfiguration))
-	router.Handle("/packages/{pkgName}/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
-	router.Handle("/packages/{pkgName}/configuration/{valueName}/datalists/names", s.requireReady(s.namesDatalist))
-	router.Handle("/packages/{pkgName}/configuration/{valueName}/datalists/keys", s.requireReady(s.keysDatalist))
+	router.Handle("/clusterpackages/open", s.requireReady(s.open))
+	// detail page endpoints
+	pkgBasePath := "/packages/{manifestName}"
+	installedPkgBasePath := pkgBasePath + "/{namespace}/{name}"
+	clpkgBasePath := "/clusterpackages/{pkgName}"
+	router.Handle(pkgBasePath, s.requireReady(s.packageDetail))
+	router.Handle(installedPkgBasePath, s.requireReady(s.packageDetail))
+	router.Handle(clpkgBasePath, s.requireReady(s.clusterPackageDetail))
+	// discussion endpoints
+	router.Handle(installedPkgBasePath+"/discussion", s.requireReady(s.packageDiscussion))
+	router.Handle(clpkgBasePath+"/discussion", s.requireReady(s.packageDiscussion))
+	router.Handle(installedPkgBasePath+"/discussion/badge", s.requireReady(s.discussionBadge))
+	router.Handle(clpkgBasePath+"/discussion/badge", s.requireReady(s.discussionBadge))
+	// configuration endpoints
+	router.Handle(installedPkgBasePath+"/configure", s.requireReady(s.installOrConfigurePackage))
+	router.Handle(clpkgBasePath+"/configure", s.requireReady(s.installOrConfigurePackage))
+	router.Handle(installedPkgBasePath+"/configure/advanced", s.requireReady(s.advancedConfiguration))
+	router.Handle(clpkgBasePath+"/configure/advanced", s.requireReady(s.advancedConfiguration))
+	router.Handle(installedPkgBasePath+"/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
+	router.Handle(clpkgBasePath+"/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
+	// configuration datalist endpoints
+	router.Handle("/datalists/{valueName}/names", s.requireReady(s.namesDatalist))
+	router.Handle("/datalists/{valueName}/keys", s.requireReady(s.keysDatalist))
+	// settings
 	router.Handle("/settings", s.requireReady(s.settingsPage))
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/packages", http.StatusFound)
+		http.Redirect(w, r, "/clusterpackages", http.StatusFound)
 	})
 	http.Handle("/", s.enrichContext(router))
 
@@ -360,37 +384,129 @@ func (s *server) open(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *server) clusterPackages(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	clpkgs, listErr := list.NewLister(ctx).GetClusterPackagesWithStatus(ctx, list.ListOptions{IncludePackageInfos: true})
+	if listErr != nil && len(clpkgs) == 0 {
+		listErr = fmt.Errorf("could not load clusterpackages: %w", listErr)
+		fmt.Fprintf(os.Stderr, "%v\n", listErr)
+	}
+
+	// Call isUpdateAvailable for each installed clusterpackage.
+	// This is not the same as getting all updates in a single transaction, because some dependency
+	// conflicts could be resolvable by installing individual clpkgs.
+	clpkgUpdateAvailable := map[string]bool{}
+	for _, pkg := range clpkgs {
+		clpkgUpdateAvailable[pkg.Name] = pkg.ClusterPackage != nil && s.isUpdateAvailable(r.Context(), pkg.Name)
+	}
+
+	tmplErr := s.templates.clusterPkgsPageTemplate.Execute(w, s.enrichPage(r, map[string]any{
+		"ClusterPackages":               clpkgs,
+		"ClusterPackageUpdateAvailable": clpkgUpdateAvailable,
+		"UpdatesAvailable":              s.isUpdateAvailable(r.Context()),
+	}, listErr))
+	checkTmplError(tmplErr, "clusterpackages")
+}
+
 func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	packages, listErr := list.NewLister(ctx).GetPackagesWithStatus(ctx, list.ListOptions{IncludePackageInfos: true})
-	if listErr != nil && len(packages) == 0 {
+	allPkgs, listErr := list.NewLister(ctx).GetPackagesWithStatus(ctx, list.ListOptions{IncludePackageInfos: true})
+	if listErr != nil {
 		listErr = fmt.Errorf("could not load packages: %w", listErr)
 		fmt.Fprintf(os.Stderr, "%v\n", listErr)
+		// TODO check again
 	}
 
 	// Call isUpdateAvailable for each installed package.
 	// This is not the same as getting all updates in a single transaction, because some dependency
 	// conflicts could be resolvable by installing individual packages.
-	packageUpdateAvailable := map[string]bool{}
+	// TODO make work again:
+	/*packageUpdateAvailable := map[string]bool{}
 	for _, pkg := range packages {
 		packageUpdateAvailable[pkg.Name] = pkg.Package != nil && s.isUpdateAvailable(r.Context(), pkg.Name)
+	}*/
+
+	var installed []*list.PackagesWithStatus
+	var available []*list.PackagesWithStatus
+	for _, pkgsWithStatus := range allPkgs {
+		if len(pkgsWithStatus.Packages) > 0 {
+			installed = append(installed, pkgsWithStatus)
+		} else {
+			available = append(available, pkgsWithStatus)
+		}
 	}
 
 	tmplErr := s.templates.pkgsPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
-		"Packages":               packages,
-		"PackageUpdateAvailable": packageUpdateAvailable,
-		"UpdatesAvailable":       s.isUpdateAvailable(r.Context()),
+		"InstalledPackages":      installed,
+		"AvailablePackages":      available,
+		"PackageUpdateAvailable": false, // TODO
+		"UpdatesAvailable":       false, // TODO s.isUpdateAvailable(r.Context()),
 	}, listErr))
 	checkTmplError(tmplErr, "packages")
 }
 
 func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	manifestName := mux.Vars(r)["manifestName"]
+	namespace := mux.Vars(r)["namespace"]
+	name := mux.Vars(r)["name"]
+	repositoryName := r.FormValue("repositoryName")
+	selectedVersion := r.FormValue("selectedVersion")
+
+	pkg, manifest, err := describe.DescribeInstalledPackage(ctx, namespace, name)
+	if err != nil && !apierrors.IsNotFound(err) {
+		s.respondAlertAndLog(w, err,
+			fmt.Sprintf("An error occurred fetching package details of installed package %v in namespace %v", name, namespace),
+			"danger")
+		return
+	} else if pkg != nil {
+		repositoryName = pkg.Spec.PackageInfo.RepositoryName
+	}
+
+	var repos []v1alpha1.PackageRepository
+	var usedRepo *v1alpha1.PackageRepository
+	if repositoryName, repos, usedRepo, err = s.getRepos(ctx, pkg.GetSpec().PackageInfo.Name, repositoryName); err != nil {
+		s.respondAlertAndLog(w, err, "", "danger")
+		return
+	}
+
+	var idx repo.PackageIndex
+	var latestVersion string
+	if idx, latestVersion, selectedVersion, err = s.getVersions(repositoryName, manifestName, selectedVersion); err != nil {
+		s.respondAlertAndLog(w, err,
+			fmt.Sprintf("An error occurred fetching package index of %v in repository %v", manifestName, repositoryName),
+			"danger")
+		return
+	}
+
+	err = s.templates.pkgPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
+		"Package":       pkg,
+		"Status":        client.GetStatusOrPending(pkg),
+		"Manifest":      manifest,
+		"LatestVersion": latestVersion,
+		// TODO "UpdateAvailable": pkg != nil && s.isUpdateAvailable(r.Context(), manifest),
+		"AutoUpdate": clientutils.AutoUpdateString(pkg, "Disabled"),
+		// TODO "ValidationResult":   res,
+		// TODO "ShowConflicts":      res.Status == dependency.ValidationResultStatusConflict,
+		"SelectedVersion":   selectedVersion,
+		"PackageIndex":      &idx,
+		"Repositories":      repos,
+		"RepositoryName":    repositoryName,
+		"ShowConfiguration": (pkg != nil && len(manifest.ValueDefinitions) > 0 && pkg.DeletionTimestamp.IsZero()) || pkg == nil,
+		// TODO "ValueErrors":        valueErrors,
+		// TODO "DatalistOptions":    datalistOptions,
+		"ShowDiscussionLink": usedRepo.IsGlasskubeRepo(),
+	}, err))
+	checkTmplError(err, fmt.Sprintf("package-detail (%s)", manifestName))
+}
+
+func (s *server) clusterPackageDetail(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	pkgName := mux.Vars(r)["pkgName"]
 	repositoryName := r.FormValue("repositoryName")
 	selectedVersion := r.FormValue("selectedVersion")
 
-	pkg, manifest, err := describe.DescribeInstalledPackage(ctx, pkgName)
+	pkg, manifest, err := describe.DescribeInstalledClusterPackage(ctx, pkgName)
 	if err != nil && !apierrors.IsNotFound(err) {
 		s.respondAlertAndLog(w, err,
 			fmt.Sprintf("An error occurred fetching package details of installed package %v", pkgName),
@@ -401,44 +517,19 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var repos []v1alpha1.PackageRepository
-	if repos, err = s.repoClientset.Meta().GetReposForPackage(pkgName); err != nil {
-		fmt.Fprintf(os.Stderr, "error getting repos for package; %v", err)
-	} else if repositoryName == "" {
-		if len(repos) == 0 {
-			s.respondAlertAndLog(w, fmt.Errorf("%v not found in any repository", pkgName), "", "danger")
-			return
-		}
-		for _, r := range repos {
-			repositoryName = r.Name
-			if r.IsDefaultRepository() {
-				break
-			}
-		}
-	}
-
-	var usedRepo v1alpha1.PackageRepository
-	if err := s.pkgClient.PackageRepositories().Get(r.Context(), repositoryName, &usedRepo); err != nil {
-		s.respondAlertAndLog(w, err,
-			fmt.Sprintf("An error occurred fetching repository %v", repositoryName),
-			"danger")
+	var usedRepo *v1alpha1.PackageRepository
+	if repositoryName, repos, usedRepo, err = s.getRepos(ctx, pkg.GetSpec().PackageInfo.Name, repositoryName); err != nil {
+		s.respondAlertAndLog(w, err, "", "danger")
 		return
 	}
 
 	var idx repo.PackageIndex
-	if err := s.repoClientset.ForRepoWithName(repositoryName).FetchPackageIndex(pkgName, &idx); err != nil {
+	var latestVersion string
+	if idx, latestVersion, selectedVersion, err = s.getVersions(repositoryName, pkgName, selectedVersion); err != nil {
 		s.respondAlertAndLog(w, err,
 			fmt.Sprintf("An error occurred fetching package index of %v in repository %v", pkgName, repositoryName),
 			"danger")
 		return
-	}
-	latestVersion := idx.LatestVersion
-
-	if selectedVersion == "" {
-		selectedVersion = latestVersion
-	} else if !slices.ContainsFunc(idx.Versions, func(item types.PackageIndexItem) bool {
-		return item.Version == selectedVersion
-	}) {
-		selectedVersion = latestVersion
 	}
 
 	if manifest == nil {
@@ -498,7 +589,51 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 		"DatalistOptions":    datalistOptions,
 		"ShowDiscussionLink": usedRepo.IsGlasskubeRepo(),
 	}, err))
-	checkTmplError(err, fmt.Sprintf("package-detail (%s)", pkgName))
+	checkTmplError(err, fmt.Sprintf("clusterpackage-detail (%s)", pkgName))
+}
+
+func (s *server) getVersions(repositoryName string, pkgName string, selectedVersion string) (repo.PackageIndex, string, string, error) {
+	var idx repo.PackageIndex
+	if err := s.repoClientset.ForRepoWithName(repositoryName).FetchPackageIndex(pkgName, &idx); err != nil {
+		return repo.PackageIndex{}, "", "", err
+	}
+	latestVersion := idx.LatestVersion
+
+	if selectedVersion == "" {
+		selectedVersion = latestVersion
+	} else if !slices.ContainsFunc(idx.Versions, func(item types.PackageIndexItem) bool {
+		return item.Version == selectedVersion
+	}) {
+		selectedVersion = latestVersion
+	}
+	return idx, latestVersion, selectedVersion, nil
+}
+
+func (s *server) getRepos(ctx context.Context, pkgName string, repositoryName string) (
+	string, []v1alpha1.PackageRepository, *v1alpha1.PackageRepository, error) {
+	var repos []v1alpha1.PackageRepository
+	var err error
+	if repos, err = s.repoClientset.Meta().GetReposForPackage(pkgName); err != nil {
+		fmt.Fprintf(os.Stderr, "error getting repos for package; %v", err)
+	} else if repositoryName == "" {
+		if len(repos) == 0 {
+
+			return "", nil, nil, fmt.Errorf("%v not found in any repository", pkgName)
+		}
+		for _, r := range repos {
+			repositoryName = r.Name
+			if r.IsDefaultRepository() {
+				break
+			}
+		}
+	}
+
+	var usedRepo v1alpha1.PackageRepository
+	if err := s.pkgClient.PackageRepositories().Get(ctx, repositoryName, &usedRepo); err != nil {
+		return "", nil, nil, err
+	}
+
+	return repositoryName, repos, &usedRepo, nil
 }
 
 // installOrConfigurePackage is an endpoint which takes POST requests, containing all necessary parameters to either
@@ -606,7 +741,7 @@ func (s *server) advancedConfiguration(w http.ResponseWriter, r *http.Request) {
 	pkgName := mux.Vars(r)["pkgName"]
 	repositoryName := r.FormValue("repositoryName")
 	selectedVersion := r.FormValue("selectedVersion")
-	pkg, manifest, err := describe.DescribeInstalledPackage(ctx, pkgName)
+	pkg, manifest, err := describe.DescribeInstalledClusterPackage(ctx, pkgName)
 	if err != nil && !apierrors.IsNotFound(err) {
 		s.respondAlertAndLog(w, err,
 			fmt.Sprintf("An error occurred fetching package details of installed package %v", pkgName),
@@ -936,13 +1071,15 @@ func (server *server) initWhenBootstrapped(ctx context.Context) {
 }
 
 func (server *server) initCachedClient(ctx context.Context) {
+	clusterPackageStore, clusterPackageController := server.initClusterPackageStoreAndController(ctx)
 	packageStore, packageController := server.initPackageStoreAndController(ctx)
 	packageInfoStore, packageInfoController := server.initPackageInfoStoreAndController(ctx)
 	packageRepoStore, packageRepoController := server.initPackageRepoStoreAndController(ctx)
+	go clusterPackageController.Run(ctx.Done())
 	go packageController.Run(ctx.Done())
 	go packageInfoController.Run(ctx.Done())
 	go packageRepoController.Run(ctx.Done())
-	server.pkgClient = server.pkgClient.WithStores(packageStore, packageInfoStore, packageRepoStore)
+	server.pkgClient = server.pkgClient.WithStores(clusterPackageStore, packageStore, packageInfoStore, packageRepoStore)
 }
 
 func (s *server) enrichContext(h http.Handler) http.Handler {
@@ -994,7 +1131,7 @@ func defaultKubeconfigExists() bool {
 	}
 }
 
-func (s *server) initPackageStoreAndController(ctx context.Context) (cache.Store, cache.Controller) {
+func (s *server) initClusterPackageStoreAndController(ctx context.Context) (cache.Store, cache.Controller) {
 	pkgClient := s.pkgClient
 	return cache.NewInformer(
 		&cache.ListWatch{
@@ -1012,28 +1149,73 @@ func (s *server) initPackageStoreAndController(ctx context.Context) (cache.Store
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj any) {
 				if pkg, ok := obj.(*v1alpha1.ClusterPackage); ok {
-					s.broadcastRefreshTriggers(pkg)
+					s.broadcastClusterPackageRefreshTriggers(pkg)
 				}
 			},
 			UpdateFunc: func(oldObj, newObj any) {
 				if pkg, ok := newObj.(*v1alpha1.ClusterPackage); ok {
-					s.broadcastRefreshTriggers(pkg)
+					s.broadcastClusterPackageRefreshTriggers(pkg)
 				}
 			},
 			DeleteFunc: func(obj any) {
 				if pkg, ok := obj.(*v1alpha1.ClusterPackage); ok {
-					s.broadcastRefreshTriggers(pkg)
+					s.broadcastClusterPackageRefreshTriggers(pkg)
+				}
+			},
+		},
+	)
+}
+func (s *server) initPackageStoreAndController(ctx context.Context) (cache.Store, cache.Controller) {
+	pkgClient := s.pkgClient
+	return cache.NewInformer(
+		&cache.ListWatch{
+			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+				var pkgList v1alpha1.PackageList
+				err := pkgClient.Packages("").GetAll(ctx, &pkgList)
+				return &pkgList, err
+			},
+			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+				return pkgClient.Packages("").Watch(ctx)
+			},
+		},
+		&v1alpha1.Package{},
+		0,
+		cache.ResourceEventHandlerFuncs{
+			AddFunc: func(obj any) {
+				if pkg, ok := obj.(*v1alpha1.Package); ok {
+					s.broadcastPackageRefreshTriggers(pkg)
+				}
+			},
+			UpdateFunc: func(oldObj, newObj any) {
+				if pkg, ok := newObj.(*v1alpha1.Package); ok {
+					s.broadcastPackageRefreshTriggers(pkg)
+				}
+			},
+			DeleteFunc: func(obj any) {
+				if pkg, ok := obj.(*v1alpha1.Package); ok {
+					s.broadcastPackageRefreshTriggers(pkg)
 				}
 			},
 		},
 	)
 }
 
-func (s *server) broadcastRefreshTriggers(pkg *v1alpha1.ClusterPackage) {
+func (s *server) broadcastClusterPackageRefreshTriggers(pkg *v1alpha1.ClusterPackage) {
 	s.sseHub.Broadcast <- &sse{
-		event: "refresh-pkg-overview",
+		event: "refresh-clusterpackage-overview",
 	}
 	s.sseHub.Broadcast <- &sse{
+		// TODO ??
+		event: fmt.Sprintf("refresh-pkg-detail-%s", pkg.Name),
+	}
+}
+
+func (s *server) broadcastPackageRefreshTriggers(pkg *v1alpha1.Package) {
+	s.sseHub.Broadcast <- &sse{
+		event: "refresh-package-overview",
+	}
+	s.sseHub.Broadcast <- &sse{
+		// TODO ??
 		event: fmt.Sprintf("refresh-pkg-detail-%s", pkg.Name),
 	}
 }

@@ -15,6 +15,9 @@
         },
         "latestVersion": {
           "type": "string"
+        },
+        "scope": {
+          "type": "string"
         }
       },
       "additionalProperties": false,

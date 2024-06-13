@@ -8,29 +8,33 @@ import (
 	"github.com/glasskube/glasskube/pkg/list"
 )
 
-const TemplateId = "pkg-overview-btn"
+const templateId = "clpkg-overview-btn"
 
-type pkgOverviewBtnInput struct {
+type clpkgOverviewBtnInput struct {
 	ButtonId        string
 	PackageName     string
 	Status          *client.PackageStatus
 	Manifest        *v1alpha1.PackageManifest
 	UpdateAvailable bool
-	Pkg             *v1alpha1.ClusterPackage
+	InDeletion      bool
 }
 
 func getButtonId(pkgName string) string {
-	return fmt.Sprintf("%v-%v", TemplateId, pkgName)
+	return fmt.Sprintf("%v-%v", templateId, pkgName)
 }
 
-func ForPkgOverviewBtn(packageWithStatus *list.PackageWithStatus, updateAvailable bool) *pkgOverviewBtnInput {
+func ForClPkgOverviewBtn(packageWithStatus *list.PackageWithStatus, updateAvailable bool) *clpkgOverviewBtnInput {
 	buttonId := getButtonId(packageWithStatus.Name)
-	return &pkgOverviewBtnInput{
+	inDeletion := false
+	if packageWithStatus.ClusterPackage != nil {
+		inDeletion = !packageWithStatus.ClusterPackage.DeletionTimestamp.IsZero()
+	}
+	return &clpkgOverviewBtnInput{
 		ButtonId:        buttonId,
 		PackageName:     packageWithStatus.Name,
 		Status:          packageWithStatus.Status,
 		Manifest:        packageWithStatus.InstalledManifest,
 		UpdateAvailable: updateAvailable,
-		Pkg:             packageWithStatus.Package,
+		InDeletion:      inDeletion,
 	}
 }

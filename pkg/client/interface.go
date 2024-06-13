@@ -16,6 +16,7 @@ type PackageV1Alpha1Client interface {
 	PackageRepositories() PackageRepositoryInterface
 	WithStores(
 		clusterPackageStore cache.Store,
+		packageStore cache.Store,
 		packageInfoStore cache.Store,
 		packageRepositoryStore cache.Store,
 	) PackageV1Alpha1Client

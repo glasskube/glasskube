@@ -29,12 +29,16 @@
 
         <ul class="navbar-nav" hx-boost="true" hx-select="main" hx-target="main" hx-swap="outerHTML">
           <li class="nav-item mx-1">
-            {{ with $packages := "packages" }}
-              <a class="nav-link {{ if eq $.NavbarActiveItem $packages }}active{{ end }}" href="/packages">Packages</a>
+            {{ with $clusterPackages := "clusterpackages" }}
+              <a class="nav-link {{ if eq $.NavbarActiveItem $clusterPackages }}active{{ end }}" href="/clusterpackages"
+                >ClusterPackages</a
+              >
             {{ end }}
           </li>
           <li class="nav-item mx-1">
-            <a class="nav-link disabled">Apps</a>
+            {{ with $packages := "packages" }}
+              <a class="nav-link {{ if eq $.NavbarActiveItem $packages }}active{{ end }}" href="/packages">Packages</a>
+            {{ end }}
           </li>
           <li class="nav-item mx-1">
             {{ with $settings := "settings" }}

@@ -35,12 +35,14 @@ func (c *baseClientset) PackageRepositories() PackageRepositoryInterface {
 
 func (c *baseClientset) WithStores(
 	clusterPackageStore cache.Store,
+	packageStore cache.Store,
 	packageInfoStore cache.Store,
 	packageRepositoryStore cache.Store,
 ) PackageV1Alpha1Client {
 	return &cacheClientset{
 		PackageV1Alpha1Client:  c,
 		clusterPackageStore:    clusterPackageStore,
+		packageStore:           packageStore,
 		packageInfoStore:       packageInfoStore,
 		packageRepositoryStore: packageRepositoryStore,
 	}

@@ -26,7 +26,7 @@ func (s *server) packageDiscussion(w http.ResponseWriter, r *http.Request) {
 	}
 	pkgName := mux.Vars(r)["pkgName"]
 	repositoryName := mux.Vars(r)["repositoryName"]
-	pkg, manifest, err := describe.DescribeInstalledPackage(r.Context(), pkgName)
+	pkg, manifest, err := describe.DescribeInstalledClusterPackage(r.Context(), pkgName)
 	if err != nil && !errors.IsNotFound(err) {
 		s.respondAlertAndLog(w, err,
 			fmt.Sprintf("An error occurred fetching installed package %v", pkgName), "danger")

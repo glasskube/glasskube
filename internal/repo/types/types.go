@@ -18,6 +18,7 @@ type PackageRepoIndexItem struct {
 	ShortDescription string `json:"shortDescription,omitempty"`
 	IconUrl          string `json:"iconUrl,omitempty"`
 	LatestVersion    string `json:"latestVersion,omitempty"`
+	Scope            string `json:"scope,omitempty"`
 }
 
 type MetaIndex struct {

@@ -6,6 +6,7 @@
     </button>
     <ul class="dropdown-menu p-0">
       <li>
+        <!-- TODO these urls need to be dynamic depending on whether its a clusterpackage or not -->
         <button
           class="dropdown-item btn btn-sm"
           hx-get="/packages/{{ .PkgName }}/configuration/{{ .ValueName }}?refKind=Secret&repositoryName={{ .RepositoryName }}&selectedVersion={{ .SelectedVersion | UrlEscape }}"
@@ -88,7 +89,7 @@
       class="form-control"
       placeholder="Name"
       aria-label="Name"
-      hx-get="/packages/{{ .PkgName }}/configuration/{{ .ValueName }}/datalists/names?refKind={{ .ValueReferenceKind }}&id={{ .ValueName }}-names"
+      hx-get="/datalists/{{ .ValueName }}/names?refKind={{ .ValueReferenceKind }}&id={{ .ValueName }}-names"
       hx-include="#input-{{ .ValueName }}-namespace"
       hx-swap="outerHTML"
       hx-target="#{{ .ValueName }}-names"
@@ -108,7 +109,7 @@
       class="form-control"
       placeholder="Key"
       aria-label="Key"
-      hx-get="/packages/{{ .PkgName }}/configuration/{{ .ValueName }}/datalists/keys?refKind={{ .ValueReferenceKind }}&id={{ .ValueName }}-keys"
+      hx-get="/datalists/{{ .ValueName }}/keys?refKind={{ .ValueReferenceKind }}&id={{ .ValueName }}-keys"
       hx-include="#input-{{ .ValueName }}-namespace,#input-{{ .ValueName }}-name"
       hx-swap="outerHTML"
       hx-target="#{{ .ValueName }}-keys"
@@ -137,7 +138,7 @@
       list="{{ .ValueName }}-keys"
       placeholder="Value"
       aria-label="Value"
-      hx-get="/packages/{{ .PkgName }}/configuration/{{ .ValueName }}/datalists/keys?refKind={{ .ValueReferenceKind }}&id={{ .ValueName }}-keys"
+      hx-get="/datalists/{{ .ValueName }}/keys?refKind={{ .ValueReferenceKind }}&id={{ .ValueName }}-keys"
       hx-include="#input-{{ .ValueName }}-name"
       hx-swap="outerHTML"
       hx-target="#{{ .ValueName }}-keys"

@@ -31,23 +31,24 @@ import (
 )
 
 type templates struct {
-	templateFuncs          template.FuncMap
-	baseTemplate           *template.Template
-	pkgsPageTmpl           *template.Template
-	pkgPageTmpl            *template.Template
-	pkgDiscussionPageTmpl  *template.Template
-	supportPageTmpl        *template.Template
-	bootstrapPageTmpl      *template.Template
-	kubeconfigPageTmpl     *template.Template
-	settingsPageTmpl       *template.Template
-	pkgUpdateModalTmpl     *template.Template
-	pkgConfigInput         *template.Template
-	pkgConfigAdvancedTmpl  *template.Template
-	pkgUninstallModalTmpl  *template.Template
-	alertTmpl              *template.Template
-	datalistTmpl           *template.Template
-	pkgDiscussionBadgeTmpl *template.Template
-	repoClientset          repoclient.RepoClientset
+	templateFuncs           template.FuncMap
+	baseTemplate            *template.Template
+	clusterPkgsPageTemplate *template.Template
+	pkgsPageTmpl            *template.Template
+	pkgPageTmpl             *template.Template
+	pkgDiscussionPageTmpl   *template.Template
+	supportPageTmpl         *template.Template
+	bootstrapPageTmpl       *template.Template
+	kubeconfigPageTmpl      *template.Template
+	settingsPageTmpl        *template.Template
+	pkgUpdateModalTmpl      *template.Template
+	pkgConfigInput          *template.Template
+	pkgConfigAdvancedTmpl   *template.Template
+	pkgUninstallModalTmpl   *template.Template
+	alertTmpl               *template.Template
+	datalistTmpl            *template.Template
+	pkgDiscussionBadgeTmpl  *template.Template
+	repoClientset           repoclient.RepoClientset
 }
 
 var (
@@ -77,9 +78,9 @@ func (t *templates) watchTemplates() error {
 
 func (t *templates) parseTemplates() {
 	t.templateFuncs = template.FuncMap{
-		"ForPkgOverviewBtn": pkg_overview_btn.ForPkgOverviewBtn,
-		"ForPkgDetailBtns":  pkg_detail_btns.ForPkgDetailBtns,
-		"ForPkgUpdateAlert": pkg_update_alert.ForPkgUpdateAlert,
+		"ForClPkgOverviewBtn": pkg_overview_btn.ForClPkgOverviewBtn,
+		"ForPkgDetailBtns":    pkg_detail_btns.ForPkgDetailBtns,
+		"ForPkgUpdateAlert":   pkg_update_alert.ForPkgUpdateAlert,
 		"PackageManifestUrl": func(pkg ctrlpkg.Package) string {
 			if !pkg.IsNil() {
 				url, err := t.repoClientset.ForPackage(pkg).
@@ -140,6 +141,7 @@ func (t *templates) parseTemplates() {
 	t.baseTemplate = template.Must(template.New("base.html").
 		Funcs(t.templateFuncs).
 		ParseFS(webFs, path.Join(templatesDir, "layout", "base.html")))
+	t.clusterPkgsPageTemplate = t.pageTmpl("clusterpackages.html")
 	t.pkgsPageTmpl = t.pageTmpl("packages.html")
 	t.pkgPageTmpl = t.pageTmpl("package.html")
 	t.pkgDiscussionPageTmpl = t.pageTmpl("discussion.html")
