@@ -26,7 +26,7 @@ var _ = Describe("DependencyGraph", func() {
 
 		When("there is a package without dependencies", func() {
 			It("should not return an error", func() {
-				Expect(graph.Add(foo, "v1.0.0", nil, true)).NotTo(HaveOccurred())
+				Expect(graph.AddCluster(foo, "v1.0.0", nil, true)).NotTo(HaveOccurred())
 				Expect(graph.Validate()).NotTo(HaveOccurred())
 			})
 		})
@@ -35,24 +35,24 @@ var _ = Describe("DependencyGraph", func() {
 			When("the dependency exists", func() {
 				When("there is a constraint", func() {
 					It("should not return an error", func() {
-						Expect(graph.Add(foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar}}, true)).NotTo(HaveOccurred())
-						Expect(graph.Add(bar, "v1.0.0", nil, false)).NotTo(HaveOccurred())
+						Expect(graph.AddCluster(foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar}}, true)).NotTo(HaveOccurred())
+						Expect(graph.AddCluster(bar, "v1.0.0", nil, false)).NotTo(HaveOccurred())
 						Expect(graph.Validate()).NotTo(HaveOccurred())
 					})
 				})
 
 				When("there is a constraint and it is not violated", func() {
 					It("should not return an error", func() {
-						Expect(graph.Add(foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar, Version: "1.x.x"}}, true)).NotTo(HaveOccurred())
-						Expect(graph.Add(bar, "v1.0.0", nil, false)).NotTo(HaveOccurred())
+						Expect(graph.AddCluster(foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar, Version: "1.x.x"}}, true)).NotTo(HaveOccurred())
+						Expect(graph.AddCluster(bar, "v1.0.0", nil, false)).NotTo(HaveOccurred())
 						Expect(graph.Validate()).NotTo(HaveOccurred())
 					})
 				})
 
 				When("there is a constraint and it is violated", func() {
 					It("should return an error", func() {
-						Expect(graph.Add(foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar, Version: "1.1.x"}}, true)).NotTo(HaveOccurred())
-						Expect(graph.Add(bar, "v1.0.0", nil, false)).NotTo(HaveOccurred())
+						Expect(graph.AddCluster(foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar, Version: "1.1.x"}}, true)).NotTo(HaveOccurred())
+						Expect(graph.AddCluster(bar, "v1.0.0", nil, false)).NotTo(HaveOccurred())
 						Expect(graph.Validate()).To(MatchError(&DependencyError{}))
 					})
 				})
@@ -60,7 +60,42 @@ var _ = Describe("DependencyGraph", func() {
 
 			When("the dependency does not exist", func() {
 				It("should return an error", func() {
-					Expect(graph.Add(foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar}}, true)).NotTo(HaveOccurred())
+					Expect(graph.AddCluster(foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar}}, true)).NotTo(HaveOccurred())
+					Expect(graph.Validate()).To(MatchError(&DependencyError{}))
+				})
+			})
+		})
+
+		When("there is a namespaced package with dependencies", func() {
+			When("the dependency exists", func() {
+				When("there is a constraint", func() {
+					It("should not return an error", func() {
+						Expect(graph.AddNamespaced(foo, foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar}})).NotTo(HaveOccurred())
+						Expect(graph.AddCluster(bar, "v1.0.0", nil, false)).NotTo(HaveOccurred())
+						Expect(graph.Validate()).NotTo(HaveOccurred())
+					})
+				})
+
+				When("there is a constraint and it is not violated", func() {
+					It("should not return an error", func() {
+						Expect(graph.AddNamespaced(foo, foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar, Version: "1.x.x"}})).NotTo(HaveOccurred())
+						Expect(graph.AddCluster(bar, "v1.0.0", nil, false)).NotTo(HaveOccurred())
+						Expect(graph.Validate()).NotTo(HaveOccurred())
+					})
+				})
+
+				When("there is a constraint and it is violated", func() {
+					It("should return an error", func() {
+						Expect(graph.AddNamespaced(foo, foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar, Version: "1.1.x"}})).NotTo(HaveOccurred())
+						Expect(graph.AddCluster(bar, "v1.0.0", nil, false)).NotTo(HaveOccurred())
+						Expect(graph.Validate()).To(MatchError(&DependencyError{}))
+					})
+				})
+			})
+
+			When("the dependency does not exist", func() {
+				It("should return an error", func() {
+					Expect(graph.AddNamespaced(foo, foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar}})).NotTo(HaveOccurred())
 					Expect(graph.Validate()).To(MatchError(&DependencyError{}))
 				})
 			})
@@ -69,7 +104,7 @@ var _ = Describe("DependencyGraph", func() {
 
 	Describe("Delete", func() {
 		It("should remove all properties", func() {
-			Expect(graph.Add(foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar}}, true)).NotTo(HaveOccurred())
+			Expect(graph.AddCluster(foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar}}, true)).NotTo(HaveOccurred())
 			Expect(graph.Version(foo)).NotTo(BeNil())
 			Expect(graph.Manual(foo)).To(BeTrue())
 			Expect(graph.Dependencies(foo)).NotTo(BeEmpty())
@@ -82,7 +117,7 @@ var _ = Describe("DependencyGraph", func() {
 
 	Describe("Prune", func() {
 		It("should remove orphaned vertex", func() {
-			Expect(graph.Add(bar, "v1.0.0", nil, false)).NotTo(HaveOccurred())
+			Expect(graph.AddCluster(bar, "v1.0.0", nil, false)).NotTo(HaveOccurred())
 			Expect(graph.Version(bar)).To(Equal(semver.MustParse("v1.0.0")))
 			Expect(graph.Prune()).To(ConsistOf(bar))
 			Expect(graph.Version(bar)).To(BeNil())
@@ -91,8 +126,8 @@ var _ = Describe("DependencyGraph", func() {
 
 	Describe("DeleteAndPrune", func() {
 		It("should remove dependency", func() {
-			Expect(graph.Add(foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar}}, true)).NotTo(HaveOccurred())
-			Expect(graph.Add(bar, "v1.0.0", nil, false)).NotTo(HaveOccurred())
+			Expect(graph.AddCluster(foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar}}, true)).NotTo(HaveOccurred())
+			Expect(graph.AddCluster(bar, "v1.0.0", nil, false)).NotTo(HaveOccurred())
 			Expect(graph.Version(bar)).To(Equal(semver.MustParse("v1.0.0")))
 			Expect(graph.DeleteAndPrune(foo)).To(ConsistOf(foo, bar))
 			Expect(graph.Version(bar)).To(BeNil())
@@ -101,18 +136,18 @@ var _ = Describe("DependencyGraph", func() {
 
 	Describe("Max", func() {
 		It("should return error for empty slice", func() {
-			Expect(graph.Add(foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar, Version: ">= 1.0.0, < 1.1.2"}}, true)).
+			Expect(graph.AddCluster(foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar, Version: ">= 1.0.0, < 1.1.2"}}, true)).
 				NotTo(HaveOccurred())
-			Expect(graph.Add(baz, "v1.0.0", []v1alpha1.Dependency{{Name: bar, Version: ">= 1.1.0"}}, true)).NotTo(HaveOccurred())
+			Expect(graph.AddCluster(baz, "v1.0.0", []v1alpha1.Dependency{{Name: bar, Version: ">= 1.1.0"}}, true)).NotTo(HaveOccurred())
 			v, err := graph.Max(bar, []*semver.Version{})
 			Expect(err).To(HaveOccurred())
 			Expect(v).To(BeNil())
 		})
 
 		It("should return error for no matching version", func() {
-			Expect(graph.Add(foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar, Version: ">= 1.0.0, < 1.1.1"}}, true)).
+			Expect(graph.AddCluster(foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar, Version: ">= 1.0.0, < 1.1.1"}}, true)).
 				NotTo(HaveOccurred())
-			Expect(graph.Add(baz, "v1.0.0", []v1alpha1.Dependency{{Name: bar, Version: ">= 1.1.0"}}, true)).NotTo(HaveOccurred())
+			Expect(graph.AddCluster(baz, "v1.0.0", []v1alpha1.Dependency{{Name: bar, Version: ">= 1.1.0"}}, true)).NotTo(HaveOccurred())
 			versions := []*semver.Version{semver.MustParse("1.0.0"), semver.MustParse("1.1.1"), semver.MustParse("1.2.0"),
 				semver.MustParse("2.0.0")}
 			v, err := graph.Max(bar, versions)
@@ -121,9 +156,9 @@ var _ = Describe("DependencyGraph", func() {
 		})
 
 		It("should return correct version", func() {
-			Expect(graph.Add(foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar, Version: ">= 1.0.0, < 1.1.1"}}, true)).
+			Expect(graph.AddCluster(foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar, Version: ">= 1.0.0, < 1.1.1"}}, true)).
 				NotTo(HaveOccurred())
-			Expect(graph.Add(baz, "v1.0.0", []v1alpha1.Dependency{{Name: bar, Version: ">= 1.1.0"}}, true)).
+			Expect(graph.AddCluster(baz, "v1.0.0", []v1alpha1.Dependency{{Name: bar, Version: ">= 1.1.0"}}, true)).
 				NotTo(HaveOccurred())
 			versions := []*semver.Version{semver.MustParse("1.0.0"), semver.MustParse("1.1.0"), semver.MustParse("1.1.1"),
 				semver.MustParse("1.2.0"), semver.MustParse("2.0.0")}
@@ -135,7 +170,7 @@ var _ = Describe("DependencyGraph", func() {
 
 	Describe("Dependencies", func() {
 		It("should return all dependencies", func() {
-			Expect(graph.Add(foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar, Version: "1.x.x"}, {Name: baz}}, true)).
+			Expect(graph.AddCluster(foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar, Version: "1.x.x"}, {Name: baz}}, true)).
 				NotTo(HaveOccurred())
 			Expect(graph.Dependencies(foo)).To(ConsistOf(bar, baz))
 		})
@@ -143,29 +178,44 @@ var _ = Describe("DependencyGraph", func() {
 
 	Describe("Dependants", func() {
 		It("should return all dependants", func() {
-			Expect(graph.Add(foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar, Version: "1.x.x"}}, true)).NotTo(HaveOccurred())
-			Expect(graph.Add(baz, "v1.0.0", []v1alpha1.Dependency{{Name: bar}}, true)).NotTo(HaveOccurred())
-			Expect(graph.Add(bar, "v1.0.0", nil, false)).NotTo(HaveOccurred())
-			Expect(graph.Dependants(bar)).To(ConsistOf(foo, baz))
+			Expect(graph.AddNamespaced(foo, foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar, Version: "1.x.x"}})).NotTo(HaveOccurred())
+			Expect(graph.AddCluster(foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar, Version: "1.x.x"}}, true)).NotTo(HaveOccurred())
+			Expect(graph.AddCluster(baz, "v1.0.0", []v1alpha1.Dependency{{Name: bar}}, true)).NotTo(HaveOccurred())
+			Expect(graph.AddCluster(bar, "v1.0.0", nil, false)).NotTo(HaveOccurred())
+			Expect(graph.Dependants(bar)).To(ContainElements(foo, baz))
+			Expect(graph.Dependants(bar)).To(HaveLen(3))
 		})
 	})
 
 	Describe("Constraints", func() {
 		It("should return constraints of dependants", func() {
-			Expect(graph.Add(foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar, Version: "1.x.x"}}, true)).NotTo(HaveOccurred())
-			Expect(graph.Add(baz, "v1.0.0", []v1alpha1.Dependency{{Name: bar}}, true)).NotTo(HaveOccurred())
-			Expect(graph.Add(bar, "v1.0.0", nil, false)).NotTo(HaveOccurred())
-			Expect(graph.Constraints(bar)).To(ConsistOf(constraint("1.x.x")))
+			Expect(graph.AddNamespaced(foo, foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar, Version: "1.2.x"}})).NotTo(HaveOccurred())
+			Expect(graph.AddCluster(foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar, Version: "1.x.x"}}, true)).NotTo(HaveOccurred())
+			Expect(graph.AddCluster(baz, "v1.0.0", []v1alpha1.Dependency{{Name: bar}}, true)).NotTo(HaveOccurred())
+			Expect(graph.AddCluster(bar, "v1.0.0", nil, false)).NotTo(HaveOccurred())
+			Expect(graph.Constraints(bar)).To(ConsistOf(constraint("1.x.x"), constraint("1.2.x")))
 		})
 	})
 
 	Describe("DeepCopy", func() {
 		It("should produce equal graph", func() {
-			Expect(graph.Add(foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar, Version: "1.x.x"}}, true)).NotTo(HaveOccurred())
-			Expect(graph.Add(bar, "v1.0.0", nil, false)).NotTo(HaveOccurred())
+			Expect(graph.AddCluster(foo, "v1.0.0", []v1alpha1.Dependency{{Name: bar, Version: "1.x.x"}}, true)).NotTo(HaveOccurred())
+			Expect(graph.AddCluster(bar, "v1.0.0", nil, false)).NotTo(HaveOccurred())
 			newGraph := graph.DeepCopy()
-			Expect(graph.Add(bar, "v1.1.0", nil, false)).NotTo(HaveOccurred())
+			Expect(graph.AddCluster(bar, "v1.1.0", nil, false)).NotTo(HaveOccurred())
 			Expect(newGraph).NotTo(Equal(graph))
+		})
+	})
+
+	Describe("Version", func() {
+		It("should return nil for missing package", func() {
+			Expect(graph.Version("foo")).To(BeNil())
+		})
+	})
+
+	Describe("Manual", func() {
+		It("should return false for missing package", func() {
+			Expect(graph.Manual("foo")).To(BeFalse())
 		})
 	})
 })

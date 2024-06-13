@@ -104,7 +104,7 @@ func (dm *DependendcyManager) NewGraph(ctx context.Context) (*graph.DependencyGr
 		} else if pi.Status.Manifest != nil {
 			deps = pi.Status.Manifest.Dependencies
 		}
-		if err := g.Add(pkg.Name, installedVersion, deps, len(pkg.OwnerReferences) == 0); err != nil {
+		if err := g.AddCluster(pkg.Name, installedVersion, deps, len(pkg.OwnerReferences) == 0); err != nil {
 			return nil, err
 		}
 	}
@@ -116,7 +116,7 @@ func (dm *DependendcyManager) add(
 	manifest v1alpha1.PackageManifest,
 	version string,
 ) error {
-	return g.Add(manifest.Name, version, manifest.Dependencies, g.Manual(manifest.Name))
+	return g.AddCluster(manifest.Name, version, manifest.Dependencies, g.Manual(manifest.Name))
 }
 
 // addDependencies adds the highest possible version of every uninstalled dependency and installs all transitive
