@@ -326,12 +326,6 @@
         "$ref": "#/$defs/Dependency"
       },
       "type": "array"
-    },
-    "components": {
-      "items": {
-        "$ref": "#/$defs/Dependency"
-      },
-      "type": "array"
     }
   },
   "additionalProperties": false,

@@ -104,5 +104,4 @@ type PackageManifest struct {
 	DefaultNamespace string              `json:"defaultNamespace,omitempty" jsonschema:"required"`
 	Entrypoints      []PackageEntrypoint `json:"entrypoints,omitempty"`
 	Dependencies     []Dependency        `json:"dependencies,omitempty"`
-	Components       []Dependency        `json:"components,omitempty"`
 }
