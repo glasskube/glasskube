@@ -710,7 +710,7 @@ func (s *server) bootstrapPage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	if r.Method == "POST" {
 		client := bootstrap.NewBootstrapClient(s.restConfig)
-		if err := client.Bootstrap(ctx, bootstrap.DefaultOptions()); err != nil {
+		if _, err := client.Bootstrap(ctx, bootstrap.DefaultOptions()); err != nil {
 			fmt.Fprintf(os.Stderr, "\nAn error occurred during bootstrap:\n%v\n", err)
 			err := s.templates.bootstrapPageTmpl.ExecuteTemplate(w, "bootstrap-failure", nil)
 			checkTmplError(err, "bootstrap-failure")
