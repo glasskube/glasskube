@@ -1,6 +1,7 @@
 package manifestvalues
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 
@@ -14,14 +15,14 @@ type validateFn func(def v1alpha1.ValueDefinition, value string) error
 var (
 	validateMinLength validateFn = func(def v1alpha1.ValueDefinition, value string) error {
 		if def.Constraints.MinLength != nil && len(value) < *def.Constraints.MinLength {
-			return ErrConstraintMinLength
+			return fmt.Errorf("%w: %v", ErrConstraintMinLength, *def.Constraints.MinLength)
 		}
 		return nil
 	}
 
 	validateMaxLength validateFn = func(def v1alpha1.ValueDefinition, value string) error {
 		if def.Constraints.MaxLength != nil && len(value) > *def.Constraints.MaxLength {
-			return ErrConstraintMaxLength
+			return fmt.Errorf("%w: %v", ErrConstraintMaxLength, *def.Constraints.MaxLength)
 		}
 		return nil
 	}
@@ -45,7 +46,7 @@ var (
 			if i, err := strconv.Atoi(value); err != nil {
 				return err
 			} else if i < *def.Constraints.Min {
-				return ErrConstraintMin
+				return fmt.Errorf("%w: %v", ErrConstraintMin, *def.Constraints.Min)
 			}
 		}
 		return nil
@@ -56,7 +57,7 @@ var (
 			if i, err := strconv.Atoi(value); err != nil {
 				return err
 			} else if i > *def.Constraints.Max {
-				return ErrConstraintMax
+				return fmt.Errorf("%w: %v", ErrConstraintMax, *def.Constraints.Max)
 			}
 		}
 		return nil
