@@ -350,9 +350,6 @@ spec:
                 required:
                 - name
                 type: object
-                x-kubernetes-validations:
-                - message: Components are only allowed for Namespaced packages
-                  rule: self.scope == 'Namespaced' || !has(self.components)
               version:
                 type: string
             type: object
