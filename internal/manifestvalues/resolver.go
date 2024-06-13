@@ -85,7 +85,7 @@ func (r *Resolver) resolveSecretRef(ctx context.Context, ref v1alpha1.ObjectKeyV
 }
 
 func (r *Resolver) resolvePackageRef(ctx context.Context, ref v1alpha1.PackageValueSource) (string, error) {
-	if pkg, err := r.pkg.GetPackage(ctx, ref.Name); err != nil {
+	if pkg, err := r.pkg.GetClusterPackage(ctx, ref.Name); err != nil {
 		return "", NewPackageRefError(ref, err)
 	} else if value, ok := pkg.Spec.Values[ref.Value]; !ok {
 		return "", NewPackageRefError(ref, NewKeyError(ref.Value))

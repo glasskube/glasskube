@@ -91,7 +91,8 @@ func (p *PackageValidatingWebhook) ValidateDelete(ctx context.Context, obj runti
 		log.Info("validate delete", "name", pkg.GetName())
 		if g, err := p.NewGraph(ctx); err != nil {
 			return nil, err
-		} else {
+		} else if !pkg.IsNamespaceScoped() {
+			// deletion is only validated for cluster-scoped packages
 			if _, err := g.ValidateDelete(pkg.GetName()); err != nil {
 				for _, err1 := range multierr.Errors(err) {
 					if !errors.Is(err1, &graph.DependencyError{}) {
