@@ -5,8 +5,8 @@ import type * as Preset from '@docusaurus/preset-classic';
 import {EnumChangefreq} from 'sitemap';
 
 const config: Config = {
-  title: 'Glasskube.dev',
-  tagline: '🧊 The next generation Package Manager for Kubernetes 📦',
+  title: 'Glasskube',
+  tagline: 'The next generation Package Manager for Kubernetes',
   favicon: 'img/favicon.png',
   trailingSlash: true,
 
@@ -110,7 +110,7 @@ const config: Config = {
   },
   themeConfig: {
     colorMode: {
-      respectPrefersColorScheme: true,
+      defaultMode: 'dark',
     },
     docs: {
       sidebar: {
@@ -120,7 +120,7 @@ const config: Config = {
     },
     announcementBar: {
       id: 'announcementBar-1', // Increment on change
-      content: `🎉️ Glasskube Cloud is launching soon! 😎 <a target="_blank" href="https://glasskube.cloud/signup.html?id=" id="banner-cloud-link">Join the wait list to request early access.</a> 🥳️`,
+      content: `🧊 Glasskube is fully open-source! 😎 <a target="_blank" href="https://github.com/glasskube/glasskube/">Star us on GitHub</a> 🌟`,
       isCloseable: false,
     },
     image:
@@ -147,6 +147,10 @@ const config: Config = {
         {to: '/blog', label: 'Blog', position: 'left'},
         {to: '/roadmap', label: 'Roadmap', position: 'left'},
         {to: '/packages', label: 'Packages', position: 'left'},
+        {
+          type: 'search',
+          position: 'left',
+        },
         {
           type: 'custom-wrapper',
           position: 'right',
@@ -215,8 +219,12 @@ const config: Config = {
               to: '/blog',
             },
             {
-              label: 'Contact / Book appointment',
+              label: 'Talk to founders',
               href: 'https://cal.glasskube.eu/team/founder/30min',
+            },
+            {
+              label: 'Signup for the wait list',
+              href: 'https://glasskube.cloud/',
             },
           ],
         },
@@ -234,7 +242,6 @@ const config: Config = {
       jsLoader: 'matomo.js',
     },
   } satisfies Preset.ThemeConfig,
-  clientModules: ['src/theme/cloud-banner.js'],
 };
 
 export default config;

@@ -1,5 +1,4 @@
 import clsx from 'clsx';
-import Link from '@docusaurus/Link';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
 import HomepageFeatures from '@site/src/components/HomepageFeatures';
@@ -10,6 +9,9 @@ import React from 'react';
 import Typewriter from 'typewriter-effect';
 import BrowserOnly from '@docusaurus/BrowserOnly';
 import AsciinemaPlayer from '../components/asciinema-player';
+import HomepageScreenshots from '@site/src/components/HomepageScreenshots';
+import TalkToFoundersButton from '@site/src/components/buttons/TalkToFoundersButton';
+import SignupForWaitlistButton from '@site/src/components/buttons/SignupForWaitlistButton';
 
 
 function HomepageHeader() {
@@ -19,53 +21,31 @@ function HomepageHeader() {
     <header className={clsx('hero hero--primary', styles.heroBanner)}>
       <div className="container">
         <div className="row row--no-gutters">
-          <div className={clsx('col', styles.heroCol)}>
-            <Heading as="h1" className="hero__title">
-              <pre>
-                <Typewriter
-                  onInit={(typewriter) => {
-                    typewriter
-                      .changeDeleteSpeed(25)
-                      .changeDelay(75)
-                      .typeString('brew install <span class="typewriter-command">glasskube/tap/glasskube</span>')
-                      .pauseFor(1500)
-                      .deleteAll(25)
-                      .typeString('glasskube install ')
-                      .typeString('<span class="typewriter-command">cert-manager</span>')
-                      .pauseFor(1500)
-                      .deleteChars('cert-manager'.length)
-                      .typeString('<span class="typewriter-command">ingress-nginx</span>')
-                      .pauseFor(1500)
-                      .deleteChars('ingress-nginx'.length)
-                      .typeString('<span class="typewriter-command">kubernetes-dashboard</span>')
-                      .deleteChars('kubernetes-dashboard'.length)
-                      .typeString('<span class="typewriter-command">[your-package]</span>')
-                      .start();
-                  }}
-                />
-              </pre>
+          <div className="col">
+            <Heading as="h1" className={styles.heroTitle}>
+              {siteConfig.tagline}
             </Heading>
-            <p className="hero__subtitle">{siteConfig.tagline}</p>
+          </div>
+
+        </div>
+        <div className="row row--no-gutters">
+          <div className={clsx('col', styles.heroCol)}>
             <div className={styles.buttons}>
-              <Link
-                className="button button--secondary button--lg"
-                to="/docs/">
-                🚀 Get started
-              </Link>
-              <Link
-                className="button button--outline button--lg"
-                to="https://discord.gg/SxH6KUCGH7">
-                Join the community
-              </Link>
+              <TalkToFoundersButton additionalClassNames={'button--lg light'}/>
+              <SignupForWaitlistButton additionalClassNames={'button--lg'}/>
             </div>
             <div className={styles.producthunt}>
-              <a href="https://www.producthunt.com/products/glasskube?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-glasskube" target="_blank">
+              <a
+                href="https://www.producthunt.com/products/glasskube?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-glasskube"
+                target="_blank">
                 <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=452879&theme=light"
-                  alt="Glasskube - &#0032;🧊&#0032;The&#0032;next&#0032;generation&#0032;Package&#0032;Manager&#0032;for&#0032;Kubernetes&#0032;📦 | Product Hunt"
-                  style={{width: '250px', height: '54px'}}/>
+                     alt="Glasskube - &#0032;🧊&#0032;The&#0032;next&#0032;generation&#0032;Package&#0032;Manager&#0032;for&#0032;Kubernetes&#0032;📦 | Product Hunt"
+                     style={{width: '250px', height: '54px'}}/>
               </a>
             </div>
           </div>
+        </div>
+        <div className="row row--no-gutters">
           <div className="col">
             <div className={styles.lottiePlayerWrapper}>
               <BrowserOnly fallback={<div className={styles.lottieFallback}>Loading...</div>}>
@@ -80,6 +60,33 @@ function HomepageHeader() {
                 }}
               </BrowserOnly>
             </div>
+          </div>
+        </div>
+        <div className="row row--no-gutters">
+          <div className={clsx('col', styles.heroCol, styles.typewriter)}>
+              <pre>
+                <Typewriter
+                  onInit={(typewriter) => {
+                    typewriter
+                      .changeDeleteSpeed(25)
+                      .changeDelay(75)
+                      .typeString('brew <span class="typewriter-command">install</span> <span class="typewriter-argument">glasskube/tap/glasskube</span>')
+                      .pauseFor(1500)
+                      .deleteAll(25)
+                      .typeString('glasskube <span class="typewriter-command">install </span>')
+                      .typeString('<span class="typewriter-argument">cert-manager</span>')
+                      .pauseFor(1500)
+                      .deleteChars('cert-manager'.length)
+                      .typeString('<span class="typewriter-argument">ingress-nginx</span>')
+                      .pauseFor(1500)
+                      .deleteChars('ingress-nginx'.length)
+                      .typeString('<span class="typewriter-argument">kubernetes-dashboard</span>')
+                      .deleteChars('kubernetes-dashboard'.length)
+                      .typeString('<span class="typewriter-argument">[your-package]</span>')
+                      .start();
+                  }}
+                />
+              </pre>
           </div>
         </div>
 
@@ -215,6 +222,7 @@ export default function Home(): JSX.Element {
       <HomepageHeader/>
       <main>
         <HomepageFeatures/>
+        <HomepageScreenshots/>
         <HomepageVideo/>
         <HomepageNewsletter/>
       </main>

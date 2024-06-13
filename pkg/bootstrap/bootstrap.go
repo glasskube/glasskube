@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/fatih/color"
@@ -70,20 +71,23 @@ func (c *BootstrapClient) initRestMapper() error {
 	}
 }
 
-func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOptions) error {
+func (c *BootstrapClient) Bootstrap(
+	ctx context.Context,
+	options BootstrapOptions,
+) ([]unstructured.Unstructured, error) {
 	telemetry.BootstrapAttempt()
 
 	if err := c.initRestMapper(); err != nil {
-		return err
+		return nil, err
 	}
 
 	if client, err := dynamic.NewForConfig(c.clientConfig); err != nil {
-		return err
+		return nil, err
 	} else {
 		c.client = client
 	}
 
-	fmt.Println(installMessage)
+	fmt.Fprintln(os.Stderr, installMessage)
 	start := time.Now()
 
 	if options.Url == "" {
@@ -92,10 +96,10 @@ func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOption
 			if releaseInfo, err := releaseinfo.FetchLatestRelease(); err != nil {
 				if httperror.Is(err, http.StatusServiceUnavailable) || httperror.IsTimeoutError(err) {
 					telemetry.BootstrapFailure(time.Since(start))
-					return fmt.Errorf("network connectivity error, check your network: %w", err)
+					return nil, fmt.Errorf("network connectivity error, check your network: %w", err)
 				}
 				telemetry.BootstrapFailure(time.Since(start))
-				return fmt.Errorf("could not determine latest version: %w", err)
+				return nil, fmt.Errorf("could not determine latest version: %w", err)
 			} else {
 				version = releaseInfo.Version
 			}
@@ -109,7 +113,7 @@ func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOption
 	if err != nil {
 		statusMessage("Couldn't fetch Glasskube manifests", false)
 		telemetry.BootstrapFailure(time.Since(start))
-		return err
+		return nil, err
 	}
 
 	statusMessage("Validating existing installation", true)
@@ -118,7 +122,7 @@ func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOption
 		telemetry.BootstrapFailure(time.Since(start))
 		statusMessage(fmt.Sprintf("Couldn't prepare manifests: %v", err), false)
 		if !options.Force {
-			return err
+			return nil, err
 		} else {
 			statusMessage("Attempting to force bootstrap anyways (Force option is enabled)", true)
 		}
@@ -133,14 +137,14 @@ func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOption
 	if err = c.applyManifests(ctx, manifests); err != nil {
 		telemetry.BootstrapFailure(time.Since(start))
 		statusMessage(fmt.Sprintf("Couldn't apply manifests: %v", err), false)
-		return err
+		return nil, err
 	}
 
 	elapsed := time.Since(start)
 	c.handleTelemetry(options.DisableTelemetry, elapsed)
 
 	statusMessage(fmt.Sprintf("Glasskube successfully installed! (took %v)", elapsed.Round(time.Second)), true)
-	return nil
+	return manifests, nil
 }
 
 func (c *BootstrapClient) preprocessManifests(
@@ -356,9 +360,9 @@ func (c *BootstrapClient) checkWorkloadReady(
 func statusMessage(input string, success bool) {
 	if success {
 		green := color.New(color.FgGreen).SprintFunc()
-		fmt.Println(green("* " + input))
+		fmt.Fprintln(os.Stderr, green("* "+input))
 	} else {
 		red := color.New(color.FgRed).SprintFunc()
-		fmt.Println(red("* " + input))
+		fmt.Fprintln(os.Stderr, red("* "+input))
 	}
 }

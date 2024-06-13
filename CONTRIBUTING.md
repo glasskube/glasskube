@@ -51,14 +51,15 @@ Following these steps will ensure that your contributions are well-received, rev
 2. Clone your fork to your local machine, using the following command:
 
 ```shell
-git clone git@github.com:USERNAME/FORKED-PROJECT.git
+# replace USERNAME with your GitHub username
+git clone git@github.com:USERNAME/glasskube.git
 ```
 
-3. Create a new branch based-off **\`main\`** branch:
+3. Please use a feature branch based on **\`main\`** for your changes. This allows easier synchronization with the main repository:
 
 ```shell
-git checkout main
-git checkout -b github_userName/XXXX
+git switch main
+git switch -c your-awesome-new-feature
 ```
 
 4. Implement the changes or additions you intend to contribute. Whether it's **bug fixes**, **new features**, or **enhancements**, this is where you put your coding skills to use.
@@ -66,28 +67,29 @@ git checkout -b github_userName/XXXX
 5. Once your changes are ready, you may then commit and push the changes from your working branch:
 
 ```shell
-git commit -m "fix(xxxx-name_of_bug): nice commit description"
-git push origin github_userName/XXXX
+git commit -m "fix: nice commit description"
+git push origin your-awesome-new-feature
 ```
 
-### Convential commit scopes (xxxx-name_of_bug) that are currently supported are:
+6. Create a Pull Request following our [pull request template](.github/PULL_REQUEST_TEMPLATE.md) to request a code-review.
 
-- website
-- cli
-- ui
-- package-operator
+## Format for Commit Message and Pull Request Titles 💬
 
-> - If a commit spans across multiple scopes you could also concatenate them e.g. fix(ui,cli): nice commit message
-> - The commit message must start with a `lower case` letter
+Glasskube uses a workflow based on GitHubs "Squash & Merge" feature.
+We therefore require all pull request titles to adher to the syntax specified by [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
+We do not restrict the format of your commit messages, however we do encourage using the Conventional Commits syntax as well.
 
-## Commit Message Format 💬
+In case you've never heard of Conventional Commits, here's a brief summary:
 
-We require all commits in this repository to adhere to the following commit message format.
+1. Every message consists of a header and optional body and footer (for PR titles, there is no body or footer).
+2. The header consists of a type, an optional scope in parentheses and a description.
 
 ```
-<type>: <description> (#<issue number>)
+<type>[optional scope]: <description>
 
 [optional body]
+
+[optional footer(s)]
 ```
 
 The following `<type>`s are available:
@@ -101,38 +103,25 @@ The following `<type>`s are available:
 - `refactor` (code refactoring)
 - `chore` (misc. routine tasks; e.g. dependency updates)
 
-This format is based on [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
-Please refer to the Conventional Commits specification for more details.
+For more details, please refer to the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification.
 
 ## Keeping your Fork Up-to-Date 🆕
 
-If you plan on doing anything more than just a tiny quick fix, you’ll want to **make sure you keep your fork up to date** by tracking the original ["upstream" repo](https://github.com/glasskube/glasskube) that you forked.
+Glasskube has an active community of contributors, with new PRs being created and merged almost every day.
+This means that the upstream repository might change during the time between you creating your fork and your PR being accepted.
+To do this without any special tooling, first, add the upstream repository as a remote, then merge the main branch into your feature branch:
 
-Follow the steps given below to do so:
-
-1. Add the 'upstream' repo to list of remotes:
-
-```shell
-git remote add upstream https://github.com/glasskube/glasskube.git
-```
-
-2. Fetch upstream repo’s branches and latest commits:
-
-```shell
+```sh
+git remote add upstream git@github.com:glasskube/glasskube.git
 git fetch upstream
+git merge upstream/main
 ```
 
-3. Checkout to the **\`github_userName/XXXX\`** branch and merge the upstream:
+For more information, check out the [official documentation](https://docs.github.com/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork).
 
-```shell
-git checkout github_userName/XXXX
-git rebase upstream/main
-```
+**Now, your feature branch is up-to-date with everything modified upstream!**
 
-**Now, your local 'github_userName/XXXX' branch is up-to-date with everything modified upstream!**
-
-- Now it's time to create a pull request back to the upstream repository and follow the [pull request template](.github/PULL_REQUEST_TEMPLATE.md) guidelines.
-- Wait for a review and address any comments.
+Please avoid rebasing or force-pushing your branch, because this prevents our code-review team from tracking changes since their last review.
 
 ## Opening PRs 📩
 
@@ -143,7 +132,6 @@ git rebase upstream/main
 - Make sure that your PR passes all checks
 - Keep pull requests small and focused, if you have multiple changes, please open multiple PRs
 - Make sure to test your changes
-- If you have multiple commits in your PR, that solve the same problem, please squash the commits
 
 ## Reviewing PRs 🕵️
 
@@ -252,7 +240,7 @@ In this case, you can host your own repository locally and add it to the list of
 
 1. Clone the [packages repository](https://github.com/glasskube/packages).
 2. Make your changes locally and host it, e.g. with [caddy](https://caddyserver.com/docs/command-line): `caddy file-server --root . --listen :9684` from the root directory of the packages project.
-3. Run `glasskube repo add local http://localhost:9684` to add this repository with the name `local`. 
+3. Run `glasskube repo add local http://localhost:9684` to add this repository with the name `local`.
 4. Make sure to restart your applications (operator, CLI, UI), such that the local repository is being used everywhere.
 
 Also note that some of the information in the repository is redundant by design, to reduce the amount of queries against the repo.
@@ -260,7 +248,7 @@ For example, the `index.yaml` contains a `latestVersion` for each package, but t
 Please make sure to have consistent and valid state in your local repo.
 
 Also please be aware of the package repo cache: When changing something in the repo, you might want to restart the applications again (otherwise you might have to wait up to 5 minutes).
-There is no option yet to override the cache time, but you could locally change it in `internal/repo/client/clientset.go:NewClientset`. 
+There is no option yet to override the cache time, but you could locally change it in `internal/repo/client/clientset.go:NewClientset`.
 
 ## Testing
 

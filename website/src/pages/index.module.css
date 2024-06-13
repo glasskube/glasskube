@@ -10,6 +10,12 @@
   overflow: hidden;
 }
 
+.heroTitle {
+  text-align: center;
+  margin-top: 6rem;
+  font-size: 4rem;
+}
+
 .heroCol {
   display: flex;
   flex-direction: column;
@@ -20,13 +26,17 @@
   .heroCol {
     padding: 2rem 0;
   }
+
+  .heroTitle {
+    margin-top: 1rem;
+    font-size: 2rem;
+  }
 }
 
 .buttons {
   display: flex;
   flex-direction: column;
   gap: var(--ifm-global-spacing);
-
 }
 
 @media (min-width: 997px) {
@@ -35,6 +45,11 @@
     align-items: center;
     justify-content: center;
   }
+}
+
+.typewriter {
+  font-size: 1.5rem;
+  color: var(--glasskube-main-light);
 }
 
 .twitterButton,
@@ -104,4 +119,20 @@
 
 .producthunt {
   margin-top: 20px;
+}
+
+@media (min-width: 997px) {
+  .buttons {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+  }
+
+  h2 {
+    font-size: 2rem;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+  }
 }
