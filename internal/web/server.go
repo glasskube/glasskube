@@ -343,7 +343,13 @@ func (s *server) open(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := open.NewOpener().Open(r.Context(), pkgName, "", 0)
+	var pkg v1alpha1.ClusterPackage
+	if err := s.pkgClient.ClusterPackages().Get(r.Context(), pkgName, &pkg); err != nil {
+		s.respondAlertAndLog(w, err, "Could not get ClusterPackage", "danger")
+		return
+	}
+
+	result, err := open.NewOpener().Open(r.Context(), &pkg, "", 0)
 	if err != nil {
 		s.respondAlertAndLog(w, err, "Could not open "+pkgName, "danger")
 	} else {
