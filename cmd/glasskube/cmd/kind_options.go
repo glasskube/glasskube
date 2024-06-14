@@ -91,13 +91,16 @@ func getPackageOrClusterPackage(
 		return nil, err
 	}
 
-	if errp != nil && errcp != nil {
+	// from here on, err == nil implies "not found"
+	pNotFound := errp != nil
+	cpNotFound := configureCmdOptions.Namespace != "" || errcp != nil
+	if pNotFound && cpNotFound {
 		return nil, fmt.Errorf("no Package or ClusterPackage found with name %v", name)
-	} else if errp == nil && (configureCmdOptions.Namespace == "" || errcp != nil) {
-		return &pkg, nil
-	} else if errp != nil && errcp == nil {
-		return &cpkg, nil
-	} else {
+	} else if !pNotFound && !cpNotFound {
 		return nil, fmt.Errorf("both Package and ClusterPackage found with name %v. Please specify the kind explicitly", name)
+	} else if !pNotFound && cpNotFound {
+		return &pkg, nil
+	} else {
+		return &cpkg, nil
 	}
 }
