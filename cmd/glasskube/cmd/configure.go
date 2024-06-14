@@ -8,7 +8,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
-	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/manifestvalues/cli"
 	"github.com/glasskube/glasskube/internal/manifestvalues/flags"
 	"github.com/glasskube/glasskube/pkg/manifest"
@@ -17,18 +16,26 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+const (
+	KindUnspecified    ResourceKind = ""
+	KindPackage        ResourceKind = "package"
+	KindClusterPackage ResourceKind = "clusterpackage"
+)
+
 var configureCmdOptions = struct {
 	flags.ValuesOptions
 	OutputOptions
 	NamespaceOptions
+	KindOptions
 }{
 	ValuesOptions: flags.NewOptions(flags.WithKeepOldValuesFlag),
+	KindOptions:   DefaultKindOptions(),
 }
 
 var configureCmd = &cobra.Command{
 	Use:               "configure [package-name]",
 	Short:             "Configure a package",
-	Args:              cobra.RangeArgs(1, 2),
+	Args:              cobra.ExactArgs(1),
 	PreRun:            cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
 	Run:               runConfigure,
 	ValidArgsFunction: completeInstalledPackageNames,
@@ -40,30 +47,11 @@ func runConfigure(cmd *cobra.Command, args []string) {
 	pkgClient := cliutils.PackageClient(ctx)
 	valueResolver := cliutils.ValueResolver(ctx)
 
-	var pkg ctrlpkg.Package
-
-	switch len(args) {
-	case 1:
-		name := args[0]
-		var cp v1alpha1.ClusterPackage
-		if err := pkgClient.ClusterPackages().Get(ctx, name, &cp); err != nil {
-			fmt.Fprintf(os.Stderr, "❌ error getting package: %v\n", err)
-			cliutils.ExitWithError()
-		} else {
-			pkg = &cp
-		}
-	case 2:
-		name := args[1]
-		namespace := configureCmdOptions.GetActualNamespace(ctx)
-		var p v1alpha1.Package
-		if err := pkgClient.Packages(namespace).Get(ctx, name, &p); err != nil {
-			fmt.Fprintf(os.Stderr, "❌ error getting package: %v\n", err)
-			cliutils.ExitWithError()
-		} else {
-			pkg = &p
-		}
-	default:
-		fmt.Fprintln(os.Stderr, "❌ invalids state: 1 or 2 arguments required")
+	name := args[0]
+	pkg, err :=
+		getPackageOrClusterPackage(ctx, name, configureCmdOptions.KindOptions, configureCmdOptions.NamespaceOptions)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "❌ could not get resource: %v\n", err)
 		cliutils.ExitWithError()
 	}
 
@@ -151,5 +139,6 @@ func init() {
 	configureCmdOptions.ValuesOptions.AddFlagsToCommand(configureCmd)
 	configureCmdOptions.OutputOptions.AddFlagsToCommand(configureCmd)
 	configureCmdOptions.NamespaceOptions.AddFlagsToCommand(configureCmd)
+	configureCmdOptions.KindOptions.AddFlagsToCommand(configureCmd)
 	RootCmd.AddCommand(configureCmd)
 }
