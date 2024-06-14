@@ -37,7 +37,9 @@ func NewOpener() *opener {
 	return &opener{}
 }
 
-func (o *opener) Open(ctx context.Context, pkg ctrlpkg.Package, entrypointName string, port int32) (*OpenResult, error) {
+func (o *opener) Open(
+	ctx context.Context, pkg ctrlpkg.Package, entrypointName string, port int32) (*OpenResult, error) {
+
 	if err := o.initFromContext(ctx); err != nil {
 		return nil, err
 	}
@@ -68,6 +70,11 @@ func (o *opener) Open(ctx context.Context, pkg ctrlpkg.Package, entrypointName s
 		}
 	}
 
+	namespace := pkg.GetNamespace()
+	if namespace == "" {
+		namespace = manifest.DefaultNamespace
+	}
+
 	result := OpenResult{opener: o}
 	var futures []future.Future
 	for _, entrypoint := range manifest.Entrypoints {
@@ -80,11 +87,7 @@ func (o *opener) Open(ctx context.Context, pkg ctrlpkg.Package, entrypointName s
 			stopCh := make(chan struct{})
 			o.readyCh = append(o.readyCh, readyCh)
 			o.stopCh = append(o.stopCh, stopCh)
-			namespace := pkg.GetNamespace()
-			if namespace == "" {
-				namespace = manifest.DefaultNamespace
-			}
-			entrypointFuture, err := o.open(ctx, namespace, manifest, e, readyCh, stopCh)
+			entrypointFuture, err := o.open(ctx, namespace, e, readyCh, stopCh)
 			if err != nil {
 				o.stop()
 				epName := e.Name
@@ -137,7 +140,6 @@ func (o *opener) stop() {
 func (o *opener) open(
 	ctx context.Context,
 	namespace string,
-	manifest *v1alpha1.PackageManifest,
 	entrypoint v1alpha1.PackageEntrypoint,
 	readyChannel chan struct{},
 	stopChannel chan struct{},
@@ -146,7 +148,7 @@ func (o *opener) open(
 		return nil, err
 	}
 
-	svc, err := o.service(ctx, namespace, manifest, entrypoint)
+	svc, err := o.service(ctx, namespace, entrypoint)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +188,6 @@ func (o *opener) open(
 func (o *opener) service(
 	ctx context.Context,
 	namespace string,
-	manifest *v1alpha1.PackageManifest,
 	entrypoint v1alpha1.PackageEntrypoint,
 ) (*corev1.Service, error) {
 	svc, err := o.ksClient.CoreV1().
