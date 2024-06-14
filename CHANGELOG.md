@@ -1,5 +1,60 @@
 # Changelog
 
+## [0.9.0](https://github.com/glasskube/glasskube/compare/v0.8.0...v0.9.0) (2024-06-13)
+
+
+### Features
+
+* **cli:** add `--dry-run` support for `glasskube install` to simulate package installation ([#727](https://github.com/glasskube/glasskube/issues/727)) ([05d6b02](https://github.com/glasskube/glasskube/commit/05d6b028275e0241e040694f4158dd3928b825fb))
+* **cli:** add `--output` flag for `glasskube bootstrap` ([#779](https://github.com/glasskube/glasskube/issues/779)) ([b427e0a](https://github.com/glasskube/glasskube/commit/b427e0ad7c424f3c2c74a054cd9382f3b45fab34))
+* **cli:** add `--output` flag for `glasskube update` ([#669](https://github.com/glasskube/glasskube/issues/669)) ([7bd44bf](https://github.com/glasskube/glasskube/commit/7bd44bf47eccdb231670621435711edf86adc0a4))
+* **cli:** add `--output` flag to `glasskube describe` ([#717](https://github.com/glasskube/glasskube/issues/717)) ([d3562df](https://github.com/glasskube/glasskube/commit/d3562df13ee9ac3e8ae1f454fda329bf6b71e399))
+* **cli:** add `auto-update` and related commands ([#772](https://github.com/glasskube/glasskube/issues/772)) ([5f441aa](https://github.com/glasskube/glasskube/commit/5f441aa2c098aeeb1e995230e8a5cb62ecbcc7ca))
+* **cli:** change flag name of --force to --yes for glasskube uninstall ([#760](https://github.com/glasskube/glasskube/issues/760)) ([e1adc7d](https://github.com/glasskube/glasskube/commit/e1adc7d561901b6abcd15481bedf2ae4b4937c65))
+* **cli:** introduce `--skip-open` support for `glasskube serve` ([#776](https://github.com/glasskube/glasskube/issues/776)) ([d559cbd](https://github.com/glasskube/glasskube/commit/d559cbddcb3776e42b424ca7847ca9e90116c474))
+* **ui:** add discord link in glasskube footer ui ([#801](https://github.com/glasskube/glasskube/issues/801)) ([f94ddb7](https://github.com/glasskube/glasskube/commit/f94ddb71ea75113ec11cc2705ebef1768c461261))
+* **ui:** cache package repositories ([#763](https://github.com/glasskube/glasskube/issues/763)) ([#791](https://github.com/glasskube/glasskube/issues/791)) ([4f3bc4f](https://github.com/glasskube/glasskube/commit/4f3bc4f5464f197ee70cc8611c7e656c6f8f06b8))
+* **ui:** introduce additional logging ([#770](https://github.com/glasskube/glasskube/issues/770)) ([d73f7a9](https://github.com/glasskube/glasskube/commit/d73f7a9ec4679fbe9caeb57418f2167799b95660))
+* **ui:** show repository status on settings page ([f1abe91](https://github.com/glasskube/glasskube/commit/f1abe917e828abdfebbd526c5bcaad764e2fc509)), closes [#751](https://github.com/glasskube/glasskube/issues/751)
+
+
+### Bug Fixes
+
+* **cli:** set autoUpdate a boolean for gk describe yaml/json output ([#780](https://github.com/glasskube/glasskube/issues/780)) ([87ad42b](https://github.com/glasskube/glasskube/commit/87ad42b06097ebf80dbe67c2c19947ddec9888b2))
+* **deps:** update dependency @easyops-cn/docusaurus-search-local to ^0.43.0 ([fe0df91](https://github.com/glasskube/glasskube/commit/fe0df91d283da035adf5ceacdd5bffc101c031e7))
+* **deps:** update dependency @easyops-cn/docusaurus-search-local to ^0.44.0 ([#761](https://github.com/glasskube/glasskube/issues/761)) ([1007409](https://github.com/glasskube/glasskube/commit/1007409046c3fa526e7e56754bef0991dd14c2f6))
+* **deps:** update kubernetes packages to v0.30.2 ([#805](https://github.com/glasskube/glasskube/issues/805)) ([dcc2784](https://github.com/glasskube/glasskube/commit/dcc2784bd432723fa6193089d02057146d6a582a))
+* **deps:** update module github.com/schollz/progressbar/v3 to v3.14.4 ([#785](https://github.com/glasskube/glasskube/issues/785)) ([647e286](https://github.com/glasskube/glasskube/commit/647e286e5bf7f159b32a50b1b85ec103c2473bf5))
+* **deps:** update module golang.org/x/term to v0.21.0 ([861d695](https://github.com/glasskube/glasskube/commit/861d6953ef10544f785af033f39f5115207b9d50))
+* **deps:** update module sigs.k8s.io/controller-runtime to v0.18.4 ([#759](https://github.com/glasskube/glasskube/issues/759)) ([429f9df](https://github.com/glasskube/glasskube/commit/429f9dfd5ec9e7343452408040dcbf3ffa3f833c))
+* suppress 404 error for packages w/o a giscus discussion ([cb927d2](https://github.com/glasskube/glasskube/commit/cb927d28b2942d8f8d2514d24794981d7d15c3d4))
+* **website:** avoid full page crash ([#774](https://github.com/glasskube/glasskube/issues/774)) ([9580559](https://github.com/glasskube/glasskube/commit/95805597c7cdb783b0b822b339cce140bb31ffe9))
+
+
+### Other
+
+* **deps:** update amannn/action-semantic-pull-request digest to e32d7e6 ([#798](https://github.com/glasskube/glasskube/issues/798)) ([5d21649](https://github.com/glasskube/glasskube/commit/5d216495755a438664e746ab78911c6e5d77d52e))
+* **deps:** update dependency esbuild to v0.21.5 ([#786](https://github.com/glasskube/glasskube/issues/786)) ([998023e](https://github.com/glasskube/glasskube/commit/998023e3d74566c47df1757cdab5c099e5c89138))
+* **deps:** update dependency go to v1.22.4 ([e775b0b](https://github.com/glasskube/glasskube/commit/e775b0be923c167b49c8555982db3595622bf006))
+* **deps:** update dependency prettier to v3.3.1 ([b2043ef](https://github.com/glasskube/glasskube/commit/b2043ef4746a68f73bfbff1b54be25ac2bc8d369))
+* **deps:** update dependency prettier to v3.3.2 ([739e251](https://github.com/glasskube/glasskube/commit/739e251b26afec7ea0cd2df993965ef1712d0b32))
+* **deps:** update googleapis/release-please-action action to v4.1.3 ([5c4f3c9](https://github.com/glasskube/glasskube/commit/5c4f3c9ed31ec052f47ff9930f4cb8cb2ccafff9))
+* **deps:** update goreleaser/goreleaser-action action to v6 ([#745](https://github.com/glasskube/glasskube/issues/745)) ([fe1d58e](https://github.com/glasskube/glasskube/commit/fe1d58e8da8cba4f4b800733bbbb136006b83364))
+* **package-operator:** use WithBlockOwnerDeletion from controllerutil ([#762](https://github.com/glasskube/glasskube/issues/762)) ([ecd72ff](https://github.com/glasskube/glasskube/commit/ecd72ff82b2eda93d2c9e78139182e7fc7a261e7))
+
+
+### Docs
+
+* clarify differences between `good first issue` and `help wanted` label ([23a7d70](https://github.com/glasskube/glasskube/commit/23a7d70d62eb0df60116e0e105c08f469d98a682))
+* correction in contributing.md ([#802](https://github.com/glasskube/glasskube/issues/802)) ([2fe6589](https://github.com/glasskube/glasskube/commit/2fe65894e53798334cda23c2537fc9d9f9c61594))
+* fix broken pull request template url ([#784](https://github.com/glasskube/glasskube/issues/784)) ([6e3061a](https://github.com/glasskube/glasskube/commit/6e3061a1c70492b5d2968509de56cd6526dd309b))
+* fix typo in README.md ([#747](https://github.com/glasskube/glasskube/issues/747)) ([679c0b3](https://github.com/glasskube/glasskube/commit/679c0b36c7f30a32f98d036029503ff1630c97c8))
+* fix typos, update supported packages ([f0f9d19](https://github.com/glasskube/glasskube/commit/f0f9d19757f06c1829725a2e481cd1616c8d8eea))
+* update contributing guide with updated PR workflow ([#799](https://github.com/glasskube/glasskube/issues/799)) ([7efc686](https://github.com/glasskube/glasskube/commit/7efc686cf2151caef90c5af1a72fce562908a6c1))
+* update local repo section ([dae0e82](https://github.com/glasskube/glasskube/commit/dae0e82f4dba19c29c0bbb8e052f841167785a4d))
+* **website:** add Hatchet and Headlamp as planned ([82784ec](https://github.com/glasskube/glasskube/commit/82784ecbe44c48ca2a27944896cb0805b4c3b247))
+* **website:** prepare website for launch ([#795](https://github.com/glasskube/glasskube/issues/795)) ([7486d31](https://github.com/glasskube/glasskube/commit/7486d31b3f8b7f1dc93c6c304d7fcfda0b832482))
+
 ## [0.8.0](https://github.com/glasskube/glasskube/compare/v0.7.0...v0.8.0) (2024-06-04)
 
 
