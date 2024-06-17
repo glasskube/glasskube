@@ -125,7 +125,7 @@ func (c *BootstrapClient) Bootstrap(ctx context.Context, options BootstrapOption
 	}
 
 	if options.CreateDefaultRepository {
-		manifests = append(manifests, DefaultRepository())
+		manifests = append(manifests, defaultRepository())
 	}
 
 	statusMessage("Applying Glasskube manifests", true)
@@ -253,7 +253,7 @@ func (c *BootstrapClient) handleTelemetry(disabled bool, elapsed time.Duration) 
 	}
 }
 
-func DefaultRepository() unstructured.Unstructured {
+func defaultRepository() unstructured.Unstructured {
 	repo := v1alpha1.PackageRepository{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: v1alpha1.GroupVersion.String(),

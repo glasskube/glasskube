@@ -3,13 +3,11 @@ package purge
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"time"
+	"os"
+	"slices"
 
 	"github.com/glasskube/glasskube/internal/clientutils"
-	"github.com/glasskube/glasskube/internal/httperror"
-	"github.com/glasskube/glasskube/internal/releaseinfo"
-	"github.com/glasskube/glasskube/internal/telemetry"
+	"github.com/glasskube/glasskube/internal/util"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"k8s.io/apimachinery/pkg/api/errors"
 
@@ -63,21 +61,14 @@ func (c *Purger) Purge(ctx context.Context) error {
 	}
 
 	c.status.SetStatus("Starting purge process")
-	start := time.Now()
 
-	releaseInfo, err := releaseinfo.FetchLatestRelease()
+	operatorVersion, err := clientutils.GetPackageOperatorVersion(ctx)
 	if err != nil {
-		if httperror.Is(err, http.StatusServiceUnavailable) || httperror.IsTimeoutError(err) {
-			telemetry.BootstrapFailure(time.Since(start))
-			return fmt.Errorf("network connectivity error, check your network: %w", err)
-		}
-		telemetry.BootstrapFailure(time.Since(start))
-		return fmt.Errorf("could not determine latest version: %w", err)
+		fmt.Fprintf(os.Stderr, "Failed to check package operator version: %v\n", err)
 	}
-	version := releaseInfo.Version
 
-	manifestUrl := fmt.Sprintf("https://github.com/glasskube/glasskube/releases/download/v%v/manifest-%v.yaml",
-		version, "slim")
+	manifestUrl := fmt.Sprintf("https://github.com/glasskube/glasskube/releases/download/v%v/manifest-%s.yaml",
+		operatorVersion, "slim")
 
 	c.status.SetStatus("Fetching Glasskube manifest from " + manifestUrl)
 	manifests, err := clientutils.FetchResources(manifestUrl)
@@ -95,6 +86,7 @@ func (c *Purger) Purge(ctx context.Context) error {
 }
 
 func (c *Purger) purgeManifests(ctx context.Context, objs []unstructured.Unstructured) error {
+	slices.Reverse(objs)
 	for _, obj := range objs {
 		gvk := obj.GroupVersionKind()
 		mapping, err := c.mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
@@ -104,7 +96,7 @@ func (c *Purger) purgeManifests(ctx context.Context, objs []unstructured.Unstruc
 
 		c.status.SetStatus(fmt.Sprintf("Deleting %v (%v)", obj.GetName(), obj.GetKind()))
 		err = c.client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).
-			Delete(ctx, obj.GetName(), metav1.DeleteOptions{})
+			Delete(ctx, obj.GetName(), metav1.DeleteOptions{PropagationPolicy: util.Pointer(metav1.DeletePropagationForeground)})
 		if err != nil && !errors.IsNotFound(err) {
 			return fmt.Errorf("could not delete %v %v: %w", obj.GetKind(), obj.GetName(), err)
 		} else if errors.IsNotFound(err) {
