@@ -1,9 +1,10 @@
 {{ define "content" }}
   {{ if .Manifest }}
+    <!-- TODO browser back and forth needs to be fixed -->
     <div
       class="container-lg mt-2"
       hx-trigger="htmx:historyRestore from:body"
-      hx-get="/packages/{{ .Manifest.Name }}"
+      hx-get="{{ .SelfHref }}"
       hx-select="main"
       hx-target="main"
       hx-swap="outerHTML">
@@ -12,7 +13,7 @@
       <div
         class="row p-3 col-lg-10 offset-lg-1"
         hx-trigger="sse:refresh-pkg-detail-{{ .Manifest.Name }}"
-        hx-get="/packages/{{ .Manifest.Name }}"
+        hx-get="{{ .SelfHref }}"
         hx-swap="outerHTML"
         hx-select="#pkg-detail-container-swapped"
         hx-target="#pkg-detail-container-swapped">
@@ -81,7 +82,7 @@
             <div
               class="visually-hidden"
               id="advanced-options"
-              hx-get="/packages/{{ .Manifest.Name }}/configure/advanced"
+              hx-get="{{ .SelfHref }}/configure/advanced"
               hx-swap="outerHTML"
               hx-target="this"
               hx-select="#advanced-options"
@@ -100,7 +101,7 @@
               </h2>
 
               <form
-                hx-post="/packages/{{ .Manifest.Name }}/configure"
+                hx-post="{{ .SelfHref }}/configure"
                 hx-target="#error-container"
                 hx-target-error="#error-container"
                 hx-select="div.alert"
@@ -117,7 +118,7 @@
                         hx-select="main"
                         hx-swap="main"
                         hx-target="main"
-                        hx-get="/packages/{{ .Manifest.Name }}"
+                        hx-get="{{ .SelfHref }}"
                         hx-include="#pkg-install-version">
                         {{ range .Repositories }}
                           <option value="{{ .Name }}" {{ if eq .Name $.RepositoryName }}selected{{ end }}>
@@ -137,7 +138,7 @@
                       hx-select="main"
                       hx-swap="main"
                       hx-target="main"
-                      hx-get="/packages/{{ .Manifest.Name }}"
+                      hx-get="{{ .SelfHref }}"
                       hx-include="#pkg-install-repository">
                       {{ with $idx := .PackageIndex }}
                         {{ range $idx.Versions | Reversed }}

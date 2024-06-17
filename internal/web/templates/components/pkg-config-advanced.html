@@ -8,7 +8,7 @@
     </div>
 
     <form
-      hx-post="/packages/{{ .Manifest.Name }}/configure/advanced"
+      hx-post="{{ .SelfHref }}"
       hx-target="#error-container"
       hx-target-error="#error-container"
       hx-select="div.alert"
@@ -24,7 +24,7 @@
             hx-select="#advanced-options"
             hx-swap="outerHTML"
             hx-target="#advanced-options"
-            hx-get="/packages/{{ .Manifest.Name }}/configure/advanced"
+            hx-get="{{ .SelfHref }}"
             hx-include="#advanced-pkg-install-version">
             {{ range .Repositories }}
               <option value="{{ .Name }}" {{ if eq .Name $.RepositoryName }}selected{{ end }}>
@@ -44,7 +44,7 @@
           hx-select="#advanced-options"
           hx-swap="outerHTML"
           hx-target="#advanced-options"
-          hx-get="/packages/{{ .Manifest.Name }}/configure/advanced"
+          hx-get="{{ .SelfHref }}"
           hx-include="#advanced-pkg-install-repository">
           {{ with $idx := .PackageIndex }}
             {{ range $idx.Versions | Reversed }}

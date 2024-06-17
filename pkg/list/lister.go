@@ -116,10 +116,9 @@ func itemShouldBeIncluded(item *result, options ListOptions) bool {
 type typeOptions int
 
 const (
-	// TODO is this how this works?
 	includeClusterPackages typeOptions = 1 << iota
 	includePackages
-	includeAll = 3
+	includeAll = includePackages | includeClusterPackages
 )
 
 func (l *lister) fetchRepoAndInstalled(ctx context.Context, options ListOptions, typeOpts typeOptions) (

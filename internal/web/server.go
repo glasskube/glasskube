@@ -30,8 +30,6 @@ import (
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	"github.com/glasskube/glasskube/internal/repo/types"
 	"github.com/glasskube/glasskube/internal/telemetry"
-	"github.com/glasskube/glasskube/internal/util"
-	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
 	"github.com/glasskube/glasskube/internal/web/handler"
 	"github.com/glasskube/glasskube/pkg/bootstrap"
 	"github.com/glasskube/glasskube/pkg/client"
@@ -204,8 +202,8 @@ func (s *server) Start(ctx context.Context) error {
 	// configuration endpoints
 	router.Handle(installedPkgBasePath+"/configure", s.requireReady(s.installOrConfigurePackage))
 	router.Handle(clpkgBasePath+"/configure", s.requireReady(s.installOrConfigurePackage))
-	router.Handle(installedPkgBasePath+"/configure/advanced", s.requireReady(s.advancedConfiguration))
-	router.Handle(clpkgBasePath+"/configure/advanced", s.requireReady(s.advancedConfiguration))
+	router.Handle(installedPkgBasePath+"/configure/advanced", s.requireReady(s.advancedPackageConfiguration))
+	router.Handle(clpkgBasePath+"/configure/advanced", s.requireReady(s.advancedClusterPackageConfiguration))
 	router.Handle(installedPkgBasePath+"/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
 	router.Handle(clpkgBasePath+"/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
 	// configuration datalist endpoints
@@ -445,197 +443,6 @@ func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 	checkTmplError(tmplErr, "packages")
 }
 
-func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	manifestName := mux.Vars(r)["manifestName"]
-	namespace := mux.Vars(r)["namespace"]
-	name := mux.Vars(r)["name"]
-	repositoryName := r.FormValue("repositoryName")
-	selectedVersion := r.FormValue("selectedVersion")
-
-	pkg, manifest, err := describe.DescribeInstalledPackage(ctx, namespace, name)
-	if err != nil && !apierrors.IsNotFound(err) {
-		s.respondAlertAndLog(w, err,
-			fmt.Sprintf("An error occurred fetching package details of installed package %v in namespace %v", name, namespace),
-			"danger")
-		return
-	} else if pkg != nil {
-		repositoryName = pkg.Spec.PackageInfo.RepositoryName
-	}
-
-	var repos []v1alpha1.PackageRepository
-	var usedRepo *v1alpha1.PackageRepository
-	if repositoryName, repos, usedRepo, err = s.getRepos(ctx, pkg.GetSpec().PackageInfo.Name, repositoryName); err != nil {
-		s.respondAlertAndLog(w, err, "", "danger")
-		return
-	}
-
-	var idx repo.PackageIndex
-	var latestVersion string
-	if idx, latestVersion, selectedVersion, err = s.getVersions(repositoryName, manifestName, selectedVersion); err != nil {
-		s.respondAlertAndLog(w, err,
-			fmt.Sprintf("An error occurred fetching package index of %v in repository %v", manifestName, repositoryName),
-			"danger")
-		return
-	}
-
-	err = s.templates.pkgPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
-		"Package":       pkg,
-		"Status":        client.GetStatusOrPending(pkg),
-		"Manifest":      manifest,
-		"LatestVersion": latestVersion,
-		// TODO "UpdateAvailable": pkg != nil && s.isUpdateAvailable(r.Context(), manifest),
-		"AutoUpdate": clientutils.AutoUpdateString(pkg, "Disabled"),
-		// TODO "ValidationResult":   res,
-		// TODO "ShowConflicts":      res.Status == dependency.ValidationResultStatusConflict,
-		"SelectedVersion":   selectedVersion,
-		"PackageIndex":      &idx,
-		"Repositories":      repos,
-		"RepositoryName":    repositoryName,
-		"ShowConfiguration": (pkg != nil && len(manifest.ValueDefinitions) > 0 && pkg.DeletionTimestamp.IsZero()) || pkg == nil,
-		// TODO "ValueErrors":        valueErrors,
-		// TODO "DatalistOptions":    datalistOptions,
-		"ShowDiscussionLink": usedRepo.IsGlasskubeRepo(),
-	}, err))
-	checkTmplError(err, fmt.Sprintf("package-detail (%s)", manifestName))
-}
-
-func (s *server) clusterPackageDetail(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	pkgName := mux.Vars(r)["pkgName"]
-	repositoryName := r.FormValue("repositoryName")
-	selectedVersion := r.FormValue("selectedVersion")
-
-	pkg, manifest, err := describe.DescribeInstalledClusterPackage(ctx, pkgName)
-	if err != nil && !apierrors.IsNotFound(err) {
-		s.respondAlertAndLog(w, err,
-			fmt.Sprintf("An error occurred fetching package details of installed package %v", pkgName),
-			"danger")
-		return
-	} else if pkg != nil {
-		repositoryName = pkg.Spec.PackageInfo.RepositoryName
-	}
-
-	var repos []v1alpha1.PackageRepository
-	var usedRepo *v1alpha1.PackageRepository
-	if repositoryName, repos, usedRepo, err = s.getRepos(ctx, pkg.GetSpec().PackageInfo.Name, repositoryName); err != nil {
-		s.respondAlertAndLog(w, err, "", "danger")
-		return
-	}
-
-	var idx repo.PackageIndex
-	var latestVersion string
-	if idx, latestVersion, selectedVersion, err = s.getVersions(repositoryName, pkgName, selectedVersion); err != nil {
-		s.respondAlertAndLog(w, err,
-			fmt.Sprintf("An error occurred fetching package index of %v in repository %v", pkgName, repositoryName),
-			"danger")
-		return
-	}
-
-	if manifest == nil {
-		manifest = &v1alpha1.PackageManifest{}
-		if err := s.repoClientset.ForRepoWithName(repositoryName).
-			FetchPackageManifest(pkgName, selectedVersion, manifest); err != nil {
-			s.respondAlertAndLog(w, err,
-				fmt.Sprintf("An error occurred fetching manifest of %v in version %v in repository %v",
-					pkgName, selectedVersion, repositoryName),
-				"danger")
-			return
-		}
-	}
-
-	res, err := s.dependencyMgr.Validate(r.Context(), manifest, selectedVersion)
-	if err != nil {
-		s.respondAlertAndLog(w, err,
-			fmt.Sprintf("An error occurred validating dependencies of %v in version %v", pkgName, selectedVersion),
-			"danger")
-		return
-	}
-
-	valueErrors := make(map[string]error)
-	datalistOptions := make(map[string]*pkg_config_input.PkgConfigInputDatalistOptions)
-	if pkg != nil {
-		nsOptions, _ := s.getNamespaceOptions()
-		pkgsOptions, _ := s.getPackagesOptions(r.Context())
-		for key, v := range pkg.Spec.Values {
-			if _, err := s.valueResolver.ResolveValue(r.Context(), v); err != nil {
-				valueErrors[key] = util.GetRootCause(err)
-			}
-			if v.ValueFrom != nil {
-				options, err := s.getDatalistOptions(r.Context(), v.ValueFrom, nsOptions, pkgsOptions)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "%v\n", err)
-				}
-				datalistOptions[key] = options
-			}
-		}
-	}
-
-	err = s.templates.pkgPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
-		"Package":            pkg,
-		"Status":             client.GetStatusOrPending(pkg),
-		"Manifest":           manifest,
-		"LatestVersion":      latestVersion,
-		"UpdateAvailable":    pkg != nil && s.isUpdateAvailable(r.Context(), pkgName),
-		"AutoUpdate":         clientutils.AutoUpdateString(pkg, "Disabled"),
-		"ValidationResult":   res,
-		"ShowConflicts":      res.Status == dependency.ValidationResultStatusConflict,
-		"SelectedVersion":    selectedVersion,
-		"PackageIndex":       &idx,
-		"Repositories":       repos,
-		"RepositoryName":     repositoryName,
-		"ShowConfiguration":  (pkg != nil && len(manifest.ValueDefinitions) > 0 && pkg.DeletionTimestamp.IsZero()) || pkg == nil,
-		"ValueErrors":        valueErrors,
-		"DatalistOptions":    datalistOptions,
-		"ShowDiscussionLink": usedRepo.IsGlasskubeRepo(),
-	}, err))
-	checkTmplError(err, fmt.Sprintf("clusterpackage-detail (%s)", pkgName))
-}
-
-func (s *server) getVersions(repositoryName string, pkgName string, selectedVersion string) (repo.PackageIndex, string, string, error) {
-	var idx repo.PackageIndex
-	if err := s.repoClientset.ForRepoWithName(repositoryName).FetchPackageIndex(pkgName, &idx); err != nil {
-		return repo.PackageIndex{}, "", "", err
-	}
-	latestVersion := idx.LatestVersion
-
-	if selectedVersion == "" {
-		selectedVersion = latestVersion
-	} else if !slices.ContainsFunc(idx.Versions, func(item types.PackageIndexItem) bool {
-		return item.Version == selectedVersion
-	}) {
-		selectedVersion = latestVersion
-	}
-	return idx, latestVersion, selectedVersion, nil
-}
-
-func (s *server) getRepos(ctx context.Context, pkgName string, repositoryName string) (
-	string, []v1alpha1.PackageRepository, *v1alpha1.PackageRepository, error) {
-	var repos []v1alpha1.PackageRepository
-	var err error
-	if repos, err = s.repoClientset.Meta().GetReposForPackage(pkgName); err != nil {
-		fmt.Fprintf(os.Stderr, "error getting repos for package; %v", err)
-	} else if repositoryName == "" {
-		if len(repos) == 0 {
-
-			return "", nil, nil, fmt.Errorf("%v not found in any repository", pkgName)
-		}
-		for _, r := range repos {
-			repositoryName = r.Name
-			if r.IsDefaultRepository() {
-				break
-			}
-		}
-	}
-
-	var usedRepo v1alpha1.PackageRepository
-	if err := s.pkgClient.PackageRepositories().Get(ctx, repositoryName, &usedRepo); err != nil {
-		return "", nil, nil, err
-	}
-
-	return repositoryName, repos, &usedRepo, nil
-}
-
 // installOrConfigurePackage is an endpoint which takes POST requests, containing all necessary parameters to either
 // install a new package if it does not exist yet, or update the configuration of an existing package.
 // The name of the concerned package is given in the pkgName query parameter.
@@ -732,11 +539,12 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-// advancedConfiguration is a GET+POST endpoint which can be used for advanced package installation options, most notably
-// for changing the package repository and changing to a specific (maybe even lower than installed) version of the package.
-// It is only intended to be used for already installed packages, for new packages these options exist anyway and
-// should be available for every user.
-func (s *server) advancedConfiguration(w http.ResponseWriter, r *http.Request) {
+// advancedClusterPackageConfiguration is a GET+POST endpoint which can be used for advanced package installation options,
+// most notably for changing the package repository and changing to a specific (maybe even lower than installed)
+// version of the package.
+// It is only intended to be used for already installed clusterpackages, for new clusterpackages these options exist
+// anyway and should be available for every user.
+func (s *server) advancedClusterPackageConfiguration(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	pkgName := mux.Vars(r)["pkgName"]
 	repositoryName := r.FormValue("repositoryName")
@@ -755,16 +563,58 @@ func (s *server) advancedConfiguration(w http.ResponseWriter, r *http.Request) {
 	} else if repositoryName == "" {
 		repositoryName = pkg.Spec.PackageInfo.RepositoryName
 	}
-	var repos []v1alpha1.PackageRepository
-	if repos, err = s.repoClientset.Meta().GetReposForPackage(pkgName); err != nil {
-		fmt.Fprintf(os.Stderr, "error getting repos for package; %v", err)
+	s.handleAdvancedConfig(ctx, &packageDetailPageContext{
+		repositoryName:  repositoryName,
+		selectedVersion: selectedVersion,
+		manifestName:    pkgName,
+		pkg:             pkg,
+		manifest:        manifest,
+	}, r, w)
+}
+
+// advancedPackageConfiguration is like advancedClusterPackageConfiguration but for packages
+func (s *server) advancedPackageConfiguration(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	manifestName := mux.Vars(r)["manifestName"]
+	namespace := mux.Vars(r)["namespace"]
+	name := mux.Vars(r)["name"]
+	repositoryName := r.FormValue("repositoryName")
+	selectedVersion := r.FormValue("selectedVersion")
+	pkg, manifest, err := describe.DescribeInstalledPackage(ctx, namespace, name)
+	if err != nil && !apierrors.IsNotFound(err) {
+		s.respondAlertAndLog(w, err,
+			fmt.Sprintf("An error occurred fetching package details of installed package %v", manifestName),
+			"danger")
+		return
+	} else if pkg == nil {
+		s.respondAlertAndLog(w, err,
+			fmt.Sprintf("Package %v is not installed", manifestName),
+			"danger")
+		return
 	} else if repositoryName == "" {
+		repositoryName = pkg.Spec.PackageInfo.RepositoryName
+	}
+	s.handleAdvancedConfig(ctx, &packageDetailPageContext{
+		repositoryName:  repositoryName,
+		selectedVersion: selectedVersion,
+		manifestName:    manifestName,
+		pkg:             pkg,
+		manifest:        manifest,
+	}, r, w)
+}
+
+func (s *server) handleAdvancedConfig(ctx context.Context, d *packageDetailPageContext, r *http.Request, w http.ResponseWriter) {
+	var err error
+	var repos []v1alpha1.PackageRepository
+	if repos, err = s.repoClientset.Meta().GetReposForPackage(d.manifestName); err != nil {
+		fmt.Fprintf(os.Stderr, "error getting repos for package; %v", err)
+	} else if d.repositoryName == "" {
 		if len(repos) == 0 {
-			s.respondAlertAndLog(w, fmt.Errorf("%v not found in any repository", pkgName), "", "danger")
+			s.respondAlertAndLog(w, fmt.Errorf("%v not found in any repository", d.manifestName), "", "danger")
 			return
 		}
 		for _, r := range repos {
-			repositoryName = r.Name
+			d.repositoryName = r.Name
 			if r.IsDefaultRepository() {
 				break
 			}
@@ -773,59 +623,81 @@ func (s *server) advancedConfiguration(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodGet {
 		var idx repo.PackageIndex
-		if err := s.repoClientset.ForRepoWithName(repositoryName).FetchPackageIndex(pkgName, &idx); err != nil {
+		if err := s.repoClientset.ForRepoWithName(d.repositoryName).FetchPackageIndex(d.manifestName, &idx); err != nil {
 			s.respondAlertAndLog(w, err,
-				fmt.Sprintf("An error occurred fetching package index of %v in repository %v", pkgName, repositoryName),
+				fmt.Sprintf("An error occurred fetching package index of %v in repository %v", d.manifestName, d.repositoryName),
 				"danger")
 			return
 		}
 		latestVersion := idx.LatestVersion
 
-		if selectedVersion == "" {
-			selectedVersion = latestVersion
+		if d.selectedVersion == "" {
+			d.selectedVersion = latestVersion
 		} else if !slices.ContainsFunc(idx.Versions, func(item types.PackageIndexItem) bool {
-			return item.Version == selectedVersion
+			return item.Version == d.selectedVersion
 		}) {
-			selectedVersion = latestVersion
+			d.selectedVersion = latestVersion
 		}
 
-		res, err := s.dependencyMgr.Validate(r.Context(), manifest, selectedVersion)
+		res, err := s.dependencyMgr.Validate(r.Context(), d.manifest, d.selectedVersion)
 		if err != nil {
 			s.respondAlertAndLog(w, err,
-				fmt.Sprintf("An error occurred validating dependencies of %v in version %v", pkgName, selectedVersion),
+				fmt.Sprintf("An error occurred validating dependencies of %v in version %v", d.manifestName, d.selectedVersion),
 				"danger")
 			return
+		}
+
+		var self string
+		if d.manifest.Scope == nil || *d.manifest.Scope == v1alpha1.ScopeCluster {
+			// Scope == nil is the fallback for all older packages – it will only be wrong for quickwit (the first non-cluster
+			// package), and only when someone selects an outdated version
+			self = fmt.Sprintf("/clusterpackages/%s/configure/advanced", d.manifestName)
+		} else {
+			pkgPath := ""
+			if !d.pkg.IsNil() {
+				pkgPath = fmt.Sprintf("/%s/%s", d.pkg.GetNamespace(), d.pkg.GetName())
+			}
+			self = fmt.Sprintf("/packages/%s%s/configure/advanced", d.manifestName, pkgPath)
 		}
 
 		err = s.templates.pkgConfigAdvancedTmpl.Execute(w, s.enrichPage(r, map[string]any{
-			"Status":           client.GetStatusOrPending(pkg),
-			"Manifest":         manifest,
+			"Status":           client.GetStatusOrPending(d.pkg),
+			"Manifest":         d.manifest,
 			"LatestVersion":    latestVersion,
 			"ValidationResult": res,
 			"ShowConflicts":    res.Status == dependency.ValidationResultStatusConflict,
-			"SelectedVersion":  selectedVersion,
+			"SelectedVersion":  d.selectedVersion,
 			"PackageIndex":     &idx,
 			"Repositories":     repos,
-			"RepositoryName":   repositoryName,
+			"RepositoryName":   d.repositoryName,
+			"SelfHref":         self,
 		}, err))
-		checkTmplError(err, fmt.Sprintf("advanced-config (%s)", pkgName))
+		checkTmplError(err, fmt.Sprintf("advanced-config (%s)", d.manifestName))
 	} else if r.Method == http.MethodPost {
-		pkg.Spec.PackageInfo.Version = selectedVersion
-		if repositoryName != "" {
-			pkg.Spec.PackageInfo.RepositoryName = repositoryName
+		d.pkg.GetSpec().PackageInfo.Version = d.selectedVersion
+		if d.repositoryName != "" {
+			d.pkg.GetSpec().PackageInfo.RepositoryName = d.repositoryName
 		}
-		if err := s.pkgClient.ClusterPackages().Update(ctx, pkg); err != nil {
-			s.respondAlertAndLog(w, err,
-				fmt.Sprintf("An error occurred updating package %v to version %v in repo %v", pkgName, selectedVersion, repositoryName),
-				"danger")
-			return
+		if d.manifest.Scope == nil || *d.manifest.Scope == v1alpha1.ScopeCluster {
+			if err := s.pkgClient.ClusterPackages().Update(ctx, d.pkg.(*v1alpha1.ClusterPackage)); err != nil {
+				s.respondAlertAndLog(w, err,
+					fmt.Sprintf("An error occurred updating package %v to version %v in repo %v",
+						d.manifestName, d.selectedVersion, d.repositoryName),
+					"danger")
+				return
+			} else {
+				s.respondSuccess(w, "Configuration updated successfully")
+			}
 		} else {
-			err := s.templates.alertTmpl.Execute(w, map[string]any{
-				"Message":     "Configuration updated successfully",
-				"Dismissible": true,
-				"Type":        "success",
-			})
-			checkTmplError(err, "success")
+			if err := s.pkgClient.Packages(d.pkg.GetNamespace()).Update(ctx, d.pkg.(*v1alpha1.Package)); err != nil {
+				s.respondAlertAndLog(w, err,
+					fmt.Sprintf("An error occurred updating package %v to version %v in repo %v",
+						d.manifestName, d.selectedVersion, d.repositoryName),
+					"danger")
+				return
+			} else {
+				s.respondSuccess(w, "Configuration updated successfully")
+			}
 		}
 	}
 }
@@ -1165,6 +1037,7 @@ func (s *server) initClusterPackageStoreAndController(ctx context.Context) (cach
 		},
 	)
 }
+
 func (s *server) initPackageStoreAndController(ctx context.Context) (cache.Store, cache.Controller) {
 	pkgClient := s.pkgClient
 	return cache.NewInformer(
@@ -1199,7 +1072,6 @@ func (s *server) initPackageStoreAndController(ctx context.Context) (cache.Store
 		},
 	)
 }
-
 func (s *server) broadcastClusterPackageRefreshTriggers(pkg *v1alpha1.ClusterPackage) {
 	s.sseHub.Broadcast <- &sse{
 		event: "refresh-clusterpackage-overview",
@@ -1265,6 +1137,15 @@ func (s *server) isUpdateAvailable(ctx context.Context, packages ...string) bool
 	} else {
 		return !tx.IsEmpty()
 	}
+}
+
+func (s *server) respondSuccess(w http.ResponseWriter, message string) {
+	err := s.templates.alertTmpl.Execute(w, map[string]any{
+		"Message":     message,
+		"Dismissible": true,
+		"Type":        "success",
+	})
+	checkTmplError(err, "success")
 }
 
 func (s *server) respondAlertAndLog(w http.ResponseWriter, err error, wrappingMsg string, alertType string) {

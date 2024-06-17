@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
@@ -24,7 +25,8 @@ func DescribeInstalledClusterPackage(ctx context.Context, pkgName string) (
 	return &pkg, mf, err
 }
 
-func DescribeInstalledPackage(ctx context.Context, namespace string, name string) (*v1alpha1.Package, *v1alpha1.PackageManifest, error) {
+func DescribeInstalledPackage(ctx context.Context, namespace string, name string) (
+	*v1alpha1.Package, *v1alpha1.PackageManifest, error) {
 	pkgClient := cliutils.PackageClient(ctx)
 	var pkg v1alpha1.Package
 	err := pkgClient.Packages(namespace).Get(ctx, name, &pkg)
@@ -46,7 +48,8 @@ func getManifestForPkg(ctx context.Context, pkg ctrlpkg.Package) (*v1alpha1.Pack
 	repoClient := cliutils.RepositoryClientset(ctx)
 	// pkg is installed, but has either no manifest or owned package info (yet): use manifest in this version from repo
 	var packageManifest v1alpha1.PackageManifest
-	err := repoClient.ForPackage(pkg).FetchPackageManifest(pkg.GetSpec().PackageInfo.Name, pkg.GetSpec().PackageInfo.Version, &packageManifest)
+	err := repoClient.ForPackage(pkg).FetchPackageManifest(
+		pkg.GetSpec().PackageInfo.Name, pkg.GetSpec().PackageInfo.Version, &packageManifest)
 	if err != nil {
 		return nil, err
 	} else {

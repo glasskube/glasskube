@@ -28,13 +28,7 @@
             <div class="col mt-2">
               <div class="card bg-body-secondary h-100 border-primary border-1">
                 <div class="card-body d-flex flex-column p-1">
-                  <!-- TODO the "header" of the card should link to nothing or to the first instance, if only one exists ?? -->
-                  <a
-                    class="flex-grow-1 d-flex align-items-center gap-1 text-reset text-decoration-none p-1"
-                    hx-select="main"
-                    hx-target="main"
-                    hx-swap="outerHTML"
-                    hx-boost="true">
+                  <span class="flex-grow-1 d-flex align-items-center gap-1 text-reset text-decoration-none p-1">
                     <div class="flex-shrink-0 align-self-center">
                       {{ if eq .IconUrl "" }}
                         <!-- TODO the glasskube logo as fallback is probably not the best idea? -->
@@ -58,22 +52,38 @@
                         {{ .ShortDescription }}
                       </span>
                     </div>
-                  </a>
-                  <table class="table table-sm table-borderless m-0">
+
+                    <span class="align-self-center mx-auto">
+                      <a
+                        href="/packages/{{ .Name }}#configuration"
+                        class="flex-grow-1 d-flex align-items-center gap-1 btn btn-primary btn-sm"
+                        hx-select="main"
+                        hx-target="main"
+                        hx-swap="outerHTML"
+                        hx-boost="true"
+                        >Install</a
+                      >
+                    </span>
+                  </span>
+
+                  <table class="table table-sm table-borderless m-0 ms-1">
                     <thead>
                       <tr>
                         <th scope="col" class="bg-body-secondary p-0">Name</th>
                         <th scope="col" class="bg-body-secondary p-0">Namespace</th>
+                        <th scope="col" class="bg-body-secondary p-0">Repository</th>
+                        <th scope="col" class="bg-body-secondary p-0">Version</th>
                         <th scope="col" class="bg-body-secondary p-0">Status</th>
+                        <th scope="col" class="bg-body-secondary p-0"></th>
                       </tr>
                     </thead>
                     <tbody>
                       {{ range .Packages }}
                         <tr>
                           <td class="bg-body-secondary p-0">
-                            <!-- TODO link should span across the entire row!! -->
                             <a
                               href="/packages/{{ .Name }}/{{ .Package.Namespace }}/{{ .Package.Name }}"
+                              class="text-reset"
                               hx-select="main"
                               hx-target="main"
                               hx-swap="outerHTML"
@@ -82,7 +92,20 @@
                             </a>
                           </td>
                           <td class="bg-body-secondary p-0">{{ .Package.Namespace }}</td>
+                          <td class="bg-body-secondary p-0">{{ .Package.Spec.PackageInfo.RepositoryName }}</td>
+                          <td class="bg-body-secondary p-0">{{ .Package.Spec.PackageInfo.Version }}</td>
                           <td class="bg-body-secondary p-0">{{ .Status.Status }}</td>
+                          <td class="bg-body-secondary p-0">
+                            <a
+                              href="/packages/{{ .Name }}/{{ .Package.Namespace }}/{{ .Package.Name }}"
+                              class="text-reset"
+                              hx-select="main"
+                              hx-target="main"
+                              hx-swap="outerHTML"
+                              hx-boost="true">
+                              Manage
+                            </a>
+                          </td>
                         </tr>
                       {{ end }}
                     </tbody>
@@ -92,63 +115,66 @@
             </div>
           {{ end }}
         </div>
-        <div>
-          <h2 class="text-reset">Available Packages</h2>
 
-          <div class="row row-cols-3 row-cols-xl-4 g-2">
-            {{ range .AvailablePackages }}
-              <!-- TODO make this a reusable template -->
-              <div class="col">
-                <div class="card bg-body-secondary h-100 border-primary border-1">
-                  <div class="card-body d-flex flex-column p-0">
-                    <a
-                      class="flex-grow-1 d-flex align-items-center gap-1 text-reset text-decoration-none p-1"
-                      href="/packages/{{ .Name }}"
-                      hx-select="main"
-                      hx-target="main"
-                      hx-swap="outerHTML"
-                      hx-boost="true">
-                      <div class="flex-shrink-0 align-self-center">
-                        {{ if eq .IconUrl "" }}
-                          <!-- TODO the glasskube logo as fallback is probably not the best idea? -->
-                          <img
-                            src="/static/assets/glasskube-logo.svg"
-                            alt="{{ .Name }}"
-                            style="width: 3.25rem; height: auto;" />
-                        {{ else }}
-                          <img src="{{ .IconUrl }}" alt="{{ .Name }}" style="width: 3.25rem; height: auto;" />
-                        {{ end }}
-                      </div>
-                      <div class="flex-grow-1 align-self-start">
-                        <h6 class="text-reset m-0">{{ .Name }}</h6>
-                        <span
-                          class="lh-sm overflow-hidden"
-                          style="
+        {{ if ne (len .AvailablePackages) 0 }}
+          <div class="mt-3">
+            <h2 class="text-reset">Available Packages</h2>
+
+            <div class="row row-cols-3 row-cols-xl-4 g-2">
+              {{ range .AvailablePackages }}
+                <!-- TODO make this a reusable template -->
+                <div class="col">
+                  <div class="card bg-body-secondary h-100 border-primary border-1">
+                    <div class="card-body d-flex flex-column p-0">
+                      <a
+                        class="flex-grow-1 d-flex align-items-center gap-1 text-reset text-decoration-none p-1"
+                        href="/packages/{{ .Name }}"
+                        hx-select="main"
+                        hx-target="main"
+                        hx-swap="outerHTML"
+                        hx-boost="true">
+                        <div class="flex-shrink-0 align-self-center">
+                          {{ if eq .IconUrl "" }}
+                            <!-- TODO the glasskube logo as fallback is probably not the best idea? -->
+                            <img
+                              src="/static/assets/glasskube-logo.svg"
+                              alt="{{ .Name }}"
+                              style="width: 3.25rem; height: auto;" />
+                          {{ else }}
+                            <img src="{{ .IconUrl }}" alt="{{ .Name }}" style="width: 3.25rem; height: auto;" />
+                          {{ end }}
+                        </div>
+                        <div class="flex-grow-1 align-self-start">
+                          <h6 class="text-reset m-0">{{ .Name }}</h6>
+                          <span
+                            class="lh-sm overflow-hidden"
+                            style="
                         font-size: small;
                         display: -webkit-box;
                         -webkit-box-orient: vertical;
                         -webkit-line-clamp: 2;">
-                          {{ .ShortDescription }}
-                        </span>
+                            {{ .ShortDescription }}
+                          </span>
+                        </div>
+                      </a>
+                      <div class="mb-1 mx-1">
+                        <a
+                          href="/packages/{{ .Name }}#configuration"
+                          hx-boost="true"
+                          hx-select="main"
+                          hx-target="main"
+                          hx-swap="outerHTML"
+                          class="btn btn-primary btn-sm w-100"
+                          >Install</a
+                        >
                       </div>
-                    </a>
-                    <div class="mb-1 mx-1">
-                      <a
-                        href="/packages/{{ .Name }}#configuration"
-                        hx-boost="true"
-                        hx-select="main"
-                        hx-target="main"
-                        hx-swap="outerHTML"
-                        class="btn btn-primary btn-sm w-100"
-                        >Install</a
-                      >
                     </div>
                   </div>
                 </div>
-              </div>
-            {{ end }}
+              {{ end }}
+            </div>
           </div>
-        </div>
+        {{ end }}
       </div>
     </div>
   </div>
