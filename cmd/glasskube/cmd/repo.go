@@ -10,6 +10,6 @@ var repoCmd = &cobra.Command{
 }
 
 func init() {
-	repoCmd.AddCommand(repoListCmd, repoAddCmd)
+	repoCmd.AddCommand(repoListCmd, repoAddCmd, repoUpdateCmd)
 	RootCmd.AddCommand(repoCmd)
 }

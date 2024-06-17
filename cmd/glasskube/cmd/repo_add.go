@@ -21,7 +21,7 @@ var repoAddCmd = &cobra.Command{
 		ctx := cmd.Context()
 		client := cliutils.PackageClient(ctx)
 		repoName := args[0]
-		repoUrl := args[1]
+		repoAddCmdOptions.Url = args[1]
 
 		if err := repoAddCmdOptions.Normalize(); err != nil {
 			fmt.Fprintf(os.Stderr, "❌ %v\n", err)
@@ -33,55 +33,11 @@ var repoAddCmd = &cobra.Command{
 				Name: repoName,
 			},
 			Spec: v1alpha1.PackageRepositorySpec{
-				Url: repoUrl,
+				Url: repoAddCmdOptions.Url,
 			},
 		}
 
-		switch repoAddCmdOptions.Auth {
-		case repoAddBasicAuth:
-			if len(repoAddCmdOptions.Username) == 0 {
-				fmt.Fprintln(os.Stderr, "Basic authentication was requested. Please enter a username:")
-				for {
-					username := cliutils.GetInputStr("username")
-					if len(username) > 0 {
-						repoAddCmdOptions.Username = username
-						break
-					}
-				}
-			}
-			if len(repoAddCmdOptions.Password) == 0 {
-				fmt.Fprintln(os.Stderr, "Basic authentication was requested. Please enter a password:")
-				for {
-					password := cliutils.GetInputStr("password")
-					if len(password) > 0 {
-						repoAddCmdOptions.Password = password
-						break
-					}
-				}
-			}
-			repo.Spec.Auth = &v1alpha1.PackageRepositoryAuthSpec{
-				Basic: &v1alpha1.PackageRepositoryBasicAuthSpec{
-					Username: &repoAddCmdOptions.Username,
-					Password: &repoAddCmdOptions.Password,
-				},
-			}
-		case repoAddBearerAuth:
-			if len(repoAddCmdOptions.Token) == 0 {
-				fmt.Fprintln(os.Stderr, "Bearer authentication was requested. Please enter a token:")
-				for {
-					token := cliutils.GetInputStr("token")
-					if len(token) > 0 {
-						repoAddCmdOptions.Token = token
-						break
-					}
-				}
-			}
-			repo.Spec.Auth = &v1alpha1.PackageRepositoryAuthSpec{
-				Bearer: &v1alpha1.PackageRepositoryBearerAuthSpec{
-					Token: &repoAddCmdOptions.Token,
-				},
-			}
-		}
+		repo.Spec.Auth = repoAddCmdOptions.SetAuth()
 
 		if repoAddCmdOptions.Default {
 			repo.SetDefaultRepository()
@@ -97,5 +53,5 @@ var repoAddCmd = &cobra.Command{
 }
 
 func init() {
-	repoAddCmdOptions.BindToCmdFlags(repoAddCmd)
+	repoAddCmdOptions.BindToCmdFlags(repoAddCmd, false)
 }
