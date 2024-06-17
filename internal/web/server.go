@@ -455,6 +455,8 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 	pkgName := mux.Vars(r)["pkgName"]
 	repositoryName := r.FormValue("repositoryName")
 	selectedVersion := r.FormValue("selectedVersion")
+	//namespace := r.FormValue("requestedNamespace")
+	//name := r.FormValue("requestedName")
 	enableAutoUpdate := r.FormValue("enableAutoUpdate")
 	pkg := &v1alpha1.ClusterPackage{}
 	var mf v1alpha1.PackageManifest
@@ -506,12 +508,16 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 		s.respondAlertAndLog(w, err, "An error occurred parsing the form", "danger")
 		return
 	} else if pkg == nil {
-		pkg = client.ClusterPackageBuilder(pkgName).
+		builder := client.PackageBuilder(pkgName).WithVersion(selectedVersion).
 			WithVersion(selectedVersion).
 			WithRepositoryName(repositoryName).
 			WithAutoUpdates(strings.ToLower(enableAutoUpdate) == "on").
-			WithValues(values).
-			Build()
+			WithValues(values)
+		if mf.Scope == nil || *mf.Scope == v1alpha1.ScopeCluster {
+			pkg = builder.BuildClusterPackage()
+		} else {
+			// TODO builder set namespace + name
+		}
 		opts := metav1.CreateOptions{}
 		err := install.NewInstaller(s.pkgClient).
 			WithStatusWriter(statuswriter.Stderr()).
@@ -522,6 +528,7 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 		}
 	} else {
 		pkg.Spec.Values = values
+		// TODO if cluster else
 		if err := s.pkgClient.ClusterPackages().Update(ctx, pkg); err != nil {
 			s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred updating package %v", pkgName), "danger")
 			return

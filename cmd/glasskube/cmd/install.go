@@ -65,7 +65,7 @@ var installCmd = &cobra.Command{
 
 		bold := color.New(color.Bold).SprintFunc()
 		packageName := args[0]
-		pkgBuilder := client.ClusterPackageBuilder(packageName)
+		pkgBuilder := client.PackageBuilder(packageName)
 		var repoClient repoclient.RepoClient
 
 		if len(installCmdOptions.Repository) > 0 {
@@ -159,7 +159,7 @@ var installCmd = &cobra.Command{
 
 		pkgBuilder.WithAutoUpdates(installCmdOptions.EnableAutoUpdates)
 
-		pkg := pkgBuilder.Build()
+		pkg := pkgBuilder.BuildClusterPackage()
 
 		fmt.Fprintln(os.Stderr, bold("Summary:"))
 		fmt.Fprintf(os.Stderr, " * The following packages will be installed in your cluster (%v):\n", config.CurrentContext)

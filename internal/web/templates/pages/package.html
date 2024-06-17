@@ -150,6 +150,25 @@
                       {{ end }}
                     </select>
                   </div>
+
+                  {{ if eq .Manifest.Scope "Namespaced" }}
+                    <label class="form-label" for="pkg-install-namespace">Namespace</label>
+                    <div class="input-group mb-2">
+                      <input
+                        class="form-control"
+                        type="text"
+                        name="requestedNamespace"
+                        id="pkg-install-namespace"
+                        required />
+                    </div>
+
+                    <label class="form-label" for="pkg-install-name">Name</label>
+                    <div class="input-group mb-2">
+                      <input class="form-control" type="text" name="requestedName" id="pkg-install-name" required />
+                    </div>
+                  {{ end }}
+
+
                   <div class="form-check mt-1 mb-3">
                     <input class="form-check-input" type="checkbox" name="enableAutoUpdate" id="enable-auto-update" />
                     <label class="form-check-label ms-1" for="enable-auto-update">Auto Updates</label>
