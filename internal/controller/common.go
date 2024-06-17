@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
@@ -20,6 +21,8 @@ import (
 	"github.com/glasskube/glasskube/internal/manifestvalues"
 	"github.com/glasskube/glasskube/internal/names"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
+	"github.com/glasskube/glasskube/internal/telemetry"
+	"github.com/glasskube/glasskube/internal/util"
 	"github.com/glasskube/glasskube/pkg/condition"
 	"go.uber.org/multierr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -82,6 +85,14 @@ func (r *PackageReconcilerCommon) InitAdapters(builder *builder.Builder) error {
 func (r *PackageReconcilerCommon) reconcile(ctx context.Context, pkg ctrlpkg.Package) (ctrl.Result, error) {
 	prc := &PackageReconcilationContext{PackageReconcilerCommon: r, pkg: pkg}
 	log := ctrl.LoggerFrom(ctx)
+
+	if !pkg.GetDeletionTimestamp().IsZero() {
+		return prc.reconcileAfterDeletion(ctx)
+	}
+
+	telemetry.ForOperator().ReconcilePackage(prc.pkg)
+	prc.ensureFinalizer()
+
 	if err := prc.ensurePackageInfo(ctx); err != nil {
 		return requeue.Always(ctx, err)
 	}
@@ -108,6 +119,7 @@ type PackageReconcilationContext struct {
 	pi                    *v1alpha1.PackageInfo
 	isSuccess             bool
 	shouldUpdateStatus    bool
+	shouldUpdateResource  bool
 	currentOwnedResources []v1alpha1.OwnedResourceRef
 	currentOwnedPackages  []v1alpha1.OwnedResourceRef
 }
@@ -205,12 +217,51 @@ func (r *PackageReconcilationContext) reconcilePackageInfoReady(ctx context.Cont
 	}
 }
 
+func (r *PackageReconcilationContext) reconcileAfterDeletion(ctx context.Context) (ctrl.Result, error) {
+	log := ctrl.LoggerFrom(ctx)
+
+	r.setShouldUpdate(conditions.SetUnknown(ctx, &r.pkg.GetStatus().Conditions,
+		condition.Pending, "Package is being deleted"))
+
+	if r.shouldUpdateStatus {
+		telemetry.ForOperator().ReportDelete(r.pkg)
+	}
+
+	if slices.Contains(r.pkg.GetFinalizers(), "packageDeletion") {
+		var err error
+		if len(r.pkg.GetStatus().OwnedPackages) != 0 {
+			multierr.AppendInto(&err, r.pruneOwnedPackages(ctx, true))
+			log.Info("waiting for deletion of required packages")
+		} else if len(r.pkg.GetStatus().OwnedPackageInfos) != 0 {
+			multierr.AppendInto(&err, r.pruneOwnedPackageInfos(ctx, true))
+			log.Info("waiting for deletion of package infos")
+		} else {
+			r.pkg.SetFinalizers(util.DeleteAll(r.pkg.GetFinalizers(), "packageDeletion"))
+			r.shouldUpdateResource = true
+		}
+
+		if err != nil {
+			return r.finalizeWithError(ctx, err)
+		}
+	}
+
+	return r.finalizeNoRequeue(ctx)
+}
+
+func (r *PackageReconcilationContext) ensureFinalizer() {
+	if !slices.Contains(r.pkg.GetFinalizers(), "packageDeletion") {
+		r.pkg.SetFinalizers(append(r.pkg.GetFinalizers(), "packageDeletion"))
+		r.shouldUpdateResource = true
+	}
+}
+
 func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bool {
 	log := ctrl.LoggerFrom(ctx)
 	log.V(1).Info("ensuring dependencies", "dependencies", r.pi.Status.Manifest.Dependencies)
 
 	var failed []string
-	if result, err := r.DependencyManager.Validate(ctx, r.pi.Status.Manifest, r.pkg.GetSpec().PackageInfo.Version); err != nil {
+	if result, err := r.DependencyManager.Validate(ctx, r.pi.Status.Manifest,
+		r.pkg.GetSpec().PackageInfo.Version); err != nil {
 		r.setShouldUpdate(
 			conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.GetStatus().Conditions,
 				condition.InstallationFailed, fmt.Sprintf("error validating dependencies: %v", err)))
@@ -227,6 +278,8 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 					Namespace: r.pkg.GetNamespace(),
 				},
 			}
+
+			newPkg.SetInstalledAsDependency(true)
 
 			repositories, err := r.RepoClientset.Meta().GetReposForPackage(requirement.Name)
 			if err != nil {
@@ -250,9 +303,6 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 			}
 
 			if _, err := controllerutil.CreateOrUpdate(ctx, r.Client, newPkg, func() error {
-				if err := r.SetOwner(r.pkg, newPkg, owners.BlockOwnerDeletion); err != nil {
-					return fmt.Errorf("unable to set ownerReference on required package: %w", err)
-				}
 				newPkg.Spec = packagesv1alpha1.PackageSpec{
 					PackageInfo: packagesv1alpha1.PackageInfoTemplate{
 						Name:           requirement.Name,
@@ -275,7 +325,8 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 	} else if result.Status == dependency.ValidationResultStatusConflict {
 		var parts []string
 		for _, c := range result.Conflicts {
-			parts = append(parts, fmt.Sprintf("need version %v of %v but found %v", c.Required.Version, c.Actual.Name, c.Actual.Version))
+			parts = append(parts, fmt.Sprintf("need version %v of %v but found %v",
+				c.Required.Version, c.Actual.Name, c.Actual.Version))
 		}
 		r.setShouldUpdate(
 			conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.GetStatus().Conditions,
@@ -288,39 +339,17 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 	// if all requirements fulfilled, status can be checked
 	for _, dep := range r.pi.Status.Manifest.Dependencies {
 		var requiredPkg packagesv1alpha1.ClusterPackage
-		if err := r.Get(ctx, types.NamespacedName{
-			Name:      dep.Name,
-			Namespace: r.pkg.GetNamespace(),
-		}, &requiredPkg); err != nil {
+		if err := r.Get(ctx, types.NamespacedName{Name: dep.Name}, &requiredPkg); err != nil {
 			if apierrors.IsNotFound(err) {
 				waitingFor = append(waitingFor, dep.Name)
 			} else {
 				message := fmt.Sprintf("failed to get required package %v: %v", dep.Name, err)
 				r.setShouldUpdate(
-					conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.GetStatus().Conditions, condition.InstallationFailed, message))
+					conditions.SetFailed(ctx, r.EventRecorder, r.pkg,
+						&r.pkg.GetStatus().Conditions, condition.InstallationFailed, message))
 				return false
 			}
 		} else {
-			// if the required package already exists, we set the owner reference if
-			// * there already exists another package owner reference (i.e. it has been installed as dependency of another package)
-			// * but NOT if there exists no other package owner reference (i.e. it has been installed manually)
-			if ok, err := r.HasAnyOwnerOfType(r.pkg, &requiredPkg); err != nil || ok {
-				if err != nil {
-					log.Error(err, "Failed to check for owner references", "owner", r.pkg.GetName(), "owned", requiredPkg.Name)
-				}
-				if ok, err := r.HasOwner(r.pkg, &requiredPkg); err != nil || !ok {
-					log.Info("Updating existing required package with new owner reference", "owner", r.pkg.GetName(), "owned", requiredPkg.Name)
-					if err := r.SetOwner(r.pkg, &requiredPkg, owners.BlockOwnerDeletion); err != nil {
-						log.Error(err, "Failed to set owner reference", "owner", r.pkg.GetName(), "owned", requiredPkg.Name)
-						failed = append(failed, dep.Name)
-					}
-					if err := r.Update(ctx, &requiredPkg); err != nil {
-						log.Error(err, "Failed to updated required package", "owner", r.pkg.GetName(), "owned", requiredPkg.Name)
-						failed = append(failed, dep.Name)
-					}
-				}
-			}
-
 			if owned, err := ownerutils.ToOwnedResourceRef(r.Scheme, &requiredPkg); err != nil {
 				log.Error(err, "Failed to create OwnedResourceRef", "package", requiredPkg)
 				failed = append(failed, dep.Name)
@@ -334,12 +363,14 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 			}
 		}
 	}
+
 	if len(failed) > 0 {
 		message := fmt.Sprintf("required package(s) not installed: %v", strings.Join(failed, ","))
-		r.setShouldUpdate(
-			conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.GetStatus().Conditions, condition.InstallationFailed, message))
+		r.setShouldUpdate(conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.GetStatus().Conditions,
+			condition.InstallationFailed, message))
 		return false
 	}
+
 	if len(waitingFor) > 0 {
 		message := fmt.Sprintf("waiting for required package(s) %v", strings.Join(waitingFor, ","))
 		r.setShouldUpdate(
@@ -360,9 +391,6 @@ func (r *PackageReconcilationContext) ensurePackageInfo(ctx context.Context) err
 
 	log.V(1).Info("ensuring PackageInfo")
 	result, err := controllerutil.CreateOrUpdate(ctx, r.Client, &packageInfo, func() error {
-		if err := r.SetOwner(r.pkg, &packageInfo, owners.BlockOwnerDeletion); err != nil {
-			return fmt.Errorf("unable to set ownerReference on PackageInfo: %w", err)
-		}
 		packageInfo.Spec = packagesv1alpha1.PackageInfoSpec{
 			Name:           r.pkg.GetSpec().PackageInfo.Name,
 			Version:        r.pkg.GetSpec().PackageInfo.Version,
@@ -388,7 +416,8 @@ func (r *PackageReconcilationContext) ensurePackageInfo(ctx context.Context) err
 		}
 	}
 
-	if changed, err := ownerutils.AddOwnedResourceRef(r.Scheme, &r.pkg.GetStatus().OwnedPackageInfos, &packageInfo); err != nil {
+	if changed, err := ownerutils.AddOwnedResourceRef(
+		r.Scheme, &r.pkg.GetStatus().OwnedPackageInfos, &packageInfo); err != nil {
 		log.Error(err, "could not add PackageInfo to owned resources")
 	} else {
 		r.setShouldUpdate(changed)
@@ -472,22 +501,29 @@ func (r *PackageReconcilationContext) actualFinalize(ctx context.Context) error 
 	}
 
 	if r.shouldUpdateStatus {
-		err := r.Status().Update(ctx, r.pkg)
-		if err != nil {
+		if err := r.Status().Update(ctx, r.pkg); err != nil {
 			log.Error(err, "package status update failed")
+			errs = multierr.Append(errs, err)
 		} else {
 			log.Info("package status updated")
 		}
-		errs = multierr.Append(errs, err)
+	} else if r.shouldUpdateResource {
+		if err := r.Update(ctx, r.pkg); err != nil {
+			log.Error(err, "package update failed")
+			errs = multierr.Append(errs, err)
+		} else {
+			log.Info("package updated")
+		}
 	}
+
 	return errs
 }
 
 func (r *PackageReconcilationContext) cleanup(ctx context.Context) error {
 	return multierr.Combine(
 		r.pruneOwnedResources(ctx),
-		r.pruneOwnedPackageInfos(ctx),
-		r.pruneOwnedPackages(ctx),
+		r.pruneOwnedPackageInfos(ctx, false),
+		r.pruneOwnedPackages(ctx, false),
 	)
 }
 
@@ -526,119 +562,133 @@ OuterLoop:
 	return errs
 }
 
-func (r *PackageReconcilationContext) pruneOwnedPackageInfos(ctx context.Context) error {
+func (r *PackageReconcilationContext) pruneOwnedPackageInfos(ctx context.Context, all bool) error {
 	log := ctrl.LoggerFrom(ctx)
-	currentRef, err := ownerutils.ToOwnedResourceRef(r.Scheme, r.pi)
+
+	allPackages, err := r.getAllPackagesAndClusterPackages(ctx)
 	if err != nil {
 		return err
 	}
+
 	var compositeErr error
 	for _, ref := range r.pkg.GetStatus().OwnedPackageInfos {
-		if !ownerutils.RefersToSameResource(ref, currentRef) {
-			var packageInfo packagesv1alpha1.PackageInfo
-			key := client.ObjectKeyFromObject(ownerutils.OwnedResourceRefToObject(ref))
-			if err := r.Get(ctx, key, &packageInfo); apierrors.IsNotFound(err) {
-				log.Info("PackageInfo not found", "PackageInfo", ref.Name)
-			} else if err != nil {
-				compositeErr = multierr.Append(compositeErr, err)
+		if !all && ref.Name == names.PackageInfoName(r.pkg) {
+			continue
+		}
+
+		// find other packages that require this
+		stillUsed := false
+	loopAllPackages:
+		for _, pkg := range allPackages {
+			if pkg.GetName() == r.pkg.GetName() && pkg.GetNamespace() == r.pkg.GetNamespace() {
+				// skip current pkg
 				continue
-			} else {
-				if owned, err := ownerutils.ObjHasOwner(&packageInfo, r.pkg); err != nil {
-					compositeErr = multierr.Append(compositeErr, err)
-					continue
-				} else if owned {
-					// Remove the owner reference for pkg
-					if err := controllerutil.RemoveOwnerReference(r.pkg, &packageInfo, r.Scheme); err != nil {
-						compositeErr = multierr.Append(compositeErr, err)
-						continue
-					}
-					if len(packageInfo.OwnerReferences) > 0 {
-						// If other owner references remain, update the PackageInfo with the owner reference removed
-						log.V(1).Info("updating old package info", "PackageInfo", packageInfo.Name)
-						if err := r.Update(ctx, &packageInfo); client.IgnoreNotFound(err) != nil {
-							compositeErr = multierr.Append(compositeErr, err)
-							continue
-						}
-					} else {
-						// If no other owner references remain, delete the PackageInfo
-						log.V(1).Info("deleting old package info", "PackageInfo", packageInfo.Name)
-						if err := r.Delete(ctx, &packageInfo); client.IgnoreNotFound(err) != nil {
-							compositeErr = multierr.Append(compositeErr, err)
-							continue
-						}
-					}
+			}
+			for _, otherRef := range pkg.GetStatus().OwnedPackageInfos {
+				if otherRef.Name == ref.Name {
+					stillUsed = true
+					break loopAllPackages
 				}
 			}
-
-			// Remove the PackageInfo from the owned PackageInfos field of pkg
-			ownerutils.RemoveOwnedResourceRef(&r.pkg.GetStatus().OwnedPackageInfos, ref)
-			r.setShouldUpdate(true)
 		}
+
+		if !stillUsed {
+			log.V(1).Info("deleting old package info", "PackageInfo", ref.Name)
+			if err := r.Delete(ctx, ownerutils.OwnedResourceRefToObject(ref)); client.IgnoreNotFound(err) != nil {
+				compositeErr = multierr.Append(compositeErr, err)
+				continue
+			}
+		}
+
+		// Remove the PackageInfo from the owned PackageInfos field of pkg
+		ownerutils.RemoveOwnedResourceRef(&r.pkg.GetStatus().OwnedPackageInfos, ref)
+		r.setShouldUpdate(true)
 	}
 	return compositeErr
 }
 
-func (r *PackageReconcilationContext) pruneOwnedPackages(ctx context.Context) error {
+func (r *PackageReconcilationContext) pruneOwnedPackages(ctx context.Context, all bool) error {
 	log := ctrl.LoggerFrom(ctx)
 	var errs error
 	ownedPackagesCopy := r.pkg.GetStatus().OwnedPackages[:]
+
+	allPackages, err := r.getAllPackagesAndClusterPackages(ctx)
+	if err != nil {
+		return err
+	}
+
 OuterLoop:
 	for _, ref := range r.pkg.GetStatus().OwnedPackages {
-		for _, newRef := range r.currentOwnedPackages {
-			if ownerutils.RefersToSameResource(ref, newRef) {
-				continue OuterLoop
+		if !all {
+			for _, newRef := range r.currentOwnedPackages {
+				if ownerutils.RefersToSameResource(ref, newRef) {
+					continue OuterLoop
+				}
 			}
 		}
 
-		var oldReqPkg v1alpha1.Package
-		if err := r.Get(ctx, types.NamespacedName{
-			Name:      ref.Name,
-			Namespace: ref.Namespace,
-		}, &oldReqPkg); err != nil {
-			if apierrors.IsNotFound(err) {
-				r.setShouldUpdate(ownerutils.Remove(&ownedPackagesCopy, ref))
-			} else {
-				log.Error(err, "Failed to get old required package", "oldPackage", ref.Name)
+		stillUsed := false
+	AllPackagesLoop:
+		for _, otherPkg := range allPackages {
+			if !otherPkg.GetDeletionTimestamp().IsZero() ||
+				(otherPkg.GetName() == r.pkg.GetName() && otherPkg.GetNamespace() == r.pkg.GetNamespace()) {
+				continue
 			}
-		} else if owning, err := r.HasOwner(r.pkg, &oldReqPkg); err != nil {
-			log.Error(err, "Failed to check owner references of old required package", "oldPackage", ref.Name)
-		} else if owning {
-			if ref.MarkedForDeletion {
-				log.Info(fmt.Sprintf("reference from %v to %v marked for deletion will be removed", r.pkg.GetName(), ref.Name))
-				var cnt int
-				cnt, err = r.CountOwnersOfType(r.pkg, &oldReqPkg)
-				if err != nil {
-					log.Error(err, "Failed to check owner references of old required package", "oldPackage", ref.Name)
-					continue
+			for _, otherRef := range otherPkg.GetStatus().OwnedPackages {
+				if otherRef.Name == ref.Name {
+					stillUsed = true
+					break AllPackagesLoop
 				}
+			}
+		}
 
-				if err := r.RemoveOwner(r.pkg, &oldReqPkg); err != nil {
-					log.Error(err, "Failed to remove owner reference", "oldPackage", ref.Name)
-				} else if err := r.Update(ctx, &oldReqPkg); err != nil {
-					log.Error(err, "Failed to update old package with removed owner reference", "oldPackage", ref.Name)
+		if !stillUsed {
+			var oldReqPkg v1alpha1.ClusterPackage
+			if err := r.Get(ctx,
+				types.NamespacedName{Name: ref.Name, Namespace: ref.Namespace}, &oldReqPkg); err != nil {
+				if apierrors.IsNotFound(err) {
+					r.setShouldUpdate(ownerutils.Remove(&ownedPackagesCopy, ref))
 				} else {
-					log.Info(fmt.Sprintf("Removed owner reference from %v to %v", r.pkg.GetName(), ref.Name))
-
-					if cnt == 1 {
-						// remove the old package if we were the only package owning it
-						deletePropagationForeground := metav1.DeletePropagationForeground
-						if err := r.Delete(ctx, ownerutils.OwnedResourceRefToObject(ref), &client.DeleteOptions{
-							PropagationPolicy: &deletePropagationForeground,
-						}); err != nil && !apierrors.IsNotFound(err) {
-							errs = multierr.Append(errs, fmt.Errorf("could not prune package: %w", err))
-						} else {
-							log.V(1).Info("pruned package", "reference", ref)
-						}
-					}
+					multierr.AppendInto(&errs, fmt.Errorf("failed to get old required package: %w", err))
+					continue OuterLoop
 				}
-			} else {
-				log.Info(fmt.Sprintf("marking for deletion: reference from %v to %v", r.pkg.GetName(), ref.Name))
-				r.setShouldUpdate(ownerutils.MarkForDeletion(&ownedPackagesCopy, ref))
+			} else if oldReqPkg.InstalledAsDependency() {
+				// remove the old package if we were the only package owning it and it was previously installed as a dependency
+				if err := r.Delete(ctx, ownerutils.OwnedResourceRefToObject(ref),
+					&client.DeleteOptions{PropagationPolicy: util.Pointer(metav1.DeletePropagationForeground)},
+				); err != nil && !apierrors.IsNotFound(err) {
+					errs = multierr.Append(errs, fmt.Errorf("could not prune package: %w", err))
+					continue OuterLoop
+				} else {
+					log.V(1).Info("pruned package", "reference", ref)
+				}
 			}
-		} else {
-			r.setShouldUpdate(ownerutils.Remove(&ownedPackagesCopy, ref))
 		}
+
+		r.setShouldUpdate(ownerutils.Remove(&ownedPackagesCopy, ref))
 	}
 	r.pkg.GetStatus().OwnedPackages = ownedPackagesCopy
 	return errs
+}
+
+func (r *PackageReconcilerCommon) getAllPackagesAndClusterPackages(ctx context.Context) ([]ctrlpkg.Package, error) {
+	var pkgList packagesv1alpha1.PackageList
+	if err := r.List(ctx, &pkgList, &client.ListOptions{}); err != nil {
+		return nil, err
+	}
+
+	var cpkgList packagesv1alpha1.ClusterPackageList
+	if err := r.List(ctx, &cpkgList, &client.ListOptions{}); err != nil {
+		return nil, err
+	}
+
+	allPackages := make([]ctrlpkg.Package, len(pkgList.Items)+len(cpkgList.Items))
+	for i := range pkgList.Items {
+		allPackages[i] = &pkgList.Items[i]
+	}
+	for i := range cpkgList.Items {
+		allPackages[len(pkgList.Items)+i] = &cpkgList.Items[i]
+	}
+
+	return allPackages, nil
 }

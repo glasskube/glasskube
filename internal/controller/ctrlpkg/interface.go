@@ -14,8 +14,13 @@ type Package interface {
 	schema.ObjectKind
 	AutoUpdatesEnabled() bool
 	SetAutoUpdatesEnabled(enabled bool)
+	InstalledAsDependency() bool
+	SetInstalledAsDependency(value bool)
 	GetSpec() *v1alpha1.PackageSpec
 	GetStatus() *v1alpha1.PackageStatus
 	IsNamespaceScoped() bool
 	IsNil() bool
 }
+
+var _ Package = &v1alpha1.Package{}
+var _ Package = &v1alpha1.ClusterPackage{}
