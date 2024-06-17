@@ -81,6 +81,5 @@ var repoUpdateCmd = &cobra.Command{
 }
 
 func init() {
-	update := true
-	repoUpdateCmdOptions.BindToCmdFlags(repoUpdateCmd, update)
+	repoUpdateCmdOptions.BindToCmdFlags(repoUpdateCmd, true)
 }

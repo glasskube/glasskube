@@ -67,13 +67,13 @@ func (opts *repoOptions) Normalize() error {
 	}
 
 	if len(opts.Username) > 0 || len(opts.Password) > 0 {
-		if opts.Auth != repoBasicAuth {
+		if opts.Auth == repoNoAuth || opts.Auth == repoBearerAuth {
 			return fmt.Errorf("username/password only applies to basic authentication (got %v)", opts.Auth)
 		} else {
 			opts.Auth = repoBasicAuth
 		}
 	} else if len(opts.Token) > 0 {
-		if opts.Auth != repoBearerAuth {
+		if opts.Auth == repoNoAuth || opts.Auth == repoBasicAuth {
 			return fmt.Errorf("token only applies to bearer authentication (got %v)", opts.Auth)
 		} else {
 			opts.Auth = repoBearerAuth
