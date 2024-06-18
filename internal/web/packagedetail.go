@@ -145,19 +145,6 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 		}
 	}
 
-	var self string
-	if d.manifest.Scope == nil || *d.manifest.Scope == v1alpha1.ScopeCluster {
-		// Scope == nil is the fallback for all older packages – it will only be wrong for quickwit (the first non-cluster
-		// package), and only when someone selects an outdated version
-		self = fmt.Sprintf("/clusterpackages/%s", d.manifestName)
-	} else {
-		pkgPath := ""
-		if !d.pkg.IsNil() {
-			pkgPath = fmt.Sprintf("/%s/%s", d.pkg.GetNamespace(), d.pkg.GetName())
-		}
-		self = fmt.Sprintf("/packages/%s%s", d.manifestName, pkgPath)
-	}
-
 	err = s.templates.pkgPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
 		"Package":            d.pkg,
 		"Status":             client.GetStatusOrPending(d.pkg),
@@ -175,9 +162,25 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 		"ValueErrors":        valueErrors,
 		"DatalistOptions":    datalistOptions,
 		"ShowDiscussionLink": usedRepo.IsGlasskubeRepo(),
-		"SelfHref":           self,
+		"PackageHref":        getPackageHref(d),
 	}, err))
 	checkTmplError(err, fmt.Sprintf("package-detail (%s)", d.manifestName))
+}
+
+func getPackageHref(d *packageDetailPageContext) string {
+	var pkgHref string
+	if d.manifest.Scope == nil || *d.manifest.Scope == v1alpha1.ScopeCluster {
+		// Scope == nil is the fallback for all older packages – it will only be wrong for quickwit (the first non-cluster
+		// package), and only when someone selects an outdated version
+		pkgHref = fmt.Sprintf("/clusterpackages/%s", d.manifestName)
+	} else {
+		pkgPath := ""
+		if !d.pkg.IsNil() {
+			pkgPath = fmt.Sprintf("/%s/%s", d.pkg.GetNamespace(), d.pkg.GetName())
+		}
+		pkgHref = fmt.Sprintf("/packages/%s%s", d.manifestName, pkgPath)
+	}
+	return pkgHref
 }
 
 func (s *server) getVersions(repositoryName string, pkgName string, selectedVersion string) (repo.PackageIndex, string, string, error) {

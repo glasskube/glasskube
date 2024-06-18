@@ -3,14 +3,14 @@
     <div
       class="container-lg mt-2"
       hx-trigger="htmx:historyRestore from:body"
-      hx-get="/packages/{{ .Manifest.Name }}/discussion"
+      hx-get="{{ .DiscussionHref }}"
       hx-select="main"
       hx-target="main"
       hx-swap="outerHTML">
       <div
         class="row p-3 col-lg-10 offset-lg-1"
         hx-trigger="sse:refresh-pkg-detail-{{ .Manifest.Name }}"
-        hx-get="/packages/{{ .Manifest.Name }}/discussion"
+        hx-get="{{ .DiscussionHref }}"
         hx-swap="outerHTML"
         hx-select="#pkg-detail-header-swapped"
         hx-target="#pkg-detail-header-swapped">

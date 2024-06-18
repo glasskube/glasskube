@@ -196,7 +196,7 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle(clpkgBasePath, s.requireReady(s.clusterPackageDetail))
 	// discussion endpoints
 	router.Handle(installedPkgBasePath+"/discussion", s.requireReady(s.packageDiscussion))
-	router.Handle(clpkgBasePath+"/discussion", s.requireReady(s.packageDiscussion))
+	router.Handle(clpkgBasePath+"/discussion", s.requireReady(s.clusterPackageDiscussion))
 	router.Handle(installedPkgBasePath+"/discussion/badge", s.requireReady(s.discussionBadge))
 	router.Handle(clpkgBasePath+"/discussion/badge", s.requireReady(s.discussionBadge))
 	// configuration endpoints
@@ -654,19 +654,6 @@ func (s *server) handleAdvancedConfig(ctx context.Context, d *packageDetailPageC
 			return
 		}
 
-		var self string
-		if d.manifest.Scope == nil || *d.manifest.Scope == v1alpha1.ScopeCluster {
-			// Scope == nil is the fallback for all older packages – it will only be wrong for quickwit (the first non-cluster
-			// package), and only when someone selects an outdated version
-			self = fmt.Sprintf("/clusterpackages/%s/configure/advanced", d.manifestName)
-		} else {
-			pkgPath := ""
-			if !d.pkg.IsNil() {
-				pkgPath = fmt.Sprintf("/%s/%s", d.pkg.GetNamespace(), d.pkg.GetName())
-			}
-			self = fmt.Sprintf("/packages/%s%s/configure/advanced", d.manifestName, pkgPath)
-		}
-
 		err = s.templates.pkgConfigAdvancedTmpl.Execute(w, s.enrichPage(r, map[string]any{
 			"Status":           client.GetStatusOrPending(d.pkg),
 			"Manifest":         d.manifest,
@@ -677,7 +664,7 @@ func (s *server) handleAdvancedConfig(ctx context.Context, d *packageDetailPageC
 			"PackageIndex":     &idx,
 			"Repositories":     repos,
 			"RepositoryName":   d.repositoryName,
-			"SelfHref":         self,
+			"SelfHref":         fmt.Sprintf("%s/configure/advanced", getPackageHref(d)),
 		}, err))
 		checkTmplError(err, fmt.Sprintf("advanced-config (%s)", d.manifestName))
 	} else if r.Method == http.MethodPost {
