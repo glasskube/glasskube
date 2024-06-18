@@ -63,6 +63,19 @@ var bootstrapCmd = &cobra.Command{
 			desiredVersion = ""
 		}
 
+		if !semver.IsUpgradable(installedVersion, desiredVersion) &&
+			installedVersion != "" &&
+			installedVersion[1:] != desiredVersion {
+			if !cliutils.YesNoPrompt(fmt.Sprintf("Glasskube is already installed in this cluster "+
+				"in the newer version %v. You are about to install version %v. This could lead "+
+				"to a broken cluster!\nAre you sure that you want to downgrade glasskube "+
+				"in this cluster?", installedVersion, desiredVersion), false) {
+				fmt.Println("Operation stopped")
+				cliutils.ExitWithError()
+			}
+
+		}
+
 		upgradeNeeded := installedVersion != "" && semver.IsUpgradable(installedVersion, desiredVersion)
 		if !bootstrapCmdOptions.yes {
 			if upgradeNeeded {
@@ -80,19 +93,6 @@ var bootstrapCmd = &cobra.Command{
 					cliutils.ExitWithError()
 				}
 			}
-		}
-
-		if !semver.IsUpgradable(installedVersion, desiredVersion) &&
-			installedVersion != "" &&
-			installedVersion[1:] != desiredVersion {
-			if !cliutils.YesNoPrompt(fmt.Sprintf("Glasskube is already installed in this cluster "+
-				"in the newer version %v. You are about to install version %v. This could lead "+
-				"to a broken cluster!\nAre you sure that you want to downgrade glasskube "+
-				"in this cluster?", installedVersion, desiredVersion), false) {
-				fmt.Println("Operation stopped")
-				cliutils.ExitWithError()
-			}
-
 		}
 		manifests, err := client.Bootstrap(
 			cmd.Context(),
