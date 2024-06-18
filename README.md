@@ -53,7 +53,7 @@ During this time, we have consistently struggled with package management, config
 We've spent countless hours templating and writing documentation for commands and concepts that were difficult to grasp.
 
 In contrast, tools like Homebrew, apt, and dnf felt easy to use and rarely caused problems.
-While working on other cloud-native projects, users consistently highlighted several common pain points.
+While we worked on other cloud-native projects, our users consistently highlighted several common pain points.
 This realization prompted us to tackle the larger issue of package management in Kubernetes, leading to the development of Glasskube.
 
 ## 🗄️ Table Of Contents
