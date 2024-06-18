@@ -151,7 +151,7 @@
                     </select>
                   </div>
 
-                  {{ if and (ne .Manifest.Scope nil) (eq .Manifest.Scope "Namespaced") }}
+                  {{ if and (ne .Manifest.Scope nil) (eq .Manifest.Scope (ToPackageScope "Namespaced")) }}
                     <label class="form-label" for="pkg-install-namespace">Namespace</label>
                     <div class="input-group mb-2">
                       <input
@@ -185,7 +185,7 @@
                       $.Package
                       $.RepositoryName
                       $.SelectedVersion
-                      $.Manifest.Name
+                      $.Manifest
                       $valName
                       $valDef
                       (index $.ValueErrors $valName)

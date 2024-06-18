@@ -136,6 +136,10 @@ func (t *templates) parseTemplates() {
 			cond := meta.FindStatusCondition(repo.Status.Conditions, string(condition.Ready))
 			return cond != nil && cond.Status == metav1.ConditionTrue
 		},
+		"ToPackageScope": func(param string) *v1alpha1.PackageScope {
+			scope := v1alpha1.PackageScope(param)
+			return &scope
+		},
 	}
 
 	t.baseTemplate = template.Must(template.New("base.html").

@@ -6,10 +6,9 @@
     </button>
     <ul class="dropdown-menu p-0">
       <li>
-        <!-- TODO these urls need to be dynamic depending on whether its a clusterpackage or not -->
         <button
           class="dropdown-item btn btn-sm"
-          hx-get="/packages/{{ .PkgName }}/configuration/{{ .ValueName }}?refKind=Secret&repositoryName={{ .RepositoryName }}&selectedVersion={{ .SelectedVersion | UrlEscape }}"
+          hx-get="{{ .PackageHref }}/configuration/{{ .ValueName }}?refKind=Secret&repositoryName={{ .RepositoryName }}&selectedVersion={{ .SelectedVersion | UrlEscape }}"
           hx-target="#{{ .ContainerId }}"
           hx-select="#{{ .ContainerId }}"
           hx-swap="outerHTML">
@@ -19,7 +18,7 @@
       <li>
         <button
           class="dropdown-item btn btn-sm"
-          hx-get="/packages/{{ .PkgName }}/configuration/{{ .ValueName }}?refKind=ConfigMap&repositoryName={{ .RepositoryName }}&selectedVersion={{ .SelectedVersion | UrlEscape }}"
+          hx-get="{{ .PackageHref }}/configuration/{{ .ValueName }}?refKind=ConfigMap&repositoryName={{ .RepositoryName }}&selectedVersion={{ .SelectedVersion | UrlEscape }}"
           hx-target="#{{ .ContainerId }}"
           hx-select="#{{ .ContainerId }}"
           hx-swap="outerHTML">
@@ -29,7 +28,7 @@
       <li>
         <button
           class="dropdown-item btn btn-sm"
-          hx-get="/packages/{{ .PkgName }}/configuration/{{ .ValueName }}?refKind=Package&repositoryName={{ .RepositoryName }}&selectedVersion={{ .SelectedVersion | UrlEscape }}"
+          hx-get="{{ .PackageHref }}/configuration/{{ .ValueName }}?refKind=Package&repositoryName={{ .RepositoryName }}&selectedVersion={{ .SelectedVersion | UrlEscape }}"
           hx-target="#{{ .ContainerId }}"
           hx-select="#{{ .ContainerId }}"
           hx-swap="outerHTML">
@@ -41,7 +40,7 @@
         <li>
           <button
             class="dropdown-item btn btn-sm"
-            hx-get="/packages/{{ .PkgName }}/configuration/{{ .ValueName }}?repositoryName={{ .RepositoryName }}&selectedVersion={{ .SelectedVersion | UrlEscape }}"
+            hx-get="{{ .PackageHref }}/configuration/{{ .ValueName }}?repositoryName={{ .RepositoryName }}&selectedVersion={{ .SelectedVersion | UrlEscape }}"
             hx-target="#{{ .ContainerId }}"
             hx-select="#{{ .ContainerId }}"
             hx-swap="outerHTML">

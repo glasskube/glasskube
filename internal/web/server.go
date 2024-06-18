@@ -18,6 +18,8 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/glasskube/glasskube/internal/web/util"
+
 	"github.com/Masterminds/semver/v3"
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	clientadapter "github.com/glasskube/glasskube/internal/adapter/goclient"
@@ -195,17 +197,21 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle(installedPkgBasePath, s.requireReady(s.packageDetail))
 	router.Handle(clpkgBasePath, s.requireReady(s.clusterPackageDetail))
 	// discussion endpoints
+	router.Handle(pkgBasePath+"/discussion", s.requireReady(s.packageDiscussion))
 	router.Handle(installedPkgBasePath+"/discussion", s.requireReady(s.packageDiscussion))
 	router.Handle(clpkgBasePath+"/discussion", s.requireReady(s.clusterPackageDiscussion))
+	router.Handle(pkgBasePath+"/discussion/badge", s.requireReady(s.discussionBadge))
 	router.Handle(installedPkgBasePath+"/discussion/badge", s.requireReady(s.discussionBadge))
 	router.Handle(clpkgBasePath+"/discussion/badge", s.requireReady(s.discussionBadge))
 	// configuration endpoints
+	router.Handle(pkgBasePath+"/configure", s.requireReady(s.installOrConfigurePackage))
 	router.Handle(installedPkgBasePath+"/configure", s.requireReady(s.installOrConfigurePackage))
 	router.Handle(clpkgBasePath+"/configure", s.requireReady(s.installOrConfigurePackage))
 	router.Handle(installedPkgBasePath+"/configure/advanced", s.requireReady(s.advancedPackageConfiguration))
 	router.Handle(clpkgBasePath+"/configure/advanced", s.requireReady(s.advancedClusterPackageConfiguration))
+	router.Handle(pkgBasePath+"/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
 	router.Handle(installedPkgBasePath+"/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
-	router.Handle(clpkgBasePath+"/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
+	router.Handle(clpkgBasePath+"/configuration/{valueName}", s.requireReady(s.clusterPackageConfigurationInput))
 	// configuration datalist endpoints
 	router.Handle("/datalists/{valueName}/names", s.requireReady(s.namesDatalist))
 	router.Handle("/datalists/{valueName}/keys", s.requireReady(s.keysDatalist))
@@ -515,9 +521,9 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 			WithValues(values)
 		if mf.Scope == nil || *mf.Scope == v1alpha1.ScopeCluster {
 			pkg = builder.BuildClusterPackage()
-		} else {
-			// TODO builder set namespace + name
 		}
+		// TODO builder set namespace + name
+
 		opts := metav1.CreateOptions{}
 		err := install.NewInstaller(s.pkgClient).
 			WithStatusWriter(statuswriter.Stderr()).
@@ -664,7 +670,7 @@ func (s *server) handleAdvancedConfig(ctx context.Context, d *packageDetailPageC
 			"PackageIndex":     &idx,
 			"Repositories":     repos,
 			"RepositoryName":   d.repositoryName,
-			"SelfHref":         fmt.Sprintf("%s/configure/advanced", getPackageHref(d)),
+			"SelfHref":         fmt.Sprintf("%s/configure/advanced", util.GetPackageHref(d.pkg, d.manifest)),
 		}, err))
 		checkTmplError(err, fmt.Sprintf("advanced-config (%s)", d.manifestName))
 	} else if r.Method == http.MethodPost {

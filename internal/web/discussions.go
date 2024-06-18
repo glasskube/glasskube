@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/glasskube/glasskube/internal/web/util"
+
 	"github.com/glasskube/glasskube/internal/giscus"
 	"github.com/glasskube/glasskube/internal/httperror"
 
@@ -89,7 +91,7 @@ func (s *server) handlePackageDiscussionPage(w http.ResponseWriter, r *http.Requ
 		}
 	}
 
-	pkgHref := getPackageHref(d)
+	pkgHref := util.GetPackageHref(d.pkg, d.manifest)
 
 	err := s.templates.pkgDiscussionPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
 		"Giscus":             giscus.Client().Config,
@@ -107,6 +109,9 @@ func (s *server) handlePackageDiscussionPage(w http.ResponseWriter, r *http.Requ
 
 func (s *server) discussionBadge(w http.ResponseWriter, r *http.Request) {
 	pkgName := mux.Vars(r)["pkgName"]
+	if pkgName == "" {
+		pkgName = mux.Vars(r)["manifestName"]
+	}
 
 	var totalCount int
 	if counts, err := giscus.Client().GetCountsFor(pkgName); err != nil {

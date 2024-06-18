@@ -7,6 +7,8 @@ import (
 	"os"
 	"slices"
 
+	webutil "github.com/glasskube/glasskube/internal/web/util"
+
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
@@ -162,25 +164,9 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 		"ValueErrors":        valueErrors,
 		"DatalistOptions":    datalistOptions,
 		"ShowDiscussionLink": usedRepo.IsGlasskubeRepo(),
-		"PackageHref":        getPackageHref(d),
+		"PackageHref":        webutil.GetPackageHref(d.pkg, d.manifest),
 	}, err))
 	checkTmplError(err, fmt.Sprintf("package-detail (%s)", d.manifestName))
-}
-
-func getPackageHref(d *packageDetailPageContext) string {
-	var pkgHref string
-	if d.manifest.Scope == nil || *d.manifest.Scope == v1alpha1.ScopeCluster {
-		// Scope == nil is the fallback for all older packages – it will only be wrong for quickwit (the first non-cluster
-		// package), and only when someone selects an outdated version
-		pkgHref = fmt.Sprintf("/clusterpackages/%s", d.manifestName)
-	} else {
-		pkgPath := ""
-		if !d.pkg.IsNil() {
-			pkgPath = fmt.Sprintf("/%s/%s", d.pkg.GetNamespace(), d.pkg.GetName())
-		}
-		pkgHref = fmt.Sprintf("/packages/%s%s", d.manifestName, pkgPath)
-	}
-	return pkgHref
 }
 
 func (s *server) getVersions(repositoryName string, pkgName string, selectedVersion string) (repo.PackageIndex, string, string, error) {

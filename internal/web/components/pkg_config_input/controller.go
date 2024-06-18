@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/glasskube/glasskube/internal/web/util"
+
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
@@ -36,6 +38,7 @@ type pkgConfigInputInput struct {
 	ValueError         error
 	Autofocus          bool
 	DatalistOptions    *PkgConfigInputDatalistOptions
+	PackageHref        string
 }
 
 func getStringValue(pkg ctrlpkg.Package, valueName string, valueDefinition *v1alpha1.ValueDefinition) string {
@@ -100,7 +103,7 @@ func ForPkgConfigInput(
 	pkg ctrlpkg.Package,
 	repositoryName string,
 	selectedVersion string,
-	pkgName string,
+	manifest *v1alpha1.PackageManifest,
 	valueName string,
 	valueDefinition v1alpha1.ValueDefinition,
 	valueError error,
@@ -114,7 +117,7 @@ func ForPkgConfigInput(
 	return &pkgConfigInputInput{
 		RepositoryName:     repositoryName,
 		SelectedVersion:    selectedVersion,
-		PkgName:            pkgName,
+		PkgName:            manifest.Name,
 		ValueName:          valueName,
 		ValueDefinition:    valueDefinition,
 		StringValue:        getStringValue(pkg, valueName, &valueDefinition),
@@ -127,5 +130,6 @@ func ForPkgConfigInput(
 		ValueError:         valueError,
 		Autofocus:          options.Autofocus,
 		DatalistOptions:    datalistOptions,
+		PackageHref:        util.GetPackageHref(pkg, manifest),
 	}
 }
