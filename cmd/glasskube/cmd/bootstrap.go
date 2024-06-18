@@ -29,6 +29,7 @@ type bootstrapOptions struct {
 	force                   bool
 	createDefaultRepository bool
 	yes                     bool
+	dryrun                  bool
 	OutputOptions
 }
 
@@ -83,13 +84,25 @@ var bootstrapCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "\nAn error occurred during bootstrap:\n%v\n", err)
 			cliutils.ExitWithError()
 		}
-		if err := printBootsrap(
-			manifests,
-			bootstrapCmdOptions.Output,
-		); err != nil {
-			fmt.Fprintf(os.Stderr, "\nAn error occurred in printing : %v\n", err)
-			cliutils.ExitWithError()
+		if bootstrapCmdOptions.dryrun {
+			fmt.Println("Dry run completed successfully.")
+			if err := printBootsrap(
+				manifests,
+				bootstrapCmdOptions.Output,
+			); err != nil {
+				fmt.Fprintf(os.Stderr, "\nAn error occurred in printing : %v\n", err)
+				cliutils.ExitWithError()
+			}
+		} else {
+			if err := printBootsrap(
+				manifests,
+				bootstrapCmdOptions.Output,
+			); err != nil {
+				fmt.Fprintf(os.Stderr, "\nAn error occurred in printing : %v\n", err)
+				cliutils.ExitWithError()
+			}
 		}
+
 	},
 }
 
@@ -101,6 +114,7 @@ func (o bootstrapOptions) asBootstrapOptions() bootstrap.BootstrapOptions {
 		DisableTelemetry:        o.disableTelemetry,
 		Force:                   o.force,
 		CreateDefaultRepository: o.createDefaultRepository,
+		DryRun:                  o.dryrun,
 	}
 }
 
@@ -221,6 +235,8 @@ func init() {
 	bootstrapCmd.Flags().BoolVar(&bootstrapCmdOptions.createDefaultRepository, "create-default-repository",
 		bootstrapCmdOptions.createDefaultRepository,
 		"Toggle creation of the default glasskube package repository")
+	bootstrapCmd.PersistentFlags().BoolVar(&bootstrapCmdOptions.dryrun, "dry-run", false,
+		"simulate the installation of package without actually installing it")
 	bootstrapCmd.Flags().BoolVar(&bootstrapCmdOptions.yes, "yes", false, "Skip confirmation prompt")
 	bootstrapCmd.MarkFlagsMutuallyExclusive("url", "type")
 	bootstrapCmd.MarkFlagsMutuallyExclusive("url", "latest")

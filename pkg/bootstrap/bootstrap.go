@@ -46,10 +46,11 @@ type BootstrapOptions struct {
 	DisableTelemetry        bool
 	Force                   bool
 	CreateDefaultRepository bool
+	DryRun                  bool
 }
 
 func DefaultOptions() BootstrapOptions {
-	return BootstrapOptions{Type: BootstrapTypeAio, Latest: config.IsDevBuild(), CreateDefaultRepository: true}
+	return BootstrapOptions{Type: BootstrapTypeAio, Latest: config.IsDevBuild(), CreateDefaultRepository: true, DryRun: false}
 }
 
 const installMessage = `
@@ -131,6 +132,14 @@ func (c *BootstrapClient) Bootstrap(
 
 	if options.CreateDefaultRepository {
 		manifests = append(manifests, defaultRepository())
+	}
+
+	if options.DryRun {
+		statusMessage("Dry-run mode enabled. The following resources would be applied:", true)
+		for _, manifest := range manifests {
+			fmt.Printf("%s\n", manifest.GetName())
+		}
+		return manifests, nil
 	}
 
 	statusMessage("Applying Glasskube manifests", true)
