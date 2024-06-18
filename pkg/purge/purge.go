@@ -67,7 +67,7 @@ func (c *Purger) Purge(ctx context.Context) error {
 		fmt.Fprintf(os.Stderr, "Failed to check package operator version: %v\n", err)
 	}
 
-	manifestUrl := fmt.Sprintf("https://github.com/glasskube/glasskube/releases/download/v%v/manifest-%s.yaml",
+	manifestUrl := fmt.Sprintf("https://github.com/glasskube/glasskube/releases/download/%v/manifest-%s.yaml",
 		operatorVersion, "slim")
 
 	c.status.SetStatus("Fetching Glasskube manifest from " + manifestUrl)

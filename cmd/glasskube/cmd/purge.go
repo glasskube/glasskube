@@ -39,6 +39,16 @@ var purgeCmd = &cobra.Command{
 		bold := color.New(color.Bold).SprintFunc()
 		currentContext := clicontext.RawConfigFromContext(ctx).CurrentContext
 
+		isBootstrapped, err := bootstrap.IsBootstrapped(cmd.Context(), cfg)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			cliutils.ExitWithError()
+		}
+		if !isBootstrapped {
+			fmt.Fprintln(os.Stderr, "error: glasskube is not bootstrapped")
+			cliutils.ExitWithError()
+		}
+
 		if !purgeCmdOptions.yes {
 			confirmMessage := fmt.Sprintf("⚠️ Glasskube and all related resources will be purged from context %s."+
 				"\nThis includes removal of all installed packages!\nContinue? ", bold(currentContext))
@@ -46,12 +56,6 @@ var purgeCmd = &cobra.Command{
 				fmt.Fprintln(os.Stderr, "Operation stopped")
 				cliutils.ExitWithError()
 			}
-		}
-
-		IsBootstrapped, err := bootstrap.IsBootstrapped(cmd.Context(), cfg)
-		if err != nil && !IsBootstrapped {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			cliutils.ExitWithError()
 		}
 
 		if err := client.Purge(ctx); err != nil {
