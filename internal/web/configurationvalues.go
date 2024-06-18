@@ -100,6 +100,7 @@ func extractPackageValueSource(r *http.Request, valueName string) *v1alpha1.Pack
 	}
 }
 
+// packageConfigurationInput is like clusterPackageConfigurationInput but for packages
 func (s *server) packageConfigurationInput(w http.ResponseWriter, r *http.Request) {
 	manifestName := mux.Vars(r)["manifestName"]
 	namespace := mux.Vars(r)["namespace"]

@@ -151,7 +151,7 @@
                     </select>
                   </div>
 
-                  {{ if and (ne .Manifest.Scope nil) (eq .Manifest.Scope (ToPackageScope "Namespaced")) }}
+                  {{ if and (ne .Manifest.Scope nil) (eq "Namespaced" (PackageScopeToString .Manifest.Scope)) }}
                     <label class="form-label" for="pkg-install-namespace">Namespace</label>
                     <div class="input-group mb-2">
                       <input

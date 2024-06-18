@@ -190,7 +190,7 @@ var installCmd = &cobra.Command{
 		}
 
 		if installCmdOptions.NoWait {
-			if err := installer.Install(ctx, pkg, opts); err != nil {
+			if err := installer.InstallClusterPackage(ctx, pkg, opts); err != nil {
 				fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
 				cliutils.ExitWithError()
 			}

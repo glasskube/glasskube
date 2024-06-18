@@ -18,6 +18,8 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
+
 	"github.com/glasskube/glasskube/internal/web/util"
 
 	"github.com/Masterminds/semver/v3"
@@ -204,9 +206,9 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle(installedPkgBasePath+"/discussion/badge", s.requireReady(s.discussionBadge))
 	router.Handle(clpkgBasePath+"/discussion/badge", s.requireReady(s.discussionBadge))
 	// configuration endpoints
-	router.Handle(pkgBasePath+"/configure", s.requireReady(s.installOrConfigurePackage))
+	// router.Handle(pkgBasePath+"/configure", s.requireReady(s.installOrConfigurePackage))
 	router.Handle(installedPkgBasePath+"/configure", s.requireReady(s.installOrConfigurePackage))
-	router.Handle(clpkgBasePath+"/configure", s.requireReady(s.installOrConfigurePackage))
+	router.Handle(clpkgBasePath+"/configure", s.requireReady(s.installOrConfigureClusterPackage))
 	router.Handle(installedPkgBasePath+"/configure/advanced", s.requireReady(s.advancedPackageConfiguration))
 	router.Handle(clpkgBasePath+"/configure/advanced", s.requireReady(s.advancedClusterPackageConfiguration))
 	router.Handle(pkgBasePath+"/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
@@ -449,92 +451,117 @@ func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 	checkTmplError(tmplErr, "packages")
 }
 
-// installOrConfigurePackage is an endpoint which takes POST requests, containing all necessary parameters to either
+// installOrConfigurePackage is like installOrConfigureClusterPackage but for packages
+func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	manifestName := mux.Vars(r)["manifestName"]
+	namespace := mux.Vars(r)["namespace"]
+	name := mux.Vars(r)["name"]
+	requestedNamespace := r.FormValue("requestedNamespace")
+	requestedName := r.FormValue("requestedName")
+	repositoryName := r.FormValue("repositoryName")
+	selectedVersion := r.FormValue("selectedVersion")
+	enableAutoUpdate := r.FormValue("enableAutoUpdate")
+
+	var err error
+	pkg := &v1alpha1.Package{}
+	var mf *v1alpha1.PackageManifest
+	if err := s.pkgClient.Packages(namespace).Get(ctx, name, pkg); err != nil && !apierrors.IsNotFound(err) {
+		s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred fetching package details of %v", name), "danger")
+		return
+	} else if err != nil {
+		pkg = nil
+	}
+
+	repositoryName, mf, err = s.getUsedRepoAndManifest(ctx, pkg, repositoryName, manifestName, selectedVersion)
+	if err != nil {
+		s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred getting manifest and repo for %s", manifestName), "danger")
+		return
+	}
+
+	if values, err := extractValues(r, mf); err != nil {
+		s.respondAlertAndLog(w, err, "An error occurred parsing the form", "danger")
+		return
+	} else if pkg == nil {
+		pkg = client.PackageBuilder(manifestName).WithVersion(selectedVersion).
+			WithVersion(selectedVersion).
+			WithRepositoryName(repositoryName).
+			WithAutoUpdates(strings.ToLower(enableAutoUpdate) == "on").
+			WithValues(values).
+			WithNamespace(requestedNamespace).
+			WithName(requestedName).
+			BuildPackage()
+		opts := metav1.CreateOptions{}
+		err := install.NewInstaller(s.pkgClient).
+			WithStatusWriter(statuswriter.Stderr()).
+			InstallPackage(ctx, pkg, opts)
+		if err != nil {
+			s.respondAlertAndLog(w, err, "An error occurred installing "+manifestName, "danger")
+			return
+		}
+	} else {
+		pkg.Spec.Values = values
+		if err := s.pkgClient.Packages(pkg.GetNamespace()).Update(ctx, pkg); err != nil {
+			s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred updating package %v", manifestName), "danger")
+			return
+		}
+		if _, err := s.valueResolver.Resolve(ctx, values); err != nil {
+			s.respondAlertAndLog(w, err, "Some values could not be resolved: ", "warning")
+		} else {
+			s.respondSuccess(w, "Configuration updated successfully")
+		}
+	}
+}
+
+// installOrConfigureClusterPackage is an endpoint which takes POST requests, containing all necessary parameters to either
 // install a new package if it does not exist yet, or update the configuration of an existing package.
 // The name of the concerned package is given in the pkgName query parameter.
 // In case the given package is not installed yet in the cluster, there must be a form parameter selectedVersion
 // containing which version should be installed.
 // In either case, the parameters from the form are parsed and converted into ValueConfiguration objects, which are
 // being set in the packages spec.
-func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Request) {
+func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	pkgName := mux.Vars(r)["pkgName"]
 	repositoryName := r.FormValue("repositoryName")
 	selectedVersion := r.FormValue("selectedVersion")
-	//namespace := r.FormValue("requestedNamespace")
-	//name := r.FormValue("requestedName")
 	enableAutoUpdate := r.FormValue("enableAutoUpdate")
+	var err error
 	pkg := &v1alpha1.ClusterPackage{}
-	var mf v1alpha1.PackageManifest
-	if err := s.pkgClient.ClusterPackages().Get(ctx, pkgName, pkg); err != nil && !apierrors.IsNotFound(err) {
+	var mf *v1alpha1.PackageManifest
+	if err = s.pkgClient.ClusterPackages().Get(ctx, pkgName, pkg); err != nil && !apierrors.IsNotFound(err) {
 		s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred fetching package details of %v", pkgName), "danger")
 		return
 	} else if err != nil {
 		pkg = nil
 	}
 
-	if pkg == nil {
-		var repoClient repoclient.RepoClient
-		if len(repositoryName) == 0 {
-			repos, err := s.repoClientset.Meta().GetReposForPackage(pkgName)
-			if err != nil {
-				s.respondAlertAndLog(w, err, "", "danger")
-				return
-			}
-			switch len(repos) {
-			case 0:
-				// TODO: show error in UI
-				fmt.Fprintf(os.Stderr, "package not found in any repository")
-				return
-			case 1:
-				repositoryName = repos[0].Name
-				repoClient = s.repoClientset.ForRepo(repos[0])
-			default:
-				// TODO: show error in UI
-				fmt.Fprintf(os.Stderr, "package found in multiple repositories")
-				return
-			}
-		} else {
-			repoClient = s.repoClientset.ForRepoWithName(repositoryName)
-		}
-		if err := repoClient.FetchPackageManifest(pkgName, selectedVersion, &mf); err != nil {
-			s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred fetching manifest of %v in version %v", pkgName, selectedVersion), "danger")
-			return
-		}
-	} else {
-		if mf1, err := manifest.GetInstalledManifestForPackage(ctx, pkg); err != nil {
-			s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred fetching package details of %v", pkgName), "danger")
-			return
-		} else {
-			mf = *mf1
-		}
+	repositoryName, mf, err = s.getUsedRepoAndManifest(ctx, pkg, repositoryName, pkgName, selectedVersion)
+	if err != nil {
+		s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred getting manifest and repo for %s", pkgName), "danger")
+		return
 	}
 
-	if values, err := extractValues(r, &mf); err != nil {
+	if values, err := extractValues(r, mf); err != nil {
 		s.respondAlertAndLog(w, err, "An error occurred parsing the form", "danger")
 		return
 	} else if pkg == nil {
-		builder := client.PackageBuilder(pkgName).WithVersion(selectedVersion).
+		pkg = client.PackageBuilder(pkgName).WithVersion(selectedVersion).
 			WithVersion(selectedVersion).
 			WithRepositoryName(repositoryName).
 			WithAutoUpdates(strings.ToLower(enableAutoUpdate) == "on").
-			WithValues(values)
-		if mf.Scope == nil || *mf.Scope == v1alpha1.ScopeCluster {
-			pkg = builder.BuildClusterPackage()
-		}
-		// TODO builder set namespace + name
-
+			WithValues(values).
+			BuildClusterPackage()
 		opts := metav1.CreateOptions{}
 		err := install.NewInstaller(s.pkgClient).
 			WithStatusWriter(statuswriter.Stderr()).
-			Install(ctx, pkg, opts)
+			InstallClusterPackage(ctx, pkg, opts)
 		if err != nil {
 			s.respondAlertAndLog(w, err, "An error occurred installing "+pkgName, "danger")
 			return
 		}
 	} else {
 		pkg.Spec.Values = values
-		// TODO if cluster else
 		if err := s.pkgClient.ClusterPackages().Update(ctx, pkg); err != nil {
 			s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred updating package %v", pkgName), "danger")
 			return
@@ -542,14 +569,45 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 		if _, err := s.valueResolver.Resolve(ctx, values); err != nil {
 			s.respondAlertAndLog(w, err, "Some values could not be resolved: ", "warning")
 		} else {
-			err := s.templates.alertTmpl.Execute(w, map[string]any{
-				"Message":     "Configuration updated successfully",
-				"Dismissible": true,
-				"Type":        "success",
-			})
-			checkTmplError(err, "success")
+			s.respondSuccess(w, "Configuration updated successfully")
 		}
 	}
+}
+
+func (s *server) getUsedRepoAndManifest(ctx context.Context, pkg ctrlpkg.Package, repositoryName string, manifestName string, selectedVersion string) (
+	string, *v1alpha1.PackageManifest, error) {
+
+	var mf v1alpha1.PackageManifest
+	if pkg.IsNil() {
+		var repoClient repoclient.RepoClient
+		if len(repositoryName) == 0 {
+			repos, err := s.repoClientset.Meta().GetReposForPackage(manifestName)
+			if err != nil {
+				return "", nil, err
+			}
+			switch len(repos) {
+			case 0:
+				return "", nil, errors.New("package not found in any repository")
+			case 1:
+				repositoryName = repos[0].Name
+				repoClient = s.repoClientset.ForRepo(repos[0])
+			default:
+				return "", nil, errors.New("package found in multiple repositories")
+			}
+		} else {
+			repoClient = s.repoClientset.ForRepoWithName(repositoryName)
+		}
+		if err := repoClient.FetchPackageManifest(manifestName, selectedVersion, &mf); err != nil {
+			return "", nil, err
+		}
+	} else {
+		if installedMf, err := manifest.GetInstalledManifestForPackage(ctx, pkg); err != nil {
+			return "", nil, err
+		} else {
+			mf = *installedMf
+		}
+	}
+	return repositoryName, &mf, nil
 }
 
 // advancedClusterPackageConfiguration is a GET+POST endpoint which can be used for advanced package installation options,

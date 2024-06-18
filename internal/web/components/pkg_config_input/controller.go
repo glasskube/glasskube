@@ -130,6 +130,6 @@ func ForPkgConfigInput(
 		ValueError:         valueError,
 		Autofocus:          options.Autofocus,
 		DatalistOptions:    datalistOptions,
-		PackageHref:        util.GetPackageHref(pkg, manifest),
+		PackageHref:        util.GetPackageHrefWithFallback(pkg, manifest),
 	}
 }

@@ -8,6 +8,14 @@ import (
 )
 
 func GetPackageHref(pkg ctrlpkg.Package, manifest *v1alpha1.PackageManifest) string {
+	return getPackageHref(pkg, manifest, false)
+}
+
+func GetPackageHrefWithFallback(pkg ctrlpkg.Package, manifest *v1alpha1.PackageManifest) string {
+	return getPackageHref(pkg, manifest, true)
+}
+
+func getPackageHref(pkg ctrlpkg.Package, manifest *v1alpha1.PackageManifest, withFallback bool) string {
 	var pkgHref string
 	if manifest.Scope == nil || *manifest.Scope == v1alpha1.ScopeCluster {
 		// Scope == nil is the fallback for all older packages – it will only be wrong for quickwit (the first non-cluster
@@ -17,8 +25,7 @@ func GetPackageHref(pkg ctrlpkg.Package, manifest *v1alpha1.PackageManifest) str
 		pkgPath := ""
 		if !pkg.IsNil() {
 			pkgPath = fmt.Sprintf("/%s/%s", pkg.GetNamespace(), pkg.GetName())
-		} else {
-			// TODO is this correct in every case?
+		} else if withFallback {
 			pkgPath = "/-/-" // not installed yet
 		}
 		pkgHref = fmt.Sprintf("/packages/%s%s", manifest.Name, pkgPath)

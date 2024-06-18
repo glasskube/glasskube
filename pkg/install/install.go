@@ -35,7 +35,7 @@ func (obj *installer) InstallBlocking(ctx context.Context, pkg *v1alpha1.Cluster
 	obj.status.Start()
 	defer obj.status.Stop()
 	if isDryRun(opts) {
-		_, err := obj.install(ctx, pkg, opts)
+		_, err := obj.installClusterPackage(ctx, pkg, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -45,29 +45,51 @@ func (obj *installer) InstallBlocking(ctx context.Context, pkg *v1alpha1.Cluster
 			Message: "Dry run - package simulated as installed and ready.",
 		}, nil
 	}
-	pkg, err := obj.install(ctx, pkg, opts)
+	pkg, err := obj.installClusterPackage(ctx, pkg, opts)
 	if err != nil {
 		return nil, err
 	}
 	return obj.awaitInstall(ctx, pkg.GetUID())
 }
 
-// Install creates a new v1alpha1.Package custom resource in the cluster.
-func (obj *installer) Install(ctx context.Context, pkg *v1alpha1.ClusterPackage,
+// Install creates a new v1alpha1.ClusterPackage custom resource in the cluster.
+func (obj *installer) InstallClusterPackage(ctx context.Context, pkg *v1alpha1.ClusterPackage,
 	opts metav1.CreateOptions) error {
 	obj.status.Start()
 	defer obj.status.Stop()
-	_, err := obj.install(ctx, pkg, opts)
+	_, err := obj.installClusterPackage(ctx, pkg, opts)
 	return err
 }
 
-func (obj *installer) install(
+// Install creates a new v1alpha1.Package custom resource in the cluster.
+func (obj *installer) InstallPackage(ctx context.Context, pkg *v1alpha1.Package,
+	opts metav1.CreateOptions) error {
+	obj.status.Start()
+	defer obj.status.Stop()
+	_, err := obj.installPackage(ctx, pkg, opts)
+	return err
+}
+
+func (obj *installer) installClusterPackage(
 	ctx context.Context,
 	pkg *v1alpha1.ClusterPackage,
 	opts metav1.CreateOptions,
 ) (*v1alpha1.ClusterPackage, error) {
 	obj.status.SetStatus(fmt.Sprintf("Installing %v...", pkg.Name))
 	err := obj.client.ClusterPackages().Create(ctx, pkg, opts)
+	if err != nil {
+		return nil, err
+	}
+	return pkg, nil
+}
+
+func (obj *installer) installPackage(
+	ctx context.Context,
+	pkg *v1alpha1.Package,
+	opts metav1.CreateOptions,
+) (*v1alpha1.Package, error) {
+	obj.status.SetStatus(fmt.Sprintf("Installing %v...", pkg.Name))
+	err := obj.client.Packages(pkg.GetNamespace()).Create(ctx, pkg, opts)
 	if err != nil {
 		return nil, err
 	}

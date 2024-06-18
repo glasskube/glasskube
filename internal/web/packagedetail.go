@@ -164,7 +164,7 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 		"ValueErrors":        valueErrors,
 		"DatalistOptions":    datalistOptions,
 		"ShowDiscussionLink": usedRepo.IsGlasskubeRepo(),
-		"PackageHref":        webutil.GetPackageHref(d.pkg, d.manifest),
+		"PackageHref":        webutil.GetPackageHrefWithFallback(d.pkg, d.manifest),
 	}, err))
 	checkTmplError(err, fmt.Sprintf("package-detail (%s)", d.manifestName))
 }
