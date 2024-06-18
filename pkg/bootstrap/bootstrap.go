@@ -50,7 +50,12 @@ type BootstrapOptions struct {
 }
 
 func DefaultOptions() BootstrapOptions {
-	return BootstrapOptions{Type: BootstrapTypeAio, Latest: config.IsDevBuild(), CreateDefaultRepository: true, DryRun: false}
+	return BootstrapOptions{
+		Type:                    BootstrapTypeAio,
+		Latest:                  config.IsDevBuild(),
+		CreateDefaultRepository: true,
+		DryRun:                  false,
+	}
 }
 
 const installMessage = `
