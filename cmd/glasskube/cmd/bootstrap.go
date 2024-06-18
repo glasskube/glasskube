@@ -47,14 +47,6 @@ var bootstrapCmd = &cobra.Command{
 
 		currentContext := clicontext.RawConfigFromContext(ctx).CurrentContext
 
-		if !bootstrapCmdOptions.yes {
-			confirmMessage := fmt.Sprintf("Glasskube will be installed in context %s.\nContinue? ", currentContext)
-			if !cliutils.YesNoPrompt(confirmMessage, true) {
-				fmt.Println("Operation stopped")
-				cliutils.ExitWithError()
-			}
-		}
-
 		installedVersion, err := clientutils.GetPackageOperatorVersion(cmd.Context())
 		if err != nil {
 			IsBootstrapped, err := bootstrap.IsBootstrapped(cmd.Context(), cfg)
@@ -70,6 +62,26 @@ var bootstrapCmd = &cobra.Command{
 		} else {
 			desiredVersion = ""
 		}
+
+		upgradeNeeded := installedVersion != "" && semver.IsUpgradable(installedVersion, desiredVersion)
+		if !bootstrapCmdOptions.yes {
+			if upgradeNeeded {
+				confirmUpdateMessage := fmt.Sprintf("Glasskube will be updated to version %s "+
+					"in cluster %s.\nContinue? ", desiredVersion, currentContext)
+				if !cliutils.YesNoPrompt(confirmUpdateMessage, true) {
+					fmt.Println("Operation stopped")
+					cliutils.ExitWithError()
+				}
+			} else {
+				confirmMessage := fmt.Sprintf("Glasskube will be installed in context %s."+
+					"\nContinue? ", currentContext)
+				if !cliutils.YesNoPrompt(confirmMessage, true) {
+					fmt.Println("Operation stopped")
+					cliutils.ExitWithError()
+				}
+			}
+		}
+
 		if !semver.IsUpgradable(installedVersion, desiredVersion) &&
 			installedVersion != "" &&
 			installedVersion[1:] != desiredVersion {
