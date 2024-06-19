@@ -13,22 +13,22 @@ require (
 	github.com/fluxcd/source-controller/api v1.2.4
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/go-logr/logr v1.4.2
-	github.com/google/go-containerregistry v0.19.1
+	github.com/google/go-containerregistry v0.19.2
 	github.com/gorilla/mux v1.8.1
 	github.com/invopop/jsonschema v0.12.0
 	github.com/onsi/ginkgo/v2 v2.19.0
 	github.com/onsi/gomega v1.33.1
 	github.com/posthog/posthog-go v0.0.0-20240327112532-87b23fe11103
 	github.com/schollz/progressbar/v3 v3.14.4
-	github.com/spf13/cobra v1.8.0
-	github.com/yuin/goldmark v1.7.1
+	github.com/spf13/cobra v1.8.1
+	github.com/yuin/goldmark v1.7.2
 	go.uber.org/multierr v1.11.0
 	golang.org/x/term v0.21.0
 	k8s.io/api v0.30.2
 	k8s.io/apiextensions-apiserver v0.30.2
 	k8s.io/apimachinery v0.30.2
 	k8s.io/client-go v0.30.2
-	k8s.io/klog/v2 v2.120.1
+	k8s.io/klog/v2 v2.130.0
 	sigs.k8s.io/controller-runtime v0.18.4
 	sigs.k8s.io/yaml v1.4.0
 )
