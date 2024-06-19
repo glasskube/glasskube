@@ -89,8 +89,9 @@ If the package manifest has more than one entrypoint, specify the name of the en
 }
 
 func init() {
-	openCmdOptions.KindOptions.AddFlagsToCommand(openCmd)
-	openCmdOptions.NamespaceOptions.AddFlagsToCommand(openCmd)
-	openCmd.Flags().Int32Var(&openCmdOptions.Port, "port", openCmdOptions.Port, "Custom port for opening the package")
+	// TODO: Enable these flags to support namespaced packages
+	// openCmdOptions.KindOptions.AddFlagsToCommand(openCmd)
+	// openCmdOptions.NamespaceOptions.AddFlagsToCommand(openCmd)
+	openCmd.Flags().Int32Var(&openCmdOptions.Port, "port", openCmdOptions.Port, "custom port for opening the package")
 	RootCmd.AddCommand(openCmd)
 }

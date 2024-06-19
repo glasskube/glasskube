@@ -52,7 +52,8 @@ func (opts *KindOptions) AddFlagsToCommand(cmd *cobra.Command) {
 
 func DefaultKindOptions() KindOptions {
 	return KindOptions{
-		Kind: KindUnspecified,
+		// TODO: Change to KindUnspecified to support namespaced packages
+		Kind: KindClusterPackage,
 	}
 }
 
