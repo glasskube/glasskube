@@ -508,7 +508,7 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 		if _, err := s.valueResolver.Resolve(ctx, values); err != nil {
 			s.respondAlertAndLog(w, err, "Some values could not be resolved: ", "warning")
 		} else {
-			s.respondSuccess(w, "Configuration updated successfully")
+			s.respondSuccess(w)
 		}
 	}
 }
@@ -569,7 +569,7 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 		if _, err := s.valueResolver.Resolve(ctx, values); err != nil {
 			s.respondAlertAndLog(w, err, "Some values could not be resolved: ", "warning")
 		} else {
-			s.respondSuccess(w, "Configuration updated successfully")
+			s.respondSuccess(w)
 		}
 	}
 }
@@ -744,7 +744,7 @@ func (s *server) handleAdvancedConfig(ctx context.Context, d *packageDetailPageC
 					"danger")
 				return
 			} else {
-				s.respondSuccess(w, "Configuration updated successfully")
+				s.respondSuccess(w)
 			}
 		} else {
 			if err := s.pkgClient.Packages(d.pkg.GetNamespace()).Update(ctx, d.pkg.(*v1alpha1.Package)); err != nil {
@@ -754,7 +754,7 @@ func (s *server) handleAdvancedConfig(ctx context.Context, d *packageDetailPageC
 					"danger")
 				return
 			} else {
-				s.respondSuccess(w, "Configuration updated successfully")
+				s.respondSuccess(w)
 			}
 		}
 	}
@@ -1197,9 +1197,9 @@ func (s *server) isUpdateAvailable(ctx context.Context, packages ...string) bool
 	}
 }
 
-func (s *server) respondSuccess(w http.ResponseWriter, message string) {
+func (s *server) respondSuccess(w http.ResponseWriter) {
 	err := s.templates.alertTmpl.Execute(w, map[string]any{
-		"Message":     message,
+		"Message":     "Configuration updated successfully",
 		"Dismissible": true,
 		"Type":        "success",
 	})

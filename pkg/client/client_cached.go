@@ -3,6 +3,8 @@ package client
 import (
 	"context"
 	"errors"
+	"fmt"
+	"slices"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -32,6 +34,7 @@ func (c *cacheClientset) ClusterPackages() ClusterPackageInterface {
 			func(items []v1alpha1.ClusterPackage) v1alpha1.ClusterPackageList {
 				return v1alpha1.ClusterPackageList{Items: items}
 			},
+			"",
 		},
 	}
 }
@@ -47,8 +50,18 @@ func (c *cacheClientset) Packages(ns string) PackageInterface {
 			p,
 			c.packageStore,
 			func(items []v1alpha1.Package) v1alpha1.PackageList {
-				return v1alpha1.PackageList{Items: items}
+				if ns == "" {
+					return v1alpha1.PackageList{Items: items}
+				}
+				filteredItems := make([]v1alpha1.Package, 0)
+				for _, item := range items {
+					if item.Namespace == ns {
+						filteredItems = append(filteredItems, item)
+					}
+				}
+				return v1alpha1.PackageList{Items: filteredItems}
 			},
+			ns,
 		},
 	}
 }
@@ -64,6 +77,7 @@ func (c *cacheClientset) PackageInfos() PackageInfoInterface {
 		func(items []v1alpha1.PackageInfo) v1alpha1.PackageInfoList {
 			return v1alpha1.PackageInfoList{Items: items}
 		},
+		"",
 	}
 }
 
@@ -80,6 +94,7 @@ func (c *cacheClientset) PackageRepositories() PackageRepositoryInterface {
 			func(items []v1alpha1.PackageRepository) v1alpha1.PackageRepositoryList {
 				return v1alpha1.PackageRepositoryList{Items: items}
 			},
+			"",
 		},
 	}
 }
@@ -88,6 +103,14 @@ type readOnlyCacheClient[T any, L any] struct {
 	fallback    readOnlyClientInterface[T, L]
 	store       cache.Store
 	listFactory func(items []T) L
+	namespace   string
+}
+
+func getKey(namespace, name string) string {
+	if namespace != "" {
+		return fmt.Sprintf("%s/%s", namespace, name)
+	}
+	return name
 }
 
 func (c *readOnlyCacheClient[T, L]) Watch(ctx context.Context) (watch.Interface, error) {
@@ -95,7 +118,7 @@ func (c *readOnlyCacheClient[T, L]) Watch(ctx context.Context) (watch.Interface,
 }
 
 func (c *readOnlyCacheClient[T, L]) Get(ctx context.Context, name string, target *T) error {
-	if obj, ok, err := c.store.GetByKey(name); err != nil {
+	if obj, ok, err := c.store.GetByKey(getKey(c.namespace, name)); err != nil {
 		return apierrors.NewInternalError(err)
 	} else if !ok {
 		return c.fallback.Get(ctx, name, target)
@@ -108,10 +131,15 @@ func (c *readOnlyCacheClient[T, L]) Get(ctx context.Context, name string, target
 }
 
 func (c *readOnlyCacheClient[T, L]) GetAll(ctx context.Context, target *L) error {
-	objs := c.store.List()
-	items := make([]T, len(objs))
-	for i, obj := range objs {
-		if obj, ok := obj.(*T); !ok {
+	keys := c.store.ListKeys()
+	slices.Sort(keys)
+	items := make([]T, len(keys))
+	for i, key := range keys {
+		if obj, exists, err := c.store.GetByKey(key); err != nil {
+			return apierrors.NewInternalError(fmt.Errorf("resource not found: %w", err))
+		} else if !exists {
+			continue
+		} else if obj, ok := obj.(*T); !ok {
 			return apierrors.NewInternalError(errors.New("resource has has wrong type"))
 		} else {
 			items[i] = *obj

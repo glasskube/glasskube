@@ -179,6 +179,7 @@ func (l *lister) fetchRepoAndInstalled(ctx context.Context, options ListOptions,
 
 	compositeErr := multierr.Combine(repoErr, clPkgErr, pkgErr, pkgInfoErr)
 	if clPkgErr != nil || pkgErr != nil || pkgInfoErr != nil {
+		// repoErr is ignored here, because that way we can still return a partial list, if one of the repos is not available
 		return nil, compositeErr
 	}
 
