@@ -7,7 +7,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/cliutils"
-	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/pkg/bootstrap"
 	"github.com/glasskube/glasskube/pkg/purge"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
@@ -28,9 +27,9 @@ var purgeCmd = &cobra.Command{
 	Args:   cobra.NoArgs,
 	PreRun: cliutils.SetupClientContext(false, &rootCmdOptions.SkipUpdateCheck),
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg, _ := cliutils.RequireConfig(config.Kubeconfig)
-		client := purge.NewPurger(cfg)
 		ctx := cmd.Context()
+		cfg := clicontext.ConfigFromContext(ctx)
+		client := purge.NewPurger(cfg)
 
 		if !rootCmdOptions.NoProgress {
 			client.WithStatusWriter(statuswriter.Spinner())
