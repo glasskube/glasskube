@@ -106,9 +106,10 @@ glasskube serve
 This command will open [`http://localhost:8580`](http://localhost:8580) in your default browser.
 Congratulations, you can now explore and install all our available packages! 🎉
 
-## 🎬 How to install you first package
+## 🎬 Glasskube Demo Video
 
-![cast](https://github.com/glasskube/glasskube/assets/16959694/f8b936ca-7b58-4e2b-8845-17da089f2384)
+
+[![Glasskube Demo Video](https://i.ytimg.com/vi/aIeTHGWsG2c/hq720.jpg)](https://www.youtube.com/watch?v=aIeTHGWsG2c)
 
 ## 📦 Supported Packages
 
