@@ -65,10 +65,12 @@ func getPackageOrClusterPackage(
 	var cpkg v1alpha1.ClusterPackage
 	// store errors separate because multierr is not threadsafe
 	var errp, errcp error
+	var pkgTried, cpkgTried bool
 
 	var wg sync.WaitGroup
-	if configureCmdOptions.Kind == KindUnspecified || configureCmdOptions.Kind == KindPackage {
+	if kindOpts.Kind == KindUnspecified || kindOpts.Kind == KindPackage {
 		wg.Add(1)
+		pkgTried = true
 		go func() {
 			defer wg.Done()
 			namespace := nsOpts.GetActualNamespace(ctx)
@@ -79,6 +81,7 @@ func getPackageOrClusterPackage(
 		(kindOpts.Kind == KindUnspecified || kindOpts.Kind == KindClusterPackage) {
 		// If a namespace was specified explicitly via a flag, we don't have to try to get the ClusterPackage.
 		wg.Add(1)
+		cpkgTried = true
 		go func() {
 			defer wg.Done()
 			errcp = pkgClient.ClusterPackages().Get(ctx, name, &cpkg)
@@ -99,8 +102,8 @@ func getPackageOrClusterPackage(
 	}
 
 	// from here on, err == nil implies "not found"
-	pNotFound := errp != nil
-	cpNotFound := configureCmdOptions.Namespace != "" || errcp != nil
+	pNotFound := !pkgTried || errp != nil
+	cpNotFound := !cpkgTried || errcp != nil
 	if pNotFound && cpNotFound {
 		return nil, fmt.Errorf("no Package or ClusterPackage found with name %v", name)
 	} else if !pNotFound && !cpNotFound {
