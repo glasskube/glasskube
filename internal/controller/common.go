@@ -38,6 +38,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+const (
+	packageDeletionFinalizer = "packages.glasskube.dev/packageDeletion"
+)
+
 type PackageReconcilerCommon struct {
 	client.Client
 	record.EventRecorder
@@ -227,7 +231,7 @@ func (r *PackageReconcilationContext) reconcileAfterDeletion(ctx context.Context
 		telemetry.ForOperator().ReportDelete(r.pkg)
 	}
 
-	if slices.Contains(r.pkg.GetFinalizers(), "packageDeletion") {
+	if slices.Contains(r.pkg.GetFinalizers(), "packages.glasskube.dev/packageDeletion") {
 		var err error
 		if len(r.pkg.GetStatus().OwnedPackages) != 0 {
 			multierr.AppendInto(&err, r.pruneOwnedPackages(ctx, true))
@@ -236,7 +240,7 @@ func (r *PackageReconcilationContext) reconcileAfterDeletion(ctx context.Context
 			multierr.AppendInto(&err, r.pruneOwnedPackageInfos(ctx, true))
 			log.Info("waiting for deletion of package infos")
 		} else {
-			r.pkg.SetFinalizers(util.DeleteAll(r.pkg.GetFinalizers(), "packageDeletion"))
+			r.pkg.SetFinalizers(util.DeleteAll(r.pkg.GetFinalizers(), packageDeletionFinalizer))
 			r.shouldUpdateResource = true
 		}
 
@@ -249,8 +253,8 @@ func (r *PackageReconcilationContext) reconcileAfterDeletion(ctx context.Context
 }
 
 func (r *PackageReconcilationContext) ensureFinalizer() {
-	if !slices.Contains(r.pkg.GetFinalizers(), "packageDeletion") {
-		r.pkg.SetFinalizers(append(r.pkg.GetFinalizers(), "packageDeletion"))
+	if !slices.Contains(r.pkg.GetFinalizers(), packageDeletionFinalizer) {
+		r.pkg.SetFinalizers(append(r.pkg.GetFinalizers(), packageDeletionFinalizer))
 		r.shouldUpdateResource = true
 	}
 }
