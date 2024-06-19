@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -44,12 +45,13 @@ var repoAddCmd = &cobra.Command{
 
 		if repoAddCmdOptions.Default {
 			defaultRepo, err = cliutils.GetDefaultRepo(ctx)
-			if err != nil {
+
+			if errors.Is(err, cliutils.NoDefaultRepo) {
+				repo.SetDefaultRepository()
+			} else if err != nil {
 				fmt.Fprintf(os.Stderr, "❌ error getting the default package repository: %v\n", err)
 				cliutils.ExitWithError()
-			}
-
-			if defaultRepo.Name != repoName {
+			} else if defaultRepo.Name != repoName {
 				defaultRepo.SetDefaultRepositoryBool(false)
 				if err := client.PackageRepositories().Update(ctx, defaultRepo); err != nil {
 					fmt.Fprintf(os.Stderr, "❌ error updating current default package repository: %v\n", err)
@@ -61,7 +63,7 @@ var repoAddCmd = &cobra.Command{
 		if err := client.PackageRepositories().Create(ctx, &repo, metav1.CreateOptions{}); err != nil {
 			fmt.Fprintf(os.Stderr, "❌ error creating package repository: %v\n", err)
 
-			if repoAddCmdOptions.Default && defaultRepo.Name != repoName {
+			if repoAddCmdOptions.Default && defaultRepo != nil && defaultRepo.Name != repoName {
 				defaultRepo.SetDefaultRepositoryBool(true)
 				if err := client.PackageRepositories().Update(ctx, defaultRepo); err != nil {
 					fmt.Fprintf(os.Stderr, "❌ error rolling back to default package repository: %v\n", err)
