@@ -8,6 +8,7 @@ import (
 
 const (
 	autoUpdateAnnotation = "packages.glasskube.dev/auto-update"
+	dependencyAnnotation = "packages.glasskube.dev/installed-as-dependency"
 )
 
 func autoUpdatesEnabled(obj metav1.ObjectMeta) bool {
@@ -29,6 +30,28 @@ func setAutoUpdatesEnabled(obj *metav1.ObjectMeta, enabled bool) {
 		obj.Annotations[autoUpdateAnnotation] = strconv.FormatBool(true)
 	} else {
 		delete(obj.Annotations, autoUpdateAnnotation)
+	}
+}
+
+func installedAsDependency(obj metav1.ObjectMeta) bool {
+	if obj.Annotations == nil {
+		return false
+	} else if enabledStr, ok := obj.Annotations[dependencyAnnotation]; !ok {
+		return false
+	} else {
+		enabled, _ := strconv.ParseBool(enabledStr)
+		return enabled
+	}
+}
+
+func setInstalledAsDependency(obj *metav1.ObjectMeta, value bool) {
+	if obj.Annotations == nil {
+		obj.Annotations = make(map[string]string)
+	}
+	if value {
+		obj.Annotations[dependencyAnnotation] = strconv.FormatBool(true)
+	} else {
+		delete(obj.Annotations, dependencyAnnotation)
 	}
 }
 

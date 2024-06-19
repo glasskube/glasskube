@@ -20,9 +20,6 @@ import (
 	"context"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
-	"github.com/glasskube/glasskube/internal/controller/conditions"
-	"github.com/glasskube/glasskube/internal/telemetry"
-	"github.com/glasskube/glasskube/pkg/condition"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -51,21 +48,9 @@ type PackageReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.3/pkg/reconcile
 func (r *PackageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	var pkg v1alpha1.Package
-
 	if err := r.Get(ctx, req.NamespacedName, &pkg); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-
-	if !pkg.DeletionTimestamp.IsZero() {
-		changed, err := conditions.SetUnknownAndUpdate(ctx, r.Client, &pkg, &pkg.Status.Conditions,
-			condition.Pending, "Package is being deleted")
-		if changed {
-			telemetry.ForOperator().ReportDelete(&pkg)
-		}
-		return ctrl.Result{}, err
-	}
-
-	telemetry.ForOperator().ReconcilePackage(&pkg)
 
 	return r.reconcile(ctx, &pkg)
 }

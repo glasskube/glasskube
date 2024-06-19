@@ -55,6 +55,14 @@ func (in *ClusterPackage) SetAutoUpdatesEnabled(enabled bool) {
 	setAutoUpdatesEnabled(&in.ObjectMeta, enabled)
 }
 
+func (pkg *ClusterPackage) InstalledAsDependency() bool {
+	return installedAsDependency(pkg.ObjectMeta)
+}
+
+func (pkg *ClusterPackage) SetInstalledAsDependency(value bool) {
+	setInstalledAsDependency(&pkg.ObjectMeta, value)
+}
+
 func (pkg *ClusterPackage) IsNamespaceScoped() bool {
 	return false
 }

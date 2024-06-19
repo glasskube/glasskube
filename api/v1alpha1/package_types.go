@@ -55,6 +55,14 @@ func (pkg *Package) SetAutoUpdatesEnabled(enabled bool) {
 	setAutoUpdatesEnabled(&pkg.ObjectMeta, enabled)
 }
 
+func (pkg *Package) InstalledAsDependency() bool {
+	return false
+}
+
+func (pkg *Package) SetInstalledAsDependency(value bool) {
+	panic("illegal operation: package can not be installed as dependency")
+}
+
 func (pkg *Package) IsNamespaceScoped() bool {
 	return true
 }
