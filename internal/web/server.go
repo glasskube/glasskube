@@ -498,8 +498,8 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 		if err != nil {
 			s.respondAlertAndLog(w, err, "An error occurred installing "+manifestName, "danger")
 		} else {
-			// TODO
-			http.Redirect(w, r, fmt.Sprintf("/packages/%s/%s/%s", manifestName, requestedNamespace, requestedName), http.StatusFound)
+			s.swappingRedirect(w, "/packages", "main", "main")
+			w.WriteHeader(http.StatusAccepted)
 		}
 	} else {
 		pkg.Spec.Values = values
@@ -510,7 +510,7 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 		if _, err := s.valueResolver.Resolve(ctx, values); err != nil {
 			s.respondAlertAndLog(w, err, "Some values could not be resolved: ", "warning")
 		} else {
-			s.respondSuccess(w, "Configuration updated successfully")
+			s.respondSuccess(w)
 		}
 	}
 }
@@ -570,7 +570,7 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 		if _, err := s.valueResolver.Resolve(ctx, values); err != nil {
 			s.respondAlertAndLog(w, err, "Some values could not be resolved: ", "warning")
 		} else {
-			s.respondSuccess(w, "Configuration updated successfully")
+			s.respondSuccess(w)
 		}
 	}
 }
@@ -745,7 +745,7 @@ func (s *server) handleAdvancedConfig(ctx context.Context, d *packageDetailPageC
 					"danger")
 				return
 			} else {
-				s.respondSuccess(w, "Configuration updated successfully")
+				s.respondSuccess(w)
 			}
 		} else {
 			if err := s.pkgClient.Packages(d.pkg.GetNamespace()).Update(ctx, d.pkg.(*v1alpha1.Package)); err != nil {
@@ -755,7 +755,7 @@ func (s *server) handleAdvancedConfig(ctx context.Context, d *packageDetailPageC
 					"danger")
 				return
 			} else {
-				s.respondSuccess(w, "Configuration updated successfully")
+				s.respondSuccess(w)
 			}
 		}
 	}
@@ -1194,35 +1194,6 @@ func (s *server) isUpdateAvailable(ctx context.Context, packages ...string) bool
 	} else {
 		return !tx.IsEmpty()
 	}
-}
-
-func (s *server) respondSuccess(w http.ResponseWriter, message string) {
-	err := s.templates.alertTmpl.Execute(w, map[string]any{
-		"Message":     message,
-		"Dismissible": true,
-		"Type":        "success",
-	})
-	checkTmplError(err, "success")
-}
-
-func (s *server) respondAlertAndLog(w http.ResponseWriter, err error, wrappingMsg string, alertType string) {
-	if wrappingMsg != "" {
-		err = fmt.Errorf("%v: %w", wrappingMsg, err)
-	}
-	fmt.Fprintf(os.Stderr, "%v\n", err)
-	s.respondAlert(w, err.Error(), alertType)
-}
-
-func (s *server) respondAlert(w http.ResponseWriter, message string, alertType string) {
-	w.Header().Add("Hx-Reselect", "div.alert") // overwrite any existing hx-select (which was a little intransparent sometimes)
-	w.Header().Add("Hx-Reswap", "afterbegin")
-	w.WriteHeader(http.StatusBadRequest)
-	err := s.templates.alertTmpl.Execute(w, map[string]any{
-		"Message":     message,
-		"Dismissible": true,
-		"Type":        alertType,
-	})
-	checkTmplError(err, "alert")
 }
 
 func isPortConflictError(err error) bool {

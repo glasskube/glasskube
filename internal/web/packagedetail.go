@@ -41,13 +41,17 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 
 	var pkg *v1alpha1.Package
 	var manifest *v1alpha1.PackageManifest
-	if namespace != "" && name != "" {
+	if namespace != "" && name != "" && namespace != "-" && name != "-" {
 		var err error
 		pkg, manifest, err = describe.DescribeInstalledPackage(ctx, namespace, name)
 		if err != nil && !errors.IsNotFound(err) {
 			s.respondAlertAndLog(w, err,
 				fmt.Sprintf("An error occurred fetching package details of installed package %v in namespace %v", name, namespace),
 				"danger")
+			return
+		} else if errors.IsNotFound(err) {
+			s.swappingRedirect(w, "/packages", "main", "main")
+			w.WriteHeader(http.StatusNotFound)
 			return
 		} else if pkg != nil {
 			repositoryName = pkg.Spec.PackageInfo.RepositoryName

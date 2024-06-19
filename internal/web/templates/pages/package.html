@@ -1,6 +1,5 @@
 {{ define "content" }}
   {{ if .Manifest }}
-    <!-- TODO browser back and forth needs to be fixed -->
     <div
       class="container-lg mt-2"
       hx-trigger="htmx:historyRestore from:body"
