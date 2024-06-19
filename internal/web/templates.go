@@ -136,8 +136,14 @@ func (t *templates) parseTemplates() {
 			cond := meta.FindStatusCondition(repo.Status.Conditions, string(condition.Ready))
 			return cond != nil && cond.Status == metav1.ConditionTrue
 		},
-		"PackageScopeToString": func(param *v1alpha1.PackageScope) string {
-			return string(*param)
+		"PackageDetailRefreshId": func(manifest *v1alpha1.PackageManifest, pkg ctrlpkg.Package) string {
+			var id string
+			if manifest.Scope.IsCluster() {
+				id = manifest.Name
+			} else if !pkg.IsNil() {
+				id = fmt.Sprintf("%s-%s", pkg.GetNamespace(), pkg.GetName())
+			}
+			return fmt.Sprintf("refresh-pkg-detail-%s", id)
 		},
 	}
 

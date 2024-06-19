@@ -497,7 +497,9 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 			InstallPackage(ctx, pkg, opts)
 		if err != nil {
 			s.respondAlertAndLog(w, err, "An error occurred installing "+manifestName, "danger")
-			return
+		} else {
+			// TODO
+			http.Redirect(w, r, fmt.Sprintf("/packages/%s/%s/%s", manifestName, requestedNamespace, requestedName), http.StatusFound)
 		}
 	} else {
 		pkg.Spec.Values = values
@@ -508,7 +510,7 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 		if _, err := s.valueResolver.Resolve(ctx, values); err != nil {
 			s.respondAlertAndLog(w, err, "Some values could not be resolved: ", "warning")
 		} else {
-			s.respondSuccess(w)
+			s.respondSuccess(w, "Configuration updated successfully")
 		}
 	}
 }
@@ -558,7 +560,6 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 			InstallClusterPackage(ctx, pkg, opts)
 		if err != nil {
 			s.respondAlertAndLog(w, err, "An error occurred installing "+pkgName, "danger")
-			return
 		}
 	} else {
 		pkg.Spec.Values = values
@@ -569,7 +570,7 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 		if _, err := s.valueResolver.Resolve(ctx, values); err != nil {
 			s.respondAlertAndLog(w, err, "Some values could not be resolved: ", "warning")
 		} else {
-			s.respondSuccess(w)
+			s.respondSuccess(w, "Configuration updated successfully")
 		}
 	}
 }
@@ -744,7 +745,7 @@ func (s *server) handleAdvancedConfig(ctx context.Context, d *packageDetailPageC
 					"danger")
 				return
 			} else {
-				s.respondSuccess(w)
+				s.respondSuccess(w, "Configuration updated successfully")
 			}
 		} else {
 			if err := s.pkgClient.Packages(d.pkg.GetNamespace()).Update(ctx, d.pkg.(*v1alpha1.Package)); err != nil {
@@ -754,7 +755,7 @@ func (s *server) handleAdvancedConfig(ctx context.Context, d *packageDetailPageC
 					"danger")
 				return
 			} else {
-				s.respondSuccess(w)
+				s.respondSuccess(w, "Configuration updated successfully")
 			}
 		}
 	}
@@ -1135,7 +1136,6 @@ func (s *server) broadcastClusterPackageRefreshTriggers(pkg *v1alpha1.ClusterPac
 		event: "refresh-clusterpackage-overview",
 	}
 	s.sseHub.Broadcast <- &sse{
-		// TODO ??
 		event: fmt.Sprintf("refresh-pkg-detail-%s", pkg.Name),
 	}
 }
@@ -1145,8 +1145,7 @@ func (s *server) broadcastPackageRefreshTriggers(pkg *v1alpha1.Package) {
 		event: "refresh-package-overview",
 	}
 	s.sseHub.Broadcast <- &sse{
-		// TODO ??
-		event: fmt.Sprintf("refresh-pkg-detail-%s", pkg.Name),
+		event: fmt.Sprintf("refresh-pkg-detail-%s-%s", pkg.Namespace, pkg.Name),
 	}
 }
 
@@ -1197,9 +1196,9 @@ func (s *server) isUpdateAvailable(ctx context.Context, packages ...string) bool
 	}
 }
 
-func (s *server) respondSuccess(w http.ResponseWriter) {
+func (s *server) respondSuccess(w http.ResponseWriter, message string) {
 	err := s.templates.alertTmpl.Execute(w, map[string]any{
-		"Message":     "Configuration updated successfully",
+		"Message":     message,
 		"Dismissible": true,
 		"Type":        "success",
 	})

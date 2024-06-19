@@ -190,7 +190,7 @@ func (l *lister) fetchRepoAndInstalled(ctx context.Context, options ListOptions,
 		res := result{
 			IndexItem: &index.Packages[i],
 		}
-		if v1alpha1.PackageScope(indexPackage.Scope) == v1alpha1.ScopeCluster && typeOpts&includeClusterPackages != 0 {
+		if indexPackage.Scope.IsCluster() && typeOpts&includeClusterPackages != 0 {
 			for j, pkg := range clusterPackages.Items {
 				if indexPackage.Name == pkg.Name {
 					res.ClusterPackage = &clusterPackages.Items[j]
@@ -199,7 +199,7 @@ func (l *lister) fetchRepoAndInstalled(ctx context.Context, options ListOptions,
 				}
 			}
 			resultLs = append(resultLs, res)
-		} else if v1alpha1.PackageScope(indexPackage.Scope) == v1alpha1.ScopeNamespaced && typeOpts&includePackages != 0 {
+		} else if indexPackage.Scope.IsNamespaced() && typeOpts&includePackages != 0 {
 			for j, pkg := range packages.Items {
 				if indexPackage.Name == pkg.Spec.PackageInfo.Name {
 					res.Packages = append(res.Packages, &packages.Items[j])

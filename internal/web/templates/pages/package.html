@@ -12,7 +12,7 @@
        otherwise during the time of swapping, a following event might not be able to trigger a new request -->
       <div
         class="row p-3 col-lg-10 offset-lg-1"
-        hx-trigger="sse:refresh-pkg-detail-{{ .Manifest.Name }}"
+        hx-trigger="sse:{{ PackageDetailRefreshId .Manifest .Package }}"
         hx-get="{{ .PackageHref }}"
         hx-swap="outerHTML"
         hx-select="#pkg-detail-container-swapped"
@@ -151,7 +151,7 @@
                     </select>
                   </div>
 
-                  {{ if and (ne .Manifest.Scope nil) (eq "Namespaced" (PackageScopeToString .Manifest.Scope)) }}
+                  {{ if .Manifest.Scope.IsNamespaced }}
                     <label class="form-label" for="pkg-install-namespace">Namespace</label>
                     <div class="input-group mb-2">
                       <input
