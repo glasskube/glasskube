@@ -5,19 +5,21 @@ import (
 	"os"
 
 	"github.com/fatih/color"
-	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/glasskube/glasskube/pkg/uninstall"
 	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var uninstallCmdOptions = struct {
 	NoWait bool
 	Yes    bool
-}{}
+	KindOptions
+	NamespaceOptions
+}{
+	KindOptions: DefaultKindOptions(),
+}
 
 var uninstallCmd = &cobra.Command{
 	Use:               "uninstall [package-name]",
@@ -32,39 +34,46 @@ var uninstallCmd = &cobra.Command{
 		currentContext := clicontext.RawConfigFromContext(ctx).CurrentContext
 		client := clicontext.PackageClientFromContext(ctx)
 		dm := cliutils.DependencyManager(ctx)
-
-		if g, err := dm.NewGraph(ctx); err != nil {
-			fmt.Fprintf(os.Stderr, "❌ Error validating uninstall: %v\n", err)
-			cliutils.ExitWithError()
-		} else {
-			g.Delete(pkgName)
-			pruned := g.Prune()
-			if err := g.Validate(); err != nil {
-				fmt.Fprintf(os.Stderr, "❌ %v can not be uninstalled for the following reason: %v\n", pkgName, err)
-				cliutils.ExitWithError()
-			} else {
-				showUninstallDetails(currentContext, pkgName, pruned)
-				if !uninstallCmdOptions.Yes && !cliutils.YesNoPrompt("Do you want to continue?", false) {
-					fmt.Println("❌ Uninstallation cancelled.")
-					cliutils.ExitSuccess()
-				}
-			}
-		}
-
 		uninstaller := uninstall.NewUninstaller(client)
 		if !rootCmdOptions.NoProgress {
 			uninstaller.WithStatusWriter(statuswriter.Spinner())
 		}
 
-		pkg := v1alpha1.ClusterPackage{ObjectMeta: metav1.ObjectMeta{Name: pkgName}}
+		pkg, err := getPackageOrClusterPackage(
+			ctx, pkgName, uninstallCmdOptions.KindOptions, uninstallCmdOptions.NamespaceOptions)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "❌ Could not get resource: %v\n", err)
+			cliutils.ExitWithError()
+		}
+
+		if !pkg.IsNamespaceScoped() {
+			if g, err := dm.NewGraph(ctx); err != nil {
+				fmt.Fprintf(os.Stderr, "❌ Error validating uninstall: %v\n", err)
+				cliutils.ExitWithError()
+			} else {
+				g.Delete(pkgName)
+				pruned := g.Prune()
+				if err := g.Validate(); err != nil {
+					fmt.Fprintf(os.Stderr, "❌ %v can not be uninstalled for the following reason: %v\n", pkgName, err)
+					cliutils.ExitWithError()
+				} else {
+					showUninstallDetails(currentContext, pkgName, pruned)
+					if !uninstallCmdOptions.Yes && !cliutils.YesNoPrompt("Do you want to continue?", false) {
+						fmt.Println("❌ Uninstallation cancelled.")
+						cliutils.ExitSuccess()
+					}
+				}
+			}
+		}
+
 		if uninstallCmdOptions.NoWait {
-			if err := uninstaller.Uninstall(ctx, &pkg); err != nil {
+			if err := uninstaller.Uninstall(ctx, pkg); err != nil {
 				fmt.Fprintf(os.Stderr, "\n❌ An error occurred during uninstallation:\n\n%v\n", err)
 				cliutils.ExitWithError()
 			}
 			fmt.Fprintln(os.Stderr, "Uninstallation started in background")
 		} else {
-			if err := uninstaller.UninstallBlocking(ctx, &pkg); err != nil {
+			if err := uninstaller.UninstallBlocking(ctx, pkg); err != nil {
 				fmt.Fprintf(os.Stderr, "\n❌ An error occurred during uninstallation:\n\n%v\n", err)
 				cliutils.ExitWithError()
 			}
@@ -85,6 +94,8 @@ func showUninstallDetails(context, name string, pruned []string) {
 }
 
 func init() {
+	uninstallCmdOptions.KindOptions.AddFlagsToCommand(uninstallCmd)
+	uninstallCmdOptions.NamespaceOptions.AddFlagsToCommand(uninstallCmd)
 	uninstallCmd.PersistentFlags().BoolVar(&uninstallCmdOptions.NoWait, "no-wait", false,
 		"perform non-blocking uninstall")
 	uninstallCmd.PersistentFlags().BoolVarP(&uninstallCmdOptions.Yes, "yes", "y", false,
