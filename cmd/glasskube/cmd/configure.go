@@ -16,12 +16,6 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-const (
-	KindUnspecified    ResourceKind = ""
-	KindPackage        ResourceKind = "package"
-	KindClusterPackage ResourceKind = "clusterpackage"
-)
-
 var configureCmdOptions = struct {
 	flags.ValuesOptions
 	OutputOptions

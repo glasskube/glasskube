@@ -15,6 +15,12 @@ import (
 
 type ResourceKind string
 
+const (
+	KindUnspecified    ResourceKind = ""
+	KindPackage        ResourceKind = "package"
+	KindClusterPackage ResourceKind = "clusterpackage"
+)
+
 // Set implements pflag.Value.
 func (kind *ResourceKind) Set(value string) error {
 	switch ResourceKind(value) {
