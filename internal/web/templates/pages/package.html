@@ -81,10 +81,12 @@
                 {{ end }}
               </h2>
 
+              <div id="configuration-error-container" class="mt-2"></div>
+
               <form
                 hx-post="{{ .PackageHref }}/configure"
-                hx-target="#error-container"
-                hx-target-error="#error-container"
+                hx-target="#configuration-error-container"
+                hx-target-error="#configuration-error-container"
                 hx-select="div.alert"
                 hx-swap="innerHTML">
                 {{ if eq .Status nil }}
