@@ -140,10 +140,7 @@ func (c *BootstrapClient) Bootstrap(
 	}
 
 	if options.DryRun {
-		statusMessage("Dry-run mode enabled. The following resources would be applied:", true)
-		for _, manifest := range manifests {
-			fmt.Printf("%s\n", manifest.GetName())
-		}
+		statusMessage("Dry-run mode enabled. Glasskube Manifests will not be applied.", true)
 		return manifests, nil
 	}
 

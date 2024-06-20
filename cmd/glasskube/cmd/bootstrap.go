@@ -85,7 +85,6 @@ var bootstrapCmd = &cobra.Command{
 			cliutils.ExitWithError()
 		}
 		if bootstrapCmdOptions.dryrun {
-			fmt.Println("Dry run completed successfully.")
 			if err := printBootsrap(
 				manifests,
 				bootstrapCmdOptions.Output,
@@ -236,7 +235,7 @@ func init() {
 		bootstrapCmdOptions.createDefaultRepository,
 		"Toggle creation of the default glasskube package repository")
 	bootstrapCmd.PersistentFlags().BoolVar(&bootstrapCmdOptions.dryrun, "dry-run", false,
-		"simulate the installation of package without actually installing it")
+		"simulate the bootstrapping of Glasskube without actually bootstrapping it")
 	bootstrapCmd.Flags().BoolVar(&bootstrapCmdOptions.yes, "yes", false, "Skip confirmation prompt")
 	bootstrapCmd.MarkFlagsMutuallyExclusive("url", "type")
 	bootstrapCmd.MarkFlagsMutuallyExclusive("url", "latest")
