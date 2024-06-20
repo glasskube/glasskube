@@ -79,14 +79,7 @@ var bootstrapCmd = &cobra.Command{
 		upgradeNeeded := installedVersion != "" && semver.IsUpgradable(installedVersion, desiredVersion)
 		if !bootstrapCmdOptions.yes {
 			if upgradeNeeded {
-				if installedVersion == desiredVersion {
-					if !cliutils.YesNoPrompt(fmt.Sprintf("Glasskube is currently installed in this cluster (%s) "+
-						"in version %v. You are about to bootstrap this version again."+
-						"\nContinue?", currentContext, installedVersion), true) {
-						fmt.Println("Operation stopped")
-						cliutils.ExitWithError()
-					}
-				} else if desiredVersion == "" {
+				if desiredVersion == "" {
 					confirmMessage := fmt.Sprintf("Glasskube is currently installed in this cluster (%s) "+
 						"in version %v. The version you are about to install is unknown. Please make sure the "+
 						"versions are compatible, this action could lead to a "+
@@ -102,6 +95,13 @@ var bootstrapCmd = &cobra.Command{
 						fmt.Println("Operation stopped")
 						cliutils.ExitWithError()
 					}
+				}
+			} else if installedVersion[1:] == desiredVersion {
+				if !cliutils.YesNoPrompt(fmt.Sprintf("Glasskube is currently installed in this cluster (%s) "+
+					"in version %v. You are about to bootstrap this version again."+
+					"\nContinue?", currentContext, installedVersion), true) {
+					fmt.Println("Operation stopped")
+					cliutils.ExitWithError()
 				}
 			} else {
 				confirmMessage := fmt.Sprintf("Glasskube will be installed in context %s."+
