@@ -82,24 +82,24 @@
     {{ if ne .Status nil }}
       <div class="mt-2">
         {{ if .Manifest.Scope.IsNamespaced }}
-          <span class="badge text-bg-secondary p-1 fw-normal">
+          <span class="badge bg-body-secondary text-primary-emphasis border-primary border border-1 p-1 fw-normal fs-6">
             Namespace:
             <strong>{{ .Package.Namespace }}</strong>
           </span>
-          <span class="badge text-bg-secondary p-1 fw-normal">
+          <span class="badge bg-body-secondary text-primary-emphasis border-primary border border-1 p-1 fw-normal fs-6">
             Name:
             <strong>{{ .Package.Name }}</strong>
           </span>
         {{ end }}
-        <span class="badge text-bg-secondary p-1 fw-normal">
+        <span class="badge bg-body-secondary text-primary-emphasis border-primary border border-1 p-1 fw-normal fs-6">
           Repository:
           <strong>{{ .Package.Spec.PackageInfo.RepositoryName }}</strong>
         </span>
-        <span class="badge text-bg-secondary p-1 fw-normal">
+        <span class="badge bg-body-secondary text-primary-emphasis border-primary border border-1 p-1 fw-normal fs-6">
           Installed version:
           <strong>{{ .Package.Spec.PackageInfo.Version }}</strong>
         </span>
-        <span class="badge text-bg-secondary p-1 fw-normal">
+        <span class="badge bg-body-secondary text-primary-emphasis border-primary border border-1 p-1 fw-normal fs-6">
           Auto-Update:
           <strong>{{ .AutoUpdate }}</strong>
         </span>
