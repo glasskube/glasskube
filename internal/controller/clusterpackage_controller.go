@@ -23,6 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 )
 
 // ClusterPackageReconciler reconciles a ClusterPackage object
@@ -54,9 +55,21 @@ func (r *ClusterPackageReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ClusterPackageReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	if bld, err := r.baseSetup(mgr, &v1alpha1.ClusterPackage{}); err != nil {
+	if bld, err := r.baseSetup(mgr, &v1alpha1.ClusterPackage{}, r); err != nil {
 		return err
 	} else {
 		return bld.Complete(r)
 	}
+}
+
+func (r *ClusterPackageReconciler) ListPackages(ctx context.Context) ([]ctrlpkg.Package, error) {
+	var l v1alpha1.ClusterPackageList
+	if err := r.Client.List(ctx, &l); err != nil {
+		return nil, err
+	}
+	res := make([]ctrlpkg.Package, len(l.Items))
+	for i := range l.Items {
+		res[i] = &l.Items[i]
+	}
+	return res, nil
 }
