@@ -96,7 +96,7 @@ var bootstrapCmd = &cobra.Command{
 						cliutils.ExitWithError()
 					}
 				}
-			} else if installedVersion[1:] == desiredVersion {
+			} else if installedVersion != "" && installedVersion[1:] == desiredVersion {
 				if !cliutils.YesNoPrompt(fmt.Sprintf("Glasskube is currently installed in this cluster (%s) "+
 					"in version %v. You are about to bootstrap this version again."+
 					"\nContinue?", currentContext, installedVersion), true) {
