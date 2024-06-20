@@ -16,14 +16,26 @@ limitations under the License.
 
 package v1alpha1
 
-type HelmManifest struct {
-	// RepositoryUrl is the remote URL of the helm repository. This is the same URL you would use
-	// if you use "helm repo add ...".
-	RepositoryUrl string `json:"repositoryUrl" jsonschema:"required"`
+type HelmRelease struct {
 	// ChartName is the name of the chart that represents this package.
 	ChartName string `json:"chartName" jsonschema:"required"`
 	// ChartVersion of the chart that should be installed.
 	ChartVersion string `json:"chartVersion" jsonschema:"required"`
+	// Values that should be used for the helm release
+	Values *JSON `json:"values,omitempty"`
+}
+
+// +kubebuilder:validation:XValidation:message="",rule="size(self.releases) > 0 || (has(self.chartName) && has(self.chartVersion))"
+type HelmManifest struct {
+	// RepositoryUrl is the remote URL of the helm repository. This is the same URL you would use
+	// if you use "helm repo add ...".
+	RepositoryUrl string        `json:"repositoryUrl" jsonschema:"required"`
+	Releases      []HelmRelease `json:"releases,omitempty" jsonschema:"oneof_required=MultiChart"`
+
+	// ChartName is the name of the chart that represents this package.
+	ChartName string `json:"chartName,omitempty" jsonschema:"oneof_required=SingleChart"`
+	// ChartVersion of the chart that should be installed.
+	ChartVersion string `json:"chartVersion,omitempty" jsonschema:"oneof_required=SingleChart"`
 	// Values that should be used for the helm release
 	Values *JSON `json:"values,omitempty"`
 }
