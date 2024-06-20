@@ -129,7 +129,7 @@ func (a *FluxHelmAdapter) ensureHelmRepository(
 	}
 	helmRepository := sourcev1beta2.HelmRepository{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      strings.Join([]string{pkg.GetName(), manifest.Name}, "-"),
+			Name:      helmResourceName(pkg, manifest),
 			Namespace: namespace,
 		},
 	}
@@ -162,7 +162,7 @@ func (a *FluxHelmAdapter) ensureHelmRelease(
 	}
 	helmRelease := helmv1beta2.HelmRelease{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      strings.Join([]string{pkg.GetName(), manifest.Name}, "-"),
+			Name:      helmResourceName(pkg, manifest),
 			Namespace: namespace,
 		},
 	}
@@ -171,7 +171,7 @@ func (a *FluxHelmAdapter) ensureHelmRelease(
 		helmRelease.Spec.Chart.Spec.Chart = manifest.Helm.ChartName
 		helmRelease.Spec.Chart.Spec.Version = manifest.Helm.ChartVersion
 		helmRelease.Spec.Chart.Spec.SourceRef.Kind = "HelmRepository"
-		helmRelease.Spec.Chart.Spec.SourceRef.Name = manifest.Name
+		helmRelease.Spec.Chart.Spec.SourceRef.Name = helmResourceName(pkg, manifest)
 		if manifest.Helm.Values != nil {
 			helmRelease.Spec.Values = &apiextensionsv1.JSON{Raw: manifest.Helm.Values.Raw[:]}
 		} else {
@@ -215,4 +215,8 @@ func extractResult(
 	} else {
 		return result.Waiting("Waiting for HelmRelease reconciliation", ownedResources)
 	}
+}
+
+func helmResourceName(pkg ctrlpkg.Package, manifest *packagesv1alpha1.PackageManifest) string {
+	return strings.Join([]string{pkg.GetName(), manifest.Name}, "-")
 }
