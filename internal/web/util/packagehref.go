@@ -16,19 +16,26 @@ func GetPackageHrefWithFallback(pkg ctrlpkg.Package, manifest *v1alpha1.PackageM
 }
 
 func getPackageHref(pkg ctrlpkg.Package, manifest *v1alpha1.PackageManifest, withFallback bool) string {
-	var pkgHref string
-	if manifest.Scope == nil || *manifest.Scope == v1alpha1.ScopeCluster {
-		// Scope == nil is the fallback for all older packages – it will only be wrong for quickwit (the first non-cluster
-		// package), and only when someone selects an outdated version
-		pkgHref = fmt.Sprintf("/clusterpackages/%s", manifest.Name)
+	if manifest.Scope.IsCluster() {
+		return GetClusterPkgHref(manifest.Name)
 	} else {
-		pkgPath := ""
 		if !pkg.IsNil() {
-			pkgPath = fmt.Sprintf("/%s/%s", pkg.GetNamespace(), pkg.GetName())
+			return GetNamespacedPkgHref(manifest.Name, pkg.GetNamespace(), pkg.GetName())
 		} else if withFallback {
-			pkgPath = "/-/-" // not installed yet
+			return GetNamespacedPkgHref(manifest.Name, "-", "-") // not installed yet
 		}
-		pkgHref = fmt.Sprintf("/packages/%s%s", manifest.Name, pkgPath)
+		return GetNamespacedPkgHref(manifest.Name, "", "")
 	}
-	return pkgHref
+}
+
+func GetClusterPkgHref(pkgName string) string {
+	return fmt.Sprintf("/clusterpackages/%s", pkgName)
+}
+
+func GetNamespacedPkgHref(manifestName string, namespace string, name string) string {
+	if namespace != "" && name != "" {
+		return fmt.Sprintf("/packages/%s/%s/%s", manifestName, namespace, name)
+	} else {
+		return fmt.Sprintf("/packages/%s", manifestName)
+	}
 }

@@ -3,6 +3,8 @@ package pkg_detail_btns
 import (
 	"fmt"
 
+	"github.com/glasskube/glasskube/internal/web/util"
+
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
@@ -18,6 +20,7 @@ type pkgDetailBtnsInput struct {
 	Manifest        *v1alpha1.PackageManifest
 	UpdateAvailable bool
 	Pkg             ctrlpkg.Package
+	PackageHref     string
 }
 
 func getId(pkgName string) string {
@@ -39,5 +42,6 @@ func ForPkgDetailBtns(
 		Manifest:        manifest,
 		UpdateAvailable: updateAvailable,
 		Pkg:             pkg,
+		PackageHref:     util.GetPackageHref(pkg, manifest),
 	}
 }

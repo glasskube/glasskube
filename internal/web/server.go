@@ -183,11 +183,6 @@ func (s *server) Start(ctx context.Context) error {
 	// TODO or one modal per type? or change modal to a page and show two sections?
 	router.Handle("/packages/update", s.requireReady(s.update))
 	router.Handle("/packages/update/modal", s.requireReady(s.updateModal))
-	// uninstall endpoints
-	router.Handle("/packages/uninstall", s.requireReady(s.uninstall))
-	router.Handle("/clusterpackages/uninstall", s.requireReady(s.uninstall))
-	router.Handle("/packages/uninstall/modal", s.requireReady(s.uninstallModal))
-	router.Handle("/clusterpackages/uninstall/modal", s.requireReady(s.uninstallModal))
 	// open endpoints
 	router.Handle("/packages/open", s.requireReady(s.open))
 	router.Handle("/clusterpackages/open", s.requireReady(s.open))
@@ -206,7 +201,6 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle(installedPkgBasePath+"/discussion/badge", s.requireReady(s.discussionBadge))
 	router.Handle(clpkgBasePath+"/discussion/badge", s.requireReady(s.discussionBadge))
 	// configuration endpoints
-	// router.Handle(pkgBasePath+"/configure", s.requireReady(s.installOrConfigurePackage))
 	router.Handle(installedPkgBasePath+"/configure", s.requireReady(s.installOrConfigurePackage))
 	router.Handle(clpkgBasePath+"/configure", s.requireReady(s.installOrConfigureClusterPackage))
 	router.Handle(installedPkgBasePath+"/configure/advanced", s.requireReady(s.advancedPackageConfiguration))
@@ -217,6 +211,9 @@ func (s *server) Start(ctx context.Context) error {
 	// configuration datalist endpoints
 	router.Handle("/datalists/{valueName}/names", s.requireReady(s.namesDatalist))
 	router.Handle("/datalists/{valueName}/keys", s.requireReady(s.keysDatalist))
+	// uninstall endpoints
+	router.Handle(installedPkgBasePath+"/uninstall", s.requireReady(s.uninstall))
+	router.Handle(clpkgBasePath+"/uninstall", s.requireReady(s.uninstall))
 	// settings
 	router.Handle("/settings", s.requireReady(s.settingsPage))
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -328,40 +325,66 @@ func (s *server) update(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *server) uninstallModal(w http.ResponseWriter, r *http.Request) {
-	pkgName := r.FormValue("packageName")
-	var pruned []string
-	var err error
-	if g, err1 := s.dependencyMgr.NewGraph(r.Context()); err1 != nil {
-		err = fmt.Errorf("error validating uninstall: %w", err1)
-	} else {
-		g.Delete(pkgName)
-		pruned = g.Prune()
-		if err1 := g.Validate(); err1 != nil {
-			err = fmt.Errorf("%v cannot be uninstalled: %w", pkgName, err1)
-		}
-	}
-	err = s.templates.pkgUninstallModalTmpl.Execute(w, map[string]any{
-		"PackageName": pkgName,
-		"Pruned":      pruned,
-		"Err":         err,
-	})
-	checkTmplError(err, "pkgUninstallModalTmpl")
-}
-
+// uninstall is an endpoint, which returns the modal html for GET requests, and performs the uninstallation for POST
 func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	pkgName := r.FormValue("packageName")
-	var pkg v1alpha1.ClusterPackage
-	if err := s.pkgClient.ClusterPackages().Get(ctx, pkgName, &pkg); err != nil {
-		s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred fetching %v during uninstall", pkgName), "danger")
-		return
-	}
-	if err := uninstall.NewUninstaller(s.pkgClient).
-		WithStatusWriter(statuswriter.Stderr()).
-		Uninstall(ctx, &pkg); err != nil {
-		s.respondAlertAndLog(w, err, "An error occurred uninstalling "+pkgName, "danger")
-		return
+	pkgName := mux.Vars(r)["pkgName"]
+	manifestName := mux.Vars(r)["manifestName"]
+	namespace := mux.Vars(r)["namespace"]
+	name := mux.Vars(r)["name"]
+
+	if r.Method == http.MethodPost {
+		uninstaller := uninstall.NewUninstaller(s.pkgClient).WithStatusWriter(statuswriter.Stderr())
+		if pkgName != "" {
+			var pkg v1alpha1.ClusterPackage
+			if err := s.pkgClient.ClusterPackages().Get(ctx, pkgName, &pkg); err != nil {
+				s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred fetching %v during uninstall", pkgName), "danger")
+				return
+			}
+			if err := uninstaller.Uninstall(ctx, &pkg); err != nil {
+				s.respondAlertAndLog(w, err, "An error occurred uninstalling "+pkgName, "danger")
+				return
+			}
+		} else {
+			var pkg v1alpha1.Package
+			if err := s.pkgClient.Packages(namespace).Get(ctx, name, &pkg); err != nil {
+				s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred fetching %v during uninstall", name), "danger")
+				return
+			}
+			if err := uninstaller.Uninstall(ctx, &pkg); err != nil {
+				s.respondAlertAndLog(w, err, "An error occurred uninstalling "+name, "danger")
+				return
+			}
+		}
+	} else {
+		if pkgName != "" {
+			var pruned []string
+			var err error
+			// dependency checks are only necessary for clusterpackages, as there are no dependencies on namespaced packages
+			if g, err1 := s.dependencyMgr.NewGraph(r.Context()); err1 != nil {
+				err = fmt.Errorf("error validating uninstall: %w", err1)
+			} else {
+				g.Delete(pkgName)
+				pruned = g.Prune()
+				if err1 := g.Validate(); err1 != nil {
+					err = fmt.Errorf("%v cannot be uninstalled: %w", pkgName, err1)
+				}
+			}
+			err = s.templates.pkgUninstallModalTmpl.Execute(w, map[string]any{
+				"PackageName": pkgName,
+				"Pruned":      pruned,
+				"Err":         err,
+				"PackageHref": util.GetClusterPkgHref(pkgName),
+			})
+			checkTmplError(err, "pkgUninstallModalTmpl")
+		} else {
+			err := s.templates.pkgUninstallModalTmpl.Execute(w, map[string]any{
+				"Namespace":   namespace,
+				"Name":        name,
+				"PackageHref": util.GetNamespacedPkgHref(manifestName, namespace, name),
+			})
+			checkTmplError(err, "pkgUninstallModalTmpl")
+		}
 	}
 }
 
