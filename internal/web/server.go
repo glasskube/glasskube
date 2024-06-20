@@ -183,9 +183,7 @@ func (s *server) Start(ctx context.Context) error {
 	// TODO or one modal per type? or change modal to a page and show two sections?
 	router.Handle("/packages/update", s.requireReady(s.update))
 	router.Handle("/packages/update/modal", s.requireReady(s.updateModal))
-	// open endpoints
-	router.Handle("/packages/open", s.requireReady(s.open))
-	router.Handle("/clusterpackages/open", s.requireReady(s.open))
+
 	// detail page endpoints
 	pkgBasePath := "/packages/{manifestName}"
 	installedPkgBasePath := pkgBasePath + "/{namespace}/{name}"
@@ -208,12 +206,16 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle(pkgBasePath+"/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
 	router.Handle(installedPkgBasePath+"/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
 	router.Handle(clpkgBasePath+"/configuration/{valueName}", s.requireReady(s.clusterPackageConfigurationInput))
-	// configuration datalist endpoints
-	router.Handle("/datalists/{valueName}/names", s.requireReady(s.namesDatalist))
-	router.Handle("/datalists/{valueName}/keys", s.requireReady(s.keysDatalist))
+	// open endpoints
+	router.Handle(installedPkgBasePath+"/open", s.requireReady(s.open))
+	router.Handle(clpkgBasePath+"/open", s.requireReady(s.open))
 	// uninstall endpoints
 	router.Handle(installedPkgBasePath+"/uninstall", s.requireReady(s.uninstall))
 	router.Handle(clpkgBasePath+"/uninstall", s.requireReady(s.uninstall))
+
+	// configuration datalist endpoints
+	router.Handle("/datalists/{valueName}/names", s.requireReady(s.namesDatalist))
+	router.Handle("/datalists/{valueName}/keys", s.requireReady(s.keysDatalist))
 	// settings
 	router.Handle("/settings", s.requireReady(s.settingsPage))
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -389,24 +391,45 @@ func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) open(w http.ResponseWriter, r *http.Request) {
-	pkgName := r.FormValue("packageName")
-	if result, ok := s.forwarders[pkgName]; ok {
+	ctx := r.Context()
+	pkgName := mux.Vars(r)["pkgName"]
+	namespace := mux.Vars(r)["namespace"]
+	name := mux.Vars(r)["name"]
+
+	if pkgName != "" {
+		var pkg v1alpha1.ClusterPackage
+		if err := s.pkgClient.ClusterPackages().Get(ctx, pkgName, &pkg); err != nil {
+			s.respondAlertAndLog(w, err, "Could not get ClusterPackage", "danger")
+			return
+		}
+		s.handleOpen(ctx, w, &pkg)
+	} else {
+		var pkg v1alpha1.Package
+		if err := s.pkgClient.Packages(namespace).Get(ctx, name, &pkg); err != nil {
+			s.respondAlertAndLog(w, err, "Could not get Package", "danger")
+			return
+		}
+		s.handleOpen(ctx, w, &pkg)
+	}
+}
+
+func (s *server) handleOpen(ctx context.Context, w http.ResponseWriter, pkg ctrlpkg.Package) {
+	fwName := pkg.GetName()
+	if pkg.IsNamespaceScoped() {
+		fwName = cache.ObjectName{Namespace: pkg.GetNamespace(), Name: pkg.GetName()}.String()
+	}
+
+	if result, ok := s.forwarders[fwName]; ok {
 		result.WaitReady()
 		_ = cliutils.OpenInBrowser(result.Url)
 		return
 	}
 
-	var pkg v1alpha1.ClusterPackage
-	if err := s.pkgClient.ClusterPackages().Get(r.Context(), pkgName, &pkg); err != nil {
-		s.respondAlertAndLog(w, err, "Could not get ClusterPackage", "danger")
-		return
-	}
-
-	result, err := open.NewOpener().Open(r.Context(), &pkg, "", 0)
+	result, err := open.NewOpener().Open(ctx, pkg, "", 0)
 	if err != nil {
-		s.respondAlertAndLog(w, err, "Could not open "+pkgName, "danger")
+		s.respondAlertAndLog(w, err, "Could not open "+pkg.GetName(), "danger")
 	} else {
-		s.forwarders[pkgName] = result
+		s.forwarders[fwName] = result
 		result.WaitReady()
 		_ = cliutils.OpenInBrowser(result.Url)
 		w.WriteHeader(http.StatusAccepted)
@@ -1114,6 +1137,11 @@ func (s *server) initClusterPackageStoreAndController(ctx context.Context) (cach
 			DeleteFunc: func(obj any) {
 				if pkg, ok := obj.(*v1alpha1.ClusterPackage); ok {
 					s.broadcastClusterPackageRefreshTriggers(pkg)
+					fwName := pkg.GetName()
+					if result, ok := s.forwarders[fwName]; ok {
+						result.Stop()
+						delete(s.forwarders, fwName)
+					}
 				}
 			},
 		},
@@ -1149,11 +1177,17 @@ func (s *server) initPackageStoreAndController(ctx context.Context) (cache.Store
 			DeleteFunc: func(obj any) {
 				if pkg, ok := obj.(*v1alpha1.Package); ok {
 					s.broadcastPackageRefreshTriggers(pkg)
+					fwName := cache.ObjectName{Namespace: pkg.GetNamespace(), Name: pkg.GetName()}.String()
+					if result, ok := s.forwarders[fwName]; ok {
+						result.Stop()
+						delete(s.forwarders, fwName)
+					}
 				}
 			},
 		},
 	)
 }
+
 func (s *server) broadcastClusterPackageRefreshTriggers(pkg *v1alpha1.ClusterPackage) {
 	s.sseHub.Broadcast <- &sse{
 		event: "refresh-clusterpackage-overview",

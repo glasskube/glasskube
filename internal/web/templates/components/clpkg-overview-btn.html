@@ -2,7 +2,7 @@
   <span id="{{ .ButtonId }}">
     {{ if eq .Status nil }}
       <a
-        href="/clusterpackages/{{ .PackageName }}#configuration"
+        href="{{ .PackageHref }}#configuration"
         hx-boost="true"
         hx-select="main"
         hx-target="main"
@@ -37,7 +37,7 @@
     {{ else if and .Manifest .Manifest.Entrypoints }}
       <button
         class="btn btn-success btn-sm w-100"
-        hx-post="/clusterpackages/open"
+        hx-post="{{ .PackageHref }}/open"
         hx-swap="none"
         name="packageName"
         value="{{ .PackageName }}">

@@ -43,7 +43,7 @@
       {{ else if and .Manifest .Manifest.Entrypoints }}
         <button
           class="btn btn-success btn-sm"
-          hx-post="/packages/open"
+          hx-post="{{ .PackageHref }}/open"
           hx-swap="none"
           name="packageName"
           value="{{ .PackageName }}">

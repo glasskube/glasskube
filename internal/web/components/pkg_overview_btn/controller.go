@@ -3,6 +3,8 @@ package pkg_overview_btn
 import (
 	"fmt"
 
+	"github.com/glasskube/glasskube/internal/web/util"
+
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/list"
@@ -17,6 +19,7 @@ type clpkgOverviewBtnInput struct {
 	Manifest        *v1alpha1.PackageManifest
 	UpdateAvailable bool
 	InDeletion      bool
+	PackageHref     string
 }
 
 func getButtonId(pkgName string) string {
@@ -36,5 +39,6 @@ func ForClPkgOverviewBtn(packageWithStatus *list.PackageWithStatus, updateAvaila
 		Manifest:        packageWithStatus.InstalledManifest,
 		UpdateAvailable: updateAvailable,
 		InDeletion:      inDeletion,
+		PackageHref:     util.GetClusterPkgHref(packageWithStatus.Name),
 	}
 }
