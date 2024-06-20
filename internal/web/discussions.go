@@ -99,7 +99,7 @@ func (s *server) handlePackageDiscussionPage(w http.ResponseWriter, r *http.Requ
 		"Status":             client.GetStatusOrPending(d.pkg),
 		"Manifest":           d.manifest,
 		"LatestVersion":      idx.LatestVersion,
-		"UpdateAvailable":    d.pkg != nil && s.isUpdateAvailable(r.Context(), d.manifestName),
+		"UpdateAvailable":    s.isUpdateAvailableForPkg(r.Context(), d.pkg),
 		"ShowDiscussionLink": true,
 		"PackageHref":        pkgHref,
 		"DiscussionHref":     fmt.Sprintf("%s/discussion", pkgHref),

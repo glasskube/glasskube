@@ -18,6 +18,8 @@ import (
 	"sync"
 	"syscall"
 
+	types2 "k8s.io/apimachinery/pkg/types"
+
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 
 	"github.com/glasskube/glasskube/internal/web/util"
@@ -179,10 +181,6 @@ func (s *server) Start(ctx context.Context) error {
 	// overview pages
 	router.Handle("/packages", s.requireReady(s.packages))
 	router.Handle("/clusterpackages", s.requireReady(s.clusterPackages))
-	// TODO how to handle updates? packages + clusterpackages all in one modal?
-	// TODO or one modal per type? or change modal to a page and show two sections?
-	router.Handle("/packages/update", s.requireReady(s.update))
-	router.Handle("/packages/update/modal", s.requireReady(s.updateModal))
 
 	// detail page endpoints
 	pkgBasePath := "/packages/{manifestName}"
@@ -206,6 +204,9 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle(pkgBasePath+"/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
 	router.Handle(installedPkgBasePath+"/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
 	router.Handle(clpkgBasePath+"/configuration/{valueName}", s.requireReady(s.clusterPackageConfigurationInput))
+	// update endpoints
+	router.Handle(installedPkgBasePath+"/update", s.requireReady(s.update))
+	router.Handle(clpkgBasePath+"/update", s.requireReady(s.update))
 	// open endpoints
 	router.Handle(installedPkgBasePath+"/open", s.requireReady(s.open))
 	router.Handle(clpkgBasePath+"/open", s.requireReady(s.open))
@@ -261,69 +262,113 @@ func (s *server) Start(ctx context.Context) error {
 	return nil
 }
 
-func (s *server) updateModal(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	pkgName := r.FormValue("packageName")
-	pkgs := make([]string, 0, 1)
-	if pkgName != "" {
-		pkgs = append(pkgs, pkgName)
-	}
-
-	updates := make([]map[string]any, 0)
-	updater := update.NewUpdater(ctx).WithStatusWriter(statuswriter.Stderr())
-	ut, err := updater.Prepare(ctx, pkgs)
-	if err != nil {
-		s.respondAlertAndLog(w, err, "An error occurred preparing update of "+pkgName, "danger")
-		return
-	}
-	utId := rand.Int()
-	s.updateMutex.Lock()
-	s.updateTransactions[utId] = *ut
-	s.updateMutex.Unlock()
-
-	for _, u := range ut.Items {
-		if u.UpdateRequired() {
-			updates = append(updates, map[string]any{
-				"Name":           u.Package.Name,
-				"CurrentVersion": u.Package.Spec.PackageInfo.Version,
-				"LatestVersion":  u.Version,
-			})
-		}
-	}
-	for _, req := range ut.Requirements {
-		updates = append(updates, map[string]any{
-			"Name":           req.Name,
-			"CurrentVersion": "-",
-			"LatestVersion":  req.Version,
-		})
-	}
-
-	err = s.templates.pkgUpdateModalTmpl.Execute(w, map[string]any{
-		"UpdateTransactionId": utId,
-		"Updates":             updates,
-		"PackageName":         pkgName,
-	})
-	checkTmplError(err, "pkgUpdateModalTmpl")
-}
-
+// uninstall is an endpoint, which returns the modal html for GET requests, and performs the update for POST
 func (s *server) update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	updater := update.NewUpdater(ctx).WithStatusWriter(statuswriter.Stderr())
-	s.updateMutex.Lock()
-	defer s.updateMutex.Unlock()
-	utIdStr := r.FormValue("updateTransactionId")
-	if utId, err := strconv.Atoi(utIdStr); err != nil {
-		s.respondAlertAndLog(w, err, "Failed to parse updateTransactionId", "danger")
-		return
-	} else if ut, ok := s.updateTransactions[utId]; !ok {
-		s.respondAlert(w, fmt.Sprintf("Failed to find UpdateTransaction with ID %d", utId), "danger")
-		return
-	} else if _, err := updater.Apply(ctx, &ut); err != nil {
-		delete(s.updateTransactions, utId)
-		s.respondAlertAndLog(w, err, "An error occurred during the update", "danger")
-		return
+	pkgName := mux.Vars(r)["pkgName"]
+	manifestName := mux.Vars(r)["manifestName"]
+	namespace := mux.Vars(r)["namespace"]
+	name := mux.Vars(r)["name"]
+
+	if r.Method == http.MethodPost {
+		updater := update.NewUpdater(ctx).WithStatusWriter(statuswriter.Stderr())
+		s.updateMutex.Lock()
+		defer s.updateMutex.Unlock()
+		utIdStr := r.FormValue("updateTransactionId")
+		if utId, err := strconv.Atoi(utIdStr); err != nil {
+			s.respondAlertAndLog(w, err, "Failed to parse updateTransactionId", "danger")
+			return
+		} else if ut, ok := s.updateTransactions[utId]; !ok {
+			s.respondAlert(w, fmt.Sprintf("Failed to find UpdateTransaction with ID %d", utId), "danger")
+			return
+		} else if _, err := updater.Apply(ctx, &ut); err != nil {
+			delete(s.updateTransactions, utId)
+			s.respondAlertAndLog(w, err, "An error occurred during the update", "danger")
+			return
+		} else {
+			delete(s.updateTransactions, utId)
+		}
 	} else {
-		delete(s.updateTransactions, utId)
+		packageHref := ""
+		updates := make([]map[string]any, 0)
+		updater := update.NewUpdater(ctx).WithStatusWriter(statuswriter.Stderr())
+		var clpkgNames []string
+		var pkgNames []types2.NamespacedName
+		if pkgName != "" {
+			packageHref = "/clusterpackages/" + pkgName
+			// update concerns cluster packages
+			if pkgName == "-" {
+				// prepare updates for all installed packages
+				var clPkgList v1alpha1.ClusterPackageList
+				if err := s.pkgClient.ClusterPackages().GetAll(ctx, &clPkgList); err != nil {
+					s.respondAlertAndLog(w, err, "An error occurred listing all clusterpackages for update", "danger")
+					return
+				}
+				for _, item := range clPkgList.Items {
+					clpkgNames = append(clpkgNames, item.Spec.PackageInfo.Name)
+				}
+			} else {
+				// prepare update for a specific package
+				clpkgNames = append(clpkgNames, pkgName)
+			}
+		} else {
+			// update concerns namespaced packages
+			packageHref = util.GetNamespacedPkgHref(manifestName, namespace, name)
+			if manifestName == "-" {
+				// prepare updates for all installed namespaced packages
+				var pkgList v1alpha1.PackageList
+				if err := s.pkgClient.Packages("").GetAll(ctx, &pkgList); err != nil {
+					s.respondAlertAndLog(w, err, "An error occurred listing all packages for update", "danger")
+					return
+				}
+				for _, item := range pkgList.Items {
+					pkgNames = append(pkgNames, types2.NamespacedName{
+						Namespace: item.GetNamespace(),
+						Name:      item.GetName(),
+					})
+				}
+			} else {
+				// prepare update for a specific namespaced package
+				pkgNames = append(pkgNames, types2.NamespacedName{
+					Namespace: namespace,
+					Name:      name,
+				})
+			}
+		}
+
+		ut, err := updater.Prepare(ctx, clpkgNames, pkgNames)
+		if err != nil {
+			s.respondAlertAndLog(w, err, "An error occurred preparing update of "+pkgName, "danger")
+			return
+		}
+		utId := rand.Int()
+		s.updateMutex.Lock()
+		s.updateTransactions[utId] = *ut
+		s.updateMutex.Unlock()
+
+		for _, u := range ut.Items {
+			if u.UpdateRequired() {
+				updates = append(updates, map[string]any{
+					"Package":        u.Package,
+					"CurrentVersion": u.Package.GetSpec().PackageInfo.Version,
+					"LatestVersion":  u.Version,
+				})
+			}
+		}
+		for _, req := range ut.Requirements {
+			updates = append(updates, map[string]any{
+				"Package":        req,
+				"CurrentVersion": "-",
+				"LatestVersion":  req.Version,
+			})
+		}
+
+		err = s.templates.pkgUpdateModalTmpl.Execute(w, map[string]any{
+			"UpdateTransactionId": utId,
+			"Updates":             updates,
+			"PackageHref":         packageHref,
+		})
+		checkTmplError(err, "pkgUpdateModalTmpl")
 	}
 }
 
@@ -447,15 +492,25 @@ func (s *server) clusterPackages(w http.ResponseWriter, r *http.Request) {
 	// Call isUpdateAvailable for each installed clusterpackage.
 	// This is not the same as getting all updates in a single transaction, because some dependency
 	// conflicts could be resolvable by installing individual clpkgs.
+	installedClPkgNames := make([]string, 0, len(clpkgs))
 	clpkgUpdateAvailable := map[string]bool{}
 	for _, pkg := range clpkgs {
-		clpkgUpdateAvailable[pkg.Name] = pkg.ClusterPackage != nil && s.isUpdateAvailable(r.Context(), pkg.Name)
+		if pkg.ClusterPackage != nil {
+			installedClPkgNames = append(installedClPkgNames, pkg.Name)
+		}
+		clpkgUpdateAvailable[pkg.Name] = pkg.ClusterPackage != nil && s.isUpdateAvailableForClPkg(r.Context(), pkg.Name)
+	}
+
+	overallUpdatesAvailable := false
+	if len(installedClPkgNames) > 0 {
+		overallUpdatesAvailable = s.isUpdateAvailable(r.Context(), installedClPkgNames, nil)
 	}
 
 	tmplErr := s.templates.clusterPkgsPageTemplate.Execute(w, s.enrichPage(r, map[string]any{
 		"ClusterPackages":               clpkgs,
 		"ClusterPackageUpdateAvailable": clpkgUpdateAvailable,
-		"UpdatesAvailable":              s.isUpdateAvailable(r.Context()),
+		"UpdatesAvailable":              overallUpdatesAvailable,
+		"PackageHref":                   util.GetClusterPkgHref("-"),
 	}, listErr))
 	checkTmplError(tmplErr, "clusterpackages")
 }
@@ -469,30 +524,41 @@ func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 		// TODO check again
 	}
 
-	// Call isUpdateAvailable for each installed package.
-	// This is not the same as getting all updates in a single transaction, because some dependency
-	// conflicts could be resolvable by installing individual packages.
-	// TODO make work again:
-	/*packageUpdateAvailable := map[string]bool{}
-	for _, pkg := range packages {
-		packageUpdateAvailable[pkg.Name] = pkg.Package != nil && s.isUpdateAvailable(r.Context(), pkg.Name)
-	}*/
-
+	packageUpdateAvailable := map[string]bool{}
 	var installed []*list.PackagesWithStatus
 	var available []*list.PackagesWithStatus
+	var installedPkgsNames []types2.NamespacedName
 	for _, pkgsWithStatus := range allPkgs {
 		if len(pkgsWithStatus.Packages) > 0 {
+			for _, pkgWithStatus := range pkgsWithStatus.Packages {
+				namespacedName := types2.NamespacedName{
+					Namespace: pkgWithStatus.Package.Namespace,
+					Name:      pkgWithStatus.Package.Name,
+				}
+				installedPkgsNames = append(installedPkgsNames, namespacedName)
+
+				// Call isUpdateAvailable for each installed package.
+				// This is not the same as getting all updates in a single transaction, because some dependency
+				// conflicts could be resolvable by installing individual packages.
+				packageUpdateAvailable[namespacedName.String()] = s.isUpdateAvailableForPkg(ctx, pkgWithStatus.Package)
+			}
 			installed = append(installed, pkgsWithStatus)
 		} else {
 			available = append(available, pkgsWithStatus)
 		}
 	}
 
+	overallUpdatesAvailable := false
+	if len(installedPkgsNames) > 0 {
+		overallUpdatesAvailable = s.isUpdateAvailable(r.Context(), nil, installedPkgsNames)
+	}
+
 	tmplErr := s.templates.pkgsPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
 		"InstalledPackages":      installed,
 		"AvailablePackages":      available,
-		"PackageUpdateAvailable": false, // TODO
-		"UpdatesAvailable":       false, // TODO s.isUpdateAvailable(r.Context()),
+		"PackageUpdateAvailable": packageUpdateAvailable,
+		"UpdatesAvailable":       overallUpdatesAvailable,
+		"PackageHref":            util.GetNamespacedPkgHref("-", "-", "-"),
 	}, listErr))
 	checkTmplError(tmplErr, "packages")
 }
@@ -1244,8 +1310,25 @@ func (s *server) initPackageRepoStoreAndController(ctx context.Context) (cache.S
 	)
 }
 
-func (s *server) isUpdateAvailable(ctx context.Context, packages ...string) bool {
-	if tx, err := update.NewUpdater(ctx).Prepare(ctx, packages); err != nil {
+func (s *server) isUpdateAvailableForClPkg(ctx context.Context, name string) bool {
+	return s.isUpdateAvailable(ctx, []string{name}, nil)
+}
+
+func (s *server) isUpdateAvailableForPkg(ctx context.Context, pkg ctrlpkg.Package) bool {
+	if pkg.IsNil() {
+		return false
+	}
+	if pkg.IsNamespaceScoped() {
+		return s.isUpdateAvailable(ctx, nil, []types2.NamespacedName{
+			{Namespace: pkg.GetNamespace(), Name: pkg.GetName()},
+		})
+	} else {
+		return s.isUpdateAvailable(ctx, []string{pkg.GetName()}, nil)
+	}
+}
+
+func (s *server) isUpdateAvailable(ctx context.Context, clpkgs []string, pkgs []types2.NamespacedName) bool {
+	if tx, err := update.NewUpdater(ctx).Prepare(ctx, clpkgs, pkgs); err != nil {
 		fmt.Fprintf(os.Stderr, "Error checking for updates: %v\n", err)
 		return false
 	} else {

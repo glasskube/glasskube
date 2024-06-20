@@ -156,7 +156,7 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 		"Status":             client.GetStatusOrPending(d.pkg),
 		"Manifest":           d.manifest,
 		"LatestVersion":      latestVersion,
-		"UpdateAvailable":    !d.pkg.IsNil() && s.isUpdateAvailable(r.Context(), d.manifestName),
+		"UpdateAvailable":    s.isUpdateAvailableForPkg(r.Context(), d.pkg),
 		"AutoUpdate":         clientutils.AutoUpdateString(d.pkg, "Disabled"),
 		"ValidationResult":   res,
 		"ShowConflicts":      res.Status == dependency.ValidationResultStatusConflict,
