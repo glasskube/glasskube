@@ -129,7 +129,7 @@ func (a *FluxHelmAdapter) ensureHelmRepository(
 	}
 	helmRepository := sourcev1beta2.HelmRepository{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      manifest.Name,
+			Name:      strings.Join([]string{pkg.GetName(), manifest.Name}, "-"),
 			Namespace: namespace,
 		},
 	}
@@ -162,7 +162,7 @@ func (a *FluxHelmAdapter) ensureHelmRelease(
 	}
 	helmRelease := helmv1beta2.HelmRelease{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      manifest.Name,
+			Name:      strings.Join([]string{pkg.GetName(), manifest.Name}, "-"),
 			Namespace: namespace,
 		},
 	}
