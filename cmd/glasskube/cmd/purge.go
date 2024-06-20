@@ -38,7 +38,7 @@ var purgeCmd = &cobra.Command{
 		bold := color.New(color.Bold).SprintFunc()
 		currentContext := clicontext.RawConfigFromContext(ctx).CurrentContext
 
-		isBootstrapped, err := bootstrap.IsBootstrapped(cmd.Context(), cfg)
+		isBootstrapped, err := bootstrap.IsBootstrapped(ctx, cfg)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			cliutils.ExitWithError()
@@ -47,11 +47,13 @@ var purgeCmd = &cobra.Command{
 			fmt.Fprintln(os.Stderr, "error: glasskube is not bootstrapped")
 			cliutils.ExitWithError()
 		}
+		fmt.Fprintf(os.Stderr,
+			"⚠️  Glasskube and all related resources will be purged from context %s.\n"+
+				"This includes removal of all installed packages!\n",
+			bold(currentContext))
 
 		if !purgeCmdOptions.yes {
-			confirmMessage := fmt.Sprintf("⚠️ Glasskube and all related resources will be purged from context %s."+
-				"\nThis includes removal of all installed packages!\nContinue? ", bold(currentContext))
-			if !cliutils.YesNoPrompt(confirmMessage, true) {
+			if !cliutils.YesNoPrompt("Continue?", false) {
 				fmt.Fprintln(os.Stderr, "Operation stopped")
 				cliutils.ExitWithError()
 			}
@@ -62,6 +64,9 @@ var purgeCmd = &cobra.Command{
 			cliutils.ExitWithError()
 		}
 
+		fmt.Fprintf(os.Stderr, "✅ Glasskube has been removed from %v\n", currentContext)
+		fmt.Fprintln(os.Stderr, "🤝 Thank you for using Glasskube")
+		cliutils.ExitSuccess()
 	},
 }
 

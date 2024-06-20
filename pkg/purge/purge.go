@@ -10,7 +10,6 @@ import (
 	"github.com/glasskube/glasskube/internal/util"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"k8s.io/apimachinery/pkg/api/errors"
-
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -81,7 +80,6 @@ func (c *Purger) Purge(ctx context.Context) error {
 		return fmt.Errorf("an error occurred during purge: %w", err)
 	}
 
-	c.status.SetStatus("Glasskube successfully purged!")
 	return nil
 }
 
