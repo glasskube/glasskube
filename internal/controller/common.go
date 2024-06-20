@@ -15,6 +15,7 @@ import (
 	"github.com/glasskube/glasskube/internal/controller/owners"
 	ownerutils "github.com/glasskube/glasskube/internal/controller/owners/utils"
 	"github.com/glasskube/glasskube/internal/controller/requeue"
+	"github.com/glasskube/glasskube/internal/controller/watch"
 	"github.com/glasskube/glasskube/internal/dependency"
 	"github.com/glasskube/glasskube/internal/manifest"
 	"github.com/glasskube/glasskube/internal/manifest/result"
@@ -55,7 +56,9 @@ type PackageReconcilerCommon struct {
 	DependencyManager *dependency.DependendcyManager
 }
 
-func (r *PackageReconcilerCommon) baseSetup(mgr ctrl.Manager, object client.Object) (*builder.Builder, error) {
+func (r *PackageReconcilerCommon) baseSetup(
+	mgr ctrl.Manager, object ctrlpkg.Package, lister watch.PackageLister) (*builder.Builder, error) {
+
 	if r.OwnerManager == nil {
 		r.OwnerManager = owners.NewOwnerManager(r.Scheme)
 	}
@@ -65,10 +68,14 @@ func (r *PackageReconcilerCommon) baseSetup(mgr ctrl.Manager, object client.Obje
 			ctrladapter.NewKubernetesClientAdapter(r.Client),
 		)
 	}
-	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(object).
-		Owns(&v1alpha1.PackageInfo{}, builder.MatchEveryOwner).
-		Owns(&v1alpha1.Package{}, builder.MatchEveryOwner).
-		Owns(&v1alpha1.ClusterPackage{}, builder.MatchEveryOwner)
+
+	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
+		For(object).
+		Watches(&v1alpha1.PackageInfo{},
+			watch.EnqueueRequestsFromOwnedResource(r.Scheme, lister, watch.OwnedPackageInfos)).
+		Watches(&v1alpha1.ClusterPackage{},
+			watch.EnqueueRequestsFromOwnedResource(r.Scheme, lister, watch.OwnedPackages))
+
 	if err := r.InitAdapters(controllerBuilder); err != nil {
 		return nil, err
 	}
