@@ -8,17 +8,24 @@ import (
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/config"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/glasskube/glasskube/pkg/update"
 	"github.com/spf13/cobra"
 	"go.uber.org/multierr"
 )
 
-var autoUpdateEnabledDisabledOptions = struct{ Yes, All bool }{}
+var autoUpdateEnabledDisabledOptions = struct {
+	Yes, All bool
+	KindOptions
+	NamespaceOptions
+}{
+	KindOptions: DefaultKindOptions(),
+}
 
 var autoUpdateEnableCmd = &cobra.Command{
 	Use:               "enable [...package]",
-	Short:             "Enable automatic updates for packages",
+	Short:             "Enable automatic updates for packages:",
 	PreRun:            cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
 	ValidArgsFunction: completeInstalledPackageNames,
 	Run: runAutoUpdateEnableOrDisable(true,
@@ -27,7 +34,7 @@ var autoUpdateEnableCmd = &cobra.Command{
 
 var autoUpdateDisableCmd = &cobra.Command{
 	Use:               "disable [...package]",
-	Short:             "Disable automatic updates for packages",
+	Short:             "Disable automatic updates for packages:",
 	PreRun:            cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
 	ValidArgsFunction: completeInstalledPackageNames,
 	Run: runAutoUpdateEnableOrDisable(false,
@@ -38,30 +45,47 @@ func runAutoUpdateEnableOrDisable(enabled bool, confirmMsg, successMsg string) f
 	return func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 		client := cliutils.PackageClient(ctx)
-		var pkgs []v1alpha1.ClusterPackage
+		var pkgs []ctrlpkg.Package
 		if autoUpdateEnabledDisabledOptions.All {
 			if len(args) > 0 {
 				fmt.Fprintf(os.Stderr, "Too many arguments: %v\n", args)
 				cliutils.ExitWithError()
 			}
-			var pkgList v1alpha1.ClusterPackageList
-			if err := client.ClusterPackages().GetAll(ctx, &pkgList); err != nil {
-				fmt.Fprintf(os.Stderr, "Could not list packages: %v", err)
-				cliutils.ExitWithError()
+			if autoUpdateEnabledDisabledOptions.Kind != KindPackage && autoUpdateEnabledDisabledOptions.Namespace == "" {
+				var pkgList v1alpha1.ClusterPackageList
+				if err := client.ClusterPackages().GetAll(ctx, &pkgList); err != nil {
+					fmt.Fprintf(os.Stderr, "Could not list packages: %v", err)
+					cliutils.ExitWithError()
+				}
+				for i := range pkgList.Items {
+					pkgs = append(pkgs, &pkgList.Items[i])
+				}
 			}
-			pkgs = pkgList.Items
+			if autoUpdateEnabledDisabledOptions.Kind != KindClusterPackage {
+				var pkgList v1alpha1.PackageList
+				if err := client.Packages(autoUpdateEnabledDisabledOptions.Namespace).
+					GetAll(ctx, &pkgList); err != nil {
+					fmt.Fprintf(os.Stderr, "Could not list packages: %v", err)
+					cliutils.ExitWithError()
+				}
+				for i := range pkgList.Items {
+					pkgs = append(pkgs, &pkgList.Items[i])
+				}
+			}
 			for _, pkg := range pkgs {
-				args = append(args, pkg.Name)
+				args = append(args, pkg.GetName())
 			}
 		} else {
 			if len(args) == 0 {
 				fmt.Fprintln(os.Stderr, "Please specify at least one package")
 				cliutils.ExitWithError()
 			}
-			pkgs = make([]v1alpha1.ClusterPackage, len(args))
+			pkgs = make([]ctrlpkg.Package, len(args))
 			for i, name := range args {
-				var pkg v1alpha1.ClusterPackage
-				if err := client.ClusterPackages().Get(ctx, name, &pkg); err != nil {
+				pkg, err := getPackageOrClusterPackage(ctx, name,
+					autoUpdateEnabledDisabledOptions.KindOptions,
+					autoUpdateEnabledDisabledOptions.NamespaceOptions)
+				if err != nil {
 					fmt.Fprintf(os.Stderr, "Could not get package %v: %v", name, err)
 					cliutils.ExitWithError()
 				}
@@ -69,7 +93,20 @@ func runAutoUpdateEnableOrDisable(enabled bool, confirmMsg, successMsg string) f
 			}
 		}
 
-		fmt.Fprintf(os.Stderr, "%v: %v\n", confirmMsg, strings.Join(args, ", "))
+		if len(pkgs) == 0 {
+			fmt.Fprintln(os.Stderr, "Nothing to do")
+			cliutils.ExitSuccess()
+		}
+
+		fmt.Fprintln(os.Stderr, confirmMsg)
+		for _, pkg := range pkgs {
+			if pkg.IsNamespaceScoped() {
+				fmt.Fprintf(os.Stderr, " * %v (Package in namespace %v with type %v)\n",
+					pkg.GetName(), pkg.GetNamespace(), pkg.GetSpec().PackageInfo.Name)
+			} else {
+				fmt.Fprintf(os.Stderr, " * %v (ClusterPackage)\n", pkg.GetName())
+			}
+		}
 		if !autoUpdateEnabledDisabledOptions.Yes && !cliutils.YesNoPrompt("Continue?", true) {
 			cancel()
 		}
@@ -78,7 +115,14 @@ func runAutoUpdateEnableOrDisable(enabled bool, confirmMsg, successMsg string) f
 		for _, pkg := range pkgs {
 			if pkg.AutoUpdatesEnabled() != enabled {
 				pkg.SetAutoUpdatesEnabled(enabled)
-				multierr.AppendInto(&err, client.ClusterPackages().Update(ctx, &pkg))
+				switch pkg := pkg.(type) {
+				case *v1alpha1.ClusterPackage:
+					multierr.AppendInto(&err, client.ClusterPackages().Update(ctx, pkg))
+				case *v1alpha1.Package:
+					multierr.AppendInto(&err, client.Packages(pkg.Namespace).Update(ctx, pkg))
+				default:
+					panic("unexpected type")
+				}
 			}
 		}
 		if err != nil {
@@ -150,6 +194,8 @@ func init() {
 			autoUpdateEnabledDisabledOptions.Yes, "do not ask for confirmation")
 		cmd.Flags().BoolVar(&autoUpdateEnabledDisabledOptions.All, "all",
 			autoUpdateEnabledDisabledOptions.All, "set for all packages")
+		autoUpdateEnabledDisabledOptions.KindOptions.AddFlagsToCommand(cmd)
+		autoUpdateEnabledDisabledOptions.NamespaceOptions.AddFlagsToCommand(cmd)
 		autoUpdateCmd.AddCommand(cmd)
 	}
 	RootCmd.AddCommand(autoUpdateCmd)
