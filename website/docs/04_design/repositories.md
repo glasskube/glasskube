@@ -85,7 +85,8 @@ Installed packages do not break but can not be updated until the missing reposit
 
 - `glasskube repo list` prints a list of installed repositories
 - `glasskube repo add [name] [url]` creates a new repository
-  - `--default` toggles the `packages.glasskube.dev/defaultRepository=true` annotation
+  - `--default` toggles the `packages.glasskube.dev/defaultRepository=true` annotation. If there is a repository
+    with that annotation already, the default annotation will be removed for that repository
   - `--auth=none` no authentication (default)
   - `--auth=basic` enables basic authentication
   - `--auth=bearer` enables token authentication
