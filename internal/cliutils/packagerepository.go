@@ -7,6 +7,8 @@ import (
 	"github.com/glasskube/glasskube/api/v1alpha1"
 )
 
+var NoDefaultRepo = fmt.Errorf("no default repo was found")
+
 func GetDefaultRepo(ctx context.Context) (*v1alpha1.PackageRepository, error) {
 	var repos v1alpha1.PackageRepositoryList
 
@@ -21,5 +23,5 @@ func GetDefaultRepo(ctx context.Context) (*v1alpha1.PackageRepository, error) {
 		}
 	}
 
-	return nil, fmt.Errorf("no default repo was found")
+	return nil, NoDefaultRepo
 }
