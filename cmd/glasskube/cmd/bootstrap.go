@@ -1,18 +1,22 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 
+	"github.com/Masterminds/semver/v3"
+	"github.com/fatih/color"
 	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/config"
-	"github.com/glasskube/glasskube/internal/semver"
+	"github.com/glasskube/glasskube/internal/releaseinfo"
 	"github.com/glasskube/glasskube/internal/util"
 	"github.com/glasskube/glasskube/pkg/bootstrap"
 	"github.com/spf13/cobra"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/yaml"
 )
@@ -45,77 +49,36 @@ var bootstrapCmd = &cobra.Command{
 		client := bootstrap.NewBootstrapClient(cfg)
 		ctx := cmd.Context()
 
-		currentContext := clicontext.RawConfigFromContext(ctx).CurrentContext
-
-		installedVersion, err := clientutils.GetPackageOperatorVersion(cmd.Context())
-		if err != nil {
-			IsBootstrapped, err := bootstrap.IsBootstrapped(cmd.Context(), cfg)
-			if err != nil && !IsBootstrapped {
-				fmt.Printf("error : %v\n", err)
+		var installedVersion, targetVersion *semver.Version
+		if installedVersionRaw, err := clientutils.GetPackageOperatorVersion(ctx); err != nil {
+			if !apierrors.IsNotFound(err) {
+				fmt.Fprintf(os.Stderr, "could not determine installed version: %v\n", err)
 				cliutils.ExitWithError()
 			}
+		} else if installedVersion, err = semver.NewVersion(installedVersionRaw); err != nil {
+			fmt.Fprintf(os.Stderr, "could not parse installed version: %v\n", err)
+			cliutils.ExitWithError()
 		}
-
-		var desiredVersion string
 		if bootstrapCmdOptions.url == "" {
-			desiredVersion = config.Version
-		} else {
-			desiredVersion = ""
-		}
-
-		if !semver.IsUpgradable(installedVersion, desiredVersion) &&
-			installedVersion != "" &&
-			installedVersion[1:] != desiredVersion {
-			if !cliutils.YesNoPrompt(fmt.Sprintf("Glasskube is already installed in this cluster "+
-				"in the newer version %v. You are about to install version %v. This could lead "+
-				"to a broken cluster!\nAre you sure that you want to downgrade glasskube "+
-				"in this cluster?", installedVersion, desiredVersion), false) {
-				fmt.Println("Operation stopped")
+			version := config.Version
+			if bootstrapCmdOptions.latest {
+				if releaseInfo, err := releaseinfo.FetchLatestRelease(); err != nil {
+					fmt.Fprintf(os.Stderr, "could not determine latest version: %v\n", err)
+					cliutils.ExitWithError()
+				} else {
+					version = releaseInfo.Version
+				}
+			}
+			var err error
+			if targetVersion, err = semver.NewVersion(version); err != nil {
+				fmt.Fprintf(os.Stderr, "could not parse target version: %v\n", err)
 				cliutils.ExitWithError()
 			}
-
 		}
 
-		upgradeNeeded := installedVersion != "" && semver.IsUpgradable(installedVersion, desiredVersion)
-		if !bootstrapCmdOptions.yes {
-			if upgradeNeeded {
-				if desiredVersion == "" {
-					confirmMessage := fmt.Sprintf("Glasskube is currently installed in this cluster (%s) "+
-						"in version %v. The version you are about to install is unknown. Please make sure the "+
-						"versions are compatible, this action could lead to a "+
-						"broken cluster!\nContinue?", currentContext, installedVersion)
-					if !cliutils.YesNoPrompt(confirmMessage, false) {
-						fmt.Println("Operation stopped")
-						cliutils.ExitWithError()
-					}
-				} else {
-					confirmMessage := fmt.Sprintf("Glasskube will be updated to version %s "+
-						"in cluster %s.\nContinue? ", desiredVersion, currentContext)
-					if !cliutils.YesNoPrompt(confirmMessage, true) {
-						fmt.Println("Operation stopped")
-						cliutils.ExitWithError()
-					}
-				}
-			} else if installedVersion != "" && installedVersion[1:] == desiredVersion {
-				if !cliutils.YesNoPrompt(fmt.Sprintf("Glasskube is currently installed in this cluster (%s) "+
-					"in version %v. You are about to bootstrap this version again."+
-					"\nContinue?", currentContext, installedVersion), true) {
-					fmt.Println("Operation stopped")
-					cliutils.ExitWithError()
-				}
-			} else {
-				confirmMessage := fmt.Sprintf("Glasskube will be installed in context %s."+
-					"\nContinue?", currentContext)
-				if !cliutils.YesNoPrompt(confirmMessage, true) {
-					fmt.Println("Operation stopped")
-					cliutils.ExitWithError()
-				}
-			}
-		}
-		manifests, err := client.Bootstrap(
-			cmd.Context(),
-			bootstrapCmdOptions.asBootstrapOptions(),
-		)
+		verifyLegalUpdate(ctx, installedVersion, targetVersion)
+
+		manifests, err := client.Bootstrap(ctx, bootstrapCmdOptions.asBootstrapOptions())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "\nAn error occurred during bootstrap:\n%v\n", err)
 			cliutils.ExitWithError()
@@ -148,6 +111,68 @@ func printBootsrap(manifests []unstructured.Unstructured, output OutputFormat) e
 		}
 	}
 	return nil
+}
+
+func verifyLegalUpdate(ctx context.Context, installedVersion, targetVersion *semver.Version) {
+	breakings := map[*semver.Version]string{
+		semver.New(0, 10, 0, "", ""): "In release v0.10.0, Packages are renamed to ClusterPackages and " +
+			"Packages are reintroduced as namespaced resources.\n" +
+			"Glasskube must be uninstalled completely, to perform this update.",
+	}
+	currentContext := color.New(color.Bold).Sprint(clicontext.RawConfigFromContext(ctx).CurrentContext)
+
+	if installedVersion != nil && targetVersion != nil {
+		for version, msg := range breakings {
+			if installedVersion.LessThan(version) && !targetVersion.LessThan(version) {
+				fmt.Fprintf(os.Stderr,
+					"❗ Upgrade from version v%v to v%v is not possible due to a breaking change in v%v\n\n"+
+						"Details: %v\n\n"+
+						"For more information, please refer to our documentation: "+
+						"https://glasskube.dev/docs/getting-started/upgrading/#%v\n",
+					installedVersion, targetVersion, version, msg, version)
+				cliutils.ExitWithError()
+			}
+		}
+		if installedVersion.GreaterThan(targetVersion) {
+			fmt.Fprintf(os.Stderr,
+				"⚠️  Glasskube is already installed in this cluster in the newer version v%v. "+
+					"You are about to install version v%v. This could lead to a broken cluster!\n",
+				installedVersion, targetVersion)
+			if !bootstrapCmdOptions.yes &&
+				!cliutils.YesNoPrompt("Are you sure that you want to downgrade glasskube in this cluster?", false) {
+				cancel()
+			}
+		} else if installedVersion.LessThan(targetVersion) {
+			fmt.Fprintf(os.Stderr, "Glasskube will be updated to version v%v in cluster %v.\n",
+				targetVersion, currentContext)
+			if !bootstrapCmdOptions.yes && !cliutils.YesNoPrompt("Continue?", true) {
+				cancel()
+			}
+		} else {
+			fmt.Fprintf(os.Stderr,
+				"⚠️  Glasskube is already installed in this cluster (%v) in version v%v. "+
+					"You are about to bootstrap this version again.\n",
+				currentContext, installedVersion)
+			if !bootstrapCmdOptions.yes && !cliutils.YesNoPrompt("Continue?", true) {
+				cancel()
+			}
+		}
+	} else if installedVersion != nil && targetVersion == nil {
+		fmt.Fprintf(os.Stderr,
+			"⚠️  Glasskube is currently installed in this cluster (%v) in version v%v. "+
+				"The version you are about to install is unknown. "+
+				"Please make sure the versions are compatible, this action could lead to a broken "+
+				"cluster!\n",
+			currentContext, installedVersion)
+		if !bootstrapCmdOptions.yes && !cliutils.YesNoPrompt("Continue?", false) {
+			cancel()
+		}
+	} else {
+		fmt.Fprintf(os.Stderr, "Glasskube will be installed in context %s.\n", currentContext)
+		if !bootstrapCmdOptions.yes && !cliutils.YesNoPrompt("Continue?", true) {
+			cancel()
+		}
+	}
 }
 
 func convertAndPrintManifests(

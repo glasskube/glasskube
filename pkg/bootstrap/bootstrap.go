@@ -87,7 +87,6 @@ func (c *BootstrapClient) Bootstrap(
 		c.client = client
 	}
 
-	fmt.Fprintln(os.Stderr, installMessage)
 	start := time.Now()
 
 	if options.Url == "" {
@@ -107,6 +106,8 @@ func (c *BootstrapClient) Bootstrap(
 		options.Url = fmt.Sprintf("https://github.com/glasskube/glasskube/releases/download/v%v/manifest-%v.yaml",
 			version, options.Type)
 	}
+
+	fmt.Fprintln(os.Stderr, installMessage)
 
 	statusMessage("Fetching Glasskube manifest from "+options.Url, true)
 	manifests, err := clientutils.FetchResources(options.Url)

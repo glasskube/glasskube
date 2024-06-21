@@ -27,7 +27,7 @@ func YesNoPrompt(label string, defaultChoice bool) bool {
 	r := bufio.NewReader(os.Stdin)
 	var s string
 	for {
-		fmt.Fprintf(os.Stderr, "%s (%s) ", label, choices)
+		fmt.Fprintf(os.Stderr, "%s (%s) ", strings.TrimSpace(label), choices)
 		InteractivityEnabledOrFail()
 		s, _ = r.ReadString('\n')
 		s = strings.TrimSpace(s)
