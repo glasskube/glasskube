@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	helmv1beta2 "github.com/fluxcd/helm-controller/api/v2beta2"
+	helmv2 "github.com/fluxcd/helm-controller/api/v2"
 	sourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
@@ -17,7 +17,7 @@ import (
 	"github.com/glasskube/glasskube/internal/manifest/result"
 	"github.com/glasskube/glasskube/internal/manifestvalues"
 	corev1 "k8s.io/api/core/v1"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -40,7 +40,7 @@ func (a *FluxHelmAdapter) ControllerInit(buildr *builder.Builder, client client.
 	if err := sourcev1beta2.AddToScheme(scheme); err != nil {
 		return err
 	}
-	if err := helmv1beta2.AddToScheme(scheme); err != nil {
+	if err := helmv2.AddToScheme(scheme); err != nil {
 		return err
 	}
 	if a.OwnerManager == nil {
@@ -48,7 +48,7 @@ func (a *FluxHelmAdapter) ControllerInit(buildr *builder.Builder, client client.
 	}
 	a.Client = client
 	buildr.Owns(&sourcev1beta2.HelmRepository{})
-	buildr.Owns(&helmv1beta2.HelmRelease{}, builder.MatchEveryOwner)
+	buildr.Owns(&helmv2.HelmRelease{}, builder.MatchEveryOwner)
 	buildr.Owns(&corev1.Namespace{})
 	return nil
 }
@@ -153,14 +153,14 @@ func (a *FluxHelmAdapter) ensureHelmRelease(
 	pkg ctrlpkg.Package,
 	manifest *packagesv1alpha1.PackageManifest,
 	patches manifestvalues.TargetPatches,
-) (*helmv1beta2.HelmRelease, error) {
+) (*helmv2.HelmRelease, error) {
 	var namespace string
 	if pkg.IsNamespaceScoped() {
 		namespace = pkg.GetNamespace()
 	} else {
 		namespace = manifest.DefaultNamespace
 	}
-	helmRelease := helmv1beta2.HelmRelease{
+	helmRelease := helmv2.HelmRelease{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      helmResourceName(pkg, manifest),
 			Namespace: namespace,
@@ -168,12 +168,15 @@ func (a *FluxHelmAdapter) ensureHelmRelease(
 	}
 	log := ctrl.LoggerFrom(ctx).WithValues("HelmRelease", helmRelease.Name)
 	result, err := controllerutil.CreateOrUpdate(ctx, a.Client, &helmRelease, func() error {
+		if helmRelease.Spec.Chart == nil {
+			helmRelease.Spec.Chart = &helmv2.HelmChartTemplate{}
+		}
 		helmRelease.Spec.Chart.Spec.Chart = manifest.Helm.ChartName
 		helmRelease.Spec.Chart.Spec.Version = manifest.Helm.ChartVersion
 		helmRelease.Spec.Chart.Spec.SourceRef.Kind = "HelmRepository"
 		helmRelease.Spec.Chart.Spec.SourceRef.Name = helmResourceName(pkg, manifest)
 		if manifest.Helm.Values != nil {
-			helmRelease.Spec.Values = &apiextensionsv1.JSON{Raw: manifest.Helm.Values.Raw[:]}
+			helmRelease.Spec.Values = &extv1.JSON{Raw: manifest.Helm.Values.Raw[:]}
 		} else {
 			helmRelease.Spec.Values = nil
 		}
@@ -193,7 +196,7 @@ func (a *FluxHelmAdapter) ensureHelmRelease(
 }
 
 func extractResult(
-	helmRelease *helmv1beta2.HelmRelease,
+	helmRelease *helmv2.HelmRelease,
 	ownedResources []packagesv1alpha1.OwnedResourceRef,
 ) *result.ReconcileResult {
 	if readyCondition := meta.FindStatusCondition(helmRelease.Status.Conditions, "Ready"); readyCondition != nil {
