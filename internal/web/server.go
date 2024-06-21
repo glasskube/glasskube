@@ -86,6 +86,7 @@ func NewServer(options ServerOptions) *server {
 		forwarders:         make(map[string]*open.OpenResult),
 		updateTransactions: make(map[int]update.UpdateTransaction),
 		templates:          templates{},
+		connectionVerifier: verifier(),
 	}
 	return &server
 }
@@ -110,6 +111,7 @@ type server struct {
 	valueResolver      *manifestvalues.Resolver
 	isBootstrapped     bool
 	templates          templates
+	connectionVerifier *connectionVerifier
 }
 
 func (s *server) RestConfig() *rest.Config {
@@ -155,6 +157,14 @@ func (s *server) Start(ctx context.Context) error {
 			fmt.Fprintf(os.Stderr, "templates will not be parsed after changes: %v\n", err)
 		}
 	}
+
+	// TODO only start when feature flag toggled via env variable for now?
+	s.connectionVerifier.start()
+	go func() {
+		<-s.connectionVerifier.failed
+		// TODO server log + sse event to render some dedicated modal with error info
+	}()
+
 	s.sseHub = NewHub()
 	_ = s.ensureBootstrapped(ctx)
 
@@ -289,12 +299,15 @@ func (s *server) update(w http.ResponseWriter, r *http.Request) {
 	} else if ut, ok := s.updateTransactions[utId]; !ok {
 		s.respondAlert(w, fmt.Sprintf("Failed to find UpdateTransaction with ID %d", utId), "danger")
 		return
-	} else if _, err := updater.Apply(ctx, &ut); err != nil {
+	} else if updatedPkgs, err := updater.Apply(ctx, &ut); err != nil {
 		delete(s.updateTransactions, utId)
 		s.respondAlertAndLog(w, err, "An error occurred during the update", "danger")
 		return
 	} else {
 		delete(s.updateTransactions, utId)
+		for _, p := range updatedPkgs {
+			s.connectionVerifier.expectUpdate(p.Name, p.ResourceVersion)
+		}
 	}
 }
 
@@ -327,12 +340,15 @@ func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
 		s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred fetching %v during uninstall", pkgName), "danger")
 		return
 	}
-	if err := uninstall.NewUninstaller(s.pkgClient).
-		WithStatusWriter(statuswriter.Stderr()).
-		Uninstall(ctx, &pkg); err != nil {
-		s.respondAlertAndLog(w, err, "An error occurred uninstalling "+pkgName, "danger")
-		return
-	}
+	go func() {
+		if err := uninstall.NewUninstaller(s.pkgClient).
+			WithStatusWriter(statuswriter.Stderr()).
+			UninstallBlocking(ctx, &pkg); err != nil {
+			s.respondAlertAndLog(w, err, "An error occurred uninstalling "+pkgName, "danger")
+			return
+		}
+		s.connectionVerifier.expectDelete(pkg.Name)
+	}()
 }
 
 func (s *server) open(w http.ResponseWriter, r *http.Request) {
@@ -571,12 +587,13 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 			WithValues(values).
 			Build()
 		opts := metav1.CreateOptions{}
-		err := install.NewInstaller(s.pkgClient).
+		if _, err := install.NewInstaller(s.pkgClient).
 			WithStatusWriter(statuswriter.Stderr()).
-			Install(ctx, pkg, opts)
-		if err != nil {
+			InstallBlocking(ctx, pkg, opts); err != nil {
 			s.respondAlertAndLog(w, err, "An error occurred installing "+pkgName, "danger")
 			return
+		} else {
+			s.connectionVerifier.expectAdd(pkgName)
 		}
 	} else {
 		pkg.Spec.Values = values
@@ -584,6 +601,7 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 			s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred updating package %v", pkgName), "danger")
 			return
 		}
+		s.connectionVerifier.expectUpdate(pkg.Name, pkg.ResourceVersion)
 		if _, err := s.valueResolver.Resolve(ctx, values); err != nil {
 			s.respondAlertAndLog(w, err, "Some values could not be resolved: ", "warning")
 		} else {
@@ -685,6 +703,7 @@ func (s *server) advancedConfiguration(w http.ResponseWriter, r *http.Request) {
 				"danger")
 			return
 		} else {
+			s.connectionVerifier.expectUpdate(pkg.Name, pkg.ResourceVersion)
 			err := s.templates.alertTmpl.Execute(w, map[string]any{
 				"Message":     "Configuration updated successfully",
 				"Dismissible": true,
@@ -1013,16 +1032,19 @@ func (s *server) initPackageStoreAndController(ctx context.Context) (cache.Store
 			AddFunc: func(obj any) {
 				if pkg, ok := obj.(*v1alpha1.ClusterPackage); ok {
 					s.broadcastRefreshTriggers(pkg)
+					s.connectionVerifier.addReceived(pkg.Name, pkg.ResourceVersion)
 				}
 			},
 			UpdateFunc: func(oldObj, newObj any) {
 				if pkg, ok := newObj.(*v1alpha1.ClusterPackage); ok {
 					s.broadcastRefreshTriggers(pkg)
+					s.connectionVerifier.updateReceived(pkg.Name, pkg.ResourceVersion)
 				}
 			},
 			DeleteFunc: func(obj any) {
 				if pkg, ok := obj.(*v1alpha1.ClusterPackage); ok {
 					s.broadcastRefreshTriggers(pkg)
+					s.connectionVerifier.deleteReceived(pkg.Name, pkg.ResourceVersion)
 				}
 			},
 		},
