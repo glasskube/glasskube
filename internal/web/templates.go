@@ -8,28 +8,26 @@ import (
 	"path"
 	"reflect"
 
+	"github.com/fsnotify/fsnotify"
+	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
+	repoclient "github.com/glasskube/glasskube/internal/repo/client"
+	"github.com/glasskube/glasskube/internal/semver"
+	"github.com/glasskube/glasskube/internal/web/components/alert"
 	"github.com/glasskube/glasskube/internal/web/components/datalist"
-
+	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
+	"github.com/glasskube/glasskube/internal/web/components/pkg_detail_btns"
+	"github.com/glasskube/glasskube/internal/web/components/pkg_overview_btn"
+	"github.com/glasskube/glasskube/internal/web/components/pkg_update_alert"
 	"github.com/glasskube/glasskube/pkg/condition"
-	"k8s.io/apimachinery/pkg/api/meta"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/text"
 	"github.com/yuin/goldmark/util"
-
-	"github.com/fsnotify/fsnotify"
-	"github.com/glasskube/glasskube/api/v1alpha1"
-	repoclient "github.com/glasskube/glasskube/internal/repo/client"
-	"github.com/glasskube/glasskube/internal/semver"
-	"github.com/glasskube/glasskube/internal/web/components/alert"
-	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
-	"github.com/glasskube/glasskube/internal/web/components/pkg_detail_btns"
-	"github.com/glasskube/glasskube/internal/web/components/pkg_overview_btn"
-	"github.com/glasskube/glasskube/internal/web/components/pkg_update_alert"
 	"go.uber.org/multierr"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type templates struct {
@@ -82,10 +80,10 @@ func (t *templates) parseTemplates() {
 		"ForPkgOverviewBtn": pkg_overview_btn.ForPkgOverviewBtn,
 		"ForPkgDetailBtns":  pkg_detail_btns.ForPkgDetailBtns,
 		"ForPkgUpdateAlert": pkg_update_alert.ForPkgUpdateAlert,
-		"PackageManifestUrl": func(pkg *v1alpha1.Package) string {
-			if pkg != nil {
-				url, err := t.repoClientset.ForPackage(*pkg).
-					GetPackageManifestURL(pkg.Name, pkg.Spec.PackageInfo.Version)
+		"PackageManifestUrl": func(pkg ctrlpkg.Package) string {
+			if !pkg.IsNil() {
+				url, err := t.repoClientset.ForPackage(pkg).
+					GetPackageManifestURL(pkg.GetName(), pkg.GetSpec().PackageInfo.Version)
 				if err == nil {
 					return url
 				}
@@ -135,7 +133,7 @@ func (t *templates) parseTemplates() {
 		},
 		"IsRepoStatusReady": func(repo v1alpha1.PackageRepository) bool {
 			cond := meta.FindStatusCondition(repo.Status.Conditions, string(condition.Ready))
-			return cond != nil && cond.Status == v1.ConditionTrue
+			return cond != nil && cond.Status == metav1.ConditionTrue
 		},
 	}
 

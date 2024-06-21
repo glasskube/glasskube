@@ -11,6 +11,7 @@ import (
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/cliutils"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/pkg/future"
 	"github.com/glasskube/glasskube/pkg/manifest"
 	corev1 "k8s.io/api/core/v1"
@@ -36,14 +37,16 @@ func NewOpener() *opener {
 	return &opener{}
 }
 
-func (o *opener) Open(ctx context.Context, packageName string, entrypointName string, port int32) (*OpenResult, error) {
+func (o *opener) Open(
+	ctx context.Context, pkg ctrlpkg.Package, entrypointName string, port int32) (*OpenResult, error) {
+
 	if err := o.initFromContext(ctx); err != nil {
 		return nil, err
 	}
 
-	manifest, err := manifest.GetInstalledManifest(ctx, packageName)
+	manifest, err := manifest.GetInstalledManifestForPackage(ctx, pkg)
 	if err != nil {
-		return nil, fmt.Errorf("could not get PackageInfo for package %v: %w", packageName, err)
+		return nil, fmt.Errorf("could not get PackageInfo for %v %v: %w", pkg.GetSpec().PackageInfo.Name, pkg.GetName(), err)
 	}
 
 	if len(manifest.Entrypoints) < 1 {
@@ -67,6 +70,11 @@ func (o *opener) Open(ctx context.Context, packageName string, entrypointName st
 		}
 	}
 
+	namespace := pkg.GetNamespace()
+	if namespace == "" {
+		namespace = manifest.DefaultNamespace
+	}
+
 	result := OpenResult{opener: o}
 	var futures []future.Future
 	for _, entrypoint := range manifest.Entrypoints {
@@ -79,7 +87,7 @@ func (o *opener) Open(ctx context.Context, packageName string, entrypointName st
 			stopCh := make(chan struct{})
 			o.readyCh = append(o.readyCh, readyCh)
 			o.stopCh = append(o.stopCh, stopCh)
-			entrypointFuture, err := o.open(ctx, manifest, e, readyCh, stopCh)
+			entrypointFuture, err := o.open(ctx, namespace, e, readyCh, stopCh)
 			if err != nil {
 				o.stop()
 				epName := e.Name
@@ -131,7 +139,7 @@ func (o *opener) stop() {
 
 func (o *opener) open(
 	ctx context.Context,
-	manifest *v1alpha1.PackageManifest,
+	namespace string,
 	entrypoint v1alpha1.PackageEntrypoint,
 	readyChannel chan struct{},
 	stopChannel chan struct{},
@@ -140,7 +148,7 @@ func (o *opener) open(
 		return nil, err
 	}
 
-	svc, err := o.service(ctx, manifest, entrypoint)
+	svc, err := o.service(ctx, namespace, entrypoint)
 	if err != nil {
 		return nil, err
 	}
@@ -179,11 +187,11 @@ func (o *opener) open(
 
 func (o *opener) service(
 	ctx context.Context,
-	manifest *v1alpha1.PackageManifest,
+	namespace string,
 	entrypoint v1alpha1.PackageEntrypoint,
 ) (*corev1.Service, error) {
 	svc, err := o.ksClient.CoreV1().
-		Services(manifest.DefaultNamespace).
+		Services(namespace).
 		Get(ctx, entrypoint.ServiceName, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("could not get service %v: %w", entrypoint.ServiceName, err)
@@ -208,7 +216,7 @@ func (o *opener) pod(ctx context.Context, service *corev1.Service) (*corev1.Pod,
 			return &pod, nil
 		}
 	}
-	return nil, fmt.Errorf("no ready pod found for service %v", service.Name)
+	return nil, fmt.Errorf("no pod found for service %v has status ready", service.Name)
 }
 
 func portMapping(service *corev1.Service, pod *corev1.Pod, entrypoint v1alpha1.PackageEntrypoint) (string, error) {

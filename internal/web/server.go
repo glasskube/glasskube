@@ -18,17 +18,6 @@ import (
 	"sync"
 	"syscall"
 
-	"k8s.io/klog/v2"
-
-	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
-
-	"k8s.io/client-go/informers"
-	corev1 "k8s.io/client-go/listers/core/v1"
-
-	"github.com/glasskube/glasskube/internal/repo/types"
-
-	"github.com/glasskube/glasskube/internal/util"
-
 	"github.com/Masterminds/semver/v3"
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	clientadapter "github.com/glasskube/glasskube/internal/adapter/goclient"
@@ -39,7 +28,10 @@ import (
 	"github.com/glasskube/glasskube/internal/manifestvalues"
 	"github.com/glasskube/glasskube/internal/repo"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
+	"github.com/glasskube/glasskube/internal/repo/types"
 	"github.com/glasskube/glasskube/internal/telemetry"
+	"github.com/glasskube/glasskube/internal/util"
+	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
 	"github.com/glasskube/glasskube/internal/web/handler"
 	"github.com/glasskube/glasskube/pkg/bootstrap"
 	"github.com/glasskube/glasskube/pkg/client"
@@ -56,11 +48,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
+	corev1 "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
+	"k8s.io/klog/v2"
 )
 
 //go:embed root
@@ -194,7 +189,9 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle("/packages/{pkgName}/configuration/{valueName}/datalists/names", s.requireReady(s.namesDatalist))
 	router.Handle("/packages/{pkgName}/configuration/{valueName}/datalists/keys", s.requireReady(s.keysDatalist))
 	router.Handle("/settings", s.requireReady(s.settingsPage))
-	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { http.Redirect(w, r, "/packages", http.StatusFound) })
+	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/packages", http.StatusFound)
+	})
 	http.Handle("/", s.enrichContext(router))
 
 	bindAddr := fmt.Sprintf("%v:%d", s.Host, s.Port)
@@ -325,8 +322,8 @@ func (s *server) uninstallModal(w http.ResponseWriter, r *http.Request) {
 func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	pkgName := r.FormValue("packageName")
-	var pkg v1alpha1.Package
-	if err := s.pkgClient.Packages().Get(ctx, pkgName, &pkg); err != nil {
+	var pkg v1alpha1.ClusterPackage
+	if err := s.pkgClient.ClusterPackages().Get(ctx, pkgName, &pkg); err != nil {
 		s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred fetching %v during uninstall", pkgName), "danger")
 		return
 	}
@@ -346,7 +343,13 @@ func (s *server) open(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := open.NewOpener().Open(r.Context(), pkgName, "", 0)
+	var pkg v1alpha1.ClusterPackage
+	if err := s.pkgClient.ClusterPackages().Get(r.Context(), pkgName, &pkg); err != nil {
+		s.respondAlertAndLog(w, err, "Could not get ClusterPackage", "danger")
+		return
+	}
+
+	result, err := open.NewOpener().Open(r.Context(), &pkg, "", 0)
 	if err != nil {
 		s.respondAlertAndLog(w, err, "Could not open "+pkgName, "danger")
 	} else {
@@ -511,9 +514,9 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 	repositoryName := r.FormValue("repositoryName")
 	selectedVersion := r.FormValue("selectedVersion")
 	enableAutoUpdate := r.FormValue("enableAutoUpdate")
-	pkg := &v1alpha1.Package{}
+	pkg := &v1alpha1.ClusterPackage{}
 	var mf v1alpha1.PackageManifest
-	if err := s.pkgClient.Packages().Get(ctx, pkgName, pkg); err != nil && !apierrors.IsNotFound(err) {
+	if err := s.pkgClient.ClusterPackages().Get(ctx, pkgName, pkg); err != nil && !apierrors.IsNotFound(err) {
 		s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred fetching package details of %v", pkgName), "danger")
 		return
 	} else if err != nil {
@@ -549,7 +552,7 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 			return
 		}
 	} else {
-		if mf1, err := manifest.GetInstalledManifestForPackage(ctx, *pkg); err != nil {
+		if mf1, err := manifest.GetInstalledManifestForPackage(ctx, pkg); err != nil {
 			s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred fetching package details of %v", pkgName), "danger")
 			return
 		} else {
@@ -561,7 +564,7 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 		s.respondAlertAndLog(w, err, "An error occurred parsing the form", "danger")
 		return
 	} else if pkg == nil {
-		pkg = client.PackageBuilder(pkgName).
+		pkg = client.ClusterPackageBuilder(pkgName).
 			WithVersion(selectedVersion).
 			WithRepositoryName(repositoryName).
 			WithAutoUpdates(strings.ToLower(enableAutoUpdate) == "on").
@@ -577,7 +580,7 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 		}
 	} else {
 		pkg.Spec.Values = values
-		if err := s.pkgClient.Packages().Update(ctx, pkg); err != nil {
+		if err := s.pkgClient.ClusterPackages().Update(ctx, pkg); err != nil {
 			s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred updating package %v", pkgName), "danger")
 			return
 		}
@@ -676,7 +679,7 @@ func (s *server) advancedConfiguration(w http.ResponseWriter, r *http.Request) {
 		if repositoryName != "" {
 			pkg.Spec.PackageInfo.RepositoryName = repositoryName
 		}
-		if err := s.pkgClient.Packages().Update(ctx, pkg); err != nil {
+		if err := s.pkgClient.ClusterPackages().Update(ctx, pkg); err != nil {
 			s.respondAlertAndLog(w, err,
 				fmt.Sprintf("An error occurred updating package %v to version %v in repo %v", pkgName, selectedVersion, repositoryName),
 				"danger")
@@ -996,29 +999,29 @@ func (s *server) initPackageStoreAndController(ctx context.Context) (cache.Store
 	return cache.NewInformer(
 		&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
-				var pkgList v1alpha1.PackageList
-				err := pkgClient.Packages().GetAll(ctx, &pkgList)
+				var pkgList v1alpha1.ClusterPackageList
+				err := pkgClient.ClusterPackages().GetAll(ctx, &pkgList)
 				return &pkgList, err
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-				return pkgClient.Packages().Watch(ctx)
+				return pkgClient.ClusterPackages().Watch(ctx)
 			},
 		},
-		&v1alpha1.Package{},
+		&v1alpha1.ClusterPackage{},
 		0,
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj any) {
-				if pkg, ok := obj.(*v1alpha1.Package); ok {
+				if pkg, ok := obj.(*v1alpha1.ClusterPackage); ok {
 					s.broadcastRefreshTriggers(pkg)
 				}
 			},
 			UpdateFunc: func(oldObj, newObj any) {
-				if pkg, ok := newObj.(*v1alpha1.Package); ok {
+				if pkg, ok := newObj.(*v1alpha1.ClusterPackage); ok {
 					s.broadcastRefreshTriggers(pkg)
 				}
 			},
 			DeleteFunc: func(obj any) {
-				if pkg, ok := obj.(*v1alpha1.Package); ok {
+				if pkg, ok := obj.(*v1alpha1.ClusterPackage); ok {
 					s.broadcastRefreshTriggers(pkg)
 				}
 			},
@@ -1026,7 +1029,7 @@ func (s *server) initPackageStoreAndController(ctx context.Context) (cache.Store
 	)
 }
 
-func (s *server) broadcastRefreshTriggers(pkg *v1alpha1.Package) {
+func (s *server) broadcastRefreshTriggers(pkg *v1alpha1.ClusterPackage) {
 	s.sseHub.Broadcast <- &sse{
 		event: "refresh-pkg-overview",
 	}

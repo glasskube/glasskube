@@ -1,3 +1,4 @@
+//nolint:dupl // It might be possible to refactor this using generics but for now we accept the dupliate code.
 package client
 
 import (

@@ -34,7 +34,7 @@ func (tx UpdateTransaction) IsEmpty() bool {
 }
 
 type updateTransactionItem struct {
-	Package v1alpha1.Package
+	Package v1alpha1.ClusterPackage
 	Version string
 }
 
@@ -76,8 +76,8 @@ func (c *updater) PrepareForVersion(
 	defer c.status.Stop()
 	c.status.SetStatus("Collecting installed package")
 
-	var pkg v1alpha1.Package
-	if err := c.client.Packages().Get(ctx, pkgName, &pkg); err != nil {
+	var pkg v1alpha1.ClusterPackage
+	if err := c.client.ClusterPackages().Get(ctx, pkgName, &pkg); err != nil {
 		return nil, fmt.Errorf("failed to get package %v: %v", pkgName, err)
 	}
 
@@ -90,7 +90,7 @@ func (c *updater) PrepareForVersion(
 	var tx UpdateTransaction
 	item := updateTransactionItem{Package: pkg, Version: pkgVersion}
 	var manifest v1alpha1.PackageManifest
-	if err := c.repoClient.ForPackage(pkg).FetchPackageManifest(pkg.Name, pkgVersion, &manifest); err != nil {
+	if err := c.repoClient.ForPackage(&pkg).FetchPackageManifest(pkg.Name, pkgVersion, &manifest); err != nil {
 		return nil, err
 	} else if result, err := c.dm.Validate(ctx, &manifest, pkgVersion); err != nil {
 		return nil, err
@@ -107,20 +107,20 @@ func (c *updater) Prepare(ctx context.Context, packageNames []string) (*UpdateTr
 	c.status.Start()
 	defer c.status.Stop()
 	c.status.SetStatus("Collecting installed packages")
-	var packagesToUpdate []v1alpha1.Package
+	var packagesToUpdate []v1alpha1.ClusterPackage
 	if len(packageNames) > 0 {
 		// Fetch all requested packages individually.
 		// This way, we can fail early if a requested package is not installed.
 		for _, name := range packageNames {
-			var pkg v1alpha1.Package
-			if err := c.client.Packages().Get(ctx, name, &pkg); err != nil {
+			var pkg v1alpha1.ClusterPackage
+			if err := c.client.ClusterPackages().Get(ctx, name, &pkg); err != nil {
 				return nil, fmt.Errorf("failed to get package %v: %v", name, err)
 			}
 			packagesToUpdate = append(packagesToUpdate, pkg)
 		}
 	} else {
-		var packageList v1alpha1.PackageList
-		if err := c.client.Packages().GetAll(ctx, &packageList); err != nil {
+		var packageList v1alpha1.ClusterPackageList
+		if err := c.client.ClusterPackages().GetAll(ctx, &packageList); err != nil {
 			return nil, fmt.Errorf("failed to get list of installed packages: %v", err)
 		}
 		packagesToUpdate = packageList.Items
@@ -132,7 +132,7 @@ func (c *updater) Prepare(ctx context.Context, packageNames []string) (*UpdateTr
 	var tx UpdateTransaction
 outer:
 	for _, pkg := range packagesToUpdate {
-		repoClient := c.repoClient.ForPackage(pkg)
+		repoClient := c.repoClient.ForPackage(&pkg)
 		var index repo.PackageRepoIndex
 		if err := repoClient.FetchPackageRepoIndex(&index); err != nil {
 			return nil, fmt.Errorf("failed to fetch index: %v", err)
@@ -176,10 +176,10 @@ outer:
 	return &tx, nil
 }
 
-func (c *updater) Apply(ctx context.Context, tx *UpdateTransaction) ([]v1alpha1.Package, error) {
+func (c *updater) Apply(ctx context.Context, tx *UpdateTransaction) ([]v1alpha1.ClusterPackage, error) {
 	c.status.Start()
 	defer c.status.Stop()
-	var updatedPackages []v1alpha1.Package
+	var updatedPackages []v1alpha1.ClusterPackage
 	for _, item := range tx.Items {
 		if item.UpdateRequired() {
 			c.status.SetStatus(fmt.Sprintf("Updating %v", item.Package.Name))
@@ -196,19 +196,19 @@ func (c *updater) Apply(ctx context.Context, tx *UpdateTransaction) ([]v1alpha1.
 	return updatedPackages, nil
 }
 
-func (c *updater) UpdatePackage(ctx context.Context, pkg *v1alpha1.Package, version string) error {
+func (c *updater) UpdatePackage(ctx context.Context, pkg *v1alpha1.ClusterPackage, version string) error {
 	pkg.Spec.PackageInfo.Version = version
-	return c.client.Packages().Update(ctx, pkg)
+	return c.client.ClusterPackages().Update(ctx, pkg)
 }
 
-func (c *updater) awaitUpdate(ctx context.Context, pkg *v1alpha1.Package) error {
-	watcher, err := c.client.Packages().Watch(ctx)
+func (c *updater) awaitUpdate(ctx context.Context, pkg *v1alpha1.ClusterPackage) error {
+	watcher, err := c.client.ClusterPackages().Watch(ctx)
 	if err != nil {
 		return err
 	}
 	defer watcher.Stop()
 	for event := range watcher.ResultChan() {
-		if eventPkg, ok := event.Object.(*v1alpha1.Package); ok && eventPkg.GetUID() == pkg.GetUID() {
+		if eventPkg, ok := event.Object.(*v1alpha1.ClusterPackage); ok && eventPkg.GetUID() == pkg.GetUID() {
 			if eventPkg.Status.Version == eventPkg.Spec.PackageInfo.Version {
 				return nil
 			}

@@ -36,7 +36,7 @@ type pkgConfigInputInput struct {
 	DatalistOptions    *PkgConfigInputDatalistOptions
 }
 
-func getStringValue(pkg *v1alpha1.Package, valueName string, valueDefinition *v1alpha1.ValueDefinition) string {
+func getStringValue(pkg *v1alpha1.ClusterPackage, valueName string, valueDefinition *v1alpha1.ValueDefinition) string {
 	if pkg != nil {
 		if valueConfiguration, ok := pkg.Spec.Values[valueName]; ok {
 			if valueConfiguration.Value != nil {
@@ -47,7 +47,7 @@ func getStringValue(pkg *v1alpha1.Package, valueName string, valueDefinition *v1
 	return valueDefinition.DefaultValue
 }
 
-func getBoolValue(pkg *v1alpha1.Package, valueName string, valueDefinition *v1alpha1.ValueDefinition) bool {
+func getBoolValue(pkg *v1alpha1.ClusterPackage, valueName string, valueDefinition *v1alpha1.ValueDefinition) bool {
 	if valueDefinition.Type == v1alpha1.ValueTypeBoolean {
 		strVal := getStringValue(pkg, valueName, valueDefinition)
 		if valBool, err := strconv.ParseBool(strVal); err == nil {
@@ -65,7 +65,7 @@ func getLabel(valueName string, valueDefinition *v1alpha1.ValueDefinition) strin
 	return inputLabel
 }
 
-func getExistingReferenceAndKind(pkg *v1alpha1.Package, valueName string) (*v1alpha1.ValueReference, string) {
+func getExistingReferenceAndKind(pkg *v1alpha1.ClusterPackage, valueName string) (*v1alpha1.ValueReference, string) {
 	if pkg != nil {
 		if val, ok := pkg.Spec.Values[valueName]; ok {
 			if val.Value == nil && val.ValueFrom != nil {
@@ -82,7 +82,8 @@ func getExistingReferenceAndKind(pkg *v1alpha1.Package, valueName string) (*v1al
 	return nil, ""
 }
 
-func getOrCreateReference(pkg *v1alpha1.Package, valueName string, desiredRefKind *string) (v1alpha1.ValueReference, string) {
+func getOrCreateReference(
+	pkg *v1alpha1.ClusterPackage, valueName string, desiredRefKind *string) (v1alpha1.ValueReference, string) {
 	existingReference, existingRefKind := getExistingReferenceAndKind(pkg, valueName)
 	if desiredRefKind != nil && *desiredRefKind != existingRefKind {
 		return v1alpha1.ValueReference{}, *desiredRefKind
@@ -94,7 +95,7 @@ func getOrCreateReference(pkg *v1alpha1.Package, valueName string, desiredRefKin
 }
 
 func ForPkgConfigInput(
-	pkg *v1alpha1.Package,
+	pkg *v1alpha1.ClusterPackage,
 	repositoryName string,
 	selectedVersion string,
 	pkgName string,

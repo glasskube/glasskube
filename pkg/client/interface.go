@@ -10,14 +10,19 @@ import (
 )
 
 type PackageV1Alpha1Client interface {
-	Packages() PackageInterface
+	ClusterPackages() ClusterPackageInterface
+	Packages(namespace string) PackageInterface
 	PackageInfos() PackageInfoInterface
 	PackageRepositories() PackageRepositoryInterface
 	WithStores(
-		packageStore cache.Store,
+		clusterPackageStore cache.Store,
 		packageInfoStore cache.Store,
 		packageRepositoryStore cache.Store,
 	) PackageV1Alpha1Client
+}
+
+type ClusterPackageInterface interface {
+	readWriteClientInterface[v1alpha1.ClusterPackage, v1alpha1.ClusterPackageList]
 }
 
 type PackageInterface interface {

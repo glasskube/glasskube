@@ -11,17 +11,17 @@ import (
 )
 
 func DescribeInstalledPackage(ctx context.Context, pkgName string) (
-	*v1alpha1.Package, *v1alpha1.PackageManifest, error) {
+	*v1alpha1.ClusterPackage, *v1alpha1.PackageManifest, error) {
 
 	pkgClient := cliutils.PackageClient(ctx)
 	repoClient := cliutils.RepositoryClientset(ctx)
-	var pkg v1alpha1.Package
-	err := pkgClient.Packages().Get(ctx, pkgName, &pkg)
+	var pkg v1alpha1.ClusterPackage
+	err := pkgClient.ClusterPackages().Get(ctx, pkgName, &pkg)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	if installedManifest, err := manifest.GetInstalledManifestForPackage(ctx, pkg); err == nil {
+	if installedManifest, err := manifest.GetInstalledManifestForPackage(ctx, &pkg); err == nil {
 		return &pkg, installedManifest, nil
 	} else if !errors.Is(err, manifest.ErrPackageNoManifest) {
 		return nil, nil, err
@@ -29,7 +29,7 @@ func DescribeInstalledPackage(ctx context.Context, pkgName string) (
 
 	// pkg is installed, but has either no manifest or owned package info (yet): use manifest in this version from repo
 	var packageManifest v1alpha1.PackageManifest
-	err = repoClient.ForPackage(pkg).FetchPackageManifest(pkgName, pkg.Spec.PackageInfo.Version, &packageManifest)
+	err = repoClient.ForPackage(&pkg).FetchPackageManifest(pkgName, pkg.Spec.PackageInfo.Version, &packageManifest)
 	if err != nil {
 		return nil, nil, err
 	} else {

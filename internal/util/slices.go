@@ -17,3 +17,15 @@ func SortBy[S ~[]E, E any, P cmp.Ordered](s S, predicate func(e E) P) {
 		}
 	})
 }
+
+func DeleteAll[S ~[]E, E comparable](s S, e E) S {
+	i := 0
+	for j := range s {
+		if s[j] != e {
+			s[i] = s[j]
+			i++
+		}
+	}
+	clear(s[i:])
+	return s[:i]
+}

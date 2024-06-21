@@ -8,6 +8,7 @@ import (
 	ctrladapter "github.com/glasskube/glasskube/internal/adapter/controllerruntime"
 	"github.com/glasskube/glasskube/internal/controller/owners"
 	"github.com/glasskube/glasskube/internal/dependency"
+	"github.com/glasskube/glasskube/internal/names"
 	fakerepo "github.com/glasskube/glasskube/internal/repo/client/fake"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -42,59 +43,67 @@ func newPackageValidatingWebhook(objects ...client.Object) *PackageValidatingWeb
 }
 
 var (
-	foov1pkg = v1alpha1.Package{
+	foov1pkg = v1alpha1.ClusterPackage{
 		ObjectMeta: v1.ObjectMeta{Name: "foo"},
 		Spec:       v1alpha1.PackageSpec{PackageInfo: v1alpha1.PackageInfoTemplate{Name: "foo", Version: "v1"}},
 		Status:     v1alpha1.PackageStatus{OwnedPackageInfos: []v1alpha1.OwnedResourceRef{{Name: "foo--v1"}}}}
 	foov1pi = v1alpha1.PackageInfo{
-		ObjectMeta: v1.ObjectMeta{Name: "foo--v1"},
+		ObjectMeta: v1.ObjectMeta{Name: names.PackageInfoName(&foov1pkg)},
 		Spec:       v1alpha1.PackageInfoSpec{Name: "foo", Version: "v1"},
 		Status: v1alpha1.PackageInfoStatus{
 			Manifest: &v1alpha1.PackageManifest{Name: "foo", Dependencies: []v1alpha1.Dependency{{Name: "bar", Version: "v1"}}}}}
-	foov2pkg = v1alpha1.Package{
+	foov2pkg = v1alpha1.ClusterPackage{
 		ObjectMeta: v1.ObjectMeta{Name: "foo"},
 		Spec:       v1alpha1.PackageSpec{PackageInfo: v1alpha1.PackageInfoTemplate{Name: "foo", Version: "v2"}},
 		Status:     v1alpha1.PackageStatus{OwnedPackageInfos: []v1alpha1.OwnedResourceRef{{Name: "foo--v2"}}}}
 	foov2pi = v1alpha1.PackageInfo{
-		ObjectMeta: v1.ObjectMeta{Name: "foo--v2"},
+		ObjectMeta: v1.ObjectMeta{Name: names.PackageInfoName(&foov2pkg)},
 		Spec:       v1alpha1.PackageInfoSpec{Name: "foo", Version: "v2"},
 		Status: v1alpha1.PackageInfoStatus{
 			Manifest: &v1alpha1.PackageManifest{Name: "foo", Dependencies: []v1alpha1.Dependency{{Name: "bar", Version: "v2"}}}}}
-	barv1pkg = v1alpha1.Package{
+	barv1pkg = v1alpha1.ClusterPackage{
 		ObjectMeta: v1.ObjectMeta{Name: "bar"},
 		Spec:       v1alpha1.PackageSpec{PackageInfo: v1alpha1.PackageInfoTemplate{Name: "bar", Version: "v1"}},
 		Status:     v1alpha1.PackageStatus{OwnedPackageInfos: []v1alpha1.OwnedResourceRef{{Name: "bar--v1"}}}}
 	barv1pi = v1alpha1.PackageInfo{
-		ObjectMeta: v1.ObjectMeta{Name: "bar--v1"},
+		ObjectMeta: v1.ObjectMeta{Name: names.PackageInfoName(&barv1pkg)},
 		Spec:       v1alpha1.PackageInfoSpec{Name: "bar", Version: "v1"},
 		Status:     v1alpha1.PackageInfoStatus{Manifest: &v1alpha1.PackageManifest{Name: "bar"}}}
-	barv2pkg = v1alpha1.Package{
+	barv2pkg = v1alpha1.ClusterPackage{
 		ObjectMeta: v1.ObjectMeta{Name: "bar"},
 		Spec:       v1alpha1.PackageSpec{PackageInfo: v1alpha1.PackageInfoTemplate{Name: "bar", Version: "v2"}},
 		Status:     v1alpha1.PackageStatus{OwnedPackageInfos: []v1alpha1.OwnedResourceRef{{Name: "bar--v2"}}}}
 	barv2pi = v1alpha1.PackageInfo{
-		ObjectMeta: v1.ObjectMeta{Name: "bar--v2"},
+		ObjectMeta: v1.ObjectMeta{Name: names.PackageInfoName(&barv2pkg)},
 		Spec:       v1alpha1.PackageInfoSpec{Name: "bar", Version: "v2"},
 		Status:     v1alpha1.PackageInfoStatus{Manifest: &v1alpha1.PackageManifest{Name: "bar"}}}
-	bazv1pkg = v1alpha1.Package{
+	bazv1pkg = v1alpha1.ClusterPackage{
 		ObjectMeta: v1.ObjectMeta{Name: "baz"},
 		Spec:       v1alpha1.PackageSpec{PackageInfo: v1alpha1.PackageInfoTemplate{Name: "baz", Version: "v1"}},
 		Status:     v1alpha1.PackageStatus{OwnedPackageInfos: []v1alpha1.OwnedResourceRef{{Name: "baz--v1"}}}}
 	bazv1pi = v1alpha1.PackageInfo{
-		ObjectMeta: v1.ObjectMeta{Name: "baz--v1"},
+		ObjectMeta: v1.ObjectMeta{Name: names.PackageInfoName(&bazv1pkg)},
 		Spec:       v1alpha1.PackageInfoSpec{Name: "baz", Version: "v1"},
 		Status: v1alpha1.PackageInfoStatus{
 			Manifest: &v1alpha1.PackageManifest{Name: "baz", Dependencies: []v1alpha1.Dependency{{Name: "foo", Version: "v1"}}}}}
-	bazv2pkg = v1alpha1.Package{
+	bazv2pkg = v1alpha1.ClusterPackage{
 		ObjectMeta: v1.ObjectMeta{Name: "baz"},
 		Spec:       v1alpha1.PackageSpec{PackageInfo: v1alpha1.PackageInfoTemplate{Name: "baz", Version: "v2"}},
 		Status:     v1alpha1.PackageStatus{OwnedPackageInfos: []v1alpha1.OwnedResourceRef{{Name: "baz--v2"}}}}
 	bazv2pi = v1alpha1.PackageInfo{
-		ObjectMeta: v1.ObjectMeta{Name: "baz--v1"},
+		ObjectMeta: v1.ObjectMeta{Name: names.PackageInfoName(&bazv2pkg)},
 		Spec:       v1alpha1.PackageInfoSpec{Name: "baz", Version: "v1"},
 		Status: v1alpha1.PackageInfoStatus{
 			Manifest: &v1alpha1.PackageManifest{Name: "baz", Dependencies: []v1alpha1.Dependency{{Name: "foo", Version: "v2"}}}}}
-	notExistsPkg = v1alpha1.Package{
+	nspv1pkg = v1alpha1.Package{
+		ObjectMeta: v1.ObjectMeta{Name: "nsp", Namespace: "default"},
+		Spec:       v1alpha1.PackageSpec{PackageInfo: v1alpha1.PackageInfoTemplate{Name: "nsp", Version: "v1"}}}
+	nspv1pi = v1alpha1.PackageInfo{
+		ObjectMeta: v1.ObjectMeta{Name: names.PackageInfoName(&nspv1pkg)},
+		Spec:       v1alpha1.PackageInfoSpec{Name: "nsp", Version: "v1"},
+		Status: v1alpha1.PackageInfoStatus{
+			Manifest: &v1alpha1.PackageManifest{Name: "nsp", Dependencies: []v1alpha1.Dependency{{Name: "foo", Version: "v1"}}}}}
+	notExistsPkg = v1alpha1.ClusterPackage{
 		ObjectMeta: v1.ObjectMeta{Name: "doesnotexist"},
 		Spec:       v1alpha1.PackageSpec{PackageInfo: v1alpha1.PackageInfoTemplate{Name: "doesnotexist", Version: "v1"}}}
 )
@@ -120,6 +129,9 @@ var _ = Describe("PackageValidatingWebhook", Ordered, func() {
 			"baz": {
 				"v1": bazv1pi.Status.Manifest,
 				"v2": bazv2pi.Status.Manifest,
+			},
+			"nsp": {
+				"v1": nspv1pi.Status.Manifest,
 			},
 		}
 	})
@@ -184,8 +196,7 @@ var _ = Describe("PackageValidatingWebhook", Ordered, func() {
 			When("dependency version ok", func() {
 				It("should not return error", func(ctx context.Context) {
 					webhook := newPackageValidatingWebhook(&barv2pkg, &barv2pi)
-					_, err := webhook.ValidateUpdate(ctx,
-						&foov1pkg, &foov2pkg)
+					_, err := webhook.ValidateUpdate(ctx, &foov1pkg, &foov2pkg)
 					Expect(err).NotTo(HaveOccurred())
 				})
 			})
@@ -208,6 +219,13 @@ var _ = Describe("PackageValidatingWebhook", Ordered, func() {
 			It("should return error", func(ctx context.Context) {
 				webhook := newPackageValidatingWebhook()
 				_, err := webhook.ValidateCreate(ctx, &unstructured.Unstructured{})
+				Expect(err).To(HaveOccurred())
+			})
+		})
+		When("a namespaced dependent exists with constraint", func() {
+			It("should return error", func(ctx context.Context) {
+				webhook := newPackageValidatingWebhook(&nspv1pkg, &nspv1pi, &foov1pkg, &foov1pi)
+				_, err := webhook.ValidateUpdate(ctx, &foov1pkg, &foov2pkg)
 				Expect(err).To(HaveOccurred())
 			})
 		})

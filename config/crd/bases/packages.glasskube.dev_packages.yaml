@@ -14,7 +14,7 @@ spec:
     shortNames:
     - pkg
     singular: package
-  scope: Cluster
+  scope: Namespaced
   versions:
   - additionalPrinterColumns:
     - jsonPath: .spec.packageInfo.version
@@ -46,7 +46,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: PackageSpec defines the desired state of Package
+            description: PackageSpec defines the desired state
             properties:
               packageInfo:
                 properties:
@@ -116,7 +116,7 @@ spec:
             - packageInfo
             type: object
           status:
-            description: PackageStatus defines the observed state of Package
+            description: PackageStatus defines the observed state
             properties:
               conditions:
                 items:

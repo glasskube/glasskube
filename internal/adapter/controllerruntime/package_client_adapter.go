@@ -31,17 +31,26 @@ func (a *ControllerRuntimeAdapter) GetPackageInfo(ctx context.Context, pkgInfoNa
 	}
 }
 
-func (a *ControllerRuntimeAdapter) ListPackages(ctx context.Context) (*v1alpha1.PackageList, error) {
+// ListPackages implements adapter.PackageClientAdapter.
+func (a *ControllerRuntimeAdapter) ListPackages(ctx context.Context, namespace string) (*v1alpha1.PackageList, error) {
 	var pkgList v1alpha1.PackageList
+	if err := a.client.List(ctx, &pkgList, &ctrlclient.ListOptions{Namespace: namespace}); err != nil {
+		return nil, err
+	}
+	return &pkgList, nil
+}
+
+func (a *ControllerRuntimeAdapter) ListClusterPackages(ctx context.Context) (*v1alpha1.ClusterPackageList, error) {
+	var pkgList v1alpha1.ClusterPackageList
 	if err := a.client.List(ctx, &pkgList, &ctrlclient.ListOptions{}); err != nil {
 		return nil, err
 	}
 	return &pkgList, nil
 }
 
-// GetPackage implements adapter.PackageClientAdapter.
-func (a *ControllerRuntimeAdapter) GetPackage(ctx context.Context, name string) (*v1alpha1.Package, error) {
-	var pkg v1alpha1.Package
+// GetClusterPackage implements adapter.PackageClientAdapter.
+func (a *ControllerRuntimeAdapter) GetClusterPackage(ctx context.Context, name string) (*v1alpha1.ClusterPackage, error) {
+	var pkg v1alpha1.ClusterPackage
 	return &pkg, a.client.Get(ctx, ctrlclient.ObjectKey{Name: name}, &pkg)
 }
 

@@ -2,6 +2,7 @@ package client
 
 import (
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/repo/types"
 )
 
@@ -25,7 +26,7 @@ type RepoMetaclient interface {
 }
 
 type RepoClientset interface {
-	ForPackage(pkg packagesv1alpha1.Package) RepoClient
+	ForPackage(pkg ctrlpkg.Package) RepoClient
 	ForRepoWithName(name string) RepoClient
 	ForRepo(repo packagesv1alpha1.PackageRepository) RepoClient
 	Default() RepoClient

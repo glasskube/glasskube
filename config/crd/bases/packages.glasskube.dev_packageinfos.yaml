@@ -241,6 +241,12 @@ spec:
                       - url
                       type: object
                     type: array
+                  scope:
+                    description: Scope is optional (default is Cluster)
+                    enum:
+                    - Cluster
+                    - Namespaced
+                    type: string
                   shortDescription:
                     type: string
                   valueDefinitions:

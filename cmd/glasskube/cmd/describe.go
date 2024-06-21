@@ -154,7 +154,7 @@ func printDependencies(manifest *v1alpha1.PackageManifest) {
 	}
 }
 
-func printRepositories(pkg *v1alpha1.Package, repos []v1alpha1.PackageRepository) {
+func printRepositories(pkg *v1alpha1.ClusterPackage, repos []v1alpha1.PackageRepository) {
 	for _, repo := range repos {
 		fmt.Fprintf(os.Stderr, " * %v", repo.Name)
 		if isInstalledFrom(pkg, repo) {
@@ -165,7 +165,7 @@ func printRepositories(pkg *v1alpha1.Package, repos []v1alpha1.PackageRepository
 	}
 }
 
-func repositoriesAsMap(pkg *v1alpha1.Package, repos []v1alpha1.PackageRepository) []map[string]any {
+func repositoriesAsMap(pkg *v1alpha1.ClusterPackage, repos []v1alpha1.PackageRepository) []map[string]any {
 	repositories := make([]map[string]any, 0, len(repos))
 	for _, repo := range repos {
 		repositories = append(repositories, map[string]any{
@@ -176,17 +176,17 @@ func repositoriesAsMap(pkg *v1alpha1.Package, repos []v1alpha1.PackageRepository
 	return repositories
 }
 
-func isInstalledFrom(pkg *v1alpha1.Package, repo v1alpha1.PackageRepository) bool {
+func isInstalledFrom(pkg *v1alpha1.ClusterPackage, repo v1alpha1.PackageRepository) bool {
 	return pkg != nil &&
 		(repo.Name == pkg.Spec.PackageInfo.RepositoryName ||
 			(len(pkg.Spec.PackageInfo.RepositoryName) == 0 && repo.IsDefaultRepository()))
 }
 
-func printReferences(ctx context.Context, pkg *v1alpha1.Package, manifest *v1alpha1.PackageManifest) {
+func printReferences(ctx context.Context, pkg *v1alpha1.ClusterPackage, manifest *v1alpha1.PackageManifest) {
 	repo := cliutils.RepositoryClientset(ctx)
 	var repoClient repoclient.RepoClient
 	if pkg != nil {
-		repoClient = repo.ForPackage(*pkg)
+		repoClient = repo.ForPackage(pkg)
 		if url, err := repoClient.GetPackageManifestURL(manifest.Name, pkg.Spec.PackageInfo.Version); err != nil {
 			fmt.Fprintf(os.Stderr, "❌ Could not get package manifest url: %v\n", err)
 		} else {
@@ -200,7 +200,7 @@ func printReferences(ctx context.Context, pkg *v1alpha1.Package, manifest *v1alp
 
 func referencesAsMap(
 	ctx context.Context,
-	pkg *v1alpha1.Package,
+	pkg *v1alpha1.ClusterPackage,
 	manifest *v1alpha1.PackageManifest,
 ) []map[string]string {
 	references := []map[string]string{}
@@ -212,7 +212,7 @@ func referencesAsMap(
 	}
 	if pkg != nil {
 		repo := cliutils.RepositoryClientset(ctx)
-		repoClient := repo.ForPackage(*pkg)
+		repoClient := repo.ForPackage(pkg)
 		if url, err := repoClient.GetPackageManifestURL(manifest.Name, pkg.Spec.PackageInfo.Version); err == nil {
 			reference := make(map[string]string)
 			reference["label"] = "Glasskube Package Manifest"
@@ -245,7 +245,7 @@ func printMarkdown(w io.Writer, text string) {
 	}
 }
 
-func status(pkg *v1alpha1.Package) string {
+func status(pkg *v1alpha1.ClusterPackage) string {
 	pkgStatus := client.GetStatusOrPending(pkg)
 	if pkgStatus != nil {
 		switch pkgStatus.Status {
@@ -261,7 +261,7 @@ func status(pkg *v1alpha1.Package) string {
 	}
 }
 
-func version(pkg *v1alpha1.Package, latestVersion string) string {
+func version(pkg *v1alpha1.ClusterPackage, latestVersion string) string {
 	if pkg != nil {
 		var parts []string
 		if len(pkg.Status.Version) > 0 {
@@ -292,7 +292,7 @@ func nameAndDescription(manifest *v1alpha1.PackageManifest) string {
 
 func createOutputStructure(
 	ctx context.Context,
-	pkg *v1alpha1.Package,
+	pkg *v1alpha1.ClusterPackage,
 	manifest *v1alpha1.PackageManifest,
 	latestVersion string,
 	repos []v1alpha1.PackageRepository,
@@ -320,7 +320,7 @@ func createOutputStructure(
 }
 
 func printJSON(ctx context.Context,
-	pkg *v1alpha1.Package,
+	pkg *v1alpha1.ClusterPackage,
 	manifest *v1alpha1.PackageManifest,
 	latestVersion string,
 	repos []v1alpha1.PackageRepository) {
@@ -334,7 +334,7 @@ func printJSON(ctx context.Context,
 }
 
 func printYAML(ctx context.Context,
-	pkg *v1alpha1.Package,
+	pkg *v1alpha1.ClusterPackage,
 	manifest *v1alpha1.PackageManifest,
 	latestVersion string,
 	repos []v1alpha1.PackageRepository) {
