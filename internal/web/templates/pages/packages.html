@@ -115,10 +115,13 @@
           {{ end }}
         </div>
 
-        {{ if ne (len .AvailablePackages) 0 }}
+        {{ if or (ne (len .AvailablePackages) 0) (eq (len .InstalledPackages) 0) }}
           <div class="mt-3">
             <h2 class="text-reset">Available Packages</h2>
 
+            {{ if and (eq (len .AvailablePackages) 0) (eq (len .InstalledPackages) 0) }}
+              <p>No packages are available right now.</p>
+            {{ end }}
             <div class="row row-cols-3 row-cols-xl-4 g-2">
               {{ range .AvailablePackages }}
                 <!-- TODO make this a reusable template -->
