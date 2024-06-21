@@ -8,7 +8,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/Masterminds/semver/v3"
 	"github.com/fatih/color"
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clientutils"
@@ -106,10 +105,6 @@ func (c *BootstrapClient) Bootstrap(
 		}
 		options.Url = fmt.Sprintf("https://github.com/glasskube/glasskube/releases/download/v%v/manifest-%v.yaml",
 			version, options.Type)
-
-		if err := c.verifyLegalUpdate(ctx, version); err != nil {
-			return nil, err
-		}
 	}
 
 	fmt.Fprintln(os.Stderr, installMessage)
@@ -151,35 +146,6 @@ func (c *BootstrapClient) Bootstrap(
 
 	statusMessage(fmt.Sprintf("Glasskube successfully installed! (took %v)", elapsed.Round(time.Second)), true)
 	return manifests, nil
-}
-
-func (c *BootstrapClient) verifyLegalUpdate(ctx context.Context, targetVersion string) error {
-	breakings := map[*semver.Version]string{
-		semver.New(0, 10, 0, "", ""): "In release v0.10.0, Packages are renamed to ClusterPackages and " +
-			"Packages are reintroduced as namespaced resources.\n" +
-			"Glasskube must be uninstalled completely, to perform this update.",
-	}
-
-	if parsedTargetVersion, err := semver.NewVersion(targetVersion); err != nil {
-		return fmt.Errorf("target release is not a valid version: %w", err)
-	} else if currentVersion, err := clientutils.GetPackageOperatorVersion(ctx); err != nil {
-		if !apierrors.IsNotFound(err) {
-			return fmt.Errorf("could not determine currently installed release: %w", err)
-		}
-	} else if parsedCurrentVersion, err := semver.NewVersion(currentVersion); err != nil {
-		return fmt.Errorf("currently installed release has invalid version tag: %w", err)
-	} else {
-		for version, msg := range breakings {
-			if parsedCurrentVersion.LessThan(version) && !parsedTargetVersion.LessThan(version) {
-				return fmt.Errorf("upgrade from version %v to %v is not possible due to a breaking change in %v\n\n"+
-					"Details: %v\n\n"+
-					"For more information, please refer to our documentation: "+
-					"https://glasskube.dev/docs/getting-started/upgrading/#%v",
-					parsedCurrentVersion, parsedTargetVersion, version, msg, version)
-			}
-		}
-	}
-	return nil
 }
 
 func (c *BootstrapClient) preprocessManifests(
