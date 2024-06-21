@@ -31,7 +31,7 @@ func (p *packageClient) Create(ctx context.Context, target *v1alpha1.Package, op
 func (p *packageClient) Delete(ctx context.Context, target *v1alpha1.Package, options v1.DeleteOptions) error {
 	return p.restClient.Delete().
 		Namespace(p.ns).
-		Resource(clusterPackageGVR.Resource).
+		Resource(packagesResource).
 		Name(target.Name).
 		Body(&options).
 		Do(ctx).Into(nil)
