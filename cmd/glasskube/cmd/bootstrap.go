@@ -47,14 +47,6 @@ var bootstrapCmd = &cobra.Command{
 
 		currentContext := clicontext.RawConfigFromContext(ctx).CurrentContext
 
-		if !bootstrapCmdOptions.yes {
-			confirmMessage := fmt.Sprintf("Glasskube will be installed in context %s.\nContinue? ", currentContext)
-			if !cliutils.YesNoPrompt(confirmMessage, true) {
-				fmt.Println("Operation stopped")
-				cliutils.ExitWithError()
-			}
-		}
-
 		installedVersion, err := clientutils.GetPackageOperatorVersion(cmd.Context())
 		if err != nil {
 			IsBootstrapped, err := bootstrap.IsBootstrapped(cmd.Context(), cfg)
@@ -70,6 +62,7 @@ var bootstrapCmd = &cobra.Command{
 		} else {
 			desiredVersion = ""
 		}
+
 		if !semver.IsUpgradable(installedVersion, desiredVersion) &&
 			installedVersion != "" &&
 			installedVersion[1:] != desiredVersion {
@@ -81,6 +74,43 @@ var bootstrapCmd = &cobra.Command{
 				cliutils.ExitWithError()
 			}
 
+		}
+
+		upgradeNeeded := installedVersion != "" && semver.IsUpgradable(installedVersion, desiredVersion)
+		if !bootstrapCmdOptions.yes {
+			if upgradeNeeded {
+				if desiredVersion == "" {
+					confirmMessage := fmt.Sprintf("Glasskube is currently installed in this cluster (%s) "+
+						"in version %v. The version you are about to install is unknown. Please make sure the "+
+						"versions are compatible, this action could lead to a "+
+						"broken cluster!\nContinue?", currentContext, installedVersion)
+					if !cliutils.YesNoPrompt(confirmMessage, false) {
+						fmt.Println("Operation stopped")
+						cliutils.ExitWithError()
+					}
+				} else {
+					confirmMessage := fmt.Sprintf("Glasskube will be updated to version %s "+
+						"in cluster %s.\nContinue? ", desiredVersion, currentContext)
+					if !cliutils.YesNoPrompt(confirmMessage, true) {
+						fmt.Println("Operation stopped")
+						cliutils.ExitWithError()
+					}
+				}
+			} else if installedVersion != "" && installedVersion[1:] == desiredVersion {
+				if !cliutils.YesNoPrompt(fmt.Sprintf("Glasskube is currently installed in this cluster (%s) "+
+					"in version %v. You are about to bootstrap this version again."+
+					"\nContinue?", currentContext, installedVersion), true) {
+					fmt.Println("Operation stopped")
+					cliutils.ExitWithError()
+				}
+			} else {
+				confirmMessage := fmt.Sprintf("Glasskube will be installed in context %s."+
+					"\nContinue?", currentContext)
+				if !cliutils.YesNoPrompt(confirmMessage, true) {
+					fmt.Println("Operation stopped")
+					cliutils.ExitWithError()
+				}
+			}
 		}
 		manifests, err := client.Bootstrap(
 			cmd.Context(),
