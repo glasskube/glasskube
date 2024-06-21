@@ -13,23 +13,23 @@ import (
 
 type cacheClientset struct {
 	PackageV1Alpha1Client
-	packageStore           cache.Store
+	clusterPackageStore    cache.Store
 	packageInfoStore       cache.Store
 	packageRepositoryStore cache.Store
 }
 
-func (c *cacheClientset) Packages() PackageInterface {
-	p := c.PackageV1Alpha1Client.Packages()
-	if c.packageStore == nil {
+func (c *cacheClientset) ClusterPackages() ClusterPackageInterface {
+	p := c.PackageV1Alpha1Client.ClusterPackages()
+	if c.clusterPackageStore == nil {
 		return p
 	}
-	return &readWriteCacheClient[v1alpha1.Package, v1alpha1.PackageList]{
+	return &readWriteCacheClient[v1alpha1.ClusterPackage, v1alpha1.ClusterPackageList]{
 		p,
-		readOnlyCacheClient[v1alpha1.Package, v1alpha1.PackageList]{
+		readOnlyCacheClient[v1alpha1.ClusterPackage, v1alpha1.ClusterPackageList]{
 			p,
-			c.packageStore,
-			func(items []v1alpha1.Package) v1alpha1.PackageList {
-				return v1alpha1.PackageList{Items: items}
+			c.clusterPackageStore,
+			func(items []v1alpha1.ClusterPackage) v1alpha1.ClusterPackageList {
+				return v1alpha1.ClusterPackageList{Items: items}
 			},
 		},
 	}

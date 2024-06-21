@@ -1,11 +1,16 @@
 package names
 
 import (
-	"fmt"
+	"strings"
 
-	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 )
 
-func PackageInfoName(pkg v1alpha1.Package) string {
-	return escapeResourceName(fmt.Sprintf("%v--%v", pkg.Spec.PackageInfo.Name, pkg.Spec.PackageInfo.Version))
+func PackageInfoName(pkg ctrlpkg.Package) string {
+	spec := pkg.GetSpec()
+	parts := []string{spec.PackageInfo.Name, spec.PackageInfo.Version}
+	if spec.PackageInfo.RepositoryName != "" {
+		parts = append([]string{spec.PackageInfo.RepositoryName}, parts...)
+	}
+	return escapeResourceName(strings.Join(parts, "--"))
 }

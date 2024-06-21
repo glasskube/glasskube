@@ -6,6 +6,7 @@ import (
 	"reflect"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/controller/owners"
 	"github.com/glasskube/glasskube/internal/dependency"
 	"github.com/glasskube/glasskube/internal/dependency/graph"
@@ -27,22 +28,33 @@ type PackageValidatingWebhook struct {
 }
 
 //+kubebuilder:webhook:path=/validate-packages-glasskube-dev-v1alpha1-package,mutating=false,failurePolicy=fail,sideEffects=None,groups=packages.glasskube.dev,resources=packages,verbs=create;update;delete,versions=v1alpha1,name=vpackage.kb.io,admissionReviewVersions=v1
+//+kubebuilder:webhook:path=/validate-packages-glasskube-dev-v1alpha1-clusterpackage,mutating=false,failurePolicy=fail,sideEffects=None,groups=packages.glasskube.dev,resources=clusterpackages,verbs=create;update;delete,versions=v1alpha1,name=vclusterpackage.kb.io,admissionReviewVersions=v1
 
 var _ webhook.CustomValidator = &PackageValidatingWebhook{}
 
 func (p *PackageValidatingWebhook) SetupWithManager(mgr ctrl.Manager) error {
 	p.OwnerManager = owners.NewOwnerManager(p.Scheme())
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(&v1alpha1.Package{}).
-		WithValidator(p).
-		Complete()
+	return multierr.Combine(
+		ctrl.NewWebhookManagedBy(mgr).
+			For(&v1alpha1.Package{}).
+			WithValidator(p).
+			Complete(),
+		ctrl.NewWebhookManagedBy(mgr).
+			For(&v1alpha1.ClusterPackage{}).
+			WithValidator(p).
+			Complete(),
+	)
+
 }
 
 // ValidateCreate implements admission.CustomValidator.
-func (p *PackageValidatingWebhook) ValidateCreate(ctx context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
+func (p *PackageValidatingWebhook) ValidateCreate(
+	ctx context.Context,
+	obj runtime.Object,
+) (warnings admission.Warnings, err error) {
 	log := ctrl.LoggerFrom(ctx)
-	if pkg, ok := obj.(*v1alpha1.Package); ok {
-		log.Info("validate create", "name", pkg.Name)
+	if pkg, ok := obj.(ctrlpkg.Package); ok {
+		log.Info("validate create", "name", pkg.GetName())
 		return nil, p.validateCreateOrUpdate(ctx, pkg)
 	}
 	return nil, ErrInvalidObject
@@ -51,10 +63,10 @@ func (p *PackageValidatingWebhook) ValidateCreate(ctx context.Context, obj runti
 // ValidateUpdate implements admission.CustomValidator.
 func (p *PackageValidatingWebhook) ValidateUpdate(ctx context.Context, oldObj runtime.Object, newObj runtime.Object) (warnings admission.Warnings, err error) {
 	log := ctrl.LoggerFrom(ctx)
-	if oldPkg, ok := oldObj.(*v1alpha1.Package); ok {
-		if newPkg, ok := newObj.(*v1alpha1.Package); ok {
-			log.Info("validate update", "name", newPkg.Name)
-			if reflect.DeepEqual(oldPkg.Spec, newPkg.Spec) {
+	if oldPkg, ok := oldObj.(ctrlpkg.Package); ok {
+		if newPkg, ok := newObj.(ctrlpkg.Package); ok {
+			log.Info("validate update", "name", newPkg.GetName())
+			if reflect.DeepEqual(oldPkg.GetSpec(), newPkg.GetSpec()) {
 				// If the package info did not change, we are already done
 				return nil, nil
 			} else {
@@ -75,12 +87,13 @@ func (p *PackageValidatingWebhook) ValidateUpdate(ctx context.Context, oldObj ru
 // deleted because the dependant is not deleted.
 func (p *PackageValidatingWebhook) ValidateDelete(ctx context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
 	log := ctrl.LoggerFrom(ctx)
-	if pkg, ok := obj.(*v1alpha1.Package); ok {
-		log.Info("validate delete", "name", pkg.Name)
+	if pkg, ok := obj.(ctrlpkg.Package); ok {
+		log.Info("validate delete", "name", pkg.GetName())
 		if g, err := p.NewGraph(ctx); err != nil {
 			return nil, err
-		} else {
-			if _, err := g.ValidateDelete(pkg.Name); err != nil {
+		} else if !pkg.IsNamespaceScoped() {
+			// deletion is only validated for cluster-scoped packages
+			if _, err := g.ValidateDelete(pkg.GetName()); err != nil {
 				for _, err1 := range multierr.Errors(err) {
 					if !errors.Is(err1, &graph.DependencyError{}) {
 						return nil, err1
@@ -94,10 +107,14 @@ func (p *PackageValidatingWebhook) ValidateDelete(ctx context.Context, obj runti
 	return nil, ErrInvalidObject
 }
 
-func (p *PackageValidatingWebhook) validateCreateOrUpdate(ctx context.Context, pkg *v1alpha1.Package) error {
+func (p *PackageValidatingWebhook) validateCreateOrUpdate(ctx context.Context, pkg ctrlpkg.Package) error {
 	// We must expect that this package is not installed in this version, so the PackageInfo does not exist.
 	var manifest v1alpha1.PackageManifest
-	err := p.RepoClient.ForPackage(*pkg).FetchPackageManifest(pkg.Spec.PackageInfo.Name, pkg.Spec.PackageInfo.Version, &manifest)
+	err := p.RepoClient.ForPackage(pkg).FetchPackageManifest(
+		pkg.GetSpec().PackageInfo.Name,
+		pkg.GetSpec().PackageInfo.Version,
+		&manifest,
+	)
 	if err != nil {
 		return err
 	}
@@ -106,7 +123,7 @@ func (p *PackageValidatingWebhook) validateCreateOrUpdate(ctx context.Context, p
 		return err
 	}
 
-	if result, err := p.Validate(ctx, &manifest, pkg.Spec.PackageInfo.Version); err != nil {
+	if result, err := p.Validate(ctx, &manifest, pkg.GetSpec().PackageInfo.Version); err != nil {
 		return err
 	} else if len(result.Conflicts) > 0 {
 		// Conflicts are not allowed.

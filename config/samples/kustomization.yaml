@@ -3,4 +3,5 @@ resources:
 - packages_v1alpha1_package.yaml
 - packages_v1alpha1_packageinfo.yaml
 - packages_v1alpha1_packagerepository.yaml
+- packages_v1alpha1_clusterpackage.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

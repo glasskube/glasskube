@@ -28,22 +28,32 @@ func (a *goClientPackageAdapter) GetPackageInfo(ctx context.Context, pkgInfoName
 	}
 }
 
-func (a *goClientPackageAdapter) ListPackages(ctx context.Context) (*v1alpha1.PackageList, error) {
-	var pkgList v1alpha1.PackageList
-	if err := a.pkgClient.Packages().GetAll(ctx, &pkgList); err != nil {
+func (a *goClientPackageAdapter) ListClusterPackages(ctx context.Context) (*v1alpha1.ClusterPackageList, error) {
+	var pkgList v1alpha1.ClusterPackageList
+	if err := a.pkgClient.ClusterPackages().GetAll(ctx, &pkgList); err != nil {
 		return nil, err
 	}
 	return &pkgList, nil
 }
 
-// GetPackage implements adapter.PackageClientAdapter.
-func (a *goClientPackageAdapter) GetPackage(ctx context.Context, name string) (*v1alpha1.Package, error) {
-	var pkg v1alpha1.Package
-	return &pkg, a.pkgClient.Packages().Get(ctx, name, &pkg)
+// GetClusterPackage implements adapter.PackageClientAdapter.
+func (a *goClientPackageAdapter) GetClusterPackage(ctx context.Context, name string) (*v1alpha1.ClusterPackage, error) {
+	var pkg v1alpha1.ClusterPackage
+	return &pkg, a.pkgClient.ClusterPackages().Get(ctx, name, &pkg)
+}
+
+// ListPackages implements adapter.PackageClientAdapter.
+func (a *goClientPackageAdapter) ListPackages(ctx context.Context, namespace string) (*v1alpha1.PackageList, error) {
+	var pkgList v1alpha1.PackageList
+	if err := a.pkgClient.Packages(namespace).GetAll(ctx, &pkgList); err != nil {
+		return nil, err
+	}
+	return &pkgList, nil
 }
 
 // GetPackageRepository implements adapter.PackageClientAdapter.
-func (a *goClientPackageAdapter) GetPackageRepository(ctx context.Context, name string) (*v1alpha1.PackageRepository, error) {
+func (a *goClientPackageAdapter) GetPackageRepository(
+	ctx context.Context, name string) (*v1alpha1.PackageRepository, error) {
 	var repo v1alpha1.PackageRepository
 	return &repo, a.pkgClient.PackageRepositories().Get(ctx, name, &repo)
 }

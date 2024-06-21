@@ -65,7 +65,7 @@ var installCmd = &cobra.Command{
 
 		bold := color.New(color.Bold).SprintFunc()
 		packageName := args[0]
-		pkgBuilder := client.PackageBuilder(packageName)
+		pkgBuilder := client.ClusterPackageBuilder(packageName)
 		var repoClient repoclient.RepoClient
 
 		if len(installCmdOptions.Repository) > 0 {
@@ -228,7 +228,7 @@ var installCmd = &cobra.Command{
 	},
 }
 
-func formatOutput(pkg *v1alpha1.Package, format OutputFormat) (string, error) {
+func formatOutput(pkg *v1alpha1.ClusterPackage, format OutputFormat) (string, error) {
 	if gvks, _, err := scheme.Scheme.ObjectKinds(pkg); err == nil && len(gvks) == 1 {
 		pkg.SetGroupVersionKind(gvks[0])
 	}

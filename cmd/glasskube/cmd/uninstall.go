@@ -5,12 +5,13 @@ import (
 	"os"
 
 	"github.com/fatih/color"
+	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/cliutils"
-	pkgClient "github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/glasskube/glasskube/pkg/uninstall"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var uninstallCmdOptions = struct {
@@ -55,15 +56,15 @@ var uninstallCmd = &cobra.Command{
 			uninstaller.WithStatusWriter(statuswriter.Spinner())
 		}
 
-		pkg := pkgClient.NewPackage(pkgName, "")
+		pkg := v1alpha1.ClusterPackage{ObjectMeta: metav1.ObjectMeta{Name: pkgName}}
 		if uninstallCmdOptions.NoWait {
-			if err := uninstaller.Uninstall(ctx, pkg); err != nil {
+			if err := uninstaller.Uninstall(ctx, &pkg); err != nil {
 				fmt.Fprintf(os.Stderr, "\n❌ An error occurred during uninstallation:\n\n%v\n", err)
 				cliutils.ExitWithError()
 			}
 			fmt.Fprintln(os.Stderr, "Uninstallation started in background")
 		} else {
-			if err := uninstaller.UninstallBlocking(ctx, pkg); err != nil {
+			if err := uninstaller.UninstallBlocking(ctx, &pkg); err != nil {
 				fmt.Fprintf(os.Stderr, "\n❌ An error occurred during uninstallation:\n\n%v\n", err)
 				cliutils.ExitWithError()
 			}

@@ -38,14 +38,14 @@ func runAutoUpdateEnableOrDisable(enabled bool, confirmMsg, successMsg string) f
 	return func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 		client := cliutils.PackageClient(ctx)
-		var pkgs []v1alpha1.Package
+		var pkgs []v1alpha1.ClusterPackage
 		if autoUpdateEnabledDisabledOptions.All {
 			if len(args) > 0 {
 				fmt.Fprintf(os.Stderr, "Too many arguments: %v\n", args)
 				cliutils.ExitWithError()
 			}
-			var pkgList v1alpha1.PackageList
-			if err := client.Packages().GetAll(ctx, &pkgList); err != nil {
+			var pkgList v1alpha1.ClusterPackageList
+			if err := client.ClusterPackages().GetAll(ctx, &pkgList); err != nil {
 				fmt.Fprintf(os.Stderr, "Could not list packages: %v", err)
 				cliutils.ExitWithError()
 			}
@@ -58,10 +58,10 @@ func runAutoUpdateEnableOrDisable(enabled bool, confirmMsg, successMsg string) f
 				fmt.Fprintln(os.Stderr, "Please specify at least one package")
 				cliutils.ExitWithError()
 			}
-			pkgs = make([]v1alpha1.Package, len(args))
+			pkgs = make([]v1alpha1.ClusterPackage, len(args))
 			for i, name := range args {
-				var pkg v1alpha1.Package
-				if err := client.Packages().Get(ctx, name, &pkg); err != nil {
+				var pkg v1alpha1.ClusterPackage
+				if err := client.ClusterPackages().Get(ctx, name, &pkg); err != nil {
 					fmt.Fprintf(os.Stderr, "Could not get package %v: %v", name, err)
 					cliutils.ExitWithError()
 				}
@@ -78,7 +78,7 @@ func runAutoUpdateEnableOrDisable(enabled bool, confirmMsg, successMsg string) f
 		for _, pkg := range pkgs {
 			if pkg.AutoUpdatesEnabled() != enabled {
 				pkg.SetAutoUpdatesEnabled(enabled)
-				multierr.AppendInto(&err, client.Packages().Update(ctx, &pkg))
+				multierr.AppendInto(&err, client.ClusterPackages().Update(ctx, &pkg))
 			}
 		}
 		if err != nil {
@@ -107,8 +107,8 @@ func runAutoUpdate(cmd *cobra.Command, args []string) {
 	updater := update.NewUpdater(ctx).
 		WithStatusWriter(statuswriter.Stderr())
 
-	var pkgs v1alpha1.PackageList
-	if err := client.Packages().GetAll(ctx, &pkgs); err != nil {
+	var pkgs v1alpha1.ClusterPackageList
+	if err := client.ClusterPackages().GetAll(ctx, &pkgs); err != nil {
 		panic(err)
 	}
 
