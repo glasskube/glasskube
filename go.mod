@@ -23,6 +23,7 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/yuin/goldmark v1.7.2
 	go.uber.org/multierr v1.11.0
+	golang.org/x/net v0.25.0
 	golang.org/x/term v0.21.0
 	k8s.io/api v0.30.2
 	k8s.io/apiextensions-apiserver v0.30.2
@@ -83,7 +84,6 @@ require (
 	github.com/wk8/go-ordered-map/v2 v2.1.8 // indirect
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/exp v0.0.0-20240112132812-db7319d0e0e3 // indirect
-	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/oauth2 v0.16.0 // indirect
 	golang.org/x/sys v0.21.0 // indirect
 	golang.org/x/text v0.15.0 // indirect

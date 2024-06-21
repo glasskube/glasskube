@@ -7,8 +7,10 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"strings"
 
 	"github.com/glasskube/glasskube/internal/web/components/datalist"
+	"golang.org/x/net/html"
 
 	"github.com/glasskube/glasskube/pkg/condition"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -97,7 +99,14 @@ func (t *templates) parseTemplates() {
 			if err := goldmark.Convert([]byte(source), &buf); err != nil {
 				return template.HTML("<p>" + source + "</p>")
 			}
-			return template.HTML(buf.String())
+
+			fromMarkdown := buf.String()
+			description, err := setLinksOpenNewTab(fromMarkdown)
+			if err != nil {
+				return template.HTML(fromMarkdown)
+			}
+
+			return template.HTML(description)
 		},
 		"Reversed": func(param any) any {
 			kind := reflect.TypeOf(param).Kind()
@@ -168,5 +177,57 @@ func checkTmplError(e error, tmplName string) {
 	if e != nil {
 		fmt.Fprintf(os.Stderr, "\nUnexpected error rendering %v: %v\n – This is most likely a BUG – "+
 			"Please report it here: https://github.com/glasskube/glasskube\n\n", tmplName, e)
+	}
+}
+
+func setLinksOpenNewTab(description string) (string, error) {
+	var buf bytes.Buffer
+	node, err := html.Parse(strings.NewReader(description))
+	if err != nil {
+		return "", err
+	}
+
+	traverseLinks(node)
+
+	if err := html.Render(&buf, node); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
+func traverseLinks(n *html.Node) {
+	if n.Type == html.ElementNode && n.Data == "a" {
+		existingTarget := false
+		existingRel := false
+
+		// Replace target and rel in case the came from Markdown
+		for _, attr := range n.Attr {
+			if attr.Key == "target" {
+				attr.Val = "_blank"
+				existingTarget = true
+			}
+
+			if attr.Key == "rel" {
+				attr.Val = "noopener noreferrer"
+				existingRel = true
+			}
+		}
+
+		if !existingTarget {
+			target := html.Attribute{Key: "target", Val: "_blank"}
+			n.Attr = append(n.Attr, target)
+		}
+
+		if !existingRel {
+			rel := html.Attribute{Key: "rel", Val: "noopener noreferrer"}
+			n.Attr = append(n.Attr, rel)
+		}
+
+		return
+	}
+
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		traverseLinks(c)
 	}
 }
