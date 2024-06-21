@@ -7,16 +7,18 @@ import (
 	"os"
 	"path"
 	"reflect"
-	"strings"
 
 	"github.com/glasskube/glasskube/internal/web/components/datalist"
-	"golang.org/x/net/html"
 
 	"github.com/glasskube/glasskube/pkg/condition"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/text"
+	"github.com/yuin/goldmark/util"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/glasskube/glasskube/api/v1alpha1"
@@ -96,17 +98,20 @@ func (t *templates) parseTemplates() {
 		"IsUpgradable":      semver.IsUpgradable,
 		"Markdown": func(source string) template.HTML {
 			var buf bytes.Buffer
-			if err := goldmark.Convert([]byte(source), &buf); err != nil {
+
+			converter := goldmark.New(
+				goldmark.WithParserOptions(
+					parser.WithASTTransformers(
+						util.Prioritized(&ASTTransformer{}, 1000),
+					),
+				),
+			)
+
+			if err := converter.Convert([]byte(source), &buf); err != nil {
 				return template.HTML("<p>" + source + "</p>")
 			}
 
-			fromMarkdown := buf.String()
-			description, err := setLinksOpenNewTab(fromMarkdown)
-			if err != nil {
-				return template.HTML(fromMarkdown)
-			}
-
-			return template.HTML(description)
+			return template.HTML(buf.String())
 		},
 		"Reversed": func(param any) any {
 			kind := reflect.TypeOf(param).Kind()
@@ -180,54 +185,20 @@ func checkTmplError(e error, tmplName string) {
 	}
 }
 
-func setLinksOpenNewTab(description string) (string, error) {
-	var buf bytes.Buffer
-	node, err := html.Parse(strings.NewReader(description))
-	if err != nil {
-		return "", err
-	}
+type ASTTransformer struct{}
 
-	traverseLinks(node)
-
-	if err := html.Render(&buf, node); err != nil {
-		return "", err
-	}
-
-	return buf.String(), nil
-}
-
-func traverseLinks(n *html.Node) {
-	if n.Type == html.ElementNode && n.Data == "a" {
-		existingTarget := false
-		existingRel := false
-
-		// Replace target and rel in case the came from Markdown
-		for _, attr := range n.Attr {
-			if attr.Key == "target" {
-				attr.Val = "_blank"
-				existingTarget = true
-			}
-
-			if attr.Key == "rel" {
-				attr.Val = "noopener noreferrer"
-				existingRel = true
-			}
+func (g *ASTTransformer) Transform(node *ast.Document, reader text.Reader, pc parser.Context) {
+	_ = ast.Walk(node, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		if !entering {
+			return ast.WalkContinue, nil
 		}
 
-		if !existingTarget {
-			target := html.Attribute{Key: "target", Val: "_blank"}
-			n.Attr = append(n.Attr, target)
+		switch v := n.(type) {
+		case *ast.Link:
+			v.SetAttributeString("target", "_blank")
+			v.SetAttributeString("rel", "noopener noreferrer")
 		}
 
-		if !existingRel {
-			rel := html.Attribute{Key: "rel", Val: "noopener noreferrer"}
-			n.Attr = append(n.Attr, rel)
-		}
-
-		return
-	}
-
-	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		traverseLinks(c)
-	}
+		return ast.WalkContinue, nil
+	})
 }
