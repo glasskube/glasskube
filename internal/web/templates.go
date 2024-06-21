@@ -15,6 +15,10 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/text"
+	"github.com/yuin/goldmark/util"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/glasskube/glasskube/api/v1alpha1"
@@ -94,9 +98,19 @@ func (t *templates) parseTemplates() {
 		"IsUpgradable":      semver.IsUpgradable,
 		"Markdown": func(source string) template.HTML {
 			var buf bytes.Buffer
-			if err := goldmark.Convert([]byte(source), &buf); err != nil {
+
+			converter := goldmark.New(
+				goldmark.WithParserOptions(
+					parser.WithASTTransformers(
+						util.Prioritized(&ASTTransformer{}, 1000),
+					),
+				),
+			)
+
+			if err := converter.Convert([]byte(source), &buf); err != nil {
 				return template.HTML("<p>" + source + "</p>")
 			}
+
 			return template.HTML(buf.String())
 		},
 		"Reversed": func(param any) any {
@@ -169,4 +183,22 @@ func checkTmplError(e error, tmplName string) {
 		fmt.Fprintf(os.Stderr, "\nUnexpected error rendering %v: %v\n – This is most likely a BUG – "+
 			"Please report it here: https://github.com/glasskube/glasskube\n\n", tmplName, e)
 	}
+}
+
+type ASTTransformer struct{}
+
+func (g *ASTTransformer) Transform(node *ast.Document, reader text.Reader, pc parser.Context) {
+	_ = ast.Walk(node, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		if !entering {
+			return ast.WalkContinue, nil
+		}
+
+		switch v := n.(type) {
+		case *ast.Link:
+			v.SetAttributeString("target", "_blank")
+			v.SetAttributeString("rel", "noopener noreferrer")
+		}
+
+		return ast.WalkContinue, nil
+	})
 }
