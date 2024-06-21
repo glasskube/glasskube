@@ -1,0 +1,32 @@
+import Install from '../../src/partials/_install.mdx';
+
+# Upgrading
+
+## CLI
+
+To upgrade the Glasskube CLI, simply install the latest version via your preferred package manager.
+
+<Install />
+
+## Cluster Components
+
+To upgrade the Glasskube cluster components, run `glasskube boostrap` using the same configuration that was used for the initial installation.
+
+## Breaking Changes
+
+### Upgrading to v0.10.0 {#0.10.0}
+
+While our goal is to prevent breaking changes if possible, this release includes several major changes in the Glasskube system:
+1. The scope of the `Package` CRD has been changed from `Cluster` to `Namespaced`.
+2. Flux components have been updated to the latest API version.
+3. The naming strategy for `PackageInfo`s and `HelmRelease`s was changed.
+4. The ownership model was overhauled in order to not rely on native `OwnerReferences`, since they have become limiting to our usecase.
+
+Unfortunately, this means that a migration from prior releases is not supported.
+Please remove Glasskube from your cluster using `glasskube purge`, then install the new version.
+
+:::warning
+This will remove all installed packages.
+:::
+
+If you have any questions or concerns, please reach out. We are happy to assist.
