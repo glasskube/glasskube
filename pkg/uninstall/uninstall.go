@@ -54,7 +54,7 @@ func (obj *uninstaller) delete(ctx context.Context, pkg *v1alpha1.ClusterPackage
 }
 
 func (obj *uninstaller) awaitDeletion(ctx context.Context, name string) error {
-	watcher, err := obj.client.ClusterPackages().Watch(ctx)
+	watcher, err := obj.client.ClusterPackages().Watch(ctx, metav1.ListOptions{})
 	if err != nil {
 		return err
 	}

@@ -202,7 +202,7 @@ func (c *updater) UpdatePackage(ctx context.Context, pkg *v1alpha1.ClusterPackag
 }
 
 func (c *updater) awaitUpdate(ctx context.Context, pkg *v1alpha1.ClusterPackage) error {
-	watcher, err := c.client.ClusterPackages().Watch(ctx)
+	watcher, err := c.client.ClusterPackages().Watch(ctx, metav1.ListOptions{})
 	if err != nil {
 		return err
 	}
