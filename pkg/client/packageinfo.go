@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -33,10 +34,15 @@ func (c *packageInfoClient) Get(ctx context.Context, name string, packageInfo *v
 		Into(packageInfo)
 }
 
-func (c *packageInfoClient) Watch(ctx context.Context) (watch.Interface, error) {
-	opts := metav1.ListOptions{Watch: true}
+func (c *packageInfoClient) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
+	var timeout time.Duration
+	if opts.TimeoutSeconds != nil {
+		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
+	}
+	opts.Watch = true
 	return c.restClient.Get().
 		Resource(packageInfoGVR.Resource).
+		Timeout(timeout).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Watch(ctx)
 }

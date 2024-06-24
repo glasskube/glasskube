@@ -3,6 +3,7 @@ package client
 
 import (
 	"context"
+	"time"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,10 +41,15 @@ func (c *packageRepositoryClient) Update(ctx context.Context, obj *v1alpha1.Pack
 }
 
 // Watch implements PackageRepositoryInterface.
-func (c *packageRepositoryClient) Watch(ctx context.Context) (watch.Interface, error) {
-	opts := metav1.ListOptions{Watch: true}
+func (c *packageRepositoryClient) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
+	var timeout time.Duration
+	if opts.TimeoutSeconds != nil {
+		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
+	}
+	opts.Watch = true
 	return c.restClient.Get().
 		Resource(packageRepositoryGVR.Resource).
+		Timeout(timeout).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Watch(ctx)
 }

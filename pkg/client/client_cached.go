@@ -72,8 +72,8 @@ type readOnlyCacheClient[T any, L any] struct {
 	listFactory func(items []T) L
 }
 
-func (c *readOnlyCacheClient[T, L]) Watch(ctx context.Context) (watch.Interface, error) {
-	return c.fallback.Watch(ctx)
+func (c *readOnlyCacheClient[T, L]) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
+	return c.fallback.Watch(ctx, opts)
 }
 
 func (c *readOnlyCacheClient[T, L]) Get(ctx context.Context, name string, target *T) error {
