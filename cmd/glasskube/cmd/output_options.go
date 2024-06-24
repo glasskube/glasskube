@@ -28,7 +28,7 @@ func (of *OutputFormat) Set(value string) error {
 }
 
 func (of *OutputFormat) Type() string {
-	return fmt.Sprintf("[%v|%v]", OutputFormatJSON, OutputFormatYAML)
+	return fmt.Sprintf("(%v|%v)", OutputFormatJSON, OutputFormatYAML)
 }
 
 type OutputOptions struct {

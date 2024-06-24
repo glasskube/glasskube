@@ -44,7 +44,7 @@ var installCmdOptions = struct {
 }
 
 var installCmd = &cobra.Command{
-	Use:               "install [package-name]",
+	Use:               "install <package-name>",
 	Short:             "Install a package",
 	Long:              `Install a package.`,
 	Args:              cobra.ExactArgs(1),
