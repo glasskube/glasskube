@@ -849,7 +849,7 @@ func (s *server) handleAdvancedConfig(ctx context.Context, d *packageDetailPageC
 		if d.repositoryName != "" {
 			d.pkg.GetSpec().PackageInfo.RepositoryName = d.repositoryName
 		}
-		if d.manifest.Scope == nil || *d.manifest.Scope == v1alpha1.ScopeCluster {
+		if d.manifest.Scope.IsCluster() {
 			if err := s.pkgClient.ClusterPackages().Update(ctx, d.pkg.(*v1alpha1.ClusterPackage)); err != nil {
 				s.respondAlertAndLog(w, err,
 					fmt.Sprintf("An error occurred updating package %v to version %v in repo %v",
