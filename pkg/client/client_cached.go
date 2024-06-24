@@ -107,10 +107,7 @@ type readOnlyCacheClient[T any, L any] struct {
 }
 
 func getKey(namespace, name string) string {
-	if namespace != "" {
-		return fmt.Sprintf("%s/%s", namespace, name)
-	}
-	return name
+	return cache.NewObjectName(namespace, name).String()
 }
 
 func (c *readOnlyCacheClient[T, L]) Watch(ctx context.Context) (watch.Interface, error) {
