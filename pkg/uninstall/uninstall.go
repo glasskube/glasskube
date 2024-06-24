@@ -71,7 +71,7 @@ func (obj *uninstaller) awaitDeletion(ctx context.Context, pkg ctrlpkg.Package) 
 	}
 	defer watcher.Stop()
 	for event := range watcher.ResultChan() {
-		if eventPkg, ok := event.Object.(ctrlpkg.Package); ok && isSameResource(eventPkg, pkg) {
+		if eventPkg, ok := event.Object.(ctrlpkg.Package); ok && ctrlpkg.IsSameResource(eventPkg, pkg) {
 			if event.Type == watch.Deleted {
 				return nil // Package deletion confirmed
 			}
@@ -89,10 +89,4 @@ func (obj *uninstaller) createWatcher(ctx context.Context, pkg ctrlpkg.Package) 
 	default:
 		return nil, fmt.Errorf("unexpected object kind: %v", pkg.GroupVersionKind().Kind)
 	}
-}
-
-func isSameResource(a, b ctrlpkg.Package) bool {
-	return a.GetName() == b.GetName() &&
-		a.GroupVersionKind() == b.GroupVersionKind() &&
-		a.GetNamespace() == b.GetNamespace()
 }

@@ -2,6 +2,7 @@ package client
 
 import (
 	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -86,4 +87,12 @@ func (b *packageBuilder) BuildPackage() *v1alpha1.Package {
 	}
 	pkg.SetAutoUpdatesEnabled(b.autoUpdate)
 	return &pkg
+}
+
+func (b *packageBuilder) Build(scope *v1alpha1.PackageScope) ctrlpkg.Package {
+	if scope.IsCluster() {
+		return b.BuildClusterPackage()
+	} else {
+		return b.BuildPackage()
+	}
 }

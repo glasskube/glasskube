@@ -602,7 +602,7 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 		opts := metav1.CreateOptions{}
 		err := install.NewInstaller(s.pkgClient).
 			WithStatusWriter(statuswriter.Stderr()).
-			InstallPackage(ctx, pkg, opts)
+			Install(ctx, pkg, opts)
 		if err != nil {
 			s.respondAlertAndLog(w, err, "An error occurred installing "+manifestName, "danger")
 		} else {
@@ -665,7 +665,7 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 		opts := metav1.CreateOptions{}
 		err := install.NewInstaller(s.pkgClient).
 			WithStatusWriter(statuswriter.Stderr()).
-			InstallClusterPackage(ctx, pkg, opts)
+			Install(ctx, pkg, opts)
 		if err != nil {
 			s.respondAlertAndLog(w, err, "An error occurred installing "+pkgName, "danger")
 		}
