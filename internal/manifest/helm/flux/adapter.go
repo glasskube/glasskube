@@ -16,6 +16,7 @@ import (
 	"github.com/glasskube/glasskube/internal/manifest"
 	"github.com/glasskube/glasskube/internal/manifest/result"
 	"github.com/glasskube/glasskube/internal/manifestvalues"
+	"github.com/glasskube/glasskube/internal/names"
 	corev1 "k8s.io/api/core/v1"
 	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -129,7 +130,7 @@ func (a *FluxHelmAdapter) ensureHelmRepository(
 	}
 	helmRepository := sourcev1beta2.HelmRepository{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      helmResourceName(pkg, manifest),
+			Name:      names.HelmResourceName(pkg, manifest),
 			Namespace: namespace,
 		},
 	}
@@ -162,7 +163,7 @@ func (a *FluxHelmAdapter) ensureHelmRelease(
 	}
 	helmRelease := helmv2.HelmRelease{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      helmResourceName(pkg, manifest),
+			Name:      names.HelmResourceName(pkg, manifest),
 			Namespace: namespace,
 		},
 	}
@@ -174,7 +175,7 @@ func (a *FluxHelmAdapter) ensureHelmRelease(
 		helmRelease.Spec.Chart.Spec.Chart = manifest.Helm.ChartName
 		helmRelease.Spec.Chart.Spec.Version = manifest.Helm.ChartVersion
 		helmRelease.Spec.Chart.Spec.SourceRef.Kind = "HelmRepository"
-		helmRelease.Spec.Chart.Spec.SourceRef.Name = helmResourceName(pkg, manifest)
+		helmRelease.Spec.Chart.Spec.SourceRef.Name = names.HelmResourceName(pkg, manifest)
 		if manifest.Helm.Values != nil {
 			helmRelease.Spec.Values = &extv1.JSON{Raw: manifest.Helm.Values.Raw[:]}
 		} else {
@@ -218,8 +219,4 @@ func extractResult(
 	} else {
 		return result.Waiting("Waiting for HelmRelease reconciliation", ownedResources)
 	}
-}
-
-func helmResourceName(pkg ctrlpkg.Package, manifest *packagesv1alpha1.PackageManifest) string {
-	return strings.Join([]string{pkg.GetName(), manifest.Name}, "-")
 }
