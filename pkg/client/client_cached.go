@@ -27,14 +27,13 @@ func (c *cacheClientset) ClusterPackages() ClusterPackageInterface {
 		return p
 	}
 	return &readWriteCacheClient[v1alpha1.ClusterPackage, v1alpha1.ClusterPackageList]{
-		p,
-		readOnlyCacheClient[v1alpha1.ClusterPackage, v1alpha1.ClusterPackageList]{
-			p,
-			c.clusterPackageStore,
-			func(items []v1alpha1.ClusterPackage) v1alpha1.ClusterPackageList {
+		fallback: p,
+		readOnlyCacheClient: readOnlyCacheClient[v1alpha1.ClusterPackage, v1alpha1.ClusterPackageList]{
+			fallback: p,
+			store:    c.clusterPackageStore,
+			listFactory: func(items []v1alpha1.ClusterPackage) v1alpha1.ClusterPackageList {
 				return v1alpha1.ClusterPackageList{Items: items}
 			},
-			"",
 		},
 	}
 }
@@ -45,14 +44,14 @@ func (c *cacheClientset) Packages(ns string) PackageInterface {
 		return p
 	}
 	return &readWriteCacheClient[v1alpha1.Package, v1alpha1.PackageList]{
-		p,
-		readOnlyCacheClient[v1alpha1.Package, v1alpha1.PackageList]{
-			p,
-			c.packageStore,
-			func(items []v1alpha1.Package) v1alpha1.PackageList {
+		fallback: p,
+		readOnlyCacheClient: readOnlyCacheClient[v1alpha1.Package, v1alpha1.PackageList]{
+			fallback: p,
+			store:    c.packageStore,
+			listFactory: func(items []v1alpha1.Package) v1alpha1.PackageList {
 				return v1alpha1.PackageList{Items: items}
 			},
-			ns,
+			namespace: ns,
 		},
 	}
 }
@@ -63,12 +62,11 @@ func (c *cacheClientset) PackageInfos() PackageInfoInterface {
 		return pi
 	}
 	return &readOnlyCacheClient[v1alpha1.PackageInfo, v1alpha1.PackageInfoList]{
-		pi,
-		c.packageInfoStore,
-		func(items []v1alpha1.PackageInfo) v1alpha1.PackageInfoList {
+		fallback: pi,
+		store:    c.packageInfoStore,
+		listFactory: func(items []v1alpha1.PackageInfo) v1alpha1.PackageInfoList {
 			return v1alpha1.PackageInfoList{Items: items}
 		},
-		"",
 	}
 }
 
@@ -78,14 +76,13 @@ func (c *cacheClientset) PackageRepositories() PackageRepositoryInterface {
 		return pr
 	}
 	return &readWriteCacheClient[v1alpha1.PackageRepository, v1alpha1.PackageRepositoryList]{
-		pr,
-		readOnlyCacheClient[v1alpha1.PackageRepository, v1alpha1.PackageRepositoryList]{
-			pr,
-			c.packageRepositoryStore,
-			func(items []v1alpha1.PackageRepository) v1alpha1.PackageRepositoryList {
+		fallback: pr,
+		readOnlyCacheClient: readOnlyCacheClient[v1alpha1.PackageRepository, v1alpha1.PackageRepositoryList]{
+			fallback: pr,
+			store:    c.packageRepositoryStore,
+			listFactory: func(items []v1alpha1.PackageRepository) v1alpha1.PackageRepositoryList {
 				return v1alpha1.PackageRepositoryList{Items: items}
 			},
-			"",
 		},
 	}
 }
