@@ -50,16 +50,7 @@ func (c *cacheClientset) Packages(ns string) PackageInterface {
 			p,
 			c.packageStore,
 			func(items []v1alpha1.Package) v1alpha1.PackageList {
-				if ns == "" {
-					return v1alpha1.PackageList{Items: items}
-				}
-				filteredItems := make([]v1alpha1.Package, 0)
-				for _, item := range items {
-					if item.Namespace == ns {
-						filteredItems = append(filteredItems, item)
-					}
-				}
-				return v1alpha1.PackageList{Items: filteredItems}
+				return v1alpha1.PackageList{Items: items}
 			},
 			ns,
 		},
@@ -132,6 +123,14 @@ func (c *readOnlyCacheClient[T, L]) GetAll(ctx context.Context, target *L) error
 	slices.Sort(keys)
 	items := make([]T, len(keys))
 	for i, key := range keys {
+		if c.namespace != "" {
+			if objName, err := cache.ParseObjectName(key); err != nil {
+				return apierrors.NewInternalError(fmt.Errorf("bad cache key: %w", err))
+			} else if objName.Namespace != c.namespace {
+				continue
+			}
+		}
+
 		if obj, exists, err := c.store.GetByKey(key); err != nil {
 			return apierrors.NewInternalError(fmt.Errorf("resource not found: %w", err))
 		} else if !exists {
