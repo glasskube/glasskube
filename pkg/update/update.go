@@ -135,15 +135,15 @@ func (c *updater) Prepare(ctx context.Context, clpkgNames []string, pkgNames []t
 		if err := c.client.ClusterPackages().GetAll(ctx, &clPackageList); err != nil {
 			return nil, fmt.Errorf("failed to get list of installed clusterpackages: %v", err)
 		}
-		for _, item := range clPackageList.Items {
-			packagesToUpdate = append(packagesToUpdate, &item)
+		for i := range clPackageList.Items {
+			packagesToUpdate = append(packagesToUpdate, &clPackageList.Items[i])
 		}
 		var packageList v1alpha1.PackageList
 		if err := c.client.Packages("").GetAll(ctx, &packageList); err != nil {
 			return nil, fmt.Errorf("failed to get list of installed packages: %v", err)
 		}
-		for _, item := range packageList.Items {
-			packagesToUpdate = append(packagesToUpdate, &item)
+		for i := range packageList.Items {
+			packagesToUpdate = append(packagesToUpdate, &packageList.Items[i])
 		}
 	}
 
