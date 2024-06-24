@@ -222,14 +222,13 @@ var _ = Describe("PackageValidatingWebhook", Ordered, func() {
 				Expect(err).To(HaveOccurred())
 			})
 		})
-		// TODO re-enable
-		/*When("a namespaced dependent exists with constraint", func() {
+		When("a namespaced dependent exists with constraint", func() {
 			It("should return error", func(ctx context.Context) {
 				webhook := newPackageValidatingWebhook(&nspv1pkg, &nspv1pi, &foov1pkg, &foov1pi)
 				_, err := webhook.ValidateUpdate(ctx, &foov1pkg, &foov2pkg)
 				Expect(err).To(HaveOccurred())
 			})
-		})*/
+		})
 	})
 
 	Context("ValidateDelete", func() {
