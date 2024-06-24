@@ -94,9 +94,8 @@ func showUninstallDetails(context, name string, pruned []string) {
 }
 
 func init() {
-	// TODO: Enable these flags to support namespaced packages
-	// uninstallCmdOptions.KindOptions.AddFlagsToCommand(uninstallCmd)
-	// uninstallCmdOptions.NamespaceOptions.AddFlagsToCommand(uninstallCmd)
+	uninstallCmdOptions.KindOptions.AddFlagsToCommand(uninstallCmd)
+	uninstallCmdOptions.NamespaceOptions.AddFlagsToCommand(uninstallCmd)
 	uninstallCmd.PersistentFlags().BoolVar(&uninstallCmdOptions.NoWait, "no-wait", false,
 		"perform non-blocking uninstall")
 	uninstallCmd.PersistentFlags().BoolVarP(&uninstallCmdOptions.Yes, "yes", "y", false,
