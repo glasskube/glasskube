@@ -16,7 +16,6 @@ async function blogPluginExtended(...pluginArgs) {
       const recentPosts = [...content.blogPosts].splice(0, recentPostsLimit);
 
       async function createRecentPostModule(blogPost, index) {
-        console.log({ blogPost });
         return {
           metadata: await actions.createData(
             `home-page-recent-post-metadata-${index}.json`,

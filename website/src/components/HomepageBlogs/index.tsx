@@ -23,8 +23,7 @@ interface HomepageProps {
   readonly recentPosts: readonly { readonly Preview: Content; metadata: any }[];
 }
 
-const LatestBlogPosts = ({ homePageBlogMetadata, recentPosts }: HomepageProps) => {
-  console.log({ homePageBlogMetadata, recentPosts });
+const LatestBlogPosts = ({ recentPosts }: HomepageProps) => {
   return (
     <section className={styles.latestBlogPosts}>
       <div className="container margin-top--lg">
@@ -32,7 +31,7 @@ const LatestBlogPosts = ({ homePageBlogMetadata, recentPosts }: HomepageProps) =
           <div className="col text--center">
             <h2>Check our blog</h2>
             <p>
-              We are working on a blog post series covering topics from general open source challenges to specific Kubernetes related topics.{' '}
+              We are working on a blog post series covering topics from general open source to specific Kubernetes related topics.{' '}
               <Link to={useBaseUrl('/blog')}>Check it out!</Link>
             </p>
           </div>
