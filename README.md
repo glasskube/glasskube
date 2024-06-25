@@ -37,7 +37,7 @@
 
 <hr>
 
-![Glasskube GUI](https://github.com/glasskube/glasskube/assets/3041752/323994d6-6b08-4dca-ac59-d29ae6b37f94)
+![Glasskube GUI](https://github.com/glasskube/glasskube/assets/3041752/54b20ffe-1daf-4905-abc5-37e99e056b02)
 
 
 ## 📦 What is Glasskube?
