@@ -117,8 +117,14 @@
   }
 }
 
-.producthunt {
-  margin-top: 20px;
+.yc {
+  margin-top: 40px;
+  color: var(--glasskube-main-light);
+}
+
+.ycImg {
+  height: 40px;
+  margin-top: -10px;
 }
 
 @media (min-width: 997px) {
@@ -134,5 +140,9 @@
 
   h3 {
     font-size: 1.5rem;
+  }
+
+  .ycImg {
+    height: 50px;
   }
 }
