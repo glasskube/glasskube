@@ -12,6 +12,8 @@ import AsciinemaPlayer from '../components/asciinema-player';
 import HomepageScreenshots from '@site/src/components/HomepageScreenshots';
 import TalkToFoundersButton from '@site/src/components/buttons/TalkToFoundersButton';
 import SignupForWaitlistButton from '@site/src/components/buttons/SignupForWaitlistButton';
+import useBaseUrl from '@docusaurus/core/lib/client/exports/useBaseUrl';
+import Image from '@theme/IdealImage';
 
 
 function HomepageHeader() {
@@ -34,13 +36,15 @@ function HomepageHeader() {
               <TalkToFoundersButton additionalClassNames={'button--lg light'}/>
               <SignupForWaitlistButton additionalClassNames={'button--lg'}/>
             </div>
-            <div className={styles.producthunt}>
+            <div className={styles.yc}>
+              <h4>Backed by</h4>
               <a
-                href="https://www.producthunt.com/products/glasskube?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-glasskube"
+                href="https://www.ycombinator.com/companies/glasskube"
                 target="_blank">
-                <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=452879&theme=light"
-                     alt="Glasskube - &#0032;🧊&#0032;The&#0032;next&#0032;generation&#0032;Package&#0032;Manager&#0032;for&#0032;Kubernetes&#0032;📦 | Product Hunt"
-                     style={{width: '250px', height: '54px'}}/>
+                <Image
+                  alt="Glasskube backed by Y Combinator"
+                  className={styles.ycImg}
+                  img={useBaseUrl('/img/yc/yc.svg')}/>
               </a>
             </div>
           </div>
