@@ -1,3 +1,5 @@
+import ThemedImage from "@theme/ThemedImage";
+
 # Glasskube Repositories
 
 ## Problem Analysis
@@ -119,17 +121,18 @@ Installed packages do not break but can not be updated until the missing reposit
 
 #### Repository Management
 
-Mockup of the new settings page where the package repository configuration will be situated.
-![ui-repo-settings](/img/docs/design/ui-repo-settings.png)
+Current UI of the new settings holds the package repository configuration.
 
-Clicking on the button labelled "Add", navigates to another page where a user can create a new repository with the following form fields:
+<ThemedImage
+  alt="Glasskube UI Repo settings"
+  sources={{
+    light: 'https://github.com/glasskube/glasskube/assets/3041752/e8565cf7-6089-4b82-b169-91f5b3ef4c33',
+    dark: 'https://github.com/glasskube/glasskube/assets/3041752/cf1f1983-78c8-4bb4-9d47-86dbf3a16c4e',
+  }}
+/>
 
-- name
-- url
-- auth type (radios): none, basic, bearer
-- auth credentials (dynamically changes based on auth type)
-
-Updating repositories is not supported via the UI.
+Adding and updating repositories is not yet supported via the UI.
+(see [#860](https://github.com/glasskube/glasskube/issues/860) and [#860](https://github.com/glasskube/glasskube/issues/861))
 
 #### Package Management
 
@@ -147,7 +150,7 @@ If a package is already installed or only available from one repository, the dro
 The `bootstrap` command creates a default repository in the cluster by default.
 This repository has the name "glasskube" and repositoryUrl "https://packages.dl.glasskube.dev/packages/".
 By creating this repository, we ensure that existing installations remain functional.
-This behavior can be turned of by running `bootstrap` with `--create-default-repository=false`.
+This behavior can be turned off by running `bootstrap` with `--create-default-repository=false`.
 
 ## Known Limitations
 
