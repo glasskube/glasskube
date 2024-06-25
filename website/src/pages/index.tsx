@@ -8,7 +8,6 @@ import styles from './index.module.css';
 import React from 'react';
 import Typewriter from 'typewriter-effect';
 import BrowserOnly from '@docusaurus/BrowserOnly';
-import AsciinemaPlayer from '../components/asciinema-player';
 import HomepageScreenshots from '@site/src/components/HomepageScreenshots';
 import TalkToFoundersButton from '@site/src/components/buttons/TalkToFoundersButton';
 import SignupForWaitlistButton from '@site/src/components/buttons/SignupForWaitlistButton';
@@ -110,12 +109,7 @@ function HomepageVideo() {
             <Heading as={'h2'} className={styles.colorWhite}>
               Learn how to install cert-manager in less than 2 minutes using Glasskube
             </Heading>
-            <AsciinemaPlayer
-              src='/cast/634355.cast'
-              rows='22'
-              idleTimeLimit={7}
-              poster='npt:0:19'
-              controls={false}/>
+            <iframe width="100%" height="460" src="https://www.youtube.com/embed/aIeTHGWsG2c?si=KUcqvY4coU89GmdK" title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen></iframe>
           </div>
         </div>
       </div>
