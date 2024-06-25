@@ -8,7 +8,7 @@ import docusaurusEslintPlugin from "@docusaurus/eslint-plugin";
 export default [
   // TODO: eslint configure for .md, .mdx files
   {files: ["*/.{js,mjs,cjs,ts,jsx,tsx}"]},
-  {ignores: ["babel.config.js", "eslint.config.mjs", "docusaurus.config.ts"]},
+  {ignores: ["babel.config.js", "eslint.config.mjs", "docusaurus.config.ts", ".docusaurus/*", "build/*"]},
   {
     plugins: {
       prettier: prettierEslintPlugin,
