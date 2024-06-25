@@ -13,6 +13,7 @@ import (
 	"github.com/glasskube/glasskube/pkg/update"
 	"github.com/spf13/cobra"
 	"go.uber.org/multierr"
+	apitypes "k8s.io/apimachinery/pkg/types"
 )
 
 var autoUpdateEnabledDisabledOptions = struct {
@@ -151,23 +152,36 @@ func runAutoUpdate(cmd *cobra.Command, args []string) {
 	updater := update.NewUpdater(ctx).
 		WithStatusWriter(statuswriter.Stderr())
 
-	var pkgs v1alpha1.ClusterPackageList
-	if err := client.ClusterPackages().GetAll(ctx, &pkgs); err != nil {
+	var cpkgs v1alpha1.ClusterPackageList
+	if err := client.ClusterPackages().GetAll(ctx, &cpkgs); err != nil {
 		panic(err)
 	}
 
-	var packageNames []string
-	for _, pkg := range pkgs.Items {
+	var cpkgNames []string
+	for _, pkg := range cpkgs.Items {
 		if pkg.AutoUpdatesEnabled() {
-			packageNames = append(packageNames, pkg.Name)
+			cpkgNames = append(cpkgNames, pkg.Name)
 		}
 	}
-	if len(packageNames) == 0 {
+
+	var pkgs v1alpha1.PackageList
+	if err := client.Packages("").GetAll(ctx, &pkgs); err != nil {
+		panic(err)
+	}
+
+	var pkgNames []apitypes.NamespacedName
+	for _, pkg := range pkgs.Items {
+		if pkg.AutoUpdatesEnabled() {
+			pkgNames = append(pkgNames, apitypes.NamespacedName{Namespace: pkg.Namespace, Name: pkg.Name})
+		}
+	}
+
+	if len(cpkgNames)+len(pkgNames) == 0 {
 		fmt.Fprintln(os.Stderr, "Automatic updates must be enabled for at least one package")
 		cliutils.ExitSuccess()
 	}
 
-	tx, err := updater.Prepare(ctx, packageNames, nil)
+	tx, err := updater.Prepare(ctx, cpkgNames, nil)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error preparing update: %v\n", err)
 		cliutils.ExitWithError()
