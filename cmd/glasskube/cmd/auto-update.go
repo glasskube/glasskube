@@ -123,7 +123,7 @@ func runAutoUpdate(cmd *cobra.Command, args []string) {
 		cliutils.ExitSuccess()
 	}
 
-	tx, err := updater.Prepare(ctx, packageNames, nil)
+	tx, err := updater.Prepare(ctx, update.GetClusterPackagesWithNames(packageNames))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error preparing update: %v\n", err)
 		cliutils.ExitWithError()

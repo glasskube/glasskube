@@ -23,6 +23,7 @@ import (
 	"github.com/glasskube/glasskube/pkg/update"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/yaml"
 )
 
@@ -30,6 +31,8 @@ var updateCmdOptions struct {
 	Version string
 	Yes     bool
 	OutputOptions
+	NamespaceOptions
+	KindOptions
 }
 
 var updateCmd = &cobra.Command{
@@ -39,7 +42,6 @@ var updateCmd = &cobra.Command{
 	ValidArgsFunction: completeInstalledPackageNames,
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
-		packageNames := args
 
 		updater := update.NewUpdater(ctx)
 		if !rootCmdOptions.NoProgress {
@@ -53,17 +55,51 @@ var updateCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "Updating to specific version is only possible for a single package\n")
 			cliutils.ExitWithError()
 		}
+
 		if len(args) == 1 && updateCmdOptions.Version != "" {
 			if !strings.HasPrefix(updateCmdOptions.Version, "v") {
 				updateCmdOptions.Version = "v" + updateCmdOptions.Version
 			}
-			tx, err = updater.PrepareForVersion(ctx, args[0], updateCmdOptions.Version)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "error in updating the package version : %v\n", err)
+
+			if pkg, err := getPackageOrClusterPackage(ctx, args[0],
+				updateCmdOptions.KindOptions, updateCmdOptions.NamespaceOptions); err != nil {
+				fmt.Fprintf(os.Stderr, "Could not get %v: %v\n", args[0], err)
 				cliutils.ExitWithError()
+			} else {
+				tx, err = updater.PrepareForVersion(ctx, pkg, updateCmdOptions.Version)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "error in updating the package version : %v\n", err)
+					cliutils.ExitWithError()
+				}
 			}
 		} else {
-			tx, err = updater.Prepare(ctx, packageNames, nil)
+			var updateGetters []update.PackagesGetter
+			if len(args) > 0 {
+				pkgs := make([]ctrlpkg.Package, len(args))
+				for i, name := range args {
+					if pkg, err := getPackageOrClusterPackage(ctx, name,
+						updateCmdOptions.KindOptions, updateCmdOptions.NamespaceOptions); err != nil {
+						fmt.Fprintf(os.Stderr, "Could not get %v: %v\n", name, err)
+						cliutils.ExitWithError()
+					} else {
+						pkgs[i] = pkg
+					}
+				}
+				updateGetters = append(updateGetters, update.GetExact(pkgs))
+			} else if updateCmdOptions.Namespace != "" {
+				updateGetters = append(updateGetters, update.GetAllPackages(updateCmdOptions.Namespace))
+			} else {
+				switch updateCmdOptions.Kind {
+				case KindClusterPackage:
+					updateGetters = append(updateGetters, update.GetAllClusterPackages())
+				case KindPackage:
+					updateGetters = append(updateGetters, update.GetAllPackages(""))
+				default:
+					updateGetters = append(updateGetters, update.GetAllClusterPackages(), update.GetAllPackages(""))
+				}
+			}
+
+			tx, err = updater.Prepare(ctx, updateGetters...)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "❌ update preparation failed: %v\n", err)
 				cliutils.ExitWithError()
@@ -92,11 +128,18 @@ func printTransaction(tx update.UpdateTransaction) {
 	w := tabwriter.NewWriter(os.Stderr, 0, 0, 1, ' ', 0)
 	for _, item := range tx.Items {
 		if item.UpdateRequired() {
-			fmt.Fprintf(w, "%v:\t%v\t-> %v\n",
-				item.Package.GetName(), item.Package.GetSpec().PackageInfo.Version, item.Version)
+			fmt.Fprintf(w, "%v\t%v:\t%v\t-> %v\n",
+				item.Package.GetSpec().PackageInfo.Name,
+				cache.MetaObjectToName(item.Package),
+				item.Package.GetSpec().PackageInfo.Version,
+				item.Version,
+			)
 		} else {
-			fmt.Fprintf(w, "%v:\t%v\t(up-to-date)\n",
-				item.Package.GetName(), item.Package.GetSpec().PackageInfo.Version)
+			fmt.Fprintf(w, "%v\t%v:\t%v\t(up-to-date)\n",
+				item.Package.GetSpec().PackageInfo.Name,
+				cache.MetaObjectToName(item.Package),
+				item.Package.GetSpec().PackageInfo.Version,
+			)
 		}
 	}
 	for _, req := range tx.Requirements {
@@ -230,5 +273,7 @@ func init() {
 	updateCmd.PersistentFlags().BoolVarP(&updateCmdOptions.Yes, "yes", "y", false,
 		"do not ask for any confirmation")
 	updateCmdOptions.OutputOptions.AddFlagsToCommand(updateCmd)
+	updateCmdOptions.KindOptions.AddFlagsToCommand(updateCmd)
+	updateCmdOptions.NamespaceOptions.AddFlagsToCommand(updateCmd)
 	RootCmd.AddCommand(updateCmd)
 }
