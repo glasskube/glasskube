@@ -5,9 +5,10 @@ import (
 	"os"
 
 	"github.com/glasskube/glasskube/internal/clientutils"
-
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/config"
+
+	"github.com/common-nighthawk/go-figure"
 	"github.com/spf13/cobra"
 )
 
@@ -17,8 +18,10 @@ var versioncmd = &cobra.Command{
 	Long:   `Print the version of glasskube and package-operator`,
 	PreRun: cliutils.SetupClientContext(false, &rootCmdOptions.SkipUpdateCheck),
 	Run: func(cmd *cobra.Command, args []string) {
+		glasscubeAscii := figure.NewColorFigure("GLASSKUBE", "standard", "blue", true)
+		glasscubeAscii.Print()
 		glasskubeVersion := config.Version
-		fmt.Fprintf(os.Stderr, "glasskube: v%s\n", glasskubeVersion)
+		fmt.Fprintf(os.Stderr, "\nglasskube: v%s\n", glasskubeVersion)
 		operatorVersion, err := clientutils.GetPackageOperatorVersion(cmd.Context())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "package-operator: not installed\n")
