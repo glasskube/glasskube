@@ -97,7 +97,7 @@ func (obj *installer) installPackage(
 }
 
 func (obj *installer) awaitInstall(ctx context.Context, pkgUID types.UID) (*client.PackageStatus, error) {
-	watcher, err := obj.client.ClusterPackages().Watch(ctx)
+	watcher, err := obj.client.ClusterPackages().Watch(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}

@@ -98,8 +98,8 @@ func getKey(namespace, name string) string {
 	return cache.NewObjectName(namespace, name).String()
 }
 
-func (c *readOnlyCacheClient[T, L]) Watch(ctx context.Context) (watch.Interface, error) {
-	return c.fallback.Watch(ctx)
+func (c *readOnlyCacheClient[T, L]) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
+	return c.fallback.Watch(ctx, opts)
 }
 
 func (c *readOnlyCacheClient[T, L]) Get(ctx context.Context, name string, target *T) error {

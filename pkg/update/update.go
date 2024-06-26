@@ -243,13 +243,13 @@ func (c *updater) UpdatePackage(ctx context.Context, pkg ctrlpkg.Package, versio
 func (c *updater) awaitUpdate(ctx context.Context, pkg ctrlpkg.Package) error {
 	switch pkg := pkg.(type) {
 	case *v1alpha1.ClusterPackage:
-		watcher, err := c.client.ClusterPackages().Watch(ctx)
+		watcher, err := c.client.ClusterPackages().Watch(ctx, metav1.ListOptions{})
 		if err != nil {
 			return err
 		}
 		return c.await(watcher, pkg)
 	case *v1alpha1.Package:
-		watcher, err := c.client.Packages(pkg.Namespace).Watch(ctx)
+		watcher, err := c.client.Packages(pkg.Namespace).Watch(ctx, metav1.ListOptions{})
 		if err != nil {
 			return err
 		}

@@ -1184,7 +1184,7 @@ func (s *server) initClusterPackageStoreAndController(ctx context.Context) (cach
 				return &pkgList, err
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-				return pkgClient.ClusterPackages().Watch(ctx)
+				return pkgClient.ClusterPackages().Watch(ctx, withDecreasedTimeout(options))
 			},
 		},
 		&v1alpha1.ClusterPackage{},
@@ -1224,7 +1224,7 @@ func (s *server) initPackageStoreAndController(ctx context.Context) (cache.Store
 				return &pkgList, err
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-				return pkgClient.Packages("").Watch(ctx)
+				return pkgClient.Packages("").Watch(ctx, withDecreasedTimeout(options))
 			},
 		},
 		&v1alpha1.Package{},
@@ -1282,7 +1282,7 @@ func (s *server) initPackageInfoStoreAndController(ctx context.Context) (cache.S
 				return &packageInfoList, err
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-				return pkgClient.PackageInfos().Watch(ctx)
+				return pkgClient.PackageInfos().Watch(ctx, withDecreasedTimeout(options))
 			},
 		},
 		&v1alpha1.PackageInfo{},
@@ -1301,13 +1301,22 @@ func (s *server) initPackageRepoStoreAndController(ctx context.Context) (cache.S
 				return &repositoryList, err
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
-				return pkgClient.PackageRepositories().Watch(ctx)
+				return pkgClient.PackageRepositories().Watch(ctx, withDecreasedTimeout(options))
 			},
 		},
 		&v1alpha1.PackageRepository{},
 		0,
 		cache.ResourceEventHandlerFuncs{}, // TODO we might also want to update here?
 	)
+}
+
+func withDecreasedTimeout(opts metav1.ListOptions) metav1.ListOptions {
+	if opts.TimeoutSeconds != nil {
+		// reuse the randomized timeout and divide by 10
+		t := *opts.TimeoutSeconds / 10
+		opts.TimeoutSeconds = &t
+	}
+	return opts
 }
 
 func (s *server) isUpdateAvailableForClPkg(ctx context.Context, name string) bool {

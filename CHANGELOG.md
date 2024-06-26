@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.10.1](https://github.com/glasskube/glasskube/compare/v0.10.0...v0.10.1) (2024-06-24)
+
+
+### Bug Fixes
+
+* **client:** propagate list options and apply timeout ([#843](https://github.com/glasskube/glasskube/issues/843)) ([7829778](https://github.com/glasskube/glasskube/commit/7829778a71eaef3fb32088fd0a8fbb0ac3a417a6))
+* **deps:** update module github.com/yuin/goldmark to v1.7.3 ([#840](https://github.com/glasskube/glasskube/issues/840)) ([cc74656](https://github.com/glasskube/glasskube/commit/cc746566236103de0d5feb529992835f9d0fa251))
+* **open:** try different service names ([#847](https://github.com/glasskube/glasskube/issues/847)) ([9a1ef27](https://github.com/glasskube/glasskube/commit/9a1ef27ce72b3ad6d6f02bcbbbc862550c63451e))
+
 ## [0.10.0](https://github.com/glasskube/glasskube/compare/v0.9.0...v0.10.0) (2024-06-21)
 
 

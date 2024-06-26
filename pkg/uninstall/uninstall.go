@@ -83,9 +83,9 @@ func (obj *uninstaller) awaitDeletion(ctx context.Context, pkg ctrlpkg.Package) 
 func (obj *uninstaller) createWatcher(ctx context.Context, pkg ctrlpkg.Package) (watch.Interface, error) {
 	switch pkg := pkg.(type) {
 	case *v1alpha1.ClusterPackage:
-		return obj.client.ClusterPackages().Watch(ctx)
+		return obj.client.ClusterPackages().Watch(ctx, metav1.ListOptions{})
 	case *v1alpha1.Package:
-		return obj.client.Packages(pkg.Namespace).Watch(ctx)
+		return obj.client.Packages(pkg.Namespace).Watch(ctx, metav1.ListOptions{})
 	default:
 		return nil, fmt.Errorf("unexpected object kind: %v", pkg.GroupVersionKind().Kind)
 	}
