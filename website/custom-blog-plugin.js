@@ -40,7 +40,7 @@ async function blogPluginExtended(...pluginArgs) {
         path: '/',
         exact: true,
 
-        component: '@site/src/pages/home.tsx',
+        component: '@site/src/components/Home/index.tsx',
 
         modules: {
           homePageBlogMetadata: await actions.createData(

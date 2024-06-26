@@ -9,13 +9,13 @@ import styles from './index.module.css';
 import React from 'react';
 import Typewriter from 'typewriter-effect';
 import BrowserOnly from '@docusaurus/BrowserOnly';
-import AsciinemaPlayer from '../components/asciinema-player';
+import AsciinemaPlayer from '@site/src/components/asciinema-player';
 import HomepageScreenshots from '@site/src/components/HomepageScreenshots';
 import TalkToFoundersButton from '@site/src/components/buttons/TalkToFoundersButton';
 import SignupForWaitlistButton from '@site/src/components/buttons/SignupForWaitlistButton';
 import useBaseUrl from '@docusaurus/core/lib/client/exports/useBaseUrl';
 import Image from '@theme/IdealImage';
-import HomepageBlogs from '../components/HomepageBlogs';
+import HomepageBlogs from '@site/src/components/HomepageBlogs';
 
 
 function HomepageHeader() {
