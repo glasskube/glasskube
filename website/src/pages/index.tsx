@@ -109,7 +109,7 @@ function HomepageVideo() {
             <Heading as={'h2'} className={styles.colorWhite}>
               Learn how to install cert-manager in less than 2 minutes using Glasskube
             </Heading>
-            <iframe width="100%" height="460" src="https://www.youtube.com/embed/aIeTHGWsG2c?si=KUcqvY4coU89GmdK" title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen></iframe>
+            <iframe width="100%" height="460" src="https://www.youtube-nocookie.com/embed/aIeTHGWsG2c?si=KUcqvY4coU89GmdK" title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen></iframe>
           </div>
         </div>
       </div>
