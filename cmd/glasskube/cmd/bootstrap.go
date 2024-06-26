@@ -85,15 +85,7 @@ var bootstrapCmd = &cobra.Command{
 			cliutils.ExitWithError()
 		}
 		if bootstrapCmdOptions.dryrun {
-			if err := printBootsrap(
-				manifests,
-				bootstrapCmdOptions.Output,
-			); err != nil {
-				fmt.Fprintf(os.Stderr, "\nAn error occurred in printing : %v\n", err)
-				cliutils.ExitWithError()
-			}
-		} else {
-			if err := printBootsrap(
+			if err := printBootstrap(
 				manifests,
 				bootstrapCmdOptions.Output,
 			); err != nil {
@@ -101,7 +93,6 @@ var bootstrapCmd = &cobra.Command{
 				cliutils.ExitWithError()
 			}
 		}
-
 	},
 }
 
@@ -117,7 +108,7 @@ func (o bootstrapOptions) asBootstrapOptions() bootstrap.BootstrapOptions {
 	}
 }
 
-func printBootsrap(manifests []unstructured.Unstructured, output OutputFormat) error {
+func printBootstrap(manifests []unstructured.Unstructured, output OutputFormat) error {
 	if output != "" {
 		if err := convertAndPrintManifests(manifests, output); err != nil {
 			return err
