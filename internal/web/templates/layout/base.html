@@ -21,8 +21,9 @@
         <div class="htmx-indicator progress-bar bg-primary h-100 w-100"></div>
       </div>
 
-      <div class="container d-flex flex-row" hx-swap-oob="outerHTML:#navbar-content" id="navbar-content">
+      <div class="container-lg d-flex flex-row navbar-inner-container" hx-swap-oob="outerHTML:#navbar-content" id="navbar-content">
         
+        <div class="d-flex  flex-row align-items-center justify-content-around">
           <a class="navbar-brand d-flex align-items-center" href="/">
             <img src="/static/assets/glasskube-logo.svg" alt="Logo" height="32" width="32" />
             <h1 class="navbar-brand text-white mx-1 my-0">Glasskube</h1>
@@ -43,20 +44,25 @@
               {{ end }}
             </li>
           </ul>
+        </div>
+          
 
-          <ul class="navbar-nav ms-auto align-items-center gap-2 d-flex flex-row">
-            <li class="nav-item">
-              <a class="nav-link" href="https://glasskube.cloud/signup.html?id={{ .CloudId }}" target="_blank"
-                ><span class="bi bi-box-arrow-up-right me-1"></span>Glasskube Cloud</a
-              >
-            </li>
-            <li class="nav-item">
-              <a class="cta cta-sm text-white" href="https://github.com/glasskube/glasskube" target="_blank">
-                <span class="bi bi-github"></span>
-                Star us
-              </a>
-            </li>
-          </ul>
+          <div class="d-flex  flex-row align-items-center justify-content-around">
+            <ul class="navbar-nav ms-auto align-items-center gap-2 d-flex flex-row">
+              <li class="nav-item">
+                <a class="nav-link" href="https://glasskube.cloud/signup.html?id={{ .CloudId }}" target="_blank"
+                  ><span class="bi bi-box-arrow-up-right me-1"></span>Glasskube Cloud</a
+                >
+              </li>
+              <li class="nav-item">
+                <a class="cta cta-sm text-white" href="https://github.com/glasskube/glasskube" target="_blank">
+                  <span class="bi bi-github"></span>
+                  Star us
+                </a>
+              </li>
+            </ul>
+          </div>
+          
       </div>
     </nav>
     <main id="main">
