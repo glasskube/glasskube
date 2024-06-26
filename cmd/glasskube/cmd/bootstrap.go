@@ -92,6 +92,14 @@ var bootstrapCmd = &cobra.Command{
 				fmt.Fprintf(os.Stderr, "\nAn error occurred in printing : %v\n", err)
 				cliutils.ExitWithError()
 			}
+		} else {
+			if err := printBootstrap(
+				manifests,
+				bootstrapCmdOptions.Output,
+			); err != nil {
+				fmt.Fprintf(os.Stderr, "\nAn error occurred in printing : %v\n", err)
+				cliutils.ExitWithError()
+			}
 		}
 	},
 }
