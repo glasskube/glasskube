@@ -17,14 +17,14 @@ import (
 )
 
 type ListCmdOptions struct {
-	ListClusterPackagesOnly bool
-	ListPackagesOnly        bool
-	ListInstalledOnly       bool
-	ListOutdatedOnly        bool
-	ShowDescription         bool
-	ShowLatestVersion       bool
-	More                    bool
+	ListInstalledOnly bool
+	ListOutdatedOnly  bool
+	ShowDescription   bool
+	ShowLatestVersion bool
+	More              bool
 	OutputOptions
+	NamespaceOptions
+	KindOptions
 }
 
 func (o ListCmdOptions) toListOptions() list.ListOptions {
@@ -34,7 +34,9 @@ func (o ListCmdOptions) toListOptions() list.ListOptions {
 	}
 }
 
-var listCmdOptions = ListCmdOptions{}
+var listCmdOptions = ListCmdOptions{
+	KindOptions: DefaultKindOptions(),
+}
 
 var listCmd = &cobra.Command{
 	Use:     "list",
@@ -50,25 +52,26 @@ var listCmd = &cobra.Command{
 			listCmdOptions.ShowDescription = true
 		}
 		lister := list.NewListerWithRepoCache(ctx)
-		scopeGiven := listCmdOptions.ListPackagesOnly || listCmdOptions.ListClusterPackagesOnly
 		var clPkgs []*list.PackageWithStatus
 		var pkgs []*list.PackagesWithStatus
 		var err error
-		if listCmdOptions.ListClusterPackagesOnly || !scopeGiven {
+		if listCmdOptions.Kind != KindPackage {
 			clPkgs, err = lister.GetClusterPackagesWithStatus(ctx, listCmdOptions.toListOptions())
 			handleListErr(len(clPkgs), err, "clusterpackages")
 		}
-		if listCmdOptions.ListPackagesOnly || !scopeGiven {
+		if listCmdOptions.Kind != KindClusterPackage {
 			pkgs, err = lister.GetPackagesWithStatus(ctx, listCmdOptions.toListOptions())
 			handleListErr(len(pkgs), err, "packages")
 		}
-		noPkgs := len(pkgs) == 0 && !listCmdOptions.ListClusterPackagesOnly
-		noClPkgs := len(clPkgs) == 0 && !listCmdOptions.ListPackagesOnly
+		noPkgs := len(pkgs) == 0 && listCmdOptions.Kind != KindClusterPackage
+		noClPkgs := len(clPkgs) == 0 && listCmdOptions.Kind != KindPackage
 		if noPkgs {
 			handleEmptyList("packages")
 		} else if len(pkgs) > 0 {
 			printPackageTable(pkgs)
-			fmt.Fprintln(os.Stderr, "")
+			if listCmdOptions.Kind != KindPackage {
+				fmt.Fprintln(os.Stderr, "")
+			}
 		}
 		if noClPkgs {
 			handleEmptyList("clusterpackages")
@@ -85,10 +88,6 @@ var listCmd = &cobra.Command{
 }
 
 func init() {
-	listCmd.PersistentFlags().BoolVarP(&listCmdOptions.ListClusterPackagesOnly, "clusterpackages", "c", false,
-		"list only clusterpackages")
-	listCmd.PersistentFlags().BoolVarP(&listCmdOptions.ListPackagesOnly, "packages", "p", false,
-		"list only packages")
 	listCmd.PersistentFlags().BoolVarP(&listCmdOptions.ListInstalledOnly, "installed", "i", false,
 		"list only installed (cluster-)packages")
 	listCmd.PersistentFlags().BoolVar(&listCmdOptions.ListOutdatedOnly, "outdated", false,
@@ -100,10 +99,11 @@ func init() {
 	listCmd.PersistentFlags().BoolVarP(&listCmdOptions.More, "more", "m", false,
 		"show additional information about (cluster-)packages (like --show-description --show-latest)")
 	listCmdOptions.OutputOptions.AddFlagsToCommand(listCmd)
+	listCmdOptions.NamespaceOptions.AddFlagsToCommand(listCmd)
+	listCmdOptions.KindOptions.AddFlagsToCommand(listCmd)
 
 	listCmd.MarkFlagsMutuallyExclusive("show-description", "more")
 	listCmd.MarkFlagsMutuallyExclusive("show-latest", "more")
-	listCmd.MarkFlagsMutuallyExclusive("clusterpackages", "packages")
 
 	RootCmd.AddCommand(listCmd)
 }
@@ -126,7 +126,7 @@ func handleEmptyList(resource string) {
 		fmt.Fprintf(os.Stderr, "There are currently no %s installed in your cluster.\n"+
 			"Run \"glasskube help install\" to get started.\n", resource)
 	} else {
-		fmt.Fprintf(os.Stderr, "No %s found. This is probably a bug.\n", resource)
+		fmt.Fprintf(os.Stderr, "No %s found in the available repositories.\n", resource)
 	}
 }
 
@@ -152,7 +152,7 @@ func printClusterPackageTable(packages []*list.PackageWithStatus) {
 			s := make([]string, len(pkg.Repos))
 			if pkg.ClusterPackage != nil {
 				for i, r := range pkg.Repos {
-					if pkg.ClusterPackage.GetSpec().PackageInfo.RepositoryName == r {
+					if pkg.ClusterPackage.Spec.PackageInfo.RepositoryName == r {
 						s[i] = fmt.Sprintf("%v (used)", r)
 					} else {
 						s[i] = r
@@ -185,14 +185,20 @@ func printPackageTable(packages []*list.PackagesWithStatus) {
 
 	var flattenedPkgs []*list.PackageWithStatus
 	for _, pkgs := range packages {
-		flattenedPkgs = append(flattenedPkgs, pkgs.Packages...)
+		if len(pkgs.Packages) == 0 {
+			flattenedPkgs = append(flattenedPkgs, &list.PackageWithStatus{
+				MetaIndexItem: pkgs.MetaIndexItem,
+			})
+		} else {
+			flattenedPkgs = append(flattenedPkgs, pkgs.Packages...)
+		}
 	}
 
 	err := cliutils.PrintTable(os.Stdout,
 		flattenedPkgs,
 		header,
 		func(pkg *list.PackageWithStatus) []string {
-			row := []string{pkg.Name, pkg.Package.Namespace, pkg.Package.Name, statusString(*pkg), versionString(*pkg),
+			row := []string{pkg.Name, pkgNamespaceString(*pkg), pkgNameString(*pkg), statusString(*pkg), versionString(*pkg),
 				clientutils.AutoUpdateString(pkg.Package, "")}
 			if listCmdOptions.ShowLatestVersion {
 				row = append(row, pkg.LatestVersion)
@@ -200,7 +206,7 @@ func printPackageTable(packages []*list.PackagesWithStatus) {
 			s := make([]string, len(pkg.Repos))
 			if pkg.Package != nil {
 				for i, r := range pkg.Repos {
-					if pkg.Package.GetSpec().PackageInfo.RepositoryName == r {
+					if pkg.Package.Spec.PackageInfo.RepositoryName == r {
 						s[i] = fmt.Sprintf("%v (used)", r)
 					} else {
 						s[i] = r
@@ -232,7 +238,6 @@ func printPackageJSON(packages []*list.PackageWithStatus) {
 }
 
 func printPackageYAML(packages []*list.PackageWithStatus) {
-
 	for i, pkg := range packages {
 		yamlData, err := yaml.Marshal(pkg)
 		if err != nil {
@@ -245,6 +250,22 @@ func printPackageYAML(packages []*list.PackageWithStatus) {
 		}
 
 		fmt.Println(string(yamlData))
+	}
+}
+
+func pkgNamespaceString(pkg list.PackageWithStatus) string {
+	if pkg.Package != nil {
+		return pkg.Package.Namespace
+	} else {
+		return ""
+	}
+}
+
+func pkgNameString(pkg list.PackageWithStatus) string {
+	if pkg.Package != nil {
+		return pkg.Package.Name
+	} else {
+		return ""
 	}
 }
 

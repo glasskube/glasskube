@@ -132,7 +132,7 @@ func (l *lister) fetchRepoAndInstalled(ctx context.Context, options ListOptions,
 	var repoErr, clPkgErr, pkgErr, pkgInfoErr error
 	wg := new(sync.WaitGroup)
 
-	if l.cachedIndex == nil {
+	if !l.useCache || l.cachedIndex == nil {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
