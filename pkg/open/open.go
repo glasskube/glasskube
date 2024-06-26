@@ -204,8 +204,8 @@ func (o *opener) service(
 
 	if manifest.Helm != nil {
 		svcNameCandidates = append(svcNameCandidates,
-			strings.Join([]string{pkg.GetName(), entrypoint.Name}, "-"),
-			strings.Join([]string{names.HelmResourceName(pkg, manifest), entrypoint.Name}, "-"),
+			strings.Join([]string{pkg.GetName(), entrypoint.ServiceName}, "-"),
+			strings.Join([]string{names.HelmResourceName(pkg, manifest), entrypoint.ServiceName}, "-"),
 			names.HelmResourceName(pkg, manifest),
 		)
 	}
