@@ -27,7 +27,7 @@ var configureCmdOptions = struct {
 }
 
 var configureCmd = &cobra.Command{
-	Use:               "configure [package-name]",
+	Use:               "configure <package-name>",
 	Short:             "Configure a package",
 	Args:              cobra.ExactArgs(1),
 	PreRun:            cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),

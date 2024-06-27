@@ -24,7 +24,7 @@ var (
 )
 
 var openCmd = &cobra.Command{
-	Use:   "open [package-name] [entrypoint]",
+	Use:   "open <package-name> [<entrypoint>]",
 	Short: "Open the Web UI of a package",
 	Long: `Open the Web UI of a package.
 If the package manifest has more than one entrypoint, specify the name of the entrypoint to open.`,

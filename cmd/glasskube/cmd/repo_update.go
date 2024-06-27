@@ -13,7 +13,7 @@ import (
 var repoUpdateCmdOptions = repoOptions{}
 
 var repoUpdateCmd = &cobra.Command{
-	Use:    "update [name]",
+	Use:    "update <name>",
 	Short:  "Update a package repository for the current cluster",
 	Args:   cobra.ExactArgs(1),
 	PreRun: cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),

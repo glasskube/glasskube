@@ -39,7 +39,7 @@ func (opts *ValuesOptions) AddFlagsToCommand(cmd *cobra.Command) {
 	flags.StringArrayVar(&opts.Values, "value", opts.Values,
 		"set a value via flag (can be used multiple times).\n"+
 			"You can create values referencing data in other resources using the following syntax: "+
-			"$<ReferenceKind>$[specifier...].\n"+
+			"$<ReferenceKind>$[<specifier>[,<specifier>...]].\n"+
 			"For example:\n"+
 			" * Reference a ConfigMap key: --value \"name=$ConfigMapRef$namespace,name,key\"\n"+
 			" * Reference a Secret key: --value \"name=$SecretRef$namespace,name,key\"\n"+
