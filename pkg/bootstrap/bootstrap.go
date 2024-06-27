@@ -233,7 +233,14 @@ func (c *BootstrapClient) applyManifests(
 
 		if err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
 			_, err = c.client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).
-				Apply(ctx, obj.GetName(), &obj, metav1.ApplyOptions{Force: true, FieldManager: "glasskube", DryRun: []string{metav1.DryRunAll}})
+				Apply(
+					ctx, obj.GetName(),
+					&obj,
+					metav1.ApplyOptions{
+						Force:        true,
+						FieldManager: "glasskube",
+						DryRun:       []string{metav1.DryRunAll},
+					})
 			return err
 		}); err != nil {
 			return err
