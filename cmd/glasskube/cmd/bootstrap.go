@@ -84,22 +84,12 @@ var bootstrapCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "\nAn error occurred during bootstrap:\n%v\n", err)
 			cliutils.ExitWithError()
 		}
-		if bootstrapCmdOptions.dryrun {
-			if err := printBootstrap(
-				manifests,
-				bootstrapCmdOptions.Output,
-			); err != nil {
-				fmt.Fprintf(os.Stderr, "\nAn error occurred in printing : %v\n", err)
-				cliutils.ExitWithError()
-			}
-		} else {
-			if err := printBootstrap(
-				manifests,
-				bootstrapCmdOptions.Output,
-			); err != nil {
-				fmt.Fprintf(os.Stderr, "\nAn error occurred in printing : %v\n", err)
-				cliutils.ExitWithError()
-			}
+		if err := printBootstrap(
+			manifests,
+			bootstrapCmdOptions.Output,
+		); err != nil {
+			fmt.Fprintf(os.Stderr, "\nAn error occurred in printing : %v\n", err)
+			cliutils.ExitWithError()
 		}
 	},
 }
