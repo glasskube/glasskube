@@ -1,7 +1,7 @@
 {{ define "pkg-update-modal" }}
   <div class="modal-dialog modal-dialog-centered" id="pkg-update-modal">
     <div class="modal-content">
-      <form hx-post="/packages/update">
+      <form hx-post="{{ .PackageHref }}/update">
         <input type="hidden" name="updateTransactionId" value="{{ .UpdateTransactionId }}" />
         <div class="modal-header">
           <h1 class="modal-title fs-5">Available Updates</h1>
@@ -19,7 +19,15 @@
             <tbody>
               {{ range .Updates }}
                 <tr>
-                  <td><b>{{ .Name }}</b></td>
+                  <td>
+                    <b
+                      >{{ if not .Package.IsNamespaceScoped }}
+                        {{ .Package.Name }}
+                      {{ else }}
+                        {{ .Package.Namespace }}/{{ .Package.Name }}
+                      {{ end }}</b
+                    >
+                  </td>
                   <td>{{ .CurrentVersion }}</td>
                   <td>{{ .LatestVersion }}</td>
                 </tr>

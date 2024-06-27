@@ -52,8 +52,7 @@ func (opts *KindOptions) AddFlagsToCommand(cmd *cobra.Command) {
 
 func DefaultKindOptions() KindOptions {
 	return KindOptions{
-		// TODO: Change to KindUnspecified to support namespaced packages
-		Kind: KindClusterPackage,
+		Kind: KindUnspecified,
 	}
 }
 
@@ -105,7 +104,7 @@ func getPackageOrClusterPackage(
 	pNotFound := !pkgTried || errp != nil
 	cpNotFound := !cpkgTried || errcp != nil
 	if pNotFound && cpNotFound {
-		return nil, fmt.Errorf("no Package or ClusterPackage found with name %v", name)
+		return nil, fmt.Errorf("no Package or ClusterPackage found with name %v: %w; %w", name, errp, errcp)
 	} else if !pNotFound && !cpNotFound {
 		return nil, fmt.Errorf("both Package and ClusterPackage found with name %v. Please specify the kind explicitly", name)
 	} else if !pNotFound && cpNotFound {

@@ -85,6 +85,14 @@ func (PackageScope) JSONSchema() *jsonschema.Schema {
 	}
 }
 
+func (s *PackageScope) IsCluster() bool {
+	return s == nil || *s == ScopeCluster
+}
+
+func (s *PackageScope) IsNamespaced() bool {
+	return s != nil && *s == ScopeNamespaced
+}
+
 type PackageManifest struct {
 	// Scope is optional (default is Cluster)
 	Scope            *PackageScope      `json:"scope,omitempty"`
