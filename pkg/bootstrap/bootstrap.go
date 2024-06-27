@@ -139,14 +139,11 @@ func (c *BootstrapClient) Bootstrap(
 		manifests = append(manifests, defaultRepository())
 	}
 
+	statusMessage("Applying Glasskube manifests", true)
 	if options.DryRun {
 		statusMessage("Dry-run mode enabled. Glasskube Manifests will not be applied.", true)
-		return manifests, nil
 	}
-
-	statusMessage("Applying Glasskube manifests", true)
-
-	if err = c.applyManifests(ctx, manifests); err != nil {
+	if err = c.applyManifests(ctx, manifests, options); err != nil {
 		telemetry.BootstrapFailure(time.Since(start))
 		statusMessage(fmt.Sprintf("Couldn't apply manifests: %v", err), false)
 		return nil, err
@@ -204,7 +201,11 @@ func (c *BootstrapClient) preprocessManifests(
 	return compositeErr
 }
 
-func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructured.Unstructured) error {
+func (c *BootstrapClient) applyManifests(
+	ctx context.Context,
+	objs []unstructured.Unstructured,
+	options BootstrapOptions,
+) error {
 	bar := progressbar.Default(int64(len(objs)), "Applying manifests")
 	progressbar.OptionClearOnFinish()(bar)
 	progressbar.OptionOnCompletion(nil)(bar)
@@ -232,7 +233,7 @@ func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructure
 
 		if err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
 			_, err = c.client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).
-				Apply(ctx, obj.GetName(), &obj, metav1.ApplyOptions{Force: true, FieldManager: "glasskube"})
+				Apply(ctx, obj.GetName(), &obj, metav1.ApplyOptions{Force: true, FieldManager: "glasskube", DryRun: []string{metav1.DryRunAll}})
 			return err
 		}); err != nil {
 			return err
@@ -250,14 +251,16 @@ func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructure
 
 		_ = bar.Add(1)
 	}
-
-	for _, obj := range checkWorkloads {
-		bar.Describe(fmt.Sprintf("Checking Status of %v (%v)", obj.GetName(), obj.GetKind()))
-		if err := c.checkWorkloadReady(obj.GetNamespace(), obj.GetName(), obj.GetKind(), 5*time.Minute); err != nil {
-			return err
+	if !options.DryRun {
+		for _, obj := range checkWorkloads {
+			bar.Describe(fmt.Sprintf("Checking Status of %v (%v)", obj.GetName(), obj.GetKind()))
+			if err := c.checkWorkloadReady(obj.GetNamespace(), obj.GetName(), obj.GetKind(), 5*time.Minute); err != nil {
+				return err
+			}
+			_ = bar.Add(1)
 		}
-		_ = bar.Add(1)
 	}
+
 	return nil
 }
 
