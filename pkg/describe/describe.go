@@ -21,7 +21,7 @@ func DescribeInstalledClusterPackage(ctx context.Context, pkgName string) (
 		return nil, nil, err
 	}
 
-	mf, err := getManifestForPkg(ctx, &pkg)
+	mf, err := GetManifestForPkg(ctx, &pkg)
 	return &pkg, mf, err
 }
 
@@ -34,11 +34,11 @@ func DescribeInstalledPackage(ctx context.Context, namespace string, name string
 		return nil, nil, err
 	}
 
-	mf, err := getManifestForPkg(ctx, &pkg)
+	mf, err := GetManifestForPkg(ctx, &pkg)
 	return &pkg, mf, err
 }
 
-func getManifestForPkg(ctx context.Context, pkg ctrlpkg.Package) (*v1alpha1.PackageManifest, error) {
+func GetManifestForPkg(ctx context.Context, pkg ctrlpkg.Package) (*v1alpha1.PackageManifest, error) {
 	if installedManifest, err := manifest.GetInstalledManifestForPackage(ctx, pkg); err == nil {
 		return installedManifest, nil
 	} else if !errors.Is(err, manifest.ErrPackageNoManifest) {
