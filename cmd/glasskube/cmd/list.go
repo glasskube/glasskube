@@ -23,7 +23,6 @@ type ListCmdOptions struct {
 	ShowLatestVersion bool
 	More              bool
 	OutputOptions
-	NamespaceOptions
 	KindOptions
 }
 
@@ -99,7 +98,6 @@ func init() {
 	listCmd.PersistentFlags().BoolVarP(&listCmdOptions.More, "more", "m", false,
 		"show additional information about (cluster-)packages (like --show-description --show-latest)")
 	listCmdOptions.OutputOptions.AddFlagsToCommand(listCmd)
-	listCmdOptions.NamespaceOptions.AddFlagsToCommand(listCmd)
 	listCmdOptions.KindOptions.AddFlagsToCommand(listCmd)
 
 	listCmd.MarkFlagsMutuallyExclusive("show-description", "more")
