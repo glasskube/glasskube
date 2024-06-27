@@ -151,23 +151,36 @@ func runAutoUpdate(cmd *cobra.Command, args []string) {
 	updater := update.NewUpdater(ctx).
 		WithStatusWriter(statuswriter.Stderr())
 
-	var pkgs v1alpha1.ClusterPackageList
-	if err := client.ClusterPackages().GetAll(ctx, &pkgs); err != nil {
+	var pkgs []ctrlpkg.Package
+
+	var cpkgList v1alpha1.ClusterPackageList
+	if err := client.ClusterPackages().GetAll(ctx, &cpkgList); err != nil {
 		panic(err)
 	}
 
-	var packageNames []string
-	for _, pkg := range pkgs.Items {
+	for i, pkg := range cpkgList.Items {
 		if pkg.AutoUpdatesEnabled() {
-			packageNames = append(packageNames, pkg.Name)
+			pkgs = append(pkgs, &cpkgList.Items[i])
 		}
 	}
-	if len(packageNames) == 0 {
+
+	var pkgList v1alpha1.PackageList
+	if err := client.Packages("").GetAll(ctx, &pkgList); err != nil {
+		panic(err)
+	}
+
+	for i, pkg := range pkgList.Items {
+		if pkg.AutoUpdatesEnabled() {
+			pkgs = append(pkgs, &pkgList.Items[i])
+		}
+	}
+
+	if len(pkgs) == 0 {
 		fmt.Fprintln(os.Stderr, "Automatic updates must be enabled for at least one package")
 		cliutils.ExitSuccess()
 	}
 
-	tx, err := updater.Prepare(ctx, update.GetClusterPackagesWithNames(packageNames))
+	tx, err := updater.Prepare(ctx, update.GetExact(pkgs))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error preparing update: %v\n", err)
 		cliutils.ExitWithError()
