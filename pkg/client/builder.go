@@ -6,15 +6,16 @@ import (
 )
 
 type packageBuilder struct {
-	name, version, repositoryName string
-	autoUpdate                    bool
-	values                        map[string]v1alpha1.ValueConfiguration
+	manifestName, version, repositoryName string
+	namespace, name                       string
+	autoUpdate                            bool
+	values                                map[string]v1alpha1.ValueConfiguration
 }
 
-func ClusterPackageBuilder(name string) *packageBuilder {
+func PackageBuilder(name string) *packageBuilder {
 	return &packageBuilder{
-		name:   name,
-		values: make(map[string]v1alpha1.ValueConfiguration),
+		manifestName: name,
+		values:       make(map[string]v1alpha1.ValueConfiguration),
 	}
 }
 
@@ -33,6 +34,16 @@ func (b *packageBuilder) WithRepositoryName(repositoryName string) *packageBuild
 	return b
 }
 
+func (b *packageBuilder) WithNamespace(namespace string) *packageBuilder {
+	b.namespace = namespace
+	return b
+}
+
+func (b *packageBuilder) WithName(name string) *packageBuilder {
+	b.name = name
+	return b
+}
+
 func (b *packageBuilder) WithValues(values map[string]v1alpha1.ValueConfiguration) *packageBuilder {
 	for name, value := range values {
 		b.values[name] = value
@@ -40,14 +51,33 @@ func (b *packageBuilder) WithValues(values map[string]v1alpha1.ValueConfiguratio
 	return b
 }
 
-func (b *packageBuilder) Build() *v1alpha1.ClusterPackage {
+func (b *packageBuilder) BuildClusterPackage() *v1alpha1.ClusterPackage {
 	pkg := v1alpha1.ClusterPackage{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: b.name,
+			Name: b.manifestName,
 		},
 		Spec: v1alpha1.PackageSpec{
 			PackageInfo: v1alpha1.PackageInfoTemplate{
-				Name:           b.name,
+				Name:           b.manifestName,
+				Version:        b.version,
+				RepositoryName: b.repositoryName,
+			},
+			Values: b.values,
+		},
+	}
+	pkg.SetAutoUpdatesEnabled(b.autoUpdate)
+	return &pkg
+}
+
+func (b *packageBuilder) BuildPackage() *v1alpha1.Package {
+	pkg := v1alpha1.Package{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      b.name,
+			Namespace: b.namespace,
+		},
+		Spec: v1alpha1.PackageSpec{
+			PackageInfo: v1alpha1.PackageInfoTemplate{
+				Name:           b.manifestName,
 				Version:        b.version,
 				RepositoryName: b.repositoryName,
 			},

@@ -9,6 +9,8 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
+
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/cliutils"
@@ -61,7 +63,7 @@ var updateCmd = &cobra.Command{
 				cliutils.ExitWithError()
 			}
 		} else {
-			tx, err = updater.Prepare(ctx, packageNames)
+			tx, err = updater.Prepare(ctx, packageNames, nil)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "❌ update preparation failed: %v\n", err)
 				cliutils.ExitWithError()
@@ -74,7 +76,7 @@ var updateCmd = &cobra.Command{
 				fmt.Fprintf(os.Stderr, "⛔ Update cancelled. No changes were made.\n")
 				cliutils.ExitSuccess()
 			}
-			updatedPackages, err := updater.Apply(ctx, tx)
+			updatedPackages, err := updater.ApplyBlocking(ctx, tx)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "❌ update failed: %v\n", err)
 				cliutils.ExitWithError()
@@ -91,10 +93,10 @@ func printTransaction(tx update.UpdateTransaction) {
 	for _, item := range tx.Items {
 		if item.UpdateRequired() {
 			fmt.Fprintf(w, "%v:\t%v\t-> %v\n",
-				item.Package.Name, item.Package.Spec.PackageInfo.Version, item.Version)
+				item.Package.GetName(), item.Package.GetSpec().PackageInfo.Version, item.Version)
 		} else {
 			fmt.Fprintf(w, "%v:\t%v\t(up-to-date)\n",
-				item.Package.Name, item.Package.Spec.PackageInfo.Version)
+				item.Package.GetName(), item.Package.GetSpec().PackageInfo.Version)
 		}
 	}
 	for _, req := range tx.Requirements {
@@ -103,7 +105,7 @@ func printTransaction(tx update.UpdateTransaction) {
 	_ = w.Flush()
 }
 
-func handleOutput(pkgs []v1alpha1.ClusterPackage) {
+func handleOutput(pkgs []ctrlpkg.Package) {
 	if updateCmdOptions.Output == "" {
 		return
 	}
@@ -111,7 +113,7 @@ func handleOutput(pkgs []v1alpha1.ClusterPackage) {
 	var outputData []byte
 	var err error
 	for i := range pkgs {
-		if gvks, _, err := scheme.Scheme.ObjectKinds(&pkgs[i]); err == nil && len(gvks) == 1 {
+		if gvks, _, err := scheme.Scheme.ObjectKinds(pkgs[i]); err == nil && len(gvks) == 1 {
 			pkgs[i].SetGroupVersionKind(gvks[0])
 		} else {
 			fmt.Fprintf(os.Stderr, "❌ failed to set GVK for package: %v\n", err)

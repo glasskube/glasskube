@@ -167,20 +167,20 @@ func runAutoUpdate(cmd *cobra.Command, args []string) {
 		cliutils.ExitSuccess()
 	}
 
-	tx, err := updater.Prepare(ctx, packageNames)
+	tx, err := updater.Prepare(ctx, packageNames, nil)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error preparing update: %v\n", err)
 		cliutils.ExitWithError()
 	}
 	printTransaction(*tx)
 
-	if updated, err := updater.Apply(ctx, tx); err != nil {
+	if updated, err := updater.ApplyBlocking(ctx, tx); err != nil {
 		fmt.Fprintf(os.Stderr, "Error applying update: %v\n", err)
 		cliutils.ExitWithError()
 	} else {
 		updatedNames := make([]string, len(updated))
 		for i := range updated {
-			updatedNames[i] = updated[i].Name
+			updatedNames[i] = updated[i].GetName()
 		}
 		fmt.Fprintf(os.Stderr, "Updated packages: %v\n", strings.Join(updatedNames, ", "))
 	}

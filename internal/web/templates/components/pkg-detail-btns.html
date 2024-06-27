@@ -1,11 +1,9 @@
 {{ define "pkg-detail-uninstall" }}
   <button
-    hx-post="/packages/uninstall/modal"
+    hx-get="{{ .PackageHref }}/uninstall"
     hx-target="#modal-container"
     hx-swap="innerHTML"
     hx-select="#pkg-uninstall-modal"
-    name="packageName"
-    value="{{ .PackageName }}"
     class="btn btn-danger btn-sm"
     data-bs-toggle="modal"
     data-bs-target="#modal-container">
@@ -16,7 +14,7 @@
 {{ define "pkg-detail-update" }}
   {{ if .UpdateAvailable }}
     <button
-      hx-get="/packages/update/modal"
+      hx-get="{{ .PackageHref }}/update"
       hx-target="#modal-container"
       hx-swap="innerHTML"
       hx-select="#pkg-update-modal"
@@ -45,7 +43,7 @@
       {{ else if and .Manifest .Manifest.Entrypoints }}
         <button
           class="btn btn-success btn-sm"
-          hx-post="/packages/open"
+          hx-post="{{ .PackageHref }}/open"
           hx-swap="none"
           name="packageName"
           value="{{ .PackageName }}">
