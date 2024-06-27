@@ -18,7 +18,7 @@ import (
 	"sync"
 	"syscall"
 
-	types2 "k8s.io/apimachinery/pkg/types"
+	apitypes "k8s.io/apimachinery/pkg/types"
 
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 
@@ -34,7 +34,7 @@ import (
 	"github.com/glasskube/glasskube/internal/manifestvalues"
 	"github.com/glasskube/glasskube/internal/repo"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
-	"github.com/glasskube/glasskube/internal/repo/types"
+	repotypes "github.com/glasskube/glasskube/internal/repo/types"
 	"github.com/glasskube/glasskube/internal/telemetry"
 	"github.com/glasskube/glasskube/internal/web/handler"
 	"github.com/glasskube/glasskube/pkg/bootstrap"
@@ -293,7 +293,7 @@ func (s *server) update(w http.ResponseWriter, r *http.Request) {
 		updates := make([]map[string]any, 0)
 		updater := update.NewUpdater(ctx).WithStatusWriter(statuswriter.Stderr())
 		var clpkgNames []string
-		var pkgNames []types2.NamespacedName
+		var pkgNames []apitypes.NamespacedName
 		if pkgName != "" {
 			packageHref = "/clusterpackages/" + pkgName
 			// update concerns cluster packages
@@ -322,14 +322,14 @@ func (s *server) update(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 				for _, item := range pkgList.Items {
-					pkgNames = append(pkgNames, types2.NamespacedName{
+					pkgNames = append(pkgNames, apitypes.NamespacedName{
 						Namespace: item.GetNamespace(),
 						Name:      item.GetName(),
 					})
 				}
 			} else {
 				// prepare update for a specific namespaced package
-				pkgNames = append(pkgNames, types2.NamespacedName{
+				pkgNames = append(pkgNames, apitypes.NamespacedName{
 					Namespace: namespace,
 					Name:      name,
 				})
@@ -459,11 +459,7 @@ func (s *server) open(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) handleOpen(ctx context.Context, w http.ResponseWriter, pkg ctrlpkg.Package) {
-	fwName := pkg.GetName()
-	if pkg.IsNamespaceScoped() {
-		fwName = cache.ObjectName{Namespace: pkg.GetNamespace(), Name: pkg.GetName()}.String()
-	}
-
+	fwName := cache.NewObjectName(pkg.GetNamespace(), pkg.GetName()).String()
 	if result, ok := s.forwarders[fwName]; ok {
 		result.WaitReady()
 		_ = cliutils.OpenInBrowser(result.Url)
@@ -527,11 +523,11 @@ func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 	packageUpdateAvailable := map[string]bool{}
 	var installed []*list.PackagesWithStatus
 	var available []*list.PackagesWithStatus
-	var installedPkgsNames []types2.NamespacedName
+	var installedPkgsNames []apitypes.NamespacedName
 	for _, pkgsWithStatus := range allPkgs {
 		if len(pkgsWithStatus.Packages) > 0 {
 			for _, pkgWithStatus := range pkgsWithStatus.Packages {
-				namespacedName := types2.NamespacedName{
+				namespacedName := apitypes.NamespacedName{
 					Namespace: pkgWithStatus.Package.Namespace,
 					Name:      pkgWithStatus.Package.Name,
 				}
@@ -817,7 +813,7 @@ func (s *server) handleAdvancedConfig(ctx context.Context, d *packageDetailPageC
 
 		if d.selectedVersion == "" {
 			d.selectedVersion = latestVersion
-		} else if !slices.ContainsFunc(idx.Versions, func(item types.PackageIndexItem) bool {
+		} else if !slices.ContainsFunc(idx.Versions, func(item repotypes.PackageIndexItem) bool {
 			return item.Version == d.selectedVersion
 		}) {
 			d.selectedVersion = latestVersion
@@ -849,8 +845,19 @@ func (s *server) handleAdvancedConfig(ctx context.Context, d *packageDetailPageC
 		if d.repositoryName != "" {
 			d.pkg.GetSpec().PackageInfo.RepositoryName = d.repositoryName
 		}
-		if d.manifest.Scope.IsCluster() {
-			if err := s.pkgClient.ClusterPackages().Update(ctx, d.pkg.(*v1alpha1.ClusterPackage)); err != nil {
+		switch pkg := d.pkg.(type) {
+		case *v1alpha1.ClusterPackage:
+			if err := s.pkgClient.ClusterPackages().Update(ctx, pkg); err != nil {
+				s.respondAlertAndLog(w, err,
+					fmt.Sprintf("An error occurred updating clusterpackage %v to version %v in repo %v",
+						d.manifestName, d.selectedVersion, d.repositoryName),
+					"danger")
+				return
+			} else {
+				s.respondSuccess(w)
+			}
+		case *v1alpha1.Package:
+			if err := s.pkgClient.Packages(d.pkg.GetNamespace()).Update(ctx, pkg); err != nil {
 				s.respondAlertAndLog(w, err,
 					fmt.Sprintf("An error occurred updating package %v to version %v in repo %v",
 						d.manifestName, d.selectedVersion, d.repositoryName),
@@ -859,16 +866,8 @@ func (s *server) handleAdvancedConfig(ctx context.Context, d *packageDetailPageC
 			} else {
 				s.respondSuccess(w)
 			}
-		} else {
-			if err := s.pkgClient.Packages(d.pkg.GetNamespace()).Update(ctx, d.pkg.(*v1alpha1.Package)); err != nil {
-				s.respondAlertAndLog(w, err,
-					fmt.Sprintf("An error occurred updating package %v to version %v in repo %v",
-						d.manifestName, d.selectedVersion, d.repositoryName),
-					"danger")
-				return
-			} else {
-				s.respondSuccess(w)
-			}
+		default:
+			panic("unexpected package type")
 		}
 	}
 }
@@ -1328,7 +1327,7 @@ func (s *server) isUpdateAvailableForPkg(ctx context.Context, pkg ctrlpkg.Packag
 		return false
 	}
 	if pkg.IsNamespaceScoped() {
-		return s.isUpdateAvailable(ctx, nil, []types2.NamespacedName{
+		return s.isUpdateAvailable(ctx, nil, []apitypes.NamespacedName{
 			{Namespace: pkg.GetNamespace(), Name: pkg.GetName()},
 		})
 	} else {
@@ -1336,7 +1335,7 @@ func (s *server) isUpdateAvailableForPkg(ctx context.Context, pkg ctrlpkg.Packag
 	}
 }
 
-func (s *server) isUpdateAvailable(ctx context.Context, clpkgs []string, pkgs []types2.NamespacedName) bool {
+func (s *server) isUpdateAvailable(ctx context.Context, clpkgs []string, pkgs []apitypes.NamespacedName) bool {
 	if tx, err := update.NewUpdater(ctx).Prepare(ctx, clpkgs, pkgs); err != nil {
 		fmt.Fprintf(os.Stderr, "Error checking for updates: %v\n", err)
 		return false
