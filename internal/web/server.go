@@ -18,8 +18,6 @@ import (
 	"sync"
 	"syscall"
 
-	apitypes "k8s.io/apimachinery/pkg/types"
-
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 
 	"github.com/glasskube/glasskube/internal/web/util"
@@ -291,62 +289,41 @@ func (s *server) update(w http.ResponseWriter, r *http.Request) {
 	} else {
 		packageHref := ""
 		updates := make([]map[string]any, 0)
-		updater := update.NewUpdater(ctx).WithStatusWriter(statuswriter.Stderr())
-		var clpkgNames []string
-		var pkgNames []apitypes.NamespacedName
+		updateGetters := make([]update.PackagesGetter, 0, 1)
 		if pkgName != "" {
 			packageHref = "/clusterpackages/" + pkgName
 			// update concerns cluster packages
 			if pkgName == "-" {
 				// prepare updates for all installed packages
-				var clPkgList v1alpha1.ClusterPackageList
-				if err := s.pkgClient.ClusterPackages().GetAll(ctx, &clPkgList); err != nil {
-					s.respondAlertAndLog(w, err, "An error occurred listing all clusterpackages for update", "danger")
-					return
-				}
-				for _, item := range clPkgList.Items {
-					clpkgNames = append(clpkgNames, item.Spec.PackageInfo.Name)
-				}
+				updateGetters = append(updateGetters, update.GetAllClusterPackages())
 			} else {
 				// prepare update for a specific package
-				clpkgNames = append(clpkgNames, pkgName)
+				updateGetters = append(updateGetters, update.GetClusterPackageWithName(pkgName))
 			}
 		} else {
 			// update concerns namespaced packages
 			packageHref = util.GetNamespacedPkgHref(manifestName, namespace, name)
 			if manifestName == "-" {
 				// prepare updates for all installed namespaced packages
-				var pkgList v1alpha1.PackageList
-				if err := s.pkgClient.Packages("").GetAll(ctx, &pkgList); err != nil {
-					s.respondAlertAndLog(w, err, "An error occurred listing all packages for update", "danger")
-					return
-				}
-				for _, item := range pkgList.Items {
-					pkgNames = append(pkgNames, apitypes.NamespacedName{
-						Namespace: item.GetNamespace(),
-						Name:      item.GetName(),
-					})
-				}
+				updateGetters = append(updateGetters, update.GetAllPackages(""))
 			} else {
 				// prepare update for a specific namespaced package
-				pkgNames = append(pkgNames, apitypes.NamespacedName{
-					Namespace: namespace,
-					Name:      name,
-				})
+				updateGetters = append(updateGetters, update.GetPackageWithName(namespace, name))
 			}
 		}
 
-		ut, err := updater.Prepare(ctx, clpkgNames, pkgNames)
+		updater := update.NewUpdater(ctx).WithStatusWriter(statuswriter.Stderr())
+		updateTx, err := updater.Prepare(ctx, updateGetters...)
 		if err != nil {
 			s.respondAlertAndLog(w, err, "An error occurred preparing update of "+pkgName, "danger")
 			return
 		}
 		utId := rand.Int()
 		s.updateMutex.Lock()
-		s.updateTransactions[utId] = *ut
+		s.updateTransactions[utId] = *updateTx
 		s.updateMutex.Unlock()
 
-		for _, u := range ut.Items {
+		for _, u := range updateTx.Items {
 			if u.UpdateRequired() {
 				updates = append(updates, map[string]any{
 					"Package":        u.Package,
@@ -355,7 +332,7 @@ func (s *server) update(w http.ResponseWriter, r *http.Request) {
 				})
 			}
 		}
-		for _, req := range ut.Requirements {
+		for _, req := range updateTx.Requirements {
 			updates = append(updates, map[string]any{
 				"Package":        req,
 				"CurrentVersion": "-",
@@ -488,18 +465,18 @@ func (s *server) clusterPackages(w http.ResponseWriter, r *http.Request) {
 	// Call isUpdateAvailable for each installed clusterpackage.
 	// This is not the same as getting all updates in a single transaction, because some dependency
 	// conflicts could be resolvable by installing individual clpkgs.
-	installedClPkgNames := make([]string, 0, len(clpkgs))
+	installedClpkgs := make([]ctrlpkg.Package, 0, len(clpkgs))
 	clpkgUpdateAvailable := map[string]bool{}
 	for _, pkg := range clpkgs {
 		if pkg.ClusterPackage != nil {
-			installedClPkgNames = append(installedClPkgNames, pkg.Name)
+			installedClpkgs = append(installedClpkgs, pkg.ClusterPackage)
 		}
-		clpkgUpdateAvailable[pkg.Name] = pkg.ClusterPackage != nil && s.isUpdateAvailableForClPkg(r.Context(), pkg.Name)
+		clpkgUpdateAvailable[pkg.Name] = s.isUpdateAvailableForPkg(r.Context(), pkg.ClusterPackage)
 	}
 
 	overallUpdatesAvailable := false
-	if len(installedClPkgNames) > 0 {
-		overallUpdatesAvailable = s.isUpdateAvailable(r.Context(), installedClPkgNames, nil)
+	if len(installedClpkgs) > 0 {
+		overallUpdatesAvailable = s.isUpdateAvailable(r.Context(), installedClpkgs)
 	}
 
 	tmplErr := s.templates.clusterPkgsPageTemplate.Execute(w, s.enrichPage(r, map[string]any{
@@ -523,20 +500,17 @@ func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 	packageUpdateAvailable := map[string]bool{}
 	var installed []*list.PackagesWithStatus
 	var available []*list.PackagesWithStatus
-	var installedPkgsNames []apitypes.NamespacedName
+	var installedPkgs []ctrlpkg.Package
 	for _, pkgsWithStatus := range allPkgs {
 		if len(pkgsWithStatus.Packages) > 0 {
 			for _, pkgWithStatus := range pkgsWithStatus.Packages {
-				namespacedName := apitypes.NamespacedName{
-					Namespace: pkgWithStatus.Package.Namespace,
-					Name:      pkgWithStatus.Package.Name,
-				}
-				installedPkgsNames = append(installedPkgsNames, namespacedName)
+				installedPkgs = append(installedPkgs, pkgWithStatus.Package)
 
 				// Call isUpdateAvailable for each installed package.
 				// This is not the same as getting all updates in a single transaction, because some dependency
 				// conflicts could be resolvable by installing individual packages.
-				packageUpdateAvailable[namespacedName.String()] = s.isUpdateAvailableForPkg(ctx, pkgWithStatus.Package)
+				packageUpdateAvailable[cache.MetaObjectToName(pkgWithStatus.Package).String()] =
+					s.isUpdateAvailableForPkg(ctx, pkgWithStatus.Package)
 			}
 			installed = append(installed, pkgsWithStatus)
 		} else {
@@ -545,8 +519,8 @@ func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	overallUpdatesAvailable := false
-	if len(installedPkgsNames) > 0 {
-		overallUpdatesAvailable = s.isUpdateAvailable(r.Context(), nil, installedPkgsNames)
+	if len(installedPkgs) > 0 {
+		overallUpdatesAvailable = s.isUpdateAvailable(r.Context(), installedPkgs)
 	}
 
 	tmplErr := s.templates.pkgsPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
@@ -602,7 +576,7 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 		opts := metav1.CreateOptions{}
 		err := install.NewInstaller(s.pkgClient).
 			WithStatusWriter(statuswriter.Stderr()).
-			InstallPackage(ctx, pkg, opts)
+			Install(ctx, pkg, opts)
 		if err != nil {
 			s.respondAlertAndLog(w, err, "An error occurred installing "+manifestName, "danger")
 		} else {
@@ -665,7 +639,7 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 		opts := metav1.CreateOptions{}
 		err := install.NewInstaller(s.pkgClient).
 			WithStatusWriter(statuswriter.Stderr()).
-			InstallClusterPackage(ctx, pkg, opts)
+			Install(ctx, pkg, opts)
 		if err != nil {
 			s.respondAlertAndLog(w, err, "An error occurred installing "+pkgName, "danger")
 		}
@@ -1318,25 +1292,15 @@ func withDecreasedTimeout(opts metav1.ListOptions) metav1.ListOptions {
 	return opts
 }
 
-func (s *server) isUpdateAvailableForClPkg(ctx context.Context, name string) bool {
-	return s.isUpdateAvailable(ctx, []string{name}, nil)
-}
-
 func (s *server) isUpdateAvailableForPkg(ctx context.Context, pkg ctrlpkg.Package) bool {
 	if pkg.IsNil() {
 		return false
 	}
-	if pkg.IsNamespaceScoped() {
-		return s.isUpdateAvailable(ctx, nil, []apitypes.NamespacedName{
-			{Namespace: pkg.GetNamespace(), Name: pkg.GetName()},
-		})
-	} else {
-		return s.isUpdateAvailable(ctx, []string{pkg.GetName()}, nil)
-	}
+	return s.isUpdateAvailable(ctx, []ctrlpkg.Package{pkg})
 }
 
-func (s *server) isUpdateAvailable(ctx context.Context, clpkgs []string, pkgs []apitypes.NamespacedName) bool {
-	if tx, err := update.NewUpdater(ctx).Prepare(ctx, clpkgs, pkgs); err != nil {
+func (s *server) isUpdateAvailable(ctx context.Context, pkgs []ctrlpkg.Package) bool {
+	if tx, err := update.NewUpdater(ctx).Prepare(ctx, update.GetExact(pkgs)); err != nil {
 		fmt.Fprintf(os.Stderr, "Error checking for updates: %v\n", err)
 		return false
 	} else {
