@@ -107,7 +107,7 @@ function HomepageVideo() {
         <div className="row">
           <div className="col col--8 col--offset-2 margin-vert--lg">
             <Heading as={'h2'} className={styles.colorWhite}>
-              Learn how to install cert-manager in less than 2 minutes using Glasskube
+              Learn how to use Glasskube in less than 2 minutes
             </Heading>
             <iframe width="100%" height="460" src="https://www.youtube-nocookie.com/embed/aIeTHGWsG2c?si=KUcqvY4coU89GmdK" title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen></iframe>
           </div>
