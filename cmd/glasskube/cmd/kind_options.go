@@ -39,7 +39,7 @@ func (kind *ResourceKind) String() string {
 
 // Type implements pflag.Value.
 func (r *ResourceKind) Type() string {
-	return fmt.Sprintf("[%v|%v]", KindPackage, KindClusterPackage)
+	return fmt.Sprintf("(%v|%v)", KindPackage, KindClusterPackage)
 }
 
 type KindOptions struct {

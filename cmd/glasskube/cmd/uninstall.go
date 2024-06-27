@@ -22,7 +22,7 @@ var uninstallCmdOptions = struct {
 }
 
 var uninstallCmd = &cobra.Command{
-	Use:               "uninstall [package-name]",
+	Use:               "uninstall <package-name>",
 	Short:             "Uninstall a package",
 	Long:              `Uninstall a package.`,
 	Args:              cobra.ExactArgs(1),

@@ -33,7 +33,7 @@ var updateCmdOptions struct {
 }
 
 var updateCmd = &cobra.Command{
-	Use:               "update [packages...]",
+	Use:               "update [<package-name>...]",
 	Short:             "Update some or all packages in your cluster",
 	PreRun:            cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
 	ValidArgsFunction: completeInstalledPackageNames,

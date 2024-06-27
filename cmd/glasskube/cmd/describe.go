@@ -33,7 +33,7 @@ var describeCmdOptions = struct {
 }{}
 
 var describeCmd = &cobra.Command{
-	Use:               "describe [package-name]",
+	Use:               "describe <package-name>",
 	Short:             "Describe a package",
 	Long:              "Shows additional information about the given package.",
 	Args:              cobra.ExactArgs(1),
