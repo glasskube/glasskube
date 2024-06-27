@@ -35,7 +35,7 @@ var autoUpdateEnableCmd = &cobra.Command{
 var autoUpdateDisableCmd = &cobra.Command{
 	Use:               "disable [...package]",
 	Short:             "Disable automatic updates for packages:",
-	PreRun:            cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
+	PreRun:            cliutils.SetupClientContext(false, &rootCmdOptions.SkipUpdateCheck),
 	ValidArgsFunction: completeInstalledPackageNames,
 	Run: runAutoUpdateEnableOrDisable(false,
 		"Enable automatic updates for the following packages", "Automatic updates disabled"),
