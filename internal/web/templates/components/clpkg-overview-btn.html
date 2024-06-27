@@ -1,8 +1,8 @@
-{{ define "pkg-overview-btn" }}
+{{ define "clpkg-overview-btn" }}
   <span id="{{ .ButtonId }}">
     {{ if eq .Status nil }}
       <a
-        href="/packages/{{ .PackageName }}#configuration"
+        href="{{ .PackageHref }}#configuration"
         hx-boost="true"
         hx-select="main"
         hx-target="main"
@@ -10,7 +10,7 @@
         class="btn btn-primary btn-sm w-100"
         >Install</a
       >
-    {{ else if not .Pkg.DeletionTimestamp.IsZero }}
+    {{ else if .InDeletion }}
       <div>
         <button type="button" class="btn btn-primary btn-sm fw-medium w-100" disabled>Uninstalling</button>
       </div>
@@ -21,8 +21,9 @@
         <span>Installation Failed</span>
       </div>
     {{ else if .UpdateAvailable }}
+      <!-- TODO update modal only for clpkgs or all?-->
       <button
-        hx-get="/packages/update/modal"
+        hx-get="{{ .PackageHref }}/update"
         hx-target="#modal-container"
         hx-swap="innerHTML"
         hx-select="#pkg-update-modal"
@@ -36,7 +37,7 @@
     {{ else if and .Manifest .Manifest.Entrypoints }}
       <button
         class="btn btn-success btn-sm w-100"
-        hx-post="/packages/open"
+        hx-post="{{ .PackageHref }}/open"
         hx-swap="none"
         name="packageName"
         value="{{ .PackageName }}">

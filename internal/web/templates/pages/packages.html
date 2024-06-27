@@ -8,57 +8,180 @@
     hx-swap="outerHTML">
     <div
       class="m-0 p-0"
-      id="pkgs-container-swapped"
-      hx-trigger="sse:refresh-pkg-overview"
+      id="package-overview-swapped"
+      hx-trigger="sse:refresh-package-overview"
       hx-get="/packages"
       hx-swap="innerHTML"
-      hx-select="#pkgs-container-swapped"
-      hx-target="#pkgs-container-swapped">
+      hx-select="#package-overview-swapped"
+      hx-target="#package-overview-swapped">
       {{ template "pkg-update-alert" . | ForPkgUpdateAlert }}
-      <div class="row row-cols-3 row-cols-xl-4 g-2">
-        {{ range .Packages }}
-          <div class="col">
-            <div class="card bg-body-secondary h-100 border-primary border-1">
-              <div class="card-body d-flex flex-column p-0">
-                <a
-                  class="flex-grow-1 d-flex align-items-center gap-1 text-reset text-decoration-none p-1"
-                  href="/packages/{{ .Name }}"
-                  hx-select="main"
-                  hx-target="main"
-                  hx-swap="outerHTML"
-                  hx-boost="true">
-                  <div class="flex-shrink-0 align-self-center">
-                    {{ if eq .IconUrl "" }}
-                      <!-- TODO the glasskube logo as fallback is probably not the best idea? -->
-                      <img
-                        src="/static/assets/glasskube-logo.svg"
-                        alt="{{ .Name }}"
-                        style="width: 3.25rem; height: auto;" />
-                    {{ else }}
-                      <img src="{{ .IconUrl }}" alt="{{ .Name }}" style="width: 3.25rem; height: auto;" />
-                    {{ end }}
-                  </div>
-                  <div class="flex-grow-1 align-self-start">
-                    <h6 class="text-reset m-0">{{ .Name }}</h6>
-                    <span
-                      class="lh-sm overflow-hidden"
-                      style="
+      <div class="row row-cols-1 g-2">
+        <div>
+          <h2 class="text-reset">Installed Packages</h2>
+
+          {{ if eq (len .InstalledPackages) 0 }}
+            <p>No packages installed yet in your cluster. You might want to try one of the packages below.</p>
+          {{ end }}
+
+          {{ range .InstalledPackages }}
+            <div class="col mt-2">
+              <div class="card bg-body-secondary h-100 border-primary border-1">
+                <div class="card-body d-flex flex-column p-1">
+                  <span class="flex-grow-1 d-flex align-items-center gap-1 text-reset text-decoration-none p-1">
+                    <div class="flex-shrink-0 align-self-center">
+                      {{ if eq .IconUrl "" }}
+                        <!-- TODO the glasskube logo as fallback is probably not the best idea? -->
+                        <img
+                          src="/static/assets/glasskube-logo.svg"
+                          alt="{{ .Name }}"
+                          style="width: 3.25rem; height: auto;" />
+                      {{ else }}
+                        <img src="{{ .IconUrl }}" alt="{{ .Name }}" style="width: 2rem; height: auto;" />
+                      {{ end }}
+                    </div>
+                    <div class="flex-grow-1 align-self-start">
+                      <h6 class="text-reset m-0">{{ .Name }}</h6>
+                      <span
+                        class="lh-sm overflow-hidden"
+                        style="
                         font-size: small;
                         display: -webkit-box;
                         -webkit-box-orient: vertical;
                         -webkit-line-clamp: 2;">
-                      {{ .ShortDescription }}
+                        {{ .ShortDescription }}
+                      </span>
+                    </div>
+
+                    <span class="align-self-center mx-auto">
+                      <a
+                        href="/packages/{{ .Name }}#configuration"
+                        class="flex-grow-1 d-flex align-items-center gap-1 btn btn-primary btn-sm"
+                        hx-select="main"
+                        hx-target="main"
+                        hx-swap="outerHTML"
+                        hx-boost="true"
+                        >Install</a
+                      >
                     </span>
-                  </div>
-                </a>
-                <div class="mb-1 mx-1">
-                  {{ template "pkg-overview-btn" ForPkgOverviewBtn . (index $.PackageUpdateAvailable .Name) }}
+                  </span>
+
+                  <table class="table table-sm table-borderless m-0 ms-1">
+                    <thead>
+                      <tr>
+                        <th scope="col" class="bg-body-secondary p-0">Name</th>
+                        <th scope="col" class="bg-body-secondary p-0">Namespace</th>
+                        <th scope="col" class="bg-body-secondary p-0">Repository</th>
+                        <th scope="col" class="bg-body-secondary p-0">Version</th>
+                        <th scope="col" class="bg-body-secondary p-0">Status</th>
+                        <th scope="col" class="bg-body-secondary p-0"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {{ range .Packages }}
+                        <tr>
+                          <td class="bg-body-secondary p-0">
+                            <a
+                              href="/packages/{{ .Name }}/{{ .Package.Namespace }}/{{ .Package.Name }}"
+                              class="text-reset"
+                              hx-select="main"
+                              hx-target="main"
+                              hx-swap="outerHTML"
+                              hx-boost="true">
+                              {{ .Package.Name }}
+                            </a>
+                          </td>
+                          <td class="bg-body-secondary p-0">{{ .Package.Namespace }}</td>
+                          <td class="bg-body-secondary p-0">{{ .Package.Spec.PackageInfo.RepositoryName }}</td>
+                          <td class="bg-body-secondary p-0">{{ .Package.Spec.PackageInfo.Version }}</td>
+                          <td class="bg-body-secondary p-0">{{ .Status.Status }}</td>
+                          <td class="bg-body-secondary p-0 pe-2 text-end">
+                            <a
+                              href="/packages/{{ .Name }}/{{ .Package.Namespace }}/{{ .Package.Name }}"
+                              class="px-1 py-0 btn btn-sm btn-outline-primary fw-normal border-1"
+                              hx-select="main"
+                              hx-target="main"
+                              hx-swap="outerHTML"
+                              hx-boost="true">
+                              <i class="bi bi-gear-fill me-1"></i>Configure
+                            </a>
+                          </td>
+                        </tr>
+                      {{ end }}
+                    </tbody>
+                  </table>
                 </div>
               </div>
+            </div>
+          {{ end }}
+        </div>
+
+        {{ if or (ne (len .AvailablePackages) 0) (eq (len .InstalledPackages) 0) }}
+          <div class="mt-3">
+            <h2 class="text-reset">Available Packages</h2>
+
+            {{ if and (eq (len .AvailablePackages) 0) (eq (len .InstalledPackages) 0) }}
+              <p>No packages are available right now.</p>
+            {{ end }}
+            <div class="row row-cols-3 row-cols-xl-4 g-2">
+              {{ range .AvailablePackages }}
+                <!-- TODO make this a reusable template -->
+                <div class="col">
+                  <div class="card bg-body-secondary h-100 border-primary border-1">
+                    <div class="card-body d-flex flex-column p-0">
+                      <a
+                        class="flex-grow-1 d-flex align-items-center gap-1 text-reset text-decoration-none p-1"
+                        href="/packages/{{ .Name }}"
+                        hx-select="main"
+                        hx-target="main"
+                        hx-swap="outerHTML"
+                        hx-boost="true">
+                        <div class="flex-shrink-0 align-self-center">
+                          {{ if eq .IconUrl "" }}
+                            <!-- TODO the glasskube logo as fallback is probably not the best idea? -->
+                            <img
+                              src="/static/assets/glasskube-logo.svg"
+                              alt="{{ .Name }}"
+                              style="width: 3.25rem; height: auto;" />
+                          {{ else }}
+                            <img src="{{ .IconUrl }}" alt="{{ .Name }}" style="width: 3.25rem; height: auto;" />
+                          {{ end }}
+                        </div>
+                        <div class="flex-grow-1 align-self-start">
+                          <h6 class="text-reset m-0">{{ .Name }}</h6>
+                          <span
+                            class="lh-sm overflow-hidden"
+                            style="
+                        font-size: small;
+                        display: -webkit-box;
+                        -webkit-box-orient: vertical;
+                        -webkit-line-clamp: 2;">
+                            {{ .ShortDescription }}
+                          </span>
+                        </div>
+                      </a>
+                      <div class="mb-1 mx-1">
+                        <a
+                          href="/packages/{{ .Name }}#configuration"
+                          hx-boost="true"
+                          hx-select="main"
+                          hx-target="main"
+                          hx-swap="outerHTML"
+                          class="btn btn-primary btn-sm w-100"
+                          >Install</a
+                        >
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {{ end }}
             </div>
           </div>
         {{ end }}
       </div>
     </div>
   </div>
+{{ end }}
+
+{{ define "installed-pkg-table-cell" }}
+
 {{ end }}

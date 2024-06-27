@@ -57,7 +57,7 @@ var describeCmd = &cobra.Command{
 			cliutils.ExitWithError()
 		}
 
-		pkg, manifest, err := describe.DescribeInstalledPackage(ctx, pkgName)
+		pkg, manifest, err := describe.DescribeInstalledClusterPackage(ctx, pkgName)
 		if err != nil && !apierrors.IsNotFound(err) {
 			// Unhandled error -> exit
 			fmt.Fprintf(os.Stderr, "❌ Could not describe package %v: %v\n", pkgName, err)
