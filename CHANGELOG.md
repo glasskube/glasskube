@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.11.0](https://github.com/glasskube/glasskube/compare/v0.10.1...v0.11.0) (2024-06-27)
+
+
+### Features
+
+* **cli:** add ascii art on glasskube version ([#879](https://github.com/glasskube/glasskube/issues/879)) ([3040ab1](https://github.com/glasskube/glasskube/commit/3040ab10f156a551c1bcbbaa06c79e819460dad3))
+
+
+### Bug Fixes
+
+* **cli:** standardize usage texts ([#848](https://github.com/glasskube/glasskube/issues/848)) ([7d23c1e](https://github.com/glasskube/glasskube/commit/7d23c1e638c406e827a25388a56efd0707eeecac))
+* **deps:** update module github.com/yuin/goldmark to v1.7.4 ([#868](https://github.com/glasskube/glasskube/issues/868)) ([d7ce5fa](https://github.com/glasskube/glasskube/commit/d7ce5fa72434e93720a9681279e8ad3e5e058cfe))
+* **open:** fix typo in service name candidate ([#885](https://github.com/glasskube/glasskube/issues/885)) ([921d049](https://github.com/glasskube/glasskube/commit/921d049ff4f3575ee863a1f2ed3f5b78ea94bf47))
+
+
+### Other
+
+* **website:** configure eslint with docusaurus, react-ts and prettier plugins ([#858](https://github.com/glasskube/glasskube/issues/858)) ([613cbb7](https://github.com/glasskube/glasskube/commit/613cbb728da7cd1329b75b3148b17c2cb01ea50b))
+
+
+### Docs
+
+* exchange static image with gif ([#862](https://github.com/glasskube/glasskube/issues/862)) ([946baf4](https://github.com/glasskube/glasskube/commit/946baf46f4872ed2b45188dfb378ed0f2df6cb24))
+* **website:** exchange repo mockup with actual screenshots ([#852](https://github.com/glasskube/glasskube/issues/852)) ([8adf8fb](https://github.com/glasskube/glasskube/commit/8adf8fb8e20f29e635eb9ce812338dd068f297bb))
+* **website:** fix broken link ([#886](https://github.com/glasskube/glasskube/issues/886)) ([146dc25](https://github.com/glasskube/glasskube/commit/146dc25b11771cb81aa782fa9ec4895bccdd4a07))
+* **website:** fix typo ([#878](https://github.com/glasskube/glasskube/issues/878)) ([e6ebb8c](https://github.com/glasskube/glasskube/commit/e6ebb8c16b3f41976e41b86ed5d4d130ed80fa32))
+* **website:** glasskube is backed by Y Combinator ([#853](https://github.com/glasskube/glasskube/issues/853)) ([05e2ef7](https://github.com/glasskube/glasskube/commit/05e2ef7ce37af1ee31618dbb49258ab45d3a8a37))
+
 ## [0.10.1](https://github.com/glasskube/glasskube/compare/v0.10.0...v0.10.1) (2024-06-24)
 
 
