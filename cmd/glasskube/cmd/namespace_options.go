@@ -16,8 +16,8 @@ func (opt *NamespaceOptions) AddFlagsToCommand(cmd *cobra.Command) {
 }
 
 func (opt *NamespaceOptions) GetActualNamespace(ctx context.Context) string {
-	if configureCmdOptions.Namespace != "" {
-		return configureCmdOptions.Namespace
+	if opt.Namespace != "" {
+		return opt.Namespace
 	} else {
 		rawConfig := clicontext.RawConfigFromContext(ctx)
 		if current, ok := rawConfig.Contexts[rawConfig.CurrentContext]; ok && current.Namespace != "" {
