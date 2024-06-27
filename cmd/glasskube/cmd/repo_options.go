@@ -28,7 +28,7 @@ func (t *repoAuthType) Set(v string) error {
 }
 
 func (e *repoAuthType) Type() string {
-	return fmt.Sprintf("[%v|%v|%v]", repoNoAuth, repoBasicAuth, repoBearerAuth)
+	return fmt.Sprintf("(%v|%v|%v)", repoNoAuth, repoBasicAuth, repoBearerAuth)
 }
 
 const (

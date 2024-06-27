@@ -14,7 +14,7 @@ import (
 var repoAddCmdOptions = repoOptions{}
 
 var repoAddCmd = &cobra.Command{
-	Use:    "add [name] [url]",
+	Use:    "add <name> <url>",
 	Short:  "Add a package repository to the current cluster",
 	Args:   cobra.ExactArgs(2),
 	PreRun: cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
