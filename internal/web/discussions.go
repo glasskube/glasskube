@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/web/util"
 
 	"github.com/glasskube/glasskube/internal/giscus"
@@ -36,12 +37,17 @@ func (s *server) packageDiscussion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	autoUpdate := ""
+	if pkg != nil {
+		autoUpdate = clientutils.AutoUpdateString(pkg, "Disabled")
+	}
+
 	s.handlePackageDiscussionPage(w, r, &packageDetailPageContext{
 		repositoryName: repositoryName,
 		manifestName:   manifestName,
 		pkg:            pkg,
 		manifest:       manifest,
-	})
+	}, autoUpdate)
 
 }
 
@@ -60,12 +66,17 @@ func (s *server) clusterPackageDiscussion(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	autoUpdate := ""
+	if pkg != nil {
+		autoUpdate = clientutils.AutoUpdateString(pkg, "Disabled")
+	}
+
 	s.handlePackageDiscussionPage(w, r, &packageDetailPageContext{
 		repositoryName: repositoryName,
 		manifestName:   pkgName,
 		pkg:            pkg,
 		manifest:       manifest,
-	})
+	}, autoUpdate)
 }
 
 func (s *server) handleGiscus(r *http.Request) {
@@ -73,7 +84,7 @@ func (s *server) handleGiscus(r *http.Request) {
 	telemetry.SetUserProperty("github_url", githubUrl)
 }
 
-func (s *server) handlePackageDiscussionPage(w http.ResponseWriter, r *http.Request, d *packageDetailPageContext) {
+func (s *server) handlePackageDiscussionPage(w http.ResponseWriter, r *http.Request, d *packageDetailPageContext, autoUpdate string) {
 	var idx repo.PackageIndex
 	if err := s.repoClientset.ForRepoWithName(d.repositoryName).FetchPackageIndex(d.manifestName, &idx); err != nil {
 		s.respondAlertAndLog(w, err, "An error occurred fetching versions of "+d.manifestName, "danger")
@@ -103,6 +114,7 @@ func (s *server) handlePackageDiscussionPage(w http.ResponseWriter, r *http.Requ
 		"ShowDiscussionLink": true,
 		"PackageHref":        pkgHref,
 		"DiscussionHref":     fmt.Sprintf("%s/discussion", pkgHref),
+		"AutoUpdate":         autoUpdate,
 	}, nil))
 	checkTmplError(err, fmt.Sprintf("package-discussion (%s)", d.manifestName))
 }
