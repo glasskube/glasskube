@@ -29,7 +29,7 @@ type bootstrapOptions struct {
 	force                   bool
 	createDefaultRepository bool
 	yes                     bool
-	dryrun                  bool
+	dryRun                  bool
 	OutputOptions
 }
 
@@ -77,6 +77,12 @@ var bootstrapCmd = &cobra.Command{
 			}
 		}
 
+		if bootstrapCmdOptions.dryRun {
+			fmt.Fprintln(os.Stderr,
+				"🔎 Dry-run mode is enabled. "+
+					"Nothing will be changed in your cluster, but validations will still be run.")
+		}
+
 		verifyLegalUpdate(ctx, installedVersion, targetVersion)
 
 		manifests, err := client.Bootstrap(ctx, bootstrapCmdOptions.asBootstrapOptions())
@@ -102,7 +108,7 @@ func (o bootstrapOptions) asBootstrapOptions() bootstrap.BootstrapOptions {
 		DisableTelemetry:        o.disableTelemetry,
 		Force:                   o.force,
 		CreateDefaultRepository: o.createDefaultRepository,
-		DryRun:                  o.dryrun,
+		DryRun:                  o.dryRun,
 	}
 }
 
@@ -223,8 +229,8 @@ func init() {
 	bootstrapCmd.Flags().BoolVar(&bootstrapCmdOptions.createDefaultRepository, "create-default-repository",
 		bootstrapCmdOptions.createDefaultRepository,
 		"Toggle creation of the default glasskube package repository")
-	bootstrapCmd.PersistentFlags().BoolVar(&bootstrapCmdOptions.dryrun, "dry-run", false,
-		"simulate the bootstrapping of Glasskube without actually bootstrapping it")
+	bootstrapCmd.PersistentFlags().BoolVar(&bootstrapCmdOptions.dryRun, "dry-run", false,
+		"Do not make any changes but run all validations")
 	bootstrapCmd.Flags().BoolVar(&bootstrapCmdOptions.yes, "yes", false, "Skip confirmation prompt")
 	bootstrapCmd.MarkFlagsMutuallyExclusive("url", "type")
 	bootstrapCmd.MarkFlagsMutuallyExclusive("url", "latest")

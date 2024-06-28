@@ -140,9 +140,7 @@ func (c *BootstrapClient) Bootstrap(
 	}
 
 	statusMessage("Applying Glasskube manifests", true)
-	if options.DryRun {
-		statusMessage("Dry-run mode enabled. Glasskube Manifests will not be applied.", true)
-	}
+
 	if err = c.applyManifests(ctx, manifests, options); err != nil {
 		telemetry.BootstrapFailure(time.Since(start))
 		statusMessage(fmt.Sprintf("Couldn't apply manifests: %v", err), false)
@@ -216,42 +214,31 @@ func (c *BootstrapClient) applyManifests(
 		gvk := obj.GroupVersionKind()
 		mapping, err := c.mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 		if err != nil {
-			return fmt.Errorf("could not get restmapping for %v %v: %w", obj.GetKind(), obj.GetName(), err)
+			if options.DryRun {
+				continue
+			} else {
+				return fmt.Errorf("could not get restmapping for %v %v: %w", obj.GetKind(), obj.GetName(), err)
+			}
 		}
 
 		bar.Describe(fmt.Sprintf("Applying %v (%v)", obj.GetName(), obj.GetKind()))
 		if obj.GetKind() == "Job" {
-			options := metav1.DeletePropagationBackground
-			err := c.client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).Delete(
-				ctx,
-				obj.GetName(),
-				metav1.DeleteOptions{PropagationPolicy: &options})
+			err := c.client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).
+				Delete(ctx, obj.GetName(), getDeleteOptions(options))
 			if err != nil && !apierrors.IsNotFound(err) {
 				return err
 			}
 		}
 
-		var dryrun []string
-		if options.DryRun {
-			dryrun = []string{metav1.DryRunAll}
-		}
-
 		if err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
 			_, err = c.client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).
-				Apply(
-					ctx, obj.GetName(),
-					&obj,
-					metav1.ApplyOptions{
-						Force:        true,
-						FieldManager: "glasskube",
-						DryRun:       dryrun,
-					})
+				Apply(ctx, obj.GetName(), &obj, getApplyOptions(options))
 			return err
-		}); err != nil {
+		}); err != nil && (!options.DryRun || !apierrors.IsNotFound(err)) {
 			return err
 		}
 
-		if obj.GetKind() == constants.Deployment {
+		if obj.GetKind() == constants.Deployment && !options.DryRun {
 			checkWorkloads = append(checkWorkloads, &objs[i])
 			bar.ChangeMax(bar.GetMax() + 1)
 		} else if obj.GetKind() == "CustomResourceDefinition" {
@@ -263,17 +250,34 @@ func (c *BootstrapClient) applyManifests(
 
 		_ = bar.Add(1)
 	}
-	if !options.DryRun {
-		for _, obj := range checkWorkloads {
-			bar.Describe(fmt.Sprintf("Checking Status of %v (%v)", obj.GetName(), obj.GetKind()))
-			if err := c.checkWorkloadReady(obj.GetNamespace(), obj.GetName(), obj.GetKind(), 5*time.Minute); err != nil {
-				return err
-			}
-			_ = bar.Add(1)
+
+	for _, obj := range checkWorkloads {
+		bar.Describe(fmt.Sprintf("Checking Status of %v (%v)", obj.GetName(), obj.GetKind()))
+		if err := c.checkWorkloadReady(obj.GetNamespace(), obj.GetName(), obj.GetKind(), 5*time.Minute); err != nil {
+			return err
 		}
+		_ = bar.Add(1)
 	}
 
 	return nil
+}
+
+func getApplyOptions(options BootstrapOptions) metav1.ApplyOptions {
+	applyOptions := metav1.ApplyOptions{Force: true, FieldManager: "glasskube"}
+	if options.DryRun {
+		applyOptions.DryRun = []string{metav1.DryRunAll}
+	}
+	return applyOptions
+}
+
+func getDeleteOptions(options BootstrapOptions) metav1.DeleteOptions {
+	deleteOptions := metav1.DeleteOptions{
+		PropagationPolicy: util.Pointer(metav1.DeletePropagationBackground),
+	}
+	if options.DryRun {
+		deleteOptions.DryRun = []string{metav1.DryRunAll}
+	}
+	return deleteOptions
 }
 
 func (c *BootstrapClient) handleTelemetry(disabled bool, elapsed time.Duration) {
