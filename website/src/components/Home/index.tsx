@@ -234,8 +234,8 @@ export default function Home({ homePageBlogMetadata, recentPosts }: HomepageProp
       <main>
         <HomepageFeatures/>
         <HomepageScreenshots/>
-        <HomepageBlogs homePageBlogMetadata={homePageBlogMetadata} recentPosts={recentPosts}/>
         <HomepageVideo/>
+        <HomepageBlogs homePageBlogMetadata={homePageBlogMetadata} recentPosts={recentPosts}/>
         <HomepageNewsletter/>
       </main>
     </Layout>

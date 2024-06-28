@@ -2,25 +2,25 @@ import React from 'react';
 import Link from '@docusaurus/Link';
 import useBaseUrl from '@docusaurus/useBaseUrl';
 import styles from './styles.module.css';
-import {Content} from '@theme/BlogPostPage';
+import { Content } from '@theme/BlogPostPage';
 import clsx from 'clsx';
 
 interface HomepageProps {
   homePageBlogMetadata: any;
-  readonly recentPosts: readonly {readonly Preview: Content; metadata: any}[];
+  readonly recentPosts: readonly { readonly Preview: Content; metadata: any }[];
 }
 
-const LatestBlogPosts = ({recentPosts}: HomepageProps) => {
+const LatestBlogPosts = ({ recentPosts }: HomepageProps) => {
   return (
     <section className={styles.latestBlogPosts}>
       <div className="container margin-top--lg">
         <div className="row">
           <div className="col text--center">
-            <h2>Check our blog</h2>
+            <h2>Recent blog posts</h2>
             <p>
-              We are working on a blog post series covering topics from general
-              open source to specific Kubernetes related topics.{' '}
-              <Link to={useBaseUrl('/blog')}>Check it out!</Link>
+              We are regularly writing <Link to={useBaseUrl('/blog')}>blog posts</Link> and
+              publish <Link to={useBaseUrl('/guides/categories/')}>guides</Link>. Find our latest blog
+              posts below.
             </p>
           </div>
         </div>
@@ -54,11 +54,10 @@ const LatestBlogPosts = ({recentPosts}: HomepageProps) => {
               className={clsx(
                 'button',
                 'button--secondary',
-                'button--lg',
                 styles.moreBlogs,
               )}
               to={useBaseUrl('/blog')}>
-              More blogs
+              More posts
             </Link>
           </div>
         </div>
