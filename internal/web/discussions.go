@@ -20,6 +20,11 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 )
 
+type discussionPageContext struct {
+	packageDetailPageContext
+	AutoUpdate string
+}
+
 // packageDiscussion is a full page for showing various discussions, reactions, etc.
 func (s *server) packageDiscussion(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
@@ -42,16 +47,17 @@ func (s *server) packageDiscussion(w http.ResponseWriter, r *http.Request) {
 		autoUpdate = clientutils.AutoUpdateString(pkg, "Disabled")
 	}
 
-	s.handlePackageDiscussionPage(w, r, &packageDetailPageContext{
-		repositoryName: repositoryName,
-		manifestName:   manifestName,
-		pkg:            pkg,
-		manifest:       manifest,
-	}, autoUpdate)
-
+	s.handlePackageDiscussionPage(w, r, &discussionPageContext{
+		packageDetailPageContext: packageDetailPageContext{
+			repositoryName: repositoryName,
+			manifestName:   manifestName,
+			pkg:            pkg,
+			manifest:       manifest,
+		},
+		AutoUpdate: autoUpdate,
+	})
 }
 
-// clusterPackageDiscussion is a full page for showing various discussions, reactions, etc.
 func (s *server) clusterPackageDiscussion(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		s.handleGiscus(r)
@@ -71,12 +77,15 @@ func (s *server) clusterPackageDiscussion(w http.ResponseWriter, r *http.Request
 		autoUpdate = clientutils.AutoUpdateString(pkg, "Disabled")
 	}
 
-	s.handlePackageDiscussionPage(w, r, &packageDetailPageContext{
-		repositoryName: repositoryName,
-		manifestName:   pkgName,
-		pkg:            pkg,
-		manifest:       manifest,
-	}, autoUpdate)
+	s.handlePackageDiscussionPage(w, r, &discussionPageContext{
+		packageDetailPageContext: packageDetailPageContext{
+			repositoryName: repositoryName,
+			manifestName:   pkgName,
+			pkg:            pkg,
+			manifest:       manifest,
+		},
+		AutoUpdate: autoUpdate,
+	})
 }
 
 func (s *server) handleGiscus(r *http.Request) {
@@ -84,7 +93,7 @@ func (s *server) handleGiscus(r *http.Request) {
 	telemetry.SetUserProperty("github_url", githubUrl)
 }
 
-func (s *server) handlePackageDiscussionPage(w http.ResponseWriter, r *http.Request, d *packageDetailPageContext, autoUpdate string) {
+func (s *server) handlePackageDiscussionPage(w http.ResponseWriter, r *http.Request, d *discussionPageContext) {
 	var idx repo.PackageIndex
 	if err := s.repoClientset.ForRepoWithName(d.repositoryName).FetchPackageIndex(d.manifestName, &idx); err != nil {
 		s.respondAlertAndLog(w, err, "An error occurred fetching versions of "+d.manifestName, "danger")
@@ -114,7 +123,7 @@ func (s *server) handlePackageDiscussionPage(w http.ResponseWriter, r *http.Requ
 		"ShowDiscussionLink": true,
 		"PackageHref":        pkgHref,
 		"DiscussionHref":     fmt.Sprintf("%s/discussion", pkgHref),
-		"AutoUpdate":         autoUpdate,
+		"AutoUpdate":         d.AutoUpdate,
 	}, nil))
 	checkTmplError(err, fmt.Sprintf("package-discussion (%s)", d.manifestName))
 }
