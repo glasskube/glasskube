@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
@@ -26,39 +27,28 @@ var repoDeleteCmd = &cobra.Command{
 func deleteRepository(ctx context.Context, repoName string) {
 	client := cliutils.PackageClient(ctx)
 
-	var repos v1alpha1.PackageRepositoryList
-	if err := client.PackageRepositories().GetAll(ctx, &repos); err != nil {
+	var targetRepo v1alpha1.PackageRepository
+	if err := client.PackageRepositories().Get(ctx, repoName, &targetRepo); err != nil {
 		fmt.Fprintf(os.Stderr, "❌ error listing package repository: %v\n", err)
-		cliutils.ExitWithError()
-	}
-
-	var targetRepo *v1alpha1.PackageRepository
-	for i := range repos.Items {
-		if repos.Items[i].Name == repoName {
-			targetRepo = &repos.Items[i]
-			break
-		}
-	}
-
-	if targetRepo == nil {
-		fmt.Fprintf(os.Stderr, "❌ repository %s not found\n", repoName)
 		cliutils.ExitWithError()
 	}
 
 	var pkgs v1alpha1.PackageList
 	if err := client.Packages("").GetAll(ctx, &pkgs); err != nil {
 		fmt.Fprintf(os.Stderr, "Could not list packages: %v", err)
+		cliutils.ExitWithError()
 	}
 
 	var clpkgs v1alpha1.ClusterPackageList
 	if err := client.ClusterPackages().GetAll(ctx, &clpkgs); err != nil {
 		fmt.Fprintf(os.Stderr, "Could not list Cluster packages: %v", err)
+		cliutils.ExitWithError()
 	}
 
 	repoPackages := getPackagesFromRepo(clpkgs, pkgs, repoName)
 	if len(repoPackages) > 0 {
 		fmt.Printf("Repository %s cannot be deleted, because the following packages are installed from this repository: %v\n",
-			repoName, repoPackages)
+			repoName, strings.Join(repoPackages, ", "))
 		cliutils.ExitWithError()
 	}
 
@@ -66,7 +56,7 @@ func deleteRepository(ctx context.Context, repoName string) {
 		fmt.Println("❌ Repository Deletion Cancelled")
 		cliutils.ExitWithError()
 	}
-	err := client.PackageRepositories().Delete(ctx, targetRepo, metav1.DeleteOptions{})
+	err := client.PackageRepositories().Delete(ctx, &targetRepo, metav1.DeleteOptions{})
 	if err != nil {
 		fmt.Println("Error deleting repository:", err)
 		cliutils.ExitWithError()
