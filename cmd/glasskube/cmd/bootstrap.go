@@ -29,6 +29,7 @@ type bootstrapOptions struct {
 	force                   bool
 	createDefaultRepository bool
 	yes                     bool
+	noProgress              bool
 	OutputOptions
 }
 
@@ -76,7 +77,7 @@ var bootstrapCmd = &cobra.Command{
 			}
 		}
 
-		verifyLegalUpdate(ctx, installedVersion, targetVersion)
+		verifyLegalUpdate(ctx, installedVersion, targetVersion, bootstrapCmdOptions.noProgress)
 
 		manifests, err := client.Bootstrap(ctx, bootstrapCmdOptions.asBootstrapOptions())
 		if err != nil {
@@ -101,6 +102,7 @@ func (o bootstrapOptions) asBootstrapOptions() bootstrap.BootstrapOptions {
 		DisableTelemetry:        o.disableTelemetry,
 		Force:                   o.force,
 		CreateDefaultRepository: o.createDefaultRepository,
+		NoProgress:              o.noProgress,
 	}
 }
 
@@ -113,7 +115,7 @@ func printBootsrap(manifests []unstructured.Unstructured, output OutputFormat) e
 	return nil
 }
 
-func verifyLegalUpdate(ctx context.Context, installedVersion, targetVersion *semver.Version) {
+func verifyLegalUpdate(ctx context.Context, installedVersion, targetVersion *semver.Version, noProgress bool) {
 	breakings := map[*semver.Version]string{
 		semver.New(0, 10, 0, "", ""): "In release v0.10.0, Packages are renamed to ClusterPackages and " +
 			"Packages are reintroduced as namespaced resources.\n" +
@@ -124,51 +126,63 @@ func verifyLegalUpdate(ctx context.Context, installedVersion, targetVersion *sem
 	if installedVersion != nil && targetVersion != nil {
 		for version, msg := range breakings {
 			if installedVersion.LessThan(version) && !targetVersion.LessThan(version) {
-				fmt.Fprintf(os.Stderr,
-					"❗ Upgrade from version v%v to v%v is not possible due to a breaking change in v%v\n\n"+
-						"Details: %v\n\n"+
-						"For more information, please refer to our documentation: "+
-						"https://glasskube.dev/docs/getting-started/upgrading/#%v\n",
-					installedVersion, targetVersion, version, msg, version)
+				if !noProgress {
+					fmt.Fprintf(os.Stderr,
+						"❗ Upgrade from version v%v to v%v is not possible due to a breaking change in v%v\n\n"+
+							"Details: %v\n\n"+
+							"For more information, please refer to our documentation: "+
+							"https://glasskube.dev/docs/getting-started/upgrading/#%v\n",
+						installedVersion, targetVersion, version, msg, version)
+				}
 				cliutils.ExitWithError()
 			}
 		}
 		if installedVersion.GreaterThan(targetVersion) {
-			fmt.Fprintf(os.Stderr,
-				"⚠️  Glasskube is already installed in this cluster in the newer version v%v. "+
-					"You are about to install version v%v. This could lead to a broken cluster!\n",
-				installedVersion, targetVersion)
+			if !noProgress {
+				fmt.Fprintf(os.Stderr,
+					"⚠️  Glasskube is already installed in this cluster in the newer version v%v. "+
+						"You are about to install version v%v. This could lead to a broken cluster!\n",
+					installedVersion, targetVersion)
+			}
 			if !bootstrapCmdOptions.yes &&
 				!cliutils.YesNoPrompt("Are you sure that you want to downgrade glasskube in this cluster?", false) {
 				cancel()
 			}
 		} else if installedVersion.LessThan(targetVersion) {
-			fmt.Fprintf(os.Stderr, "Glasskube will be updated to version v%v in cluster %v.\n",
-				targetVersion, currentContext)
+			if !noProgress {
+				fmt.Fprintf(os.Stderr, "Glasskube will be updated to version v%v in cluster %v.\n",
+					targetVersion, currentContext)
+			}
 			if !bootstrapCmdOptions.yes && !cliutils.YesNoPrompt("Continue?", true) {
 				cancel()
 			}
 		} else {
-			fmt.Fprintf(os.Stderr,
-				"⚠️  Glasskube is already installed in this cluster (%v) in version v%v. "+
-					"You are about to bootstrap this version again.\n",
-				currentContext, installedVersion)
+			if !noProgress {
+				fmt.Fprintf(os.Stderr,
+					"⚠️  Glasskube is already installed in this cluster (%v) in version v%v. "+
+						"You are about to bootstrap this version again.\n",
+					currentContext, installedVersion)
+			}
 			if !bootstrapCmdOptions.yes && !cliutils.YesNoPrompt("Continue?", true) {
 				cancel()
 			}
 		}
 	} else if installedVersion != nil && targetVersion == nil {
-		fmt.Fprintf(os.Stderr,
-			"⚠️  Glasskube is currently installed in this cluster (%v) in version v%v. "+
-				"The version you are about to install is unknown. "+
-				"Please make sure the versions are compatible, this action could lead to a broken "+
-				"cluster!\n",
-			currentContext, installedVersion)
+		if !noProgress {
+			fmt.Fprintf(os.Stderr,
+				"⚠️  Glasskube is currently installed in this cluster (%v) in version v%v. "+
+					"The version you are about to install is unknown. "+
+					"Please make sure the versions are compatible, this action could lead to a broken "+
+					"cluster!\n",
+				currentContext, installedVersion)
+		}
 		if !bootstrapCmdOptions.yes && !cliutils.YesNoPrompt("Continue?", false) {
 			cancel()
 		}
 	} else {
-		fmt.Fprintf(os.Stderr, "Glasskube will be installed in context %s.\n", currentContext)
+		if !noProgress {
+			fmt.Fprintf(os.Stderr, "Glasskube will be installed in context %s.\n", currentContext)
+		}
 		if !bootstrapCmdOptions.yes && !cliutils.YesNoPrompt("Continue?", true) {
 			cancel()
 		}
@@ -222,6 +236,7 @@ func init() {
 		bootstrapCmdOptions.createDefaultRepository,
 		"Toggle creation of the default glasskube package repository")
 	bootstrapCmd.Flags().BoolVar(&bootstrapCmdOptions.yes, "yes", false, "Skip confirmation prompt")
+	bootstrapCmd.Flags().BoolVar(&bootstrapCmdOptions.noProgress, "no-progress", false, "Suppress progress messages") // Added NoProgress flag
 	bootstrapCmd.MarkFlagsMutuallyExclusive("url", "type")
 	bootstrapCmd.MarkFlagsMutuallyExclusive("url", "latest")
 }

@@ -46,6 +46,7 @@ type BootstrapOptions struct {
 	DisableTelemetry        bool
 	Force                   bool
 	CreateDefaultRepository bool
+	NoProgress              bool
 }
 
 func DefaultOptions() BootstrapOptions {
@@ -107,25 +108,27 @@ func (c *BootstrapClient) Bootstrap(
 			version, options.Type)
 	}
 
-	fmt.Fprintln(os.Stderr, installMessage)
+	if !options.NoProgress {
+		fmt.Fprintln(os.Stderr, installMessage)
+	}
 
-	statusMessage("Fetching Glasskube manifest from "+options.Url, true)
+	statusMessage("Fetching Glasskube manifest from "+options.Url, true, options.NoProgress)
 	manifests, err := clientutils.FetchResources(options.Url)
 	if err != nil {
-		statusMessage("Couldn't fetch Glasskube manifests", false)
+		statusMessage("Couldn't fetch Glasskube manifests", false, options.NoProgress)
 		telemetry.BootstrapFailure(time.Since(start))
 		return nil, err
 	}
 
-	statusMessage("Validating existing installation", true)
+	statusMessage("Validating existing installation", true, options.NoProgress)
 
 	if err = c.preprocessManifests(ctx, manifests, &options); err != nil {
 		telemetry.BootstrapFailure(time.Since(start))
-		statusMessage(fmt.Sprintf("Couldn't prepare manifests: %v", err), false)
+		statusMessage(fmt.Sprintf("Couldn't prepare manifests: %v", err), false, options.NoProgress)
 		if !options.Force {
 			return nil, err
 		} else {
-			statusMessage("Attempting to force bootstrap anyways (Force option is enabled)", true)
+			statusMessage("Attempting to force bootstrap anyways (Force option is enabled)", true, options.NoProgress)
 		}
 	}
 
@@ -133,18 +136,18 @@ func (c *BootstrapClient) Bootstrap(
 		manifests = append(manifests, defaultRepository())
 	}
 
-	statusMessage("Applying Glasskube manifests", true)
+	statusMessage("Applying Glasskube manifests", true, options.NoProgress)
 
-	if err = c.applyManifests(ctx, manifests); err != nil {
+	if err = c.applyManifests(ctx, manifests, options.NoProgress); err != nil {
 		telemetry.BootstrapFailure(time.Since(start))
-		statusMessage(fmt.Sprintf("Couldn't apply manifests: %v", err), false)
+		statusMessage(fmt.Sprintf("Couldn't apply manifests: %v", err), false, options.NoProgress)
 		return nil, err
 	}
 
 	elapsed := time.Since(start)
-	c.handleTelemetry(options.DisableTelemetry, elapsed)
+	c.handleTelemetry(options.DisableTelemetry, elapsed, options.NoProgress)
 
-	statusMessage(fmt.Sprintf("Glasskube successfully installed! (took %v)", elapsed.Round(time.Second)), true)
+	statusMessage(fmt.Sprintf("Glasskube successfully installed! (took %v)", elapsed.Round(time.Second)), true, options.NoProgress)
 	return manifests, nil
 }
 
@@ -193,11 +196,14 @@ func (c *BootstrapClient) preprocessManifests(
 	return compositeErr
 }
 
-func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructured.Unstructured) error {
-	bar := progressbar.Default(int64(len(objs)), "Applying manifests")
-	progressbar.OptionClearOnFinish()(bar)
-	progressbar.OptionOnCompletion(nil)(bar)
-	defer func(bar *progressbar.ProgressBar) { _ = bar.Exit() }(bar)
+func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructured.Unstructured, noProgress bool) error {
+	var bar *progressbar.ProgressBar
+	if !noProgress {
+		bar = progressbar.Default(int64(len(objs)), "Applying manifests")
+		progressbar.OptionClearOnFinish()(bar)
+		progressbar.OptionOnCompletion(nil)(bar)
+		defer func(bar *progressbar.ProgressBar) { _ = bar.Exit() }(bar)
+	}
 
 	var checkWorkloads []*unstructured.Unstructured
 	for i, obj := range objs {
@@ -207,7 +213,10 @@ func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructure
 			return fmt.Errorf("could not get restmapping for %v %v: %w", obj.GetKind(), obj.GetName(), err)
 		}
 
-		bar.Describe(fmt.Sprintf("Applying %v (%v)", obj.GetName(), obj.GetKind()))
+		if !noProgress {
+			bar.Describe(fmt.Sprintf("Applying %v (%v)", obj.GetName(), obj.GetKind()))
+		}
+
 		if obj.GetKind() == "Job" {
 			options := metav1.DeletePropagationBackground
 			err := c.client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).Delete(
@@ -229,7 +238,9 @@ func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructure
 
 		if obj.GetKind() == constants.Deployment {
 			checkWorkloads = append(checkWorkloads, &objs[i])
-			bar.ChangeMax(bar.GetMax() + 1)
+			if !noProgress {
+				bar.ChangeMax(bar.GetMax() + 1)
+			}
 		} else if obj.GetKind() == "CustomResourceDefinition" {
 			// The RESTMapping must be re-created after applying a CRD, so we can create resources of that kind immediately.
 			if err := c.initRestMapper(); err != nil {
@@ -237,23 +248,29 @@ func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructure
 			}
 		}
 
-		_ = bar.Add(1)
+		if !noProgress {
+			_ = bar.Add(1)
+		}
 	}
 
 	for _, obj := range checkWorkloads {
-		bar.Describe(fmt.Sprintf("Checking Status of %v (%v)", obj.GetName(), obj.GetKind()))
+		if !noProgress {
+			bar.Describe(fmt.Sprintf("Checking Status of %v (%v)", obj.GetName(), obj.GetKind()))
+		}
 		if err := c.checkWorkloadReady(obj.GetNamespace(), obj.GetName(), obj.GetKind(), 5*time.Minute); err != nil {
 			return err
 		}
-		_ = bar.Add(1)
+		if !noProgress {
+			_ = bar.Add(1)
+		}
 	}
 	return nil
 }
 
-func (c *BootstrapClient) handleTelemetry(disabled bool, elapsed time.Duration) {
-	if !disabled {
+func (c *BootstrapClient) handleTelemetry(disabled bool, elapsed time.Duration, noProgress bool) {
+	if !disabled && !noProgress {
 		statusMessage("Telemetry is enabled for this cluster – "+
-			"Run \"glasskube telemetry status\" for more info.", true)
+			"Run \"glasskube telemetry status\" for more info.", true, false)
 		telemetry.BootstrapSuccess(elapsed)
 	}
 }
@@ -358,7 +375,11 @@ func (c *BootstrapClient) checkWorkloadReady(
 	}
 }
 
-func statusMessage(input string, success bool) {
+func statusMessage(input string, success bool, noProgress bool) {
+	if noProgress {
+		return
+	}
+
 	if success {
 		green := color.New(color.FgGreen).SprintFunc()
 		fmt.Fprintln(os.Stderr, green("* "+input))
