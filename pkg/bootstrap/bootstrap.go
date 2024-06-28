@@ -230,6 +230,7 @@ func (c *BootstrapClient) applyManifests(
 				return err
 			}
 		}
+
 		var dryrun []string
 		if options.DryRun {
 			dryrun = []string{metav1.DryRunAll}
