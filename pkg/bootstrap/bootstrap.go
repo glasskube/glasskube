@@ -230,6 +230,10 @@ func (c *BootstrapClient) applyManifests(
 				return err
 			}
 		}
+		var dryrun []string
+		if options.DryRun {
+			dryrun = []string{metav1.DryRunAll}
+		}
 
 		if err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
 			_, err = c.client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).
@@ -239,7 +243,7 @@ func (c *BootstrapClient) applyManifests(
 					metav1.ApplyOptions{
 						Force:        true,
 						FieldManager: "glasskube",
-						DryRun:       []string{metav1.DryRunAll},
+						DryRun:       dryrun,
 					})
 			return err
 		}); err != nil {
