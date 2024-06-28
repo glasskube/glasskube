@@ -46,10 +46,14 @@ func deleteRepository(ctx context.Context, repoName string) {
 	}
 
 	var pkgs v1alpha1.PackageList
-	_ = client.Packages("").GetAll(ctx, &pkgs)
+	if err := client.Packages("").GetAll(ctx, &pkgs); err != nil {
+		fmt.Fprintf(os.Stderr, "Could not list packages: %v", err)
+	}
 
 	var clpkgs v1alpha1.ClusterPackageList
-	_ = client.ClusterPackages().GetAll(ctx, &clpkgs)
+	if err := client.ClusterPackages().GetAll(ctx, &clpkgs); err != nil {
+		fmt.Fprintf(os.Stderr, "Could not list Cluster packages: %v", err)
+	}
 
 	repoPackages := getPackagesFromRepo(clpkgs, pkgs, repoName)
 	if len(repoPackages) > 0 {
@@ -58,7 +62,7 @@ func deleteRepository(ctx context.Context, repoName string) {
 		cliutils.ExitWithError()
 	}
 
-	if !cliutils.YesNoPrompt("Do you want to continue?", false) {
+	if !cliutils.YesNoPrompt(fmt.Sprintf("Repository %s will now be deleted. Do you want to continue?", repoName), false) {
 		fmt.Println("❌ Repository Deletion Cancelled")
 		cliutils.ExitWithError()
 	}
