@@ -129,7 +129,7 @@ func handleEmptyList(resource string) {
 }
 
 func printClusterPackageTable(packages []*list.PackageWithStatus) {
-	header := []string{"NAME", "STATUS", "VERSION", "AUTO-UPDATE"}
+	header := []string{"NAME", "STATUS", "MESSAGE", "VERSION", "AUTO-UPDATE"}
 	if listCmdOptions.ShowLatestVersion {
 		header = append(header, "LATEST VERSION")
 	}
@@ -142,7 +142,7 @@ func printClusterPackageTable(packages []*list.PackageWithStatus) {
 		packages,
 		header,
 		func(pkg *list.PackageWithStatus) []string {
-			row := []string{pkg.Name, statusString(*pkg), versionString(*pkg),
+			row := []string{pkg.Name, statusString(*pkg), messageString(*pkg), versionString(*pkg),
 				clientutils.AutoUpdateString(pkg.ClusterPackage, "")}
 			if listCmdOptions.ShowLatestVersion {
 				row = append(row, pkg.LatestVersion)
@@ -172,7 +172,7 @@ func printClusterPackageTable(packages []*list.PackageWithStatus) {
 }
 
 func printPackageTable(packages []*list.PackagesWithStatus) {
-	header := []string{"PACKAGENAME", "NAMESPACE", "NAME", "STATUS", "VERSION", "AUTO-UPDATE"}
+	header := []string{"PACKAGENAME", "NAMESPACE", "NAME", "STATUS", "MESSAGE", "VERSION", "AUTO-UPDATE"}
 	if listCmdOptions.ShowLatestVersion {
 		header = append(header, "LATEST VERSION")
 	}
@@ -196,7 +196,7 @@ func printPackageTable(packages []*list.PackagesWithStatus) {
 		flattenedPkgs,
 		header,
 		func(pkg *list.PackageWithStatus) []string {
-			row := []string{pkg.Name, pkgNamespaceString(*pkg), pkgNameString(*pkg), statusString(*pkg), versionString(*pkg),
+			row := []string{pkg.Name, pkgNamespaceString(*pkg), pkgNameString(*pkg), statusString(*pkg), messageString(*pkg), versionString(*pkg),
 				clientutils.AutoUpdateString(pkg.Package, "")}
 			if listCmdOptions.ShowLatestVersion {
 				row = append(row, pkg.LatestVersion)
@@ -272,6 +272,14 @@ func statusString(pkg list.PackageWithStatus) string {
 		return pkg.Status.Status
 	} else {
 		return "Not installed"
+	}
+}
+
+func messageString(pkg list.PackageWithStatus) string {
+	if pkg.Status != nil {
+		return pkg.Status.Reason
+	} else {
+		return ""
 	}
 }
 
