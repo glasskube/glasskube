@@ -21,6 +21,7 @@ type ListCmdOptions struct {
 	ListOutdatedOnly  bool
 	ShowDescription   bool
 	ShowLatestVersion bool
+	ShowName          bool
 	More              bool
 	OutputOptions
 	KindOptions
@@ -97,6 +98,8 @@ func init() {
 		"show the latest version of (cluster-)packages if available")
 	listCmd.PersistentFlags().BoolVarP(&listCmdOptions.More, "more", "m", false,
 		"show additional information about (cluster-)packages (like --show-description --show-latest)")
+	listCmd.PersistentFlags().BoolVar(&listCmdOptions.ShowName, "show-name", false,
+		"show the name of packages")
 	listCmdOptions.OutputOptions.AddFlagsToCommand(listCmd)
 	listCmdOptions.KindOptions.AddFlagsToCommand(listCmd)
 
@@ -129,7 +132,12 @@ func handleEmptyList(resource string) {
 }
 
 func printClusterPackageTable(packages []*list.PackageWithStatus) {
-	header := []string{"NAME", "STATUS", "VERSION", "AUTO-UPDATE"}
+	var header []string
+	if listCmdOptions.ShowName {
+		header = []string{"NAME"}
+	} else {
+		header = []string{"NAME", "STATUS", "VERSION", "AUTO-UPDATE"}
+	}
 	if listCmdOptions.ShowLatestVersion {
 		header = append(header, "LATEST VERSION")
 	}
@@ -142,8 +150,13 @@ func printClusterPackageTable(packages []*list.PackageWithStatus) {
 		packages,
 		header,
 		func(pkg *list.PackageWithStatus) []string {
-			row := []string{pkg.Name, statusString(*pkg), versionString(*pkg),
-				clientutils.AutoUpdateString(pkg.ClusterPackage, "")}
+			var row []string
+			if listCmdOptions.ShowName {
+				row = []string{pkg.Name}
+			} else {
+				row = []string{pkg.Name, statusString(*pkg), versionString(*pkg),
+					clientutils.AutoUpdateString(pkg.ClusterPackage, "")}
+			}
 			if listCmdOptions.ShowLatestVersion {
 				row = append(row, pkg.LatestVersion)
 			}
