@@ -129,7 +129,7 @@ func handleEmptyList(resource string) {
 }
 
 func printClusterPackageTable(packages []*list.PackageWithStatus) {
-	header := []string{"NAME", "STATUS", "MESSAGE", "VERSION", "AUTO-UPDATE"}
+	header := []string{"NAME", "STATUS", "VERSION", "AUTO-UPDATE", "MESSAGE"}
 	if listCmdOptions.ShowLatestVersion {
 		header = append(header, "LATEST VERSION")
 	}
@@ -142,8 +142,8 @@ func printClusterPackageTable(packages []*list.PackageWithStatus) {
 		packages,
 		header,
 		func(pkg *list.PackageWithStatus) []string {
-			row := []string{pkg.Name, statusString(*pkg), messageString(*pkg), versionString(*pkg),
-				clientutils.AutoUpdateString(pkg.ClusterPackage, "")}
+			row := []string{pkg.Name, statusString(*pkg), versionString(*pkg),
+				clientutils.AutoUpdateString(pkg.ClusterPackage, ""), messageString(*pkg)}
 			if listCmdOptions.ShowLatestVersion {
 				row = append(row, pkg.LatestVersion)
 			}
@@ -172,7 +172,7 @@ func printClusterPackageTable(packages []*list.PackageWithStatus) {
 }
 
 func printPackageTable(packages []*list.PackagesWithStatus) {
-	header := []string{"PACKAGENAME", "NAMESPACE", "NAME", "STATUS", "MESSAGE", "VERSION", "AUTO-UPDATE"}
+	header := []string{"PACKAGENAME", "NAMESPACE", "NAME", "STATUS", "VERSION", "AUTO-UPDATE", "MESSAGE"}
 	if listCmdOptions.ShowLatestVersion {
 		header = append(header, "LATEST VERSION")
 	}
@@ -196,8 +196,8 @@ func printPackageTable(packages []*list.PackagesWithStatus) {
 		flattenedPkgs,
 		header,
 		func(pkg *list.PackageWithStatus) []string {
-			row := []string{pkg.Name, pkgNamespaceString(*pkg), pkgNameString(*pkg), statusString(*pkg), messageString(*pkg), versionString(*pkg),
-				clientutils.AutoUpdateString(pkg.Package, "")}
+			row := []string{pkg.Name, pkgNamespaceString(*pkg), pkgNameString(*pkg), statusString(*pkg), versionString(*pkg),
+				clientutils.AutoUpdateString(pkg.Package, ""), messageString(*pkg)}
 			if listCmdOptions.ShowLatestVersion {
 				row = append(row, pkg.LatestVersion)
 			}
@@ -277,7 +277,7 @@ func statusString(pkg list.PackageWithStatus) string {
 
 func messageString(pkg list.PackageWithStatus) string {
 	if pkg.Status != nil {
-		return pkg.Status.Reason
+		return pkg.Status.Message
 	} else {
 		return ""
 	}
