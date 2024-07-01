@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/web/util"
 
 	"github.com/glasskube/glasskube/internal/giscus"
@@ -103,6 +104,7 @@ func (s *server) handlePackageDiscussionPage(w http.ResponseWriter, r *http.Requ
 		"ShowDiscussionLink": true,
 		"PackageHref":        pkgHref,
 		"DiscussionHref":     fmt.Sprintf("%s/discussion", pkgHref),
+		"AutoUpdate":         clientutils.AutoUpdateString(d.pkg, "Disabled"),
 	}, nil))
 	checkTmplError(err, fmt.Sprintf("package-discussion (%s)", d.manifestName))
 }
