@@ -247,3 +247,9 @@ func SetUserProperty(key string, value string) {
 		},
 	})
 }
+
+func ReportCacheVerificationError(err error) {
+	ev := instance.getBaseEvent("error_cache_verification", false)
+	ev.Properties["err"] = err.Error()
+	_ = instance.posthog.Enqueue(ev)
+}
