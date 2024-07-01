@@ -27,7 +27,7 @@ var configureCmdOptions = struct {
 }
 
 var configureCmd = &cobra.Command{
-	Use:               "configure [package-name]",
+	Use:               "configure <package-name>",
 	Short:             "Configure a package",
 	Args:              cobra.ExactArgs(1),
 	PreRun:            cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
@@ -132,8 +132,7 @@ func runConfigure(cmd *cobra.Command, args []string) {
 func init() {
 	configureCmdOptions.ValuesOptions.AddFlagsToCommand(configureCmd)
 	configureCmdOptions.OutputOptions.AddFlagsToCommand(configureCmd)
-	// TODO: Enable these flags to support namespaced packages
-	// configureCmdOptions.NamespaceOptions.AddFlagsToCommand(configureCmd)
-	// configureCmdOptions.KindOptions.AddFlagsToCommand(configureCmd)
+	configureCmdOptions.NamespaceOptions.AddFlagsToCommand(configureCmd)
+	configureCmdOptions.KindOptions.AddFlagsToCommand(configureCmd)
 	RootCmd.AddCommand(configureCmd)
 }

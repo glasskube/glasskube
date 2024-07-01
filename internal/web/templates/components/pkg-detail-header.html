@@ -4,7 +4,7 @@
       <div class="flex-shrink-0 ps-1 pe-2 py-1 align-self-center">
         <a
           class="text-reset"
-          href="/packages/{{ .Manifest.Name }}"
+          href="{{ .PackageHref }}"
           hx-boost="true"
           hx-swap="outerHTML"
           hx-select="main"
@@ -21,7 +21,7 @@
           <span class="d-flex ">
             <a
               class="text-reset text-decoration-none flex-grow-1"
-              href="/packages/{{ .Manifest.Name }}"
+              href="{{ .PackageHref }}"
               hx-boost="true"
               hx-swap="outerHTML"
               hx-select="main"
@@ -47,23 +47,21 @@
               hx-select="main"
               hx-target="main"
               hx-swap="outerHTML"
-              href="/packages/{{ .Manifest.Name }}{{ if .ShowDiscussionLink }}/discussion{{ end }}">
-              {{ if .ShowDiscussionLink }}
-                <span class="bi bi-heart-fill text-danger"></span>
-                <span class="bi bi-hand-thumbs-up-fill text-warning"></span>
-                <span class="bi bi-chat-left-text-fill text-info"></span>
-                <span
-                  id="discussion-link-badge"
-                  class="position-absolute top-0 start-100 translate-middle badge bg-accent lh-sm"
-                  hx-select="#discussion-link-badge"
-                  hx-target="this"
-                  hx-swap="outerHTML"
-                  hx-get="/packages/{{ .Manifest.Name }}/discussion/badge"
-                  hx-trigger="load"
-                  hx-indicator="this">
-                  &mldr;
-                </span>
-              {{ end }}
+              href="{{ .PackageHref }}/discussion">
+              <span class="bi bi-heart-fill text-danger"></span>
+              <span class="bi bi-hand-thumbs-up-fill text-warning"></span>
+              <span class="bi bi-chat-left-text-fill text-info"></span>
+              <span
+                id="discussion-link-badge"
+                class="position-absolute top-0 start-100 translate-middle badge bg-accent lh-sm"
+                hx-select="#discussion-link-badge"
+                hx-target="this"
+                hx-swap="outerHTML"
+                hx-get="{{ .PackageHref }}/discussion/badge"
+                hx-trigger="load"
+                hx-indicator="this">
+                &mldr;
+              </span>
             </a>
           {{ end }}
           {{ if PackageManifestUrl .Package }}
@@ -81,5 +79,31 @@
         </div>
       </div>
     </div>
+    {{ if ne .Status nil }}
+      <div class="mt-2">
+        {{ if .Manifest.Scope.IsNamespaced }}
+          <span class="badge bg-body-secondary text-primary-emphasis border-primary border border-1 p-1 fw-normal">
+            Namespace:
+            <strong>{{ .Package.Namespace }}</strong>
+          </span>
+          <span class="badge bg-body-secondary text-primary-emphasis border-primary border border-1 p-1 fw-normal">
+            Name:
+            <strong>{{ .Package.Name }}</strong>
+          </span>
+        {{ end }}
+        <span class="badge bg-body-secondary text-primary-emphasis border-primary border border-1 p-1 fw-normal">
+          Repository:
+          <strong>{{ .Package.Spec.PackageInfo.RepositoryName }}</strong>
+        </span>
+        <span class="badge bg-body-secondary text-primary-emphasis border-primary border border-1 p-1 fw-normal">
+          Installed version:
+          <strong>{{ .Package.Spec.PackageInfo.Version }}</strong>
+        </span>
+        <span class="badge bg-body-secondary text-primary-emphasis border-primary border border-1 p-1 fw-normal">
+          Auto-Update:
+          <strong>{{ .AutoUpdate }}</strong>
+        </span>
+      </div>
+    {{ end }}
   </div>
 {{ end }}

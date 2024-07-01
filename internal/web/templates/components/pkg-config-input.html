@@ -8,7 +8,7 @@
       <li>
         <button
           class="dropdown-item btn btn-sm"
-          hx-get="/packages/{{ .PkgName }}/configuration/{{ .ValueName }}?refKind=Secret&repositoryName={{ .RepositoryName }}&selectedVersion={{ .SelectedVersion | UrlEscape }}"
+          hx-get="{{ .PackageHref }}/configuration/{{ .ValueName }}?refKind=Secret&repositoryName={{ .RepositoryName }}&selectedVersion={{ .SelectedVersion | UrlEscape }}"
           hx-target="#{{ .ContainerId }}"
           hx-select="#{{ .ContainerId }}"
           hx-swap="outerHTML">
@@ -18,7 +18,7 @@
       <li>
         <button
           class="dropdown-item btn btn-sm"
-          hx-get="/packages/{{ .PkgName }}/configuration/{{ .ValueName }}?refKind=ConfigMap&repositoryName={{ .RepositoryName }}&selectedVersion={{ .SelectedVersion | UrlEscape }}"
+          hx-get="{{ .PackageHref }}/configuration/{{ .ValueName }}?refKind=ConfigMap&repositoryName={{ .RepositoryName }}&selectedVersion={{ .SelectedVersion | UrlEscape }}"
           hx-target="#{{ .ContainerId }}"
           hx-select="#{{ .ContainerId }}"
           hx-swap="outerHTML">
@@ -28,7 +28,7 @@
       <li>
         <button
           class="dropdown-item btn btn-sm"
-          hx-get="/packages/{{ .PkgName }}/configuration/{{ .ValueName }}?refKind=Package&repositoryName={{ .RepositoryName }}&selectedVersion={{ .SelectedVersion | UrlEscape }}"
+          hx-get="{{ .PackageHref }}/configuration/{{ .ValueName }}?refKind=Package&repositoryName={{ .RepositoryName }}&selectedVersion={{ .SelectedVersion | UrlEscape }}"
           hx-target="#{{ .ContainerId }}"
           hx-select="#{{ .ContainerId }}"
           hx-swap="outerHTML">
@@ -40,7 +40,7 @@
         <li>
           <button
             class="dropdown-item btn btn-sm"
-            hx-get="/packages/{{ .PkgName }}/configuration/{{ .ValueName }}?repositoryName={{ .RepositoryName }}&selectedVersion={{ .SelectedVersion | UrlEscape }}"
+            hx-get="{{ .PackageHref }}/configuration/{{ .ValueName }}?repositoryName={{ .RepositoryName }}&selectedVersion={{ .SelectedVersion | UrlEscape }}"
             hx-target="#{{ .ContainerId }}"
             hx-select="#{{ .ContainerId }}"
             hx-swap="outerHTML">
@@ -88,7 +88,7 @@
       class="form-control"
       placeholder="Name"
       aria-label="Name"
-      hx-get="/packages/{{ .PkgName }}/configuration/{{ .ValueName }}/datalists/names?refKind={{ .ValueReferenceKind }}&id={{ .ValueName }}-names"
+      hx-get="/datalists/{{ .ValueName }}/names?refKind={{ .ValueReferenceKind }}&id={{ .ValueName }}-names"
       hx-include="#input-{{ .ValueName }}-namespace"
       hx-swap="outerHTML"
       hx-target="#{{ .ValueName }}-names"
@@ -108,7 +108,7 @@
       class="form-control"
       placeholder="Key"
       aria-label="Key"
-      hx-get="/packages/{{ .PkgName }}/configuration/{{ .ValueName }}/datalists/keys?refKind={{ .ValueReferenceKind }}&id={{ .ValueName }}-keys"
+      hx-get="/datalists/{{ .ValueName }}/keys?refKind={{ .ValueReferenceKind }}&id={{ .ValueName }}-keys"
       hx-include="#input-{{ .ValueName }}-namespace,#input-{{ .ValueName }}-name"
       hx-swap="outerHTML"
       hx-target="#{{ .ValueName }}-keys"
@@ -137,7 +137,7 @@
       list="{{ .ValueName }}-keys"
       placeholder="Value"
       aria-label="Value"
-      hx-get="/packages/{{ .PkgName }}/configuration/{{ .ValueName }}/datalists/keys?refKind={{ .ValueReferenceKind }}&id={{ .ValueName }}-keys"
+      hx-get="/datalists/{{ .ValueName }}/keys?refKind={{ .ValueReferenceKind }}&id={{ .ValueName }}-keys"
       hx-include="#input-{{ .ValueName }}-name"
       hx-swap="outerHTML"
       hx-target="#{{ .ValueName }}-keys"
@@ -156,6 +156,7 @@
     value="{{ .StringValue }}"
     class="form-control"
     id="{{ .FormId }}"
+    {{ if .ValueDefinition.Constraints.Required }}required{{ end }}
     {{ if ne .ValueDefinition.Constraints.MinLength nil }}
       minlength="{{ .ValueDefinition.Constraints.MinLength }}"
     {{ end }}
@@ -173,6 +174,7 @@
     type="number"
     autocomplete="off"
     {{ if .Autofocus }}autofocus{{ end }}
+    {{ if .ValueDefinition.Constraints.Required }}required{{ end }}
     {{ if ne .ValueDefinition.Constraints.Min nil }}min="{{ .ValueDefinition.Constraints.Min }}"{{ end }}
     {{ if ne .ValueDefinition.Constraints.Max nil }}max="{{ .ValueDefinition.Constraints.Max }}"{{ end }}
     name="{{ .ValueName }}"
@@ -224,13 +226,23 @@
   {{ end }}
 {{ end }}
 
+{{ define "pkg-config-input-required-label" }}
+  <label for="{{ .FormId }}" class="form-label">
+    {{ .FormLabel }}
+    {{ if .ValueDefinition.Constraints.Required }}
+      <span class="text-danger">*</span>
+    {{ end }}
+    (<code>{{ .ValueName }}</code>)
+  </label>
+{{ end }}
 
-<!-- this is the entry point for rendering the the input group for one value definition -->
+
+<!-- this is the entry point for rendering the input group for one value definition -->
 {{ define "pkg-config-input" }}
   <div id="{{ .ContainerId }}" class="mb-2">
     {{ if eq .ValueDefinition.Type "text" }}
       <div>
-        <label for="{{ .FormId }}" class="form-label">{{ .FormLabel }} (<code>{{ .ValueName }}</code>)</label>
+        {{ template "pkg-config-input-required-label" . }}
         <div class="input-group input-group-sm">
           {{ template "pkg-config-input-reference-dropdown" . }}
           {{ if eq .ValueReferenceKind "" }}
@@ -244,7 +256,7 @@
       </div>
     {{ else if eq .ValueDefinition.Type "number" }}
       <div>
-        <label for="{{ .FormId }}" class="form-label">{{ .FormLabel }} (<code>{{ .ValueName }}</code>)</label>
+        {{ template "pkg-config-input-required-label" . }}
         <div class="input-group input-group-sm">
           {{ template "pkg-config-input-reference-dropdown" . }}
           {{ if eq .ValueReferenceKind "" }}
@@ -259,7 +271,7 @@
     {{ else if eq .ValueDefinition.Type "boolean" }}
       <div>
         {{ if ne .ValueReferenceKind "" }}
-          <label for="{{ .FormId }}" class="form-label">{{ .FormLabel }} (<code>{{ .ValueName }}</code>)</label>
+          {{ template "pkg-config-input-required-label" . }}
         {{ end }}
         <div class="input-group input-group-sm">
           {{ template "pkg-config-input-reference-dropdown" . }}
@@ -274,7 +286,7 @@
       </div>
     {{ else if eq .ValueDefinition.Type "options" }}
       <div>
-        <label for="{{ .FormId }}" class="form-label">{{ .FormLabel }} (<code>{{ .ValueName }}</code>)</label>
+        {{ template "pkg-config-input-required-label" . }}
         <div class="input-group input-group-sm">
           {{ template "pkg-config-input-reference-dropdown" . }}
           {{ if eq .ValueReferenceKind "" }}

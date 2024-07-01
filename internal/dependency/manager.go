@@ -98,14 +98,13 @@ func (dm *DependendcyManager) NewGraph(ctx context.Context) (*graph.DependencyGr
 		}
 	}
 
-	// TODO re-enable this when we fully support namespaced packages (this is just a quickfix to avoid client-side rate limits)
-	/*if pkgs, err := dm.pkgClient.ListPackages(ctx, ""); err != nil {
+	if pkgs, err := dm.pkgClient.ListPackages(ctx, ""); err != nil {
 		return nil, err
 	} else {
 		for i := range pkgs.Items {
 			allPkgs = append(allPkgs, &pkgs.Items[i])
 		}
-	}*/
+	}
 
 	g := graph.NewGraph()
 	for _, pkg := range allPkgs {

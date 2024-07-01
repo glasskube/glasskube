@@ -225,7 +225,7 @@ func HttpMiddleware() func(http.Handler) http.Handler {
 						ev := instance.getBaseEvent("ui_endpoint", false)
 						ev.Properties["$current_url"] = r.URL.String()
 						ev.Properties["method"] = r.Method
-						ev.Properties["path"] = r.URL
+						ev.Properties["path"] = r.URL // TODO exclusions necessary since namespace/name are part of the URL!
 						ev.Properties["execution_time"] = time.Since(start).Milliseconds()
 						ev.Properties["user_agent"] = r.UserAgent()
 						_ = instance.posthog.Enqueue(ev)

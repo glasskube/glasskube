@@ -1,0 +1,65 @@
+{{ define "content" }}
+  <!-- TODO why are we restoring main on historyRestore but only overview-swapped in sse ? -->
+  <div
+    class="container-lg my-2"
+    hx-trigger="htmx:historyRestore from:body"
+    hx-get="/clusterpackages"
+    hx-select="main"
+    hx-target="main"
+    hx-swap="outerHTML">
+    <div
+      class="m-0 p-0"
+      id="clusterpackage-overview-swapped"
+      hx-trigger="sse:refresh-clusterpackage-overview"
+      hx-get="/clusterpackages"
+      hx-swap="innerHTML"
+      hx-select="#clusterpackage-overview-swapped"
+      hx-target="#clusterpackage-overview-swapped">
+      {{ template "pkg-update-alert" . | ForPkgUpdateAlert }}
+      <div class="row row-cols-3 row-cols-xl-4 g-2">
+        {{ range .ClusterPackages }}
+          <div class="col">
+            <div class="card bg-body-secondary h-100 border-primary border-1">
+              <div class="card-body d-flex flex-column p-0">
+                <a
+                  class="flex-grow-1 d-flex align-items-center gap-1 text-reset text-decoration-none p-1"
+                  href="/clusterpackages/{{ .Name }}"
+                  hx-select="main"
+                  hx-target="main"
+                  hx-swap="outerHTML"
+                  hx-boost="true">
+                  <div class="flex-shrink-0 align-self-center">
+                    {{ if eq .IconUrl "" }}
+                      <!-- TODO the glasskube logo as fallback is probably not the best idea? -->
+                      <img
+                        src="/static/assets/glasskube-logo.svg"
+                        alt="{{ .Name }}"
+                        style="width: 3.25rem; height: auto;" />
+                    {{ else }}
+                      <img src="{{ .IconUrl }}" alt="{{ .Name }}" style="width: 3.25rem; height: auto;" />
+                    {{ end }}
+                  </div>
+                  <div class="flex-grow-1 align-self-start">
+                    <h6 class="text-reset m-0">{{ .Name }}</h6>
+                    <span
+                      class="lh-sm overflow-hidden"
+                      style="
+                        font-size: small;
+                        display: -webkit-box;
+                        -webkit-box-orient: vertical;
+                        -webkit-line-clamp: 2;">
+                      {{ .ShortDescription }}
+                    </span>
+                  </div>
+                </a>
+                <div class="mb-1 mx-1">
+                  {{ template "clpkg-overview-btn" (ForClPkgOverviewBtn . (index $.ClusterPackageUpdateAvailable .Name)) }}
+                </div>
+              </div>
+            </div>
+          </div>
+        {{ end }}
+      </div>
+    </div>
+  </div>
+{{ end }}

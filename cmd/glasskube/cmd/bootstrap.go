@@ -29,6 +29,7 @@ type bootstrapOptions struct {
 	force                   bool
 	createDefaultRepository bool
 	yes                     bool
+	dryRun                  bool
 	OutputOptions
 }
 
@@ -76,6 +77,12 @@ var bootstrapCmd = &cobra.Command{
 			}
 		}
 
+		if bootstrapCmdOptions.dryRun {
+			fmt.Fprintln(os.Stderr,
+				"🔎 Dry-run mode is enabled. "+
+					"Nothing will be changed in your cluster, but validations will still be run.")
+		}
+
 		verifyLegalUpdate(ctx, installedVersion, targetVersion)
 
 		manifests, err := client.Bootstrap(ctx, bootstrapCmdOptions.asBootstrapOptions())
@@ -83,7 +90,7 @@ var bootstrapCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "\nAn error occurred during bootstrap:\n%v\n", err)
 			cliutils.ExitWithError()
 		}
-		if err := printBootsrap(
+		if err := printBootstrap(
 			manifests,
 			bootstrapCmdOptions.Output,
 		); err != nil {
@@ -101,10 +108,11 @@ func (o bootstrapOptions) asBootstrapOptions() bootstrap.BootstrapOptions {
 		DisableTelemetry:        o.disableTelemetry,
 		Force:                   o.force,
 		CreateDefaultRepository: o.createDefaultRepository,
+		DryRun:                  o.dryRun,
 	}
 }
 
-func printBootsrap(manifests []unstructured.Unstructured, output OutputFormat) error {
+func printBootstrap(manifests []unstructured.Unstructured, output OutputFormat) error {
 	if output != "" {
 		if err := convertAndPrintManifests(manifests, output); err != nil {
 			return err
@@ -221,6 +229,8 @@ func init() {
 	bootstrapCmd.Flags().BoolVar(&bootstrapCmdOptions.createDefaultRepository, "create-default-repository",
 		bootstrapCmdOptions.createDefaultRepository,
 		"Toggle creation of the default glasskube package repository")
+	bootstrapCmd.PersistentFlags().BoolVar(&bootstrapCmdOptions.dryRun, "dry-run", false,
+		"Do not make any changes but run all validations")
 	bootstrapCmd.Flags().BoolVar(&bootstrapCmdOptions.yes, "yes", false, "Skip confirmation prompt")
 	bootstrapCmd.MarkFlagsMutuallyExclusive("url", "type")
 	bootstrapCmd.MarkFlagsMutuallyExclusive("url", "latest")
