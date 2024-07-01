@@ -168,7 +168,7 @@ func (s *server) Start(ctx context.Context) error {
 	fileServer := http.FileServer(http.FS(root))
 
 	router := mux.NewRouter()
-	router.Use(telemetry.HttpMiddleware())
+	router.Use(telemetry.HttpMiddleware(telemetry.WithPathRedactor(packagesPathRedactor)))
 	router.PathPrefix("/static/").Handler(fileServer)
 	router.Handle("/favicon.ico", fileServer)
 	router.HandleFunc("/events", s.sseHub.handler)
