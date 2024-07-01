@@ -1,5 +1,48 @@
 # Changelog
 
+## [0.12.0](https://github.com/glasskube/glasskube/compare/v0.11.0...v0.12.0) (2024-07-01)
+
+
+### Features
+
+* add namespace support for enable/disable auto-update ([#834](https://github.com/glasskube/glasskube/issues/834)) ([2d0c02b](https://github.com/glasskube/glasskube/commit/2d0c02b9183ef7b97f12e7afb47b2fd8bd516dfb))
+* **cli:** add --dry-run to bootstrap command ([#819](https://github.com/glasskube/glasskube/issues/819)) ([3a5b2d2](https://github.com/glasskube/glasskube/commit/3a5b2d2c147ec7b9657ed38b0d52b8926bb8340a))
+* **cli:** add installing namespace-scoped packages ([#851](https://github.com/glasskube/glasskube/issues/851)) ([c7e139f](https://github.com/glasskube/glasskube/commit/c7e139ffc89cb93a76066c475b92dce0c86fcf22))
+* **cli:** add support for auto-updating namespace-scoped packages ([#855](https://github.com/glasskube/glasskube/issues/855)) ([93926ad](https://github.com/glasskube/glasskube/commit/93926adfe3ca36653a00b65a88644fa8c5b73657))
+* **cli:** add support for describing namespaced packages ([#877](https://github.com/glasskube/glasskube/issues/877)) ([aba9651](https://github.com/glasskube/glasskube/commit/aba965152e70a6f60544cc34d7229a35fe1698e1))
+* **cli:** add support for updating namespace-scoped packages ([#859](https://github.com/glasskube/glasskube/issues/859)) ([25cc84c](https://github.com/glasskube/glasskube/commit/25cc84c76454bc9eb24b9d84a4c295f7190cc603))
+* **cli:** add uninstalling namespaced packages ([#857](https://github.com/glasskube/glasskube/issues/857)) ([41b3773](https://github.com/glasskube/glasskube/commit/41b3773e88e064ce68958ee45c5d89885777204d))
+* **cli:** support repo deletion with `repo delete [repoName]` ([#909](https://github.com/glasskube/glasskube/issues/909)) ([3152412](https://github.com/glasskube/glasskube/commit/31524127caf735ef5cde1d492802466a5a53e811))
+* **deploy:** add autoupdate manifest ([#902](https://github.com/glasskube/glasskube/issues/902)) ([6c9e24d](https://github.com/glasskube/glasskube/commit/6c9e24d9a963a0059aad58cd92ddb0d3619683c9))
+* **ui:** add support for namespace-scoped packages ([#817](https://github.com/glasskube/glasskube/issues/817)) ([ea9bbfb](https://github.com/glasskube/glasskube/commit/ea9bbfb161c4d09337d8c36a61fad6991e29798b))
+* **ui:** added asterisk for mandatory form inputs ([#904](https://github.com/glasskube/glasskube/issues/904)) ([d4c959c](https://github.com/glasskube/glasskube/commit/d4c959c69d2e437eb4d15f6354a90ce329adee05))
+
+
+### Bug Fixes
+
+* **cli:** remove bootstrap requirement from `auto-update` command ([#901](https://github.com/glasskube/glasskube/issues/901)) ([6547fbb](https://github.com/glasskube/glasskube/commit/6547fbb5119cb3f328fb106e538c1eb04cad142f))
+* **ui:** autoupdate label for discussion page ([#907](https://github.com/glasskube/glasskube/issues/907)) ([a4d3543](https://github.com/glasskube/glasskube/commit/a4d35432fb5cecf49ec7c1c9aa3215a75d53a23c))
+* **ui:** improve navbar for smaller screens ([#876](https://github.com/glasskube/glasskube/issues/876)) ([e92cecd](https://github.com/glasskube/glasskube/commit/e92cecdb38fba125129d10109ce397a9109bf229))
+* **ui:** show an error if the client cache is out of sync ([#911](https://github.com/glasskube/glasskube/issues/911)) ([9b6f854](https://github.com/glasskube/glasskube/commit/9b6f854396a229d76adb0512aa259b8a2bb8a8a2))
+* **ui:** sticky navbar ([#903](https://github.com/glasskube/glasskube/issues/903)) ([4870c3a](https://github.com/glasskube/glasskube/commit/4870c3a257f43f87e4215aea6349f0e660a48d82))
+
+
+### Other
+
+* **cli:** enable `--kind`, `--namespace` flags ([#856](https://github.com/glasskube/glasskube/issues/856)) ([a7b5627](https://github.com/glasskube/glasskube/commit/a7b5627899c0ea6eea4bf2fd283f5a9bdbc33ee7))
+* **deps:** update amannn/action-semantic-pull-request digest to 0723387 ([#906](https://github.com/glasskube/glasskube/issues/906)) ([09a301c](https://github.com/glasskube/glasskube/commit/09a301c7d6f3b27bb850e41261e169639cae6f86))
+* **deps:** update dependency @eslint/js to v9.6.0 ([#913](https://github.com/glasskube/glasskube/issues/913)) ([032568e](https://github.com/glasskube/glasskube/commit/032568e552f3c6364f093a7930e70c712a2e95b1))
+* **deps:** update dependency esbuild to v0.22.0 ([#916](https://github.com/glasskube/glasskube/issues/916)) ([ddd0e07](https://github.com/glasskube/glasskube/commit/ddd0e0715f749e8a233c6022cc3d2539cb610fdf))
+* **deps:** update dependency globals to v15.7.0 ([#915](https://github.com/glasskube/glasskube/issues/915)) ([39dda0c](https://github.com/glasskube/glasskube/commit/39dda0ca7351477d2bb1a2319444afb1bc866821))
+* **ui:** telemetry should exclude certain paths ([#921](https://github.com/glasskube/glasskube/issues/921)) ([05dec1a](https://github.com/glasskube/glasskube/commit/05dec1a0c53c973d5c1eb2cb322de37f77b3c6a5))
+
+
+### Docs
+
+* document purge command ([#908](https://github.com/glasskube/glasskube/issues/908)) ([51b4e2f](https://github.com/glasskube/glasskube/commit/51b4e2f45a0954c77582d6192794da9f8042f0a2))
+* **website:** change YouTube embeds to use youtube-nocookie ([#888](https://github.com/glasskube/glasskube/issues/888)) ([d25231a](https://github.com/glasskube/glasskube/commit/d25231a88175f0f55378ae3714008f47d3982b6a))
+* **website:** exchange AsciinemaPlayer with youtube demo video embed ([#883](https://github.com/glasskube/glasskube/issues/883)) ([52e0925](https://github.com/glasskube/glasskube/commit/52e0925acea2b14ad9e0292bf6aca307bb600bb9))
+
 ## [0.11.0](https://github.com/glasskube/glasskube/compare/v0.10.1...v0.11.0) (2024-06-27)
 
 
