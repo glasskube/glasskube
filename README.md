@@ -178,7 +178,3 @@ Thanks to everyone, that is supporting this project. We are thankful, for every 
 ## 📘 License
 
 The Glasskube is licensed under the Apache 2.0 license. For more information check the [LICENSE](https://github.com/glasskube/glasskube/blob/main/LICENSE) file for details.
-
-<a href="https://github.com/glasskube/glasskube/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=glasskube/glasskube&columns=6" />
-</a>
