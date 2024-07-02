@@ -1,5 +1,14 @@
 {{ define "pkg-detail-header" }}
-  <div class="d-flex flex-column">
+  <div
+    class="d-flex flex-column"
+    id="pkg-detail-header"
+    hx-swap="innerHTML"
+    hx-select="#pkg-detail-header"
+    hx-target="#pkg-detail-header"
+    hx-trigger="sse:{{ PackageDetailHeaderRefreshId .Manifest .Package }}"
+    hx-get="{{ .PackageHref }}?component=header">
+    <!-- TODO swap a container again to avoid race condition -->
+    <!-- TODO only return header part from endpoint -->
     <div class="d-flex align-items-center">
       <div class="flex-shrink-0 ps-1 pe-2 py-1 align-self-center">
         <a

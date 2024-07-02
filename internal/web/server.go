@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"reflect"
 	"slices"
 	"strconv"
 	"strings"
@@ -1140,10 +1141,7 @@ func (s *server) broadcastUpdatesWhenInitiallySynced(controllers ...cache.Contro
 	defer tick.Stop()
 	for {
 		if s.allControllersInitiallySynced(controllers...) {
-			s.sseHub.Broadcast <- &sse{
-				event: refreshClusterPkgOverview,
-			}
-			// TODO all possible refreshes
+			s.broadcastAllPossibleUpdates()
 			break
 		}
 		<-tick.C
@@ -1217,6 +1215,72 @@ func defaultKubeconfigExists() bool {
 	}
 }
 
+// TODO make more fancy
+type refreshTriggerHeaderOnly bool
+
+const (
+	refreshTriggerHeader refreshTriggerHeaderOnly = true
+	refreshTriggerAll    refreshTriggerHeaderOnly = false
+)
+
+func (s *server) broadcastAllPossibleUpdates() {
+	s.broadcastRefreshClusterPackageOverview()
+	s.broadcastRefreshPackageOverview()
+	// TODO all possible package details
+}
+
+func (s *server) broadcastUpdates(oldPkg ctrlpkg.Package, newPkg ctrlpkg.Package) {
+	// TODO maybe make our objects comparable so we don't need reflect.DeepEqual ?
+	// TODO why can this be nil?
+	if oldPkg != nil && !oldPkg.IsNil() && newPkg != nil && !newPkg.IsNil() {
+		if !reflect.DeepEqual(oldPkg.GetSpec(), newPkg.GetSpec()) {
+			s.broadcastRefreshTriggers(newPkg, refreshTriggerAll)
+			// TODO if only package info changes, and not the value definitions -> only header too?
+		} else if !reflect.DeepEqual(oldPkg.GetStatus(), newPkg.GetStatus()) {
+			s.broadcastRefreshTriggers(newPkg, refreshTriggerHeader)
+		} else if !reflect.DeepEqual(oldPkg.GetAnnotations(), newPkg.GetAnnotations()) ||
+			!reflect.DeepEqual(oldPkg.GetLabels(), newPkg.GetLabels()) {
+			s.broadcastRefreshTriggers(newPkg, refreshTriggerHeader)
+		}
+	} else if oldPkg != nil && oldPkg.IsNil() {
+		s.broadcastRefreshTriggers(newPkg, refreshTriggerAll)
+	} else if newPkg != nil && newPkg.IsNil() {
+		s.broadcastRefreshTriggers(oldPkg, refreshTriggerAll)
+	}
+}
+
+func (s *server) broadcastRefreshTriggers(pkg ctrlpkg.Package, headerOnly refreshTriggerHeaderOnly) {
+	segment := ""
+	if headerOnly {
+		segment = "-header"
+	}
+	if pkg.IsNamespaceScoped() {
+		s.broadcastRefreshPackageOverview()
+		// TODO pull id functions to a common place (see also templates)
+		s.sseHub.Broadcast <- &sse{
+			event: fmt.Sprintf("refresh-package-detail%s-%s-%s", segment, pkg.GetNamespace(), pkg.GetName()),
+		}
+	} else {
+		s.broadcastRefreshClusterPackageOverview()
+		// TODO pull id functions to a common place (see also templates)
+		s.sseHub.Broadcast <- &sse{
+			event: fmt.Sprintf("refresh-clusterpackage-detail%s-%s", segment, pkg.GetName()),
+		}
+	}
+}
+
+func (s *server) broadcastRefreshPackageOverview() {
+	s.sseHub.Broadcast <- &sse{
+		event: "refresh-package-overview",
+	}
+}
+
+func (s *server) broadcastRefreshClusterPackageOverview() {
+	s.sseHub.Broadcast <- &sse{
+		event: "refresh-clusterpackage-overview",
+	}
+}
+
 func (s *server) initClusterPackageStoreAndController(ctx context.Context) (cache.Store, cache.Controller) {
 	pkgClient := s.nonCachedClient
 	return cache.NewInformer(
@@ -1235,17 +1299,19 @@ func (s *server) initClusterPackageStoreAndController(ctx context.Context) (cach
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj any) {
 				if pkg, ok := obj.(*v1alpha1.ClusterPackage); ok {
-					s.broadcastClusterPackageRefreshTriggers(pkg)
+					s.broadcastUpdates(nil, pkg)
 				}
 			},
 			UpdateFunc: func(oldObj, newObj any) {
-				if pkg, ok := newObj.(*v1alpha1.ClusterPackage); ok {
-					s.broadcastClusterPackageRefreshTriggers(pkg)
+				if oldPkg, ok := oldObj.(*v1alpha1.ClusterPackage); ok {
+					if newPkg, ok := newObj.(*v1alpha1.ClusterPackage); ok {
+						s.broadcastUpdates(oldPkg, newPkg)
+					}
 				}
 			},
 			DeleteFunc: func(obj any) {
 				if pkg, ok := obj.(*v1alpha1.ClusterPackage); ok {
-					s.broadcastClusterPackageRefreshTriggers(pkg)
+					s.broadcastUpdates(pkg, nil)
 					fwName := pkg.GetName()
 					if result, ok := s.forwarders[fwName]; ok {
 						result.Stop()
@@ -1275,17 +1341,19 @@ func (s *server) initPackageStoreAndController(ctx context.Context) (cache.Store
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj any) {
 				if pkg, ok := obj.(*v1alpha1.Package); ok {
-					s.broadcastPackageRefreshTriggers(pkg)
+					s.broadcastUpdates(nil, pkg)
 				}
 			},
 			UpdateFunc: func(oldObj, newObj any) {
-				if pkg, ok := newObj.(*v1alpha1.Package); ok {
-					s.broadcastPackageRefreshTriggers(pkg)
+				if oldPkg, ok := oldObj.(*v1alpha1.Package); ok {
+					if newPkg, ok := newObj.(*v1alpha1.Package); ok {
+						s.broadcastUpdates(oldPkg, newPkg)
+					}
 				}
 			},
 			DeleteFunc: func(obj any) {
 				if pkg, ok := obj.(*v1alpha1.Package); ok {
-					s.broadcastPackageRefreshTriggers(pkg)
+					s.broadcastUpdates(pkg, nil)
 					fwName := cache.ObjectName{Namespace: pkg.GetNamespace(), Name: pkg.GetName()}.String()
 					if result, ok := s.forwarders[fwName]; ok {
 						result.Stop()
@@ -1295,24 +1363,6 @@ func (s *server) initPackageStoreAndController(ctx context.Context) (cache.Store
 			},
 		},
 	)
-}
-
-func (s *server) broadcastClusterPackageRefreshTriggers(pkg *v1alpha1.ClusterPackage) {
-	s.sseHub.Broadcast <- &sse{
-		event: refreshClusterPkgOverview,
-	}
-	s.sseHub.Broadcast <- &sse{
-		event: fmt.Sprintf("refresh-pkg-detail-%s", pkg.Name),
-	}
-}
-
-func (s *server) broadcastPackageRefreshTriggers(pkg *v1alpha1.Package) {
-	s.sseHub.Broadcast <- &sse{
-		event: refreshPkgOverview,
-	}
-	s.sseHub.Broadcast <- &sse{
-		event: fmt.Sprintf("refresh-pkg-detail-%s-%s", pkg.Namespace, pkg.Name),
-	}
 }
 
 func (s *server) initPackageInfoStoreAndController(ctx context.Context) (cache.Store, cache.Controller) {
