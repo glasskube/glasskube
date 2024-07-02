@@ -21,6 +21,7 @@ type ListCmdOptions struct {
 	ListOutdatedOnly  bool
 	ShowDescription   bool
 	ShowLatestVersion bool
+	ShowMessage       bool
 	More              bool
 	OutputOptions
 	KindOptions
@@ -49,6 +50,7 @@ var listCmd = &cobra.Command{
 		if listCmdOptions.More {
 			listCmdOptions.ShowLatestVersion = true
 			listCmdOptions.ShowDescription = true
+			listCmdOptions.ShowMessage = true
 		}
 		lister := list.NewListerWithRepoCache(ctx)
 		var clPkgs []*list.PackageWithStatus
@@ -95,6 +97,8 @@ func init() {
 		"show the (cluster-)package description")
 	listCmd.PersistentFlags().BoolVar(&listCmdOptions.ShowLatestVersion, "show-latest", false,
 		"show the latest version of (cluster-)packages if available")
+	listCmd.PersistentFlags().BoolVar(&listCmdOptions.ShowMessage, "show-message", false,
+		"show the messages of (cluster-)packages")
 	listCmd.PersistentFlags().BoolVarP(&listCmdOptions.More, "more", "m", false,
 		"show additional information about (cluster-)packages (like --show-description --show-latest)")
 	listCmdOptions.OutputOptions.AddFlagsToCommand(listCmd)
@@ -137,9 +141,10 @@ func printClusterPackageTable(packages []*list.PackageWithStatus) {
 	if listCmdOptions.ShowDescription {
 		header = append(header, "DESCRIPTION")
 	}
-
 	header = append(header, "STATUS")
-	header = append(header, "MESSAGE")
+	if listCmdOptions.ShowMessage {
+		header = append(header, "Message")
+	}
 
 	err := cliutils.PrintTable(os.Stdout,
 		packages,
@@ -167,7 +172,9 @@ func printClusterPackageTable(packages []*list.PackageWithStatus) {
 				row = append(row, pkg.ShortDescription)
 			}
 			row = append(row, statusString(*pkg))
-			row = append(row, messageString(*pkg))
+			if listCmdOptions.ShowMessage {
+				row = append(row, messageString(*pkg))
+			}
 			return row
 		})
 	if err != nil {
@@ -186,7 +193,9 @@ func printPackageTable(packages []*list.PackagesWithStatus) {
 		header = append(header, "DESCRIPTION")
 	}
 	header = append(header, "STATUS")
-	header = append(header, "MESSAGE")
+	if listCmdOptions.ShowMessage {
+		header = append(header, "MESSAGE")
+	}
 
 	var flattenedPkgs []*list.PackageWithStatus
 	for _, pkgs := range packages {
@@ -225,7 +234,9 @@ func printPackageTable(packages []*list.PackagesWithStatus) {
 				row = append(row, pkg.ShortDescription)
 			}
 			row = append(row, statusString(*pkg))
-			row = append(row, messageString(*pkg))
+			if listCmdOptions.ShowMessage {
+				row = append(row, messageString(*pkg))
+			}
 			return row
 		})
 	if err != nil {
