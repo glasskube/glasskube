@@ -7,6 +7,8 @@ import (
 	"os"
 	"slices"
 
+	"github.com/glasskube/glasskube/internal/manifestvalues"
+
 	webutil "github.com/glasskube/glasskube/internal/web/util"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
@@ -138,8 +140,10 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 		nsOptions, _ := s.getNamespaceOptions()
 		pkgsOptions, _ := s.getPackagesOptions(r.Context())
 		for key, v := range d.pkg.GetSpec().Values {
-			if _, err := s.valueResolver.ResolveValue(r.Context(), v); err != nil {
+			if resolved, err := s.valueResolver.ResolveValue(r.Context(), v); err != nil {
 				valueErrors[key] = util.GetRootCause(err)
+			} else if err := manifestvalues.ValidateSingle(key, d.manifest.ValueDefinitions[key], resolved); err != nil {
+				valueErrors[key] = err
 			}
 			if v.ValueFrom != nil {
 				options, err := s.getDatalistOptions(r.Context(), v.ValueFrom, nsOptions, pkgsOptions)
