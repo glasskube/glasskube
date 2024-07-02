@@ -13,11 +13,11 @@ type result struct {
 	Repositories   []*v1alpha1.PackageRepository
 }
 
-func (item result) Installed() bool {
+func (item result) ClusterPackageInstalled() bool {
 	return item.ClusterPackage != nil
 }
 
-func (item result) Outdated() bool {
+func (item result) ClusterPackageOutdated() bool {
 	// TODO check again whether this works correctly in relation with multiple repos?
 	return item.ClusterPackage != nil && item.IndexItem != nil &&
 		item.ClusterPackage.Spec.PackageInfo.Version != item.IndexItem.LatestVersion
