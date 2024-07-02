@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
 
+	"github.com/glasskube/glasskube/api/v1alpha1"
+
 	"github.com/glasskube/glasskube/internal/telemetry/annotations"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/discovery"
@@ -17,16 +19,27 @@ type NamespaceGetter interface {
 	GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error)
 }
 
+type RepositoryLister interface {
+	ListRepositories(ctx context.Context) (*v1alpha1.PackageRepositoryList, error)
+}
+
 type PropertyGetter struct {
-	NodeLister      NodeLister
-	NamespaceGetter NamespaceGetter
-	DiscoveryClient discovery.DiscoveryInterface
+	NodeLister       NodeLister
+	NamespaceGetter  NamespaceGetter
+	DiscoveryClient  discovery.DiscoveryInterface
+	RepositoryLister RepositoryLister
 }
 
 type ClusterProperties struct {
 	kubernetesVersion string
 	provider          string
 	nnodes            int
+}
+
+type RepositoryProperties struct {
+	nrepositories       int
+	nrepositoriesAuth   int
+	customRepoAsDefault bool
 }
 
 func (g PropertyGetter) Enabled() bool {
@@ -63,6 +76,23 @@ func (g PropertyGetter) ClusterProperties() (p ClusterProperties) {
 				if len(splits) > 1 {
 					p.provider = splits[0]
 					break
+				}
+			}
+		}
+	}
+	return
+}
+
+func (g PropertyGetter) RepositoryProperties() (p RepositoryProperties) {
+	if g.RepositoryLister != nil {
+		if ls, err := g.RepositoryLister.ListRepositories(context.Background()); err == nil {
+			p.nrepositories = len(ls.Items)
+			for _, repo := range ls.Items {
+				if repo.Spec.Auth != nil {
+					p.nrepositoriesAuth = p.nrepositoriesAuth + 1
+				}
+				if repo.IsDefaultRepository() && !repo.IsGlasskubeRepo() {
+					p.customRepoAsDefault = true
 				}
 			}
 		}

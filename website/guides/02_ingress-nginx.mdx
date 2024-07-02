@@ -9,7 +9,7 @@ tags: [ ingress-nginx ]
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import Install from '../src/partials/_install.mdx';
-import GuidesDiscussion from '@site/src/components/GiscusWrapper';
+import Discussion from '@site/src/components/GiscusWrapper';
 
 
 # Install ingress-nginx for Kubernetes
@@ -142,7 +142,7 @@ spec:
 
 This Ingress tells the controller that all traffic to the domain "app.your-company.com" with a path prefix of "/" should be routed to a Service in the same namespace named "your-app".
 With the addition of a `cert-manager.io/cluster-issuer` annotation and `tls` block, it also instructs [cert-manager](https://cert-manager.io/) to issue a certificate for this domain name.
-To learn more about cert-manager, check out [our guide on how to install cert-manager using Glasskube](./cert-manager).
+To learn more about cert-manager, check out [our guide on how to install cert-manager using Glasskube](./01_cert-manager.mdx).
 
 Further links about ingress-nginx:
 
@@ -150,4 +150,4 @@ Further links about ingress-nginx:
  - Ingress configuration: https://kubernetes.io/docs/concepts/services-networking/ingress/
  - Ingress controllers: https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/
 
-<GuidesDiscussion />
+<Discussion category="Guides" categoryId="DIC_kwDOLDumD84CfK3R" />

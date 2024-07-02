@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
-	"github.com/fluxcd/helm-controller/api/v2beta2"
+	helmv2 "github.com/fluxcd/helm-controller/api/v2"
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -162,13 +162,13 @@ var _ = Describe("ApplyToResource", func() {
 		}, "2")
 		Expect(err).NotTo(HaveOccurred())
 
-		obj := v2beta2.HelmRelease{
+		obj := helmv2.HelmRelease{
 			TypeMeta: metav1.TypeMeta{
-				APIVersion: v2beta2.GroupVersion.Version + "/" + v2beta2.GroupVersion.Version,
+				APIVersion: helmv2.GroupVersion.Version + "/" + helmv2.GroupVersion.Version,
 				Kind:       "HelmRelease"},
 			ObjectMeta: metav1.ObjectMeta{Name: "foo", Namespace: "foo"},
-			Spec: v2beta2.HelmReleaseSpec{
-				Chart:  v2beta2.HelmChartTemplate{Spec: v2beta2.HelmChartTemplateSpec{Chart: "foo"}},
+			Spec: helmv2.HelmReleaseSpec{
+				Chart:  &helmv2.HelmChartTemplate{Spec: helmv2.HelmChartTemplateSpec{Chart: "foo"}},
 				Values: &extv1.JSON{Raw: []byte(`{"spec":{}}`)}}}
 		expected := *obj.DeepCopy()
 		expected.Spec.Values.Raw = []byte(`{"spec":{"replicas":"2"}}`)

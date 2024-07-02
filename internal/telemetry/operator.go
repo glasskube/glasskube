@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/telemetry/properties"
 	"github.com/glasskube/glasskube/pkg/condition"
 	"github.com/posthog/posthog-go"
@@ -39,6 +40,13 @@ func (l *managerNodeLister) ListNodes(ctx context.Context) (*corev1.NodeList, er
 	return &nl, l.List(ctx, &nl)
 }
 
+type managerRepositoryLister struct{ client.Client }
+
+func (l *managerRepositoryLister) ListRepositories(ctx context.Context) (*v1alpha1.PackageRepositoryList, error) {
+	var ls v1alpha1.PackageRepositoryList
+	return &ls, l.List(ctx, &ls)
+}
+
 var operatorInstance *OperatorTelemetry
 
 func InitWithManager(mgr manager.Manager) {
@@ -55,8 +63,9 @@ func ForControllerManager(mgr manager.Manager) *OperatorTelemetry {
 		packageReportTimes:        make(map[string]time.Time),
 		packageReportMuteDuration: 8 * time.Hour,
 		PropertyGetter: properties.PropertyGetter{
-			NamespaceGetter: &managerNamespaceGetter{mgr.GetClient()},
-			NodeLister:      &managerNodeLister{mgr.GetClient()},
+			NamespaceGetter:  &managerNamespaceGetter{mgr.GetClient()},
+			NodeLister:       &managerNodeLister{mgr.GetClient()},
+			RepositoryLister: &managerRepositoryLister{mgr.GetClient()},
 		},
 	}
 	if discoveryClient, err := discovery.NewDiscoveryClientForConfig(mgr.GetConfig()); err == nil {
@@ -97,14 +106,14 @@ func (t *OperatorTelemetry) OnEvent(obj client.Object, status condition.Type, re
 	})
 }
 
-func (t *OperatorTelemetry) ReconcilePackage(pkg *v1alpha1.Package) {
+func (t *OperatorTelemetry) ReconcilePackage(pkg ctrlpkg.Package) {
 	if !t.Enabled() || t.posthog == nil {
 		return
 	}
 	go func() {
 		t.packageReportTimesMutex.Lock()
 		defer t.packageReportTimesMutex.Unlock()
-		if lastReported, ok := t.packageReportTimes[pkg.Name]; ok &&
+		if lastReported, ok := t.packageReportTimes[pkg.GetName()]; ok &&
 			lastReported.Add(t.packageReportMuteDuration).After(time.Now()) {
 			return
 		}
@@ -117,12 +126,12 @@ func (t *OperatorTelemetry) ReconcilePackage(pkg *v1alpha1.Package) {
 			),
 		})
 		if err == nil {
-			t.packageReportTimes[pkg.Name] = time.Now()
+			t.packageReportTimes[pkg.GetName()] = time.Now()
 		}
 	}()
 }
 
-func (t *OperatorTelemetry) ReportDelete(pkg *v1alpha1.Package) {
+func (t *OperatorTelemetry) ReportDelete(pkg ctrlpkg.Package) {
 	if !t.Enabled() || t.posthog == nil {
 		return
 	}

@@ -4,7 +4,7 @@
       <div class="alert alert-warning py-1 ps-2 pe-1 d-flex flex-row align-items-center" role="alert">
         <span class="flex-grow-1">Updates for your packages are available!</span>
         <button
-          hx-get="/packages/update/modal"
+          hx-get="{{ .PackageHref }}/update"
           hx-swap="innerHTML"
           hx-target="#modal-container"
           hx-select="#pkg-update-modal"

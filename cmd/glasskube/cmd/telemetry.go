@@ -6,13 +6,12 @@ import (
 	"strconv"
 
 	"github.com/fatih/color"
+	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/telemetry/annotations"
-	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/spf13/cobra"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/applyconfigurations/core/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 var telemetryStatusCmd = &cobra.Command{
@@ -21,9 +20,9 @@ var telemetryStatusCmd = &cobra.Command{
 	PreRun: cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
-		rawConfig := client.RawConfigFromContext(ctx)
+		rawConfig := clicontext.RawConfigFromContext(ctx)
+		clientset := clicontext.KubernetesClientFromContext(ctx)
 		bold := color.New(color.Bold).SprintfFunc()
-		clientset := kubernetes.NewForConfigOrDie(client.ConfigFromContext(ctx))
 		var status string
 		if ns, err := clientset.CoreV1().Namespaces().Get(ctx, "glasskube-system", v1.GetOptions{}); err != nil {
 			fmt.Fprintf(os.Stderr, "error getting telemetry status: %v\n", err)
@@ -40,7 +39,7 @@ var telemetryStatusCmd = &cobra.Command{
 }
 
 var telemetryCmd = &cobra.Command{
-	Use:   "telemetry <enable|disable>",
+	Use:   "telemetry (enable|disable)",
 	Short: "View and modify telemetry settings",
 	Long: "View and modify telemetry settings. \n" +
 		"For more information on how Glasskube uses telemetry see https://glasskube.dev/telemetry",
@@ -49,10 +48,10 @@ var telemetryCmd = &cobra.Command{
 	PreRun:    cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
-		rawConfig := client.RawConfigFromContext(ctx)
+		rawConfig := clicontext.RawConfigFromContext(ctx)
+		clientset := clicontext.KubernetesClientFromContext(ctx)
 		bold := color.New(color.Bold).SprintfFunc()
 		enabled := args[0] == "enable"
-		clientset := kubernetes.NewForConfigOrDie(client.ConfigFromContext(ctx))
 		if _, err := clientset.CoreV1().Namespaces().Apply(ctx,
 			corev1.Namespace("glasskube-system").
 				WithAnnotations(map[string]string{annotations.TelemetryEnabledAnnotation: strconv.FormatBool(enabled)}),

@@ -1,10 +1,12 @@
 package manifestvalues
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"go.uber.org/multierr"
 )
 
@@ -13,14 +15,14 @@ type validateFn func(def v1alpha1.ValueDefinition, value string) error
 var (
 	validateMinLength validateFn = func(def v1alpha1.ValueDefinition, value string) error {
 		if def.Constraints.MinLength != nil && len(value) < *def.Constraints.MinLength {
-			return ErrConstraintMinLength
+			return fmt.Errorf("%w: %v", ErrConstraintMinLength, *def.Constraints.MinLength)
 		}
 		return nil
 	}
 
 	validateMaxLength validateFn = func(def v1alpha1.ValueDefinition, value string) error {
 		if def.Constraints.MaxLength != nil && len(value) > *def.Constraints.MaxLength {
-			return ErrConstraintMaxLength
+			return fmt.Errorf("%w: %v", ErrConstraintMaxLength, *def.Constraints.MaxLength)
 		}
 		return nil
 	}
@@ -44,7 +46,7 @@ var (
 			if i, err := strconv.Atoi(value); err != nil {
 				return err
 			} else if i < *def.Constraints.Min {
-				return ErrConstraintMin
+				return fmt.Errorf("%w: %v", ErrConstraintMin, *def.Constraints.Min)
 			}
 		}
 		return nil
@@ -55,7 +57,7 @@ var (
 			if i, err := strconv.Atoi(value); err != nil {
 				return err
 			} else if i > *def.Constraints.Max {
-				return ErrConstraintMax
+				return fmt.Errorf("%w: %v", ErrConstraintMax, *def.Constraints.Max)
 			}
 		}
 		return nil
@@ -161,9 +163,9 @@ func targetsForResolvedValues(values map[string]string) map[string]validationTar
 	return result
 }
 
-func targetsForPackage(pkg *v1alpha1.Package) map[string]validationTarget {
+func targetsForPackage(pkg ctrlpkg.Package) map[string]validationTarget {
 	result := make(map[string]validationTarget)
-	for name, value := range pkg.Spec.Values {
+	for name, value := range pkg.GetSpec().Values {
 		if value.Value != nil {
 			result[name] = acutalValue(*value.Value)
 		} else {
@@ -182,6 +184,6 @@ func ValidateResolvedValues(manifest v1alpha1.PackageManifest, values map[string
 // Reference values are **not resolved**, so constraint validation is skipped for
 // these values. If instead you want to validate **all** values, please resolve all
 // references first, using a Resolver instance, and then use ValidateResolvedValues.
-func ValidatePackage(manifest v1alpha1.PackageManifest, pkg *v1alpha1.Package) error {
+func ValidatePackage(manifest v1alpha1.PackageManifest, pkg ctrlpkg.Package) error {
 	return validate(manifest, targetsForPackage(pkg))
 }

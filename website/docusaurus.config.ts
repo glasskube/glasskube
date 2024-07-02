@@ -5,8 +5,8 @@ import type * as Preset from '@docusaurus/preset-classic';
 import {EnumChangefreq} from 'sitemap';
 
 const config: Config = {
-  title: 'Glasskube.dev',
-  tagline: '🧊 The next generation Package Manager for Kubernetes 📦',
+  title: 'Glasskube',
+  tagline: 'The next generation Package Manager for Kubernetes',
   favicon: 'img/favicon.png',
   trailingSlash: true,
 
@@ -110,7 +110,7 @@ const config: Config = {
   },
   themeConfig: {
     colorMode: {
-      respectPrefersColorScheme: true,
+      defaultMode: 'dark',
     },
     docs: {
       sidebar: {
@@ -119,9 +119,8 @@ const config: Config = {
       },
     },
     announcementBar: {
-      id: 'announcementBar-0', // Increment on change
-      // content: '⭐️ If you like <code>glasskube</code>, give it a star on <a target="_blank" rel="noopener noreferrer" href="https://github.com/glasskube/glasskube">GitHub</a> and follow us on <a target="_blank" rel="noopener noreferrer" href="https://x.com/glasskube">X</a> ⭐️',
-      content: `🎉️ <a target="_blank" href="https://github.com/glasskube/glasskube"><code>glasskube/glasskube</code></a> Beta is launching on <a target="_blank" rel="noopener noreferrer" href="https://www.producthunt.com/posts/glasskube">Producthunt</a> 🥳️`,
+      id: 'announcementBar-1', // Increment on change
+      content: `🧊 Glasskube is fully open-source! 😎 <a target="_blank" href="https://github.com/glasskube/glasskube/">Star us on GitHub</a> 🌟`,
       isCloseable: false,
     },
     image:
@@ -145,13 +144,17 @@ const config: Config = {
           label: 'Guides',
           activeBaseRegex: `/guides/`,
         },
-        { to: '/blog', label: 'Blog', position: 'left' },
-        { to: '/roadmap', label: 'Roadmap', position: 'left' },
-        { to: '/packages', label: 'Packages', position: 'left' },
+        {to: '/blog', label: 'Blog', position: 'left'},
+        {to: '/roadmap', label: 'Roadmap', position: 'left'},
+        {to: '/packages', label: 'Packages', position: 'left'},
+        {
+          type: 'search',
+          position: 'left',
+        },
         {
           type: 'custom-wrapper',
           position: 'right',
-        }
+        },
       ],
     },
     footer: {
@@ -216,8 +219,12 @@ const config: Config = {
               to: '/blog',
             },
             {
-              label: 'Contact / Book appointment',
+              label: 'Talk to founders',
               href: 'https://cal.glasskube.eu/team/founder/30min',
+            },
+            {
+              label: 'Signup for the wait list',
+              href: 'https://glasskube.cloud/',
             },
           ],
         },

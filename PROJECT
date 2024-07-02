@@ -29,4 +29,24 @@ resources:
   path: github.com/glasskube/glasskube/api/v1alpha1
   plural: packageinfos
   version: v1alpha1
+- api:
+    crdVersion: v1
+  controller: true
+  domain: glasskube.dev
+  group: packages
+  kind: PackageRepository
+  path: github.com/glasskube/glasskube/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: glasskube.dev
+  group: packages
+  kind: ClusterPackage
+  path: github.com/glasskube/glasskube/api/v1alpha1
+  version: v1alpha1
+  webhooks:
+    validation: true
+    webhookVersion: v1
 version: "3"

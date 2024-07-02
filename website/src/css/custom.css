@@ -4,6 +4,12 @@
  * work well for content-centric websites.
  */
 
+@import "@fontsource/inter/latin-300.css";
+@import "@fontsource/inter/latin-400.css";
+@import "@fontsource/inter/latin-600.css";
+@import "@fontsource/inter/latin-700.css";
+@import "@fontsource/poppins/latin-600.css";
+
 
 /* You can override the default Infima variables here. */
 :root {
@@ -17,6 +23,9 @@
   --glasskube-red: #ff4136;
   --glasskube-pink: #e03466;
 
+  --glasskube-background-dark: #0f1a24;
+  --glasskube-surface-dark: #1f2933;
+
   --ifm-color-primary: var(--glasskube-main-2);
   --ifm-color-primary-dark: var(--glasskube-main-2);
   --ifm-color-primary-darker: var(--glasskube-main-2);
@@ -26,9 +35,11 @@
   --ifm-color-primary-lightest: var(--glasskube-main-4);
   --ifm-code-font-size: 95%;
   --ifm-font-color-base: var(--glasskube-grey-0);
-  /* --ifm-menu-color: var(--glasskube-grey-0); */
   --ifm-pre-background: rgba(255, 255, 255, 0.1);
   --ifm-menu-color-background-active: var(--glasskube-main-light);
+  --ifm-font-family-base: Inter, system-ui, sans-serif;
+  --ifm-heading-font-family: Poppins, Inter, system-ui, sans-serif;
+
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
 }
 
@@ -57,14 +68,20 @@
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
 
+html[data-theme='dark'] {
+  --ifm-background-color: var(--glasskube-background-dark);
+  --ifm-background-surface-color: var(--glasskube-surface-dark);
+}
+
 [data-theme='dark'] .hero--primary {
-  --ifm-hero-background-color: var(--ifm-color-primary-darker);
-  --ifm-hero-text-color: var(--ifm-font-color-base);
+  /*--ifm-hero-background-color: var(--ifm-color-primary-darker);*/
+  /*--ifm-hero-text-color: var(--ifm-font-color-base);*/
+  --ifm-hero-background-color: var(--ifm-color-base);
 }
 
 div[class^='announcementBar_'] {
   color: var(--ifm-font-color-base);
-  background: linear-gradient(60deg, var(--glasskube-pink), var(--glasskube-main-3));
+  background: linear-gradient(60deg, var(--glasskube-main-3), var(--glasskube-pink));
   font-weight: var(--ifm-font-weight-bold);
 }
 
@@ -84,14 +101,14 @@ div[class^='announcementBar_'] {
   }
 }
 
-.hero__title>pre {
+.hero__title > pre {
   white-space: normal;
   height: 4.6em;
   margin: 0;
 }
 
 @media (min-width: 997px) {
-  .hero__title>pre {
+  .hero__title > pre {
     white-space: unset;
     height: auto;
   }
@@ -107,8 +124,18 @@ div[class^='announcementBar_'] {
   }
 }
 
+a.button--outline.light, .light {
+  color: var(--glasskube-main-light);
+}
+
+
 .typewriter-command {
   color: var(--glasskube-main-4);
+
+}
+
+.typewriter-argument {
+  color: var(--glasskube-main-3);
   font-weight: var(--ifm-font-weight-bold);
 }
 
@@ -135,3 +162,41 @@ div[class^='announcementBar_'] {
     margin: 2rem;
   }
 }
+
+.button.button--accent {
+  background-color: var(--glasskube-pink);
+  color: var(--glasskube-main-light);
+}
+
+.button.button--outline {
+  position: relative;
+  color: var(--ifm-navbar-link-color);
+}
+
+.button.button--outline::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  border: 3px solid transparent;
+  background: linear-gradient(to right, var(--glasskube-main-3), var(--glasskube-pink)) border-box;
+  mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+}
+
+h1 {
+  background: linear-gradient(60deg, var(--glasskube-main-3), var(--glasskube-pink));
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+h2 {
+  padding-bottom: 5px;
+}
+
+[data-theme='dark'] {
+  h2 {
+    text-shadow:  0 0 5px var(--glasskube-pink);
+  }
+}
+

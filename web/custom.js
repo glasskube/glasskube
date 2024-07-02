@@ -9,6 +9,24 @@
   getColorSchemeQuery().addEventListener('change', () => setPreferredTheme());
 })();
 
+(() => {
+  const dismissed = sessionStorage.getItem('cloud-info-dismissed') === 'true';
+  if (!dismissed) {
+    document.body
+      .querySelector('#cloud-info')
+      .classList.remove('visually-hidden');
+  }
+  document.body
+    .querySelector('#cloud-info-close')
+    .addEventListener('click', () => {
+      sessionStorage.setItem('cloud-info-dismissed', true);
+    });
+})();
+
+window.advancedOptions = function (currentContext) {
+  return localStorage.getItem('advancedOptions_' + currentContext) === 'true';
+};
+
 var sseOnline = true;
 document.addEventListener('htmx:sseError', function () {
   sseOnline = false;

@@ -55,7 +55,7 @@ title: glasskube install [package]
 flowchart BT
   UI([UI])-- via local server<br>http://localhost:8580 ---Client(Client)
   CLI([CLI])-- cobra cli ---Client
-  Client-- 1. validate package -->Repo[(Public Glasskube<br>Package Repo)]
+  Client-- 1. validate package -->Repo[(Package Repo)]
   Client-- 2. create<br>`Package` CR -->Kubernetes(((Kubernetes API)))
   subgraph Cluster
     Kubernetes-- 3. reconcile<br>`Package` -->PackageController
@@ -90,7 +90,8 @@ The package operator has two controllers:
 #### Package Repository
 
 A place where `PackageManifest`s are stored, searched and maintained.
-Currently only the glasskube packages repository is supported: [`glasskube/packages`](https://github.com/glasskube/packages)
+There is a central package repository managed by Glasskube: [`glasskube/packages`](https://github.com/glasskube/packages),
+however using custom package repositories is supported too, see [Glasskube Repositories](design/repositories).
 
 ## Commands
 
@@ -149,6 +150,18 @@ Shows additional information about the given package.
 
 Opens the default entrypoint of the given package.
 Use `glasskube open <package> <entrypoint>` to open a specific entrypoint.
+
+### `glasskube repo`
+
+Manages the package repositories of the cluster. `glasskube repo list` lists the currently configured repositories,
+while `glasskube repo add` allows you to add new repositories to your cluster.
+
+### `glasskube purge`
+
+Uninstalls the Glassube package-operator from the current cluster and deletes all Glasskube Custom Resource Definitions.
+**Warning:** This will delete all installed packages.
+
+If you are unhappy with Glasskube we would love to hear your feedback, so please get in touch!
 
 ### `glasskube version`
 

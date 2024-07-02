@@ -2,6 +2,7 @@ package client
 
 import (
 	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/pkg/condition"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,11 +26,18 @@ func GetStatus(status *v1alpha1.PackageStatus) *PackageStatus {
 	return nil
 }
 
-func GetStatusOrPending(status *v1alpha1.PackageStatus) *PackageStatus {
-	if status := GetStatus(status); status != nil {
-		return status
+func GetStatusOrPending(pkg ctrlpkg.Package) *PackageStatus {
+	if !pkg.IsNil() {
+		if !pkg.GetDeletionTimestamp().IsZero() {
+			return NewUninstallingStatus()
+		}
+		if status := GetStatus(pkg.GetStatus()); status != nil {
+			return status
+		} else {
+			return NewPendingStatus()
+		}
 	} else {
-		return NewPendingStatus()
+		return nil
 	}
 }
 
@@ -42,5 +50,10 @@ func newPackageStatus(cnd *metav1.Condition) *PackageStatus {
 }
 
 func NewPendingStatus() *PackageStatus {
+
 	return &PackageStatus{Status: "Pending"}
+}
+
+func NewUninstallingStatus() *PackageStatus {
+	return &PackageStatus{Status: "Uninstalling"}
 }

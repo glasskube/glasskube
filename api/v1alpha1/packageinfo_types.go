@@ -26,9 +26,9 @@ import (
 // PackageInfoSpec defines the desired state of PackageInfo
 type PackageInfoSpec struct {
 	// +kubebuilder:validation:Required
-	Name          string `json:"name"`
-	Version       string `json:"version,omitempty"`
-	RepositoryUrl string `json:"repositoryUrl,omitempty"`
+	Name           string `json:"name"`
+	Version        string `json:"version,omitempty"`
+	RepositoryName string `json:"repositoryUrl,omitempty"`
 }
 
 // PackageInfoStatus defines the observed state of PackageInfo

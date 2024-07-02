@@ -2,85 +2,81 @@ package client
 
 import (
 	"context"
+	"time"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 )
 
-var packageGVR = v1alpha1.GroupVersion.WithResource("packages")
-
-type PackageInterface interface {
-	Create(ctx context.Context, p *v1alpha1.Package) error
-	Update(ctx context.Context, p *v1alpha1.Package) error
-	Get(ctx context.Context, pkgName string, p *v1alpha1.Package) error
-	GetAll(ctx context.Context, result *v1alpha1.PackageList) error
-	Watch(ctx context.Context) (watch.Interface, error)
-	Delete(ctx context.Context, pkg *v1alpha1.Package, options metav1.DeleteOptions) error
-}
+const packagesResource = "packages"
 
 type packageClient struct {
 	restClient rest.Interface
+	ns         string
 }
 
-func (c *packageClient) Create(ctx context.Context, pkg *v1alpha1.Package) error {
-	return c.restClient.Post().
-		Resource(packageGVR.Resource).
-		Body(pkg).Do(ctx).Into(pkg)
-}
-
-// Update implements PackageInterface.
-func (c *packageClient) Update(ctx context.Context, p *v1alpha1.Package) error {
-	return c.restClient.Put().
-		Resource(packageGVR.Resource).
-		Name(p.GetName()).
-		Body(p).
-		Do(ctx).
-		Into(p)
-}
-
-func (c *packageClient) Watch(ctx context.Context) (watch.Interface, error) {
-	opts := metav1.ListOptions{Watch: true}
-	return c.restClient.Get().
-		Resource(packageGVR.Resource).
+// Create implements PackageInterface.
+func (p *packageClient) Create(ctx context.Context, target *v1alpha1.Package, opts v1.CreateOptions) error {
+	return p.restClient.Post().
+		Namespace(p.ns).
+		Resource(packagesResource).
 		VersionedParams(&opts, scheme.ParameterCodec).
-		Watch(ctx)
+		Body(target).Do(ctx).Into(target)
 }
 
-func (c *packageClient) Get(ctx context.Context, pkgName string, result *v1alpha1.Package) error {
-	return c.restClient.Get().
-		Resource(packageGVR.Resource).
-		Name(pkgName).
-		Do(ctx).Into(result)
-}
-
-func (c *packageClient) GetAll(ctx context.Context, result *v1alpha1.PackageList) error {
-	return c.restClient.Get().
-		Resource(packageGVR.Resource).
-		Do(ctx).Into(result)
-}
-
-func (c *packageClient) Delete(ctx context.Context, pkg *v1alpha1.Package, options metav1.DeleteOptions) error {
-	return c.restClient.Delete().
-		Resource(packageGVR.Resource).
-		Name(pkg.Name).
+// Delete implements PackageInterface.
+func (p *packageClient) Delete(ctx context.Context, target *v1alpha1.Package, options v1.DeleteOptions) error {
+	return p.restClient.Delete().
+		Namespace(p.ns).
+		Resource(packagesResource).
+		Name(target.Name).
 		Body(&options).
 		Do(ctx).Into(nil)
 }
 
-// NewPackage instantiates a new v1alpha1.Package struct with the given package name
-func NewPackage(packageName, version string) *v1alpha1.Package {
-	return &v1alpha1.Package{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: packageName,
-		},
-		Spec: v1alpha1.PackageSpec{
-			PackageInfo: v1alpha1.PackageInfoTemplate{
-				Name:    packageName,
-				Version: version,
-			},
-		},
+// Get implements PackageInterface.
+func (p *packageClient) Get(ctx context.Context, name string, target *v1alpha1.Package) error {
+	return p.restClient.Get().
+		Namespace(p.ns).
+		Resource(packagesResource).
+		Name(name).
+		Do(ctx).Into(target)
+}
+
+// GetAll implements PackageInterface.
+func (p *packageClient) GetAll(ctx context.Context, target *v1alpha1.PackageList) error {
+	return p.restClient.Get().
+		Namespace(p.ns).
+		Resource(packagesResource).
+		Do(ctx).Into(target)
+}
+
+// Update implements PackageInterface.
+func (p *packageClient) Update(ctx context.Context, target *v1alpha1.Package) error {
+	return p.restClient.Put().
+		Namespace(p.ns).
+		Resource(packagesResource).
+		Name(target.Name).
+		Body(target).
+		Do(ctx).
+		Into(target)
+}
+
+// Watch implements PackageInterface.
+func (p *packageClient) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
+	var timeout time.Duration
+	if opts.TimeoutSeconds != nil {
+		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
 	}
+	opts.Watch = true
+	return p.restClient.Get().
+		Namespace(p.ns).
+		Resource(packagesResource).
+		Timeout(timeout).
+		VersionedParams(&opts, scheme.ParameterCodec).
+		Watch(ctx)
 }

@@ -48,7 +48,7 @@ const Users: Package[] = [
   {
     name: 'ingress-nginx',
     shortDescription: 'Ingress-NGINX Controller for Kubernetes',
-    iconUrl: 'https://github.com/glasskube/glasskube/assets/3041752/27df77f1-7eb9-43df-b6b8-40c1d9052b69',
+    iconUrl: 'https://github.com/glasskube/glasskube/assets/3041752/6701cd57-b690-4641-b967-ef2faee646e5',
     websiteUrl: 'https://kubernetes.github.io/ingress-nginx/',
     sourceUrl: 'https://github.com/kubernetes/ingress-nginx',
     tags: ['networking'],
@@ -155,7 +155,7 @@ const Users: Package[] = [
     iconUrl: 'https://github.com/glasskube/glasskube/assets/16959694/c36ac826-6f80-4e6b-9a08-9719759e94b6',
     websiteUrl: 'https://quickwit.io/',
     sourceUrl: 'https://github.com/quickwit-oss/quickwit',
-    tags: ['planned', 'logging'],
+    tags: ['logging'],
   },
   {
     name: 'Kubeflow',
@@ -164,6 +164,22 @@ const Users: Package[] = [
     websiteUrl: 'https://www.kubeflow.org/',
     sourceUrl: 'https://github.com/kubeflow/kubeflow',
     tags: ['planned', 'ai', 'visualization', 'configuration', 'delivery'],
+  },
+  {
+    name: 'Hatchet',
+    shortDescription: 'A distributed, fault-tolerant task queue',
+    iconUrl: 'https://github.com/glasskube/glasskube/assets/3041752/7a01a56c-dc74-4afc-90af-17f79c3077d1',
+    websiteUrl: 'https://hatchet.run/',
+    sourceUrl: 'https://github.com/hatchet-dev/hatchet',
+    tags: ['planned', 'visualization', 'messaging'],
+  },
+  {
+    name: 'Headlamp',
+    shortDescription: 'A Kubernetes web UI that is fully-featured, user-friendly and extensible',
+    iconUrl: 'https://github.com/glasskube/glasskube/assets/3041752/99016aa3-7033-4568-ad3c-b5e6e74105ad',
+    websiteUrl: 'https://headlamp.dev/',
+    sourceUrl: 'https://github.com/headlamp-k8s/headlamp',
+    tags: ['planned', 'visualization', 'configuration'],
   },
   /*
   * Pro Tip: add your site in alphabetical order.

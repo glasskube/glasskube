@@ -27,5 +27,5 @@ func (t *BootstrapType) Set(v string) error {
 }
 
 func (e *BootstrapType) Type() string {
-	return fmt.Sprintf("[%v|%v]", BootstrapTypeAio, BootstrapTypeSlim)
+	return fmt.Sprintf("(%v|%v)", BootstrapTypeAio, BootstrapTypeSlim)
 }

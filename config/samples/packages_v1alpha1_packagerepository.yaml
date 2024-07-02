@@ -1,0 +1,9 @@
+apiVersion: packages.glasskube.dev/v1alpha1
+kind: PackageRepository
+metadata:
+  labels:
+    app.kubernetes.io/name: glasskube
+    app.kubernetes.io/managed-by: kustomize
+  name: packagerepository-sample
+spec:
+  # TODO(user): Add fields here

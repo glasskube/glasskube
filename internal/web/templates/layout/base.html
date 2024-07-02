@@ -16,41 +16,52 @@
     sse-connect="/events"
     hx-indicator="#indicator"
     hx-target-error="#error-container">
-    <nav
-      hx-boost="true"
-      hx-select="main"
-      hx-target="main"
-      hx-swap="outerHTML"
-      class="navbar navbar-expand-lg navbar-dark bg-secondary">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-secondary sticky-top">
       <div id="indicator" class="progress-container bg-transparent w-100 position-fixed top-0 start-0">
         <div class="htmx-indicator progress-bar bg-primary h-100 w-100"></div>
       </div>
 
-      <div class="container">
-        <a class="navbar-brand d-flex align-items-center" href="/">
-          <img src="/static/assets/glasskube-logo.svg" alt="Logo" height="32" width="32" />
-          <h1 class="navbar-brand text-white mx-1 my-0">Glasskube</h1>
-        </a>
+      <div class="container-lg d-flex flex-row" hx-swap-oob="outerHTML:#navbar-content" id="navbar-content">
+        <div class="d-flex  flex-row align-items-center justify-content-around">
+          <a class="navbar-brand d-flex align-items-center" href="/">
+            <img src="/static/assets/glasskube-logo.svg" alt="Logo" height="32" width="32" />
+            <h1 class="navbar-brand text-white mx-1 my-0">Glasskube</h1>
+          </a>
 
-        <ul class="navbar-nav">
-          <li class="nav-item mx-1">
-            <a class="nav-link active" href="/packages"> Packages </a>
-          </li>
-          <li class="nav-item mx-1">
-            <a class="nav-link disabled">Apps</a>
-          </li>
-          <li class="nav-item mx-1">
-            <a class="nav-link disabled">Settings</a>
-          </li>
-        </ul>
+          <ul class="navbar-nav d-flex flex-row" hx-boost="true" hx-select="main" hx-target="main" hx-swap="outerHTML">
+            <li class="nav-item mx-1">
+              {{ with $clusterPackages := "clusterpackages" }}
+                <a
+                  class="nav-link {{ if eq $.NavbarActiveItem $clusterPackages }}active{{ end }}"
+                  href="/clusterpackages"
+                  >ClusterPackages</a
+                >
+              {{ end }}
+            </li>
+            <li class="nav-item mx-1">
+              {{ with $packages := "packages" }}
+                <a class="nav-link {{ if eq $.NavbarActiveItem $packages }}active{{ end }}" href="/packages"
+                  >Packages</a
+                >
+              {{ end }}
+            </li>
+            <li class="nav-item mx-1">
+              {{ with $settings := "settings" }}
+                <a class="nav-link {{ if eq $.NavbarActiveItem $settings }}active{{ end }}" href="/settings"
+                  >Settings</a
+                >
+              {{ end }}
+            </li>
+          </ul>
+        </div>
 
-        <div class="navbar-collapse">
-          <ul class="navbar-nav ms-auto align-items-center gap-1">
-            {{ if .CurrentContext }}
-              <li class="nav-item">
-                <span class="nav-link">Context: {{ .CurrentContext }}</span>
-              </li>
-            {{ end }}
+        <div class="d-flex  flex-row align-items-center justify-content-around">
+          <ul class="navbar-nav ms-auto align-items-center gap-2 d-flex flex-row">
+            <li class="nav-item">
+              <a class="nav-link" href="https://glasskube.cloud/signup.html?id={{ .CloudId }}" target="_blank"
+                ><span class="bi bi-box-arrow-up-right me-1"></span>Glasskube Cloud</a
+              >
+            </li>
             <li class="nav-item">
               <a class="cta cta-sm text-white" href="https://github.com/glasskube/glasskube" target="_blank">
                 <span class="bi bi-github"></span>
@@ -67,8 +78,25 @@
       </div>
 
       <div id="error-container" class="container-lg mt-2">
+        <div
+          id="cloud-info"
+          hx-preserve="cloud-info"
+          class="alert alert-info alert-dismissible text-center visually-hidden"
+          role="alert">
+          🎉️ Glasskube Cloud is launching soon! 😎
+          <a class="text-reset" href="https://glasskube.cloud/signup.html?id={{ .CloudId }}" target="_blank"
+            >Join the wait list to request early access.</a
+          >
+          🥳
+          <button
+            id="cloud-info-close"
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="alert"
+            aria-label="Close"></button>
+        </div>
         {{ if .Error }}
-          {{ template "alert" .Error "danger" | ForAlert }}
+          {{ template "alert" (ForAlert .Error "danger") }}
         {{ end }}
         {{ if .VersionMismatchWarning }}
           {{ template "version-mismatch-warning" .VersionDetails }}
@@ -81,17 +109,33 @@
     <div class="modal" id="modal-container" tabindex="-1" style="display: none" aria-hidden="false">
       <div class="modal-dialog" role="document"></div>
     </div>
+
     <footer class="footer py-3 mt-auto w-100 bg-secondary-subtle">
-      <div class="container text-center">
-        <span class="text-muted">Glasskube cluster version: {{ .VersionDetails.OperatorVersion }}</span>
-        <br />
-        <span class="text-muted">Glasskube version: {{ .VersionDetails.ClientVersion }}</span>
-        <br />
-        {{ if .VersionDetails.NeedsOperatorUpdate }}
-          <span class="text-danger">New version available! ({{ .VersionDetails.ClientVersion }})</span>
-        {{ else }}
-          <span class="text-success">Up to date</span>
-        {{ end }}
+      <div class="container">
+        <div class="row">
+          <div class="col-4 ">
+            <span class="text-muted text-wrap text-break">Context: {{ .CurrentContext }}</span>
+          </div>
+          <div class="col-4 text-center">
+            <span class="text-muted">Glasskube cluster version: {{ .VersionDetails.OperatorVersion }}</span>
+            <br />
+            <span class="text-muted">Glasskube version: {{ .VersionDetails.ClientVersion }}</span>
+            <br />
+            {{ if .VersionDetails.NeedsOperatorUpdate }}
+              <span class="text-danger">New version available! ({{ .VersionDetails.ClientVersion }})</span>
+            {{ else }}
+              <span class="text-success">Up to date</span>
+            {{ end }}
+          </div>
+          <div class="col-4 text-end">
+            <a class="nav-link" href="https://glasskube.cloud/signup.html?id={{ .CloudId }}" target="_blank">
+              <span class="bi bi-box-arrow-up-right me-1"></span>Glasskube Cloud
+            </a>
+            <a class="nav-link" href="https://discord.gg/SxH6KUCGH7" target="_blank">
+              <span class="bi bi-box-arrow-up-right me-1"></span>Glasskube Discord
+            </a>
+          </div>
+        </div>
       </div>
     </footer>
 

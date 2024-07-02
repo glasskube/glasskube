@@ -23,15 +23,17 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	ctrladapter "github.com/glasskube/glasskube/internal/adapter/controllerruntime"
+	"github.com/glasskube/glasskube/internal/dependency"
+	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	"github.com/glasskube/glasskube/internal/telemetry"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -97,28 +99,59 @@ func main() {
 		os.Exit(1)
 	}
 
+	repoClient := repoclient.NewClientset(
+		ctrladapter.NewPackageClientAdapter(mgr.GetClient()),
+		ctrladapter.NewKubernetesClientAdapter(mgr.GetClient()),
+	)
+	dependencyManager := dependency.NewDependencyManager(
+		ctrladapter.NewPackageClientAdapter(mgr.GetClient()),
+		repoClient,
+	)
+
 	telemetry.InitWithManager(mgr)
+	commonReconciler := controller.PackageReconcilerCommon{
+		Client:            mgr.GetClient(),
+		EventRecorder:     mgr.GetEventRecorderFor("package-controller"),
+		Scheme:            mgr.GetScheme(),
+		HelmAdapter:       flux.NewAdapter(),
+		ManifestAdapter:   plain.NewAdapter(),
+		RepoClientset:     repoClient,
+		DependencyManager: dependencyManager,
+	}
 	if err = (&controller.PackageReconciler{
-		Client:          mgr.GetClient(),
-		EventRecorder:   mgr.GetEventRecorderFor("package-controller"),
-		Scheme:          mgr.GetScheme(),
-		HelmAdapter:     flux.NewAdapter(),
-		ManifestAdapter: plain.NewAdapter(),
+		PackageReconcilerCommon: commonReconciler,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Package")
+		os.Exit(1)
+	}
+	if err = (&controller.ClusterPackageReconciler{
+		PackageReconcilerCommon: commonReconciler,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ClusterPackage")
 		os.Exit(1)
 	}
 	if err = (&controller.PackageInfoReconciler{
 		Client:        mgr.GetClient(),
 		EventRecorder: mgr.GetEventRecorderFor("packageinfo-controller"),
 		Scheme:        mgr.GetScheme(),
+		RepoClient:    repoClient,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "PackageInfo")
 		os.Exit(1)
 	}
+	if err = (&controller.PackageRepositoryReconciler{
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		RepoClient: repoClient,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "PackageRepository")
+		os.Exit(1)
+	}
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err = (&webhook.PackageValidatingWebhook{
-			Client: mgr.GetClient(),
+			Client:             mgr.GetClient(),
+			DependendcyManager: dependencyManager,
+			RepoClient:         repoClient,
 		}).SetupWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Package")
 			os.Exit(1)

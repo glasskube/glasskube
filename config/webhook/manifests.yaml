@@ -10,6 +10,27 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /validate-packages-glasskube-dev-v1alpha1-clusterpackage
+  failurePolicy: Fail
+  name: vclusterpackage.kb.io
+  rules:
+  - apiGroups:
+    - packages.glasskube.dev
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    - DELETE
+    resources:
+    - clusterpackages
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
       path: /validate-packages-glasskube-dev-v1alpha1-package
   failurePolicy: Fail
   name: vpackage.kb.io

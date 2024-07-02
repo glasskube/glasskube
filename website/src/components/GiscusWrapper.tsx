@@ -1,9 +1,9 @@
-import React, { useEffect } from 'react';
+import React, {useEffect} from 'react';
 import Giscus from '@giscus/react';
-import { useColorMode } from '@docusaurus/theme-common';
+import {useColorMode} from '@docusaurus/theme-common';
 
-export default function GiscusWrapper(props) {
-  const { colorMode } = useColorMode();
+export default function GiscusWrapper({category, categoryId}) {
+  const {colorMode} = useColorMode();
 
   const handleGiscusMessage = (ev) => {
     if (ev.origin !== 'https://giscus.app') return;
@@ -38,8 +38,8 @@ export default function GiscusWrapper(props) {
     <Giscus
       repo="glasskube/glasskube"
       repoId="R_kgDOLDumDw"
-      category={props.category}
-      categoryId={props.categoryId}
+      category={category}
+      categoryId={categoryId}
       mapping="title"
       strict="0"
       reactionsEnabled="1"
@@ -52,7 +52,9 @@ export default function GiscusWrapper(props) {
   );
 }
 
-
-export function BlogDiscussion() { return <GiscusWrapper category="Blog" categoryId="DIC_kwDOLDumD84CfCte" /> }
-export function GuidesDiscussion() { return <GiscusWrapper category="Guides" categoryId="DIC_kwDOLDumD84CfK3R" /> }
-
+export function BlogDiscussion() {
+  return <GiscusWrapper category="Blog" categoryId="DIC_kwDOLDumD84CfCte" />;
+}
+export function Discussion({category, categoryId}) {
+  return <GiscusWrapper category={category} categoryId={categoryId} />;
+}

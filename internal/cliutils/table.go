@@ -5,25 +5,23 @@ import (
 	"io"
 	"strings"
 	"text/tabwriter"
-
-	"github.com/glasskube/glasskube/pkg/list"
 )
 
-var tabSep = "\t"
+const tabSep = "\t"
 
-func PrintPackageTable(
+func PrintTable[T any](
 	w io.Writer,
-	packages []*list.PackageWithStatus,
-	cols []string,
-	getColsOfRow func(pkg *list.PackageWithStatus) []string,
+	rowItems []T,
+	columns []string,
+	getColsOfRow func(item T) []string,
 ) error {
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(tw, strings.Join(cols, tabSep))
+	fmt.Fprintln(tw, strings.Join(columns, tabSep))
 	var sb strings.Builder
-	for _, pkg := range packages {
+	for _, pkg := range rowItems {
 		colsOfRow := getColsOfRow(pkg)
-		if len(colsOfRow) != len(cols) {
-			return fmt.Errorf("column mapping func returned %v columns instead of %v", len(colsOfRow), len(cols))
+		if len(colsOfRow) != len(columns) {
+			return fmt.Errorf("column mapping func returned %v columns instead of %v", len(colsOfRow), len(columns))
 		}
 		for _, col := range colsOfRow {
 			sb.WriteString(col)
