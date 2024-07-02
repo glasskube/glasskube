@@ -64,7 +64,7 @@ func (l *lister) GetClusterPackagesWithStatus(
 	index, err := l.fetchRepoAndInstalled(ctx, options, includeClusterPackages)
 	result := make([]*PackageWithStatus, 0, len(index))
 	for _, item := range index {
-		if itemShouldBeIncluded(&item, options) {
+		if clusterPackageShouldBeIncluded(&item, options) {
 			pkgWithStatus := PackageWithStatus{
 				MetaIndexItem:  *item.IndexItem,
 				ClusterPackage: item.ClusterPackage,
@@ -86,31 +86,44 @@ func (l *lister) GetPackagesWithStatus(
 	index, err := l.fetchRepoAndInstalled(ctx, options, includePackages)
 	result := make([]*PackagesWithStatus, 0, len(index))
 	for _, item := range index {
-		// TODO itemShouldBeIncluded is wrong here – need to check outdated in the inner loop
-		// if itemShouldBeIncluded(&item, options) {
 		ls := make([]*PackageWithStatus, 0, len(item.Packages))
 		for _, pkg := range item.Packages {
-			pkgWithStatus := PackageWithStatus{
-				MetaIndexItem: *item.IndexItem,
-				Package:       pkg,
-				Status:        client.GetStatusOrPending(pkg),
+			if packageShouldBeIncluded(&item, pkg, options) {
+				pkgWithStatus := PackageWithStatus{
+					MetaIndexItem: *item.IndexItem,
+					Package:       pkg,
+					Status:        client.GetStatusOrPending(pkg),
+				}
+				if item.PackageInfo != nil {
+					pkgWithStatus.InstalledManifest = item.PackageInfo.Status.Manifest
+				}
+				ls = append(ls, &pkgWithStatus)
 			}
-			if item.PackageInfo != nil {
-				pkgWithStatus.InstalledManifest = item.PackageInfo.Status.Manifest
-			}
-			ls = append(ls, &pkgWithStatus)
 		}
-		result = append(result, &PackagesWithStatus{
-			MetaIndexItem: *item.IndexItem,
-			Packages:      ls,
-		})
-		// }
+		hasIncludedItems := len(ls) > 0
+		if hasIncludedItems || (!options.OnlyInstalled && !options.OnlyOutdated) {
+			result = append(result, &PackagesWithStatus{
+				MetaIndexItem: *item.IndexItem,
+				Packages:      ls,
+			})
+		}
 	}
 	return result, err
 }
 
-func itemShouldBeIncluded(item *result, options ListOptions) bool {
-	return !((options.OnlyInstalled && !item.Installed()) || (options.OnlyOutdated && !item.Outdated()))
+func clusterPackageShouldBeIncluded(item *result, options ListOptions) bool {
+	return !((options.OnlyInstalled && !item.ClusterPackageInstalled()) ||
+		(options.OnlyOutdated && !item.ClusterPackageOutdated()))
+}
+
+func packageShouldBeIncluded(item *result, pkg *v1alpha1.Package, options ListOptions) bool {
+	if pkg != nil {
+		if !options.OnlyOutdated {
+			return true
+		}
+		return item.IndexItem != nil && pkg.Spec.PackageInfo.Version != item.IndexItem.LatestVersion
+	}
+	return false
 }
 
 type typeOptions int
