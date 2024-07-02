@@ -9,6 +9,7 @@ import (
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/names"
+	"github.com/glasskube/glasskube/internal/repo"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
@@ -37,4 +38,34 @@ func GetInstalledManifestForPackage(ctx context.Context, pkg ctrlpkg.Package) (*
 	} else {
 		return nil, ErrPackageNoManifest
 	}
+}
+
+func GetManifestForPackage(
+	ctx context.Context,
+	pkg ctrlpkg.Package,
+	version string,
+) (*v1alpha1.PackageManifest, error) {
+	repoClient := cliutils.RepositoryClientset(ctx)
+	var packageIndex repo.PackageIndex
+	err := repoClient.ForPackage(pkg).FetchPackageIndex(pkg.GetSpec().PackageInfo.Name, &packageIndex)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching package index: %w", err)
+	}
+
+	for _, v := range packageIndex.Versions {
+		if v.Version == version {
+			var manifest v1alpha1.PackageManifest
+			err := repoClient.ForPackage(pkg).FetchPackageManifest(
+				pkg.GetSpec().PackageInfo.Name,
+				version,
+				&manifest,
+			)
+			if err != nil {
+				return nil, fmt.Errorf("error fetching manifest: %w", err)
+			}
+			return &manifest, nil
+		}
+	}
+
+	return nil, fmt.Errorf("version %s not found for package %s", version, pkg.GetSpec().PackageInfo.Name)
 }
