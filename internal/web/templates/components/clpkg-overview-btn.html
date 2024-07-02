@@ -1,0 +1,54 @@
+{{ define "clpkg-overview-btn" }}
+  <span id="{{ .ButtonId }}">
+    {{ if eq .Status nil }}
+      <a
+        href="{{ .PackageHref }}#configuration"
+        hx-boost="true"
+        hx-select="main"
+        hx-target="main"
+        hx-swap="outerHTML"
+        class="btn btn-primary btn-sm w-100"
+        >Install</a
+      >
+    {{ else if .InDeletion }}
+      <div>
+        <button type="button" class="btn btn-primary btn-sm fw-medium w-100" disabled>Uninstalling</button>
+      </div>
+    {{ else if eq .Status.Status "Pending" }}
+      <button type="button" class="btn btn-primary btn-sm fw-medium w-100" disabled>Pending</button>
+    {{ else if eq .Status.Status "Failed" }}
+      <div class="btn btn-danger btn-sm w-100">
+        <span>Installation Failed</span>
+      </div>
+    {{ else if .UpdateAvailable }}
+      <!-- TODO update modal only for clpkgs or all?-->
+      <button
+        hx-get="{{ .PackageHref }}/update"
+        hx-target="#modal-container"
+        hx-swap="innerHTML"
+        hx-select="#pkg-update-modal"
+        name="packageName"
+        value="{{ .PackageName }}"
+        class="btn btn-warning btn-sm w-100"
+        data-bs-toggle="modal"
+        data-bs-target="#modal-container">
+        Update
+      </button>
+    {{ else if and .Manifest .Manifest.Entrypoints }}
+      <button
+        class="btn btn-success btn-sm w-100"
+        hx-post="{{ .PackageHref }}/open"
+        hx-swap="none"
+        name="packageName"
+        value="{{ .PackageName }}">
+        <i class="bi bi-box-arrow-up-right"></i>
+        <span>Open</span>
+      </button>
+    {{ else }}
+      <div class="btn btn-success btn-sm w-100">
+        <i class="bi bi-check-lg"></i>
+        <span>Installed</span>
+      </div>
+    {{ end }}
+  </span>
+{{ end }}

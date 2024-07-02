@@ -10,7 +10,7 @@ import (
 )
 
 type clientSetKubernetesClientAdapter struct {
-	clientset kubernetes.Clientset
+	clientset *kubernetes.Clientset
 }
 
 // GetConfigMap implements adapter.KubernetesClientAdapter.
@@ -29,6 +29,6 @@ func (c *clientSetKubernetesClientAdapter) GetSecret(ctx context.Context, name s
 	return c.clientset.CoreV1().Secrets(namespace).Get(ctx, name, metav1.GetOptions{})
 }
 
-func NewKubernetesClientAdapter(clientset kubernetes.Clientset) adapter.KubernetesClientAdapter {
+func NewKubernetesClientAdapter(clientset *kubernetes.Clientset) adapter.KubernetesClientAdapter {
 	return &clientSetKubernetesClientAdapter{clientset: clientset}
 }

@@ -1,0 +1,71 @@
+{{ define "content" }}
+  <div class="container-lg mt-2">
+    <div class="row p-3 col-lg-10 offset-lg-1">
+      <div>
+        <h2 class="text-reset">Package Repositories</h2>
+        <div class="alert alert-info" role="alert">
+          Please use the CLI to manage your repositories: <code>glasskube repo --help</code>.
+        </div>
+        <div class="row row-cols-1 g-2">
+          {{ range .Repositories }}
+            <div class="col">
+              <div class="card bg-body-secondary h-100 border-primary border-1">
+                <div class="card-body d-flex flex-row p-2">
+                  <div class="mx-1 align-self-center">
+                    {{ if IsRepoStatusReady . }}
+                      <i class="bi bi-circle-fill text-success" title="Ready"></i>
+                    {{ else }}
+                      <i class="bi bi-circle-fill text-danger" title="Not Ready"></i>
+                    {{ end }}
+                  </div>
+                  <div class="ms-2 d-flex flex-column">
+                    <span class="fw-semibold">
+                      {{ .Name }}
+                      {{ if .IsDefaultRepository }}
+                        <span class="badge bg-primary">Default</span>
+                      {{ end }}
+                    </span>
+                    <span class="small lh-sm fw-normal">{{ .Spec.Url }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {{ end }}
+        </div>
+      </div>
+      <div class="mt-2">
+        <h2 class="text-reset">Danger Zone</h2>
+        <div class="alert alert-warning" role="alert">
+          <div class="form-switch mb-2">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              role="switch"
+              name="enableAdvancedOptions"
+              id="enableAdvancedOptions" />
+            <label class="form-check-label mx-1 fw-semibold" for="enableAdvancedOptions">Advanced Options</label>
+          </div>
+          <p>Advanced options include package downgrades and changing the repository of an installed package.</p>
+          <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>
+          It is not recommended to use these except for testing / maintaining a Glasskube package. These should only
+          ever be used in dev/test environments, and never in production. <strong>Use at your own risk!</strong>
+        </div>
+        <div class="row row-cols-1 g-2"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    (() => {
+      const enableAdvancedOptions = document.querySelector('#enableAdvancedOptions');
+      const key = 'advancedOptions_{{ .CurrentContext }}';
+      const advancedOptions = localStorage.getItem(key) === 'true'
+      if (advancedOptions) {
+        enableAdvancedOptions.checked = true;
+      }
+      document.querySelector('#enableAdvancedOptions').addEventListener('change', (evt) => {
+        localStorage.setItem(key, evt.target.checked);
+      });
+    })();
+  </script>
+{{ end }}

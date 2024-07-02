@@ -11,7 +11,7 @@ description: Timoni installs and updates cloud-native applications as bundles (O
 
 Timoni is closer related to Helm than Glasskube, but brings some features and new approaches to the table Helm doesn't offer.
 Its bundles are OCI images, so the only way to install these bundles is to publish them first to an OCI registry,
-which makes additional security features like image (co-)singing possible.
+which makes additional security features like image (co-)signing possible.
 Similar to Glasskube it performs garbage collection of orphan resources after an uninstallation operation.
 
 Timoni is generally more mature than Glasskube. However, it doesn't prioritize making standard package installation and upgrades easy.

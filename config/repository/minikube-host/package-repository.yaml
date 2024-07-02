@@ -1,0 +1,6 @@
+apiVersion: packages.glasskube.dev/v1alpha1
+kind: PackageRepository
+metadata:
+  name: host
+spec:
+  url: http://host.minikube.internal:9090/packages/

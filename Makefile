@@ -156,6 +156,14 @@ ifndef ignore-not-found
   ignore-not-found = false
 endif
 
+.PHONY: setup
+setup: manifests kustomize install dependencies webhook cert  ## Install CRDs, webhook, local cert, default repo in the current cluster
+	$(KUSTOMIZE) build config/repository/default | $(KUBECTL) apply -f -
+
+.PHONY: dependencies
+dependencies: manifests kustomize
+	$(KUSTOMIZE) build config/dependencies | $(KUBECTL) apply -f -
+
 .PHONY: install
 install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
 	$(KUSTOMIZE) build config/crd | $(KUBECTL) apply -f -

@@ -1,0 +1,17 @@
+.borderLeft {
+  border-left: var(--glasskube-main-3) 4px solid;
+  padding-left: 1rem;
+}
+
+.screenshots {
+  display: flex;
+  align-items: center;
+  padding: 2rem 0;
+  width: 100%;
+}
+
+.sticky {
+  margin-top: 70px;
+  position: sticky;
+  top: 100px;
+}

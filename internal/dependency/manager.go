@@ -3,9 +3,11 @@ package dependency
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 	"strings"
 
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/names"
 	"go.uber.org/multierr"
 
@@ -14,25 +16,19 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/glasskube/glasskube/api/v1alpha1"
-	"github.com/glasskube/glasskube/internal/repo"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 )
 
 type DependendcyManager struct {
-	clientAdapter adapter.PackageClientAdapter
-	repoAdapter   adapter.RepoAdapter
+	pkgClient   adapter.PackageClientAdapter
+	repoAdapter adapter.RepoAdapter
 }
 
-func NewDependencyManager(adapter adapter.PackageClientAdapter) *DependendcyManager {
+func NewDependencyManager(pkgClient adapter.PackageClientAdapter, repoClient repoclient.RepoClientset) *DependendcyManager {
 	return &DependendcyManager{
-		clientAdapter: adapter,
-		repoAdapter:   &defaultRepoAdapter{repo: repo.DefaultClient},
+		pkgClient:   pkgClient,
+		repoAdapter: &defaultRepoAdapter{client: repoClient},
 	}
-}
-
-func (dm *DependendcyManager) WithRepo(repoClient repoclient.RepoClient) *DependendcyManager {
-	dm.repoAdapter = &defaultRepoAdapter{repo: repoClient}
-	return dm
 }
 
 func (dm *DependendcyManager) Validate(
@@ -49,9 +45,12 @@ func (dm *DependendcyManager) Validate(
 		return nil, err
 	}
 
-	// We can not call validate the graph here, because the initial graph, representing the current cluster state, may
+	// We do not check the validation error here, because the initial graph, representing the current cluster state, may
 	// actually be invalid. This is because we let the operator create/update dependencies which can only happen after
 	// a package is already created.
+	// We need this error though in order to check later whether a dependency error was introduced by the action that
+	// is currently validated or existed before.
+	errBefore := g.Validate()
 
 	if err := dm.add(g, *manifest, version); err != nil {
 		return nil, err
@@ -65,10 +64,12 @@ func (dm *DependendcyManager) Validate(
 
 	var conflicts []Conflict
 	for _, err := range multierr.Errors(g.Validate()) {
-		if conflict, err := errorToConflict(err); err != nil {
-			return nil, err
-		} else {
-			conflicts = append(conflicts, *conflict)
+		if isErrNew(err, errBefore) {
+			if conflict, err := errorToConflict(err); err != nil {
+				return nil, err
+			} else {
+				conflicts = append(conflicts, *conflict)
+			}
 		}
 	}
 
@@ -88,25 +89,54 @@ func (dm *DependendcyManager) Validate(
 
 // NewGraph constructs a DependencyGraph from all packages returned by clientAdapter.ListPackages
 func (dm *DependendcyManager) NewGraph(ctx context.Context) (*graph.DependencyGraph, error) {
-	pkgs, err := dm.clientAdapter.ListPackages(ctx)
-	if err != nil {
+	var allPkgs []ctrlpkg.Package
+	if pkgs, err := dm.pkgClient.ListClusterPackages(ctx); err != nil {
 		return nil, err
+	} else {
+		for i := range pkgs.Items {
+			allPkgs = append(allPkgs, &pkgs.Items[i])
+		}
 	}
+
+	if pkgs, err := dm.pkgClient.ListPackages(ctx, ""); err != nil {
+		return nil, err
+	} else {
+		for i := range pkgs.Items {
+			allPkgs = append(allPkgs, &pkgs.Items[i])
+		}
+	}
+
 	g := graph.NewGraph()
-	for _, pkg := range pkgs.Items {
+	for _, pkg := range allPkgs {
 		var deps []v1alpha1.Dependency
-		installedVersion := pkg.Spec.PackageInfo.Version
-		if !pkg.DeletionTimestamp.IsZero() {
+		installedVersion := pkg.GetSpec().PackageInfo.Version
+		if !pkg.GetDeletionTimestamp().IsZero() {
 			// A package that is currently being deleted is added to the graph, but in a state representing
 			// "not installed"
 			installedVersion = ""
-		} else if pi, err := dm.clientAdapter.GetPackageInfo(ctx, names.PackageInfoName(pkg)); err != nil {
+		} else if pi, err := dm.pkgClient.GetPackageInfo(ctx, names.PackageInfoName(pkg)); err != nil {
 			return nil, err
 		} else if pi.Status.Manifest != nil {
 			deps = pi.Status.Manifest.Dependencies
 		}
-		if err := g.Add(pkg.Name, installedVersion, deps, len(pkg.OwnerReferences) == 0); err != nil {
-			return nil, err
+		if pkg.IsNamespaceScoped() {
+			if err := g.AddNamespaced(
+				fmt.Sprintf("%v.%v", pkg.GetName(), pkg.GetNamespace()),
+				pkg.GetSpec().PackageInfo.Name,
+				installedVersion,
+				deps,
+			); err != nil {
+				return nil, err
+			}
+		} else {
+			if err := g.AddCluster(
+				pkg.GetSpec().PackageInfo.Name,
+				installedVersion,
+				deps,
+				len(pkg.GetOwnerReferences()) == 0,
+			); err != nil {
+				return nil, err
+			}
 		}
 	}
 	return g, nil
@@ -117,7 +147,7 @@ func (dm *DependendcyManager) add(
 	manifest v1alpha1.PackageManifest,
 	version string,
 ) error {
-	return g.Add(manifest.Name, version, manifest.Dependencies, g.Manual(manifest.Name))
+	return g.AddCluster(manifest.Name, version, manifest.Dependencies, g.Manual(manifest.Name))
 }
 
 // addDependencies adds the highest possible version of every uninstalled dependency and installs all transitive
@@ -136,7 +166,7 @@ func (dm *DependendcyManager) addDependencies(
 				// This error occurs when no suitable version exists.
 				// In this case, the dependency is not added to the graph and a validation error detects this later.
 				continue
-			} else if depManifest, err := dm.repoAdapter.GetManifest("", dep, maxVersion.Original()); err != nil {
+			} else if depManifest, err := dm.repoAdapter.GetManifest(dep, maxVersion.Original()); err != nil {
 				return nil, err
 			} else if err := dm.add(g, *depManifest, maxVersion.Original()); err != nil {
 				return nil, err
@@ -175,9 +205,23 @@ func errorToConflict(err error) (*Conflict, error) {
 	}
 }
 
+func isErrNew(errCurrent error, errBefore error) bool {
+	if errCurrentDep := (&graph.DependencyError{}); errors.As(errCurrent, &errCurrentDep) {
+		for _, err := range multierr.Errors(errBefore) {
+			if errBeforeDep := (&graph.DependencyError{}); errors.As(err, &errBeforeDep) &&
+				errBeforeDep.Name == errCurrentDep.Name &&
+				errBeforeDep.Dependency == errCurrentDep.Dependency {
+				return false
+			}
+
+		}
+	}
+	return true
+}
+
 // getVersions is a utility to get all versions for a package from repoAdapter and also parse them
 func (dm *DependendcyManager) getVersions(name string) ([]*semver.Version, error) {
-	if versions, err := dm.repoAdapter.GetVersions("", name); err != nil {
+	if versions, err := dm.repoAdapter.GetVersions(name); err != nil {
 		return nil, err
 	} else {
 		parsedVersions := make([]*semver.Version, len(versions))

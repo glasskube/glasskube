@@ -38,7 +38,8 @@ func (mgr *OwnerManager) GetScheme() *runtime.Scheme {
 }
 
 func (mgr *OwnerManager) HasOwner(owner client.Object, obj metav1.Object) (bool, error) {
-	if _, err := mgr.findOwnerReferenceIndex(owner, obj.GetOwnerReferences()); err != nil && !errors.Is(err, ErrNoSuchOwner) {
+	_, err := mgr.findOwnerReferenceIndex(owner, obj.GetOwnerReferences())
+	if err != nil && !errors.Is(err, ErrNoSuchOwner) {
 		return false, err
 	} else if errors.Is(err, ErrNoSuchOwner) {
 		return false, nil
@@ -90,30 +91,27 @@ func (mgr *OwnerManager) SetOwner(
 	obj metav1.Object,
 	options OwnerOptions,
 ) error {
+	ctrlOptions := []controllerutil.OwnerReferenceOption{
+		controllerutil.WithBlockOwnerDeletion(options&BlockOwnerDeletion != 0),
+	}
+
 	if options&Controller != 0 {
-		if err := controllerutil.SetControllerReference(owner, obj, mgr.scheme); err != nil {
+		if err := controllerutil.SetControllerReference(owner, obj, mgr.scheme, ctrlOptions...); err != nil {
 			return err
 		}
 	} else {
-		if err := controllerutil.SetOwnerReference(owner, obj, mgr.scheme); err != nil {
+		if err := controllerutil.SetOwnerReference(owner, obj, mgr.scheme, ctrlOptions...); err != nil {
 			return err
 		}
 	}
-	references := obj.GetOwnerReferences()
-	i, err := mgr.findOwnerReferenceIndex(owner, references)
-	if err != nil {
-		return err
-	}
-	ref := &references[i]
-	blockOwnerDeletion := options&BlockOwnerDeletion != 0
-	ref.BlockOwnerDeletion = &blockOwnerDeletion
-	obj.SetOwnerReferences(references)
 
 	return nil
 }
 
-// SetOwnerIfManagedOrNotExists ensures that the operator only sets owner references on objects when it also manages them.
-func (mgr *OwnerManager) SetOwnerIfManagedOrNotExists(c client.Client, ctx context.Context, owner client.Object, obj client.Object) error {
+// SetOwnerIfManagedOrNotExists ensures that the operator only sets owner references on objects when it also manages
+// them.
+func (mgr *OwnerManager) SetOwnerIfManagedOrNotExists(
+	c client.Client, ctx context.Context, owner client.Object, obj client.Object) error {
 	if shouldSetOwner, err := labels.IsManagedOrNotExists(c, ctx, obj); err != nil {
 		return err
 	} else if shouldSetOwner {

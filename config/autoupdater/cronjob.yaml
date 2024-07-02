@@ -1,0 +1,19 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: glasskube-autoupdate
+spec:
+  schedule: "0 0 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          securityContext:
+            runAsNonRoot: true
+          containers:
+            - name: glasskube
+              image: ghcr.io/glasskube/glasskube:v0.11.0 # x-release-please-version
+              args:
+                - autoupdate
+          serviceAccountName: glasskube-autoupdate
+          restartPolicy: OnFailure

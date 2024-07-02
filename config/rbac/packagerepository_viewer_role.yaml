@@ -1,0 +1,23 @@
+# permissions for end users to view packagerepositories.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: glasskube
+    app.kubernetes.io/managed-by: kustomize
+  name: packagerepository-viewer-role
+rules:
+- apiGroups:
+  - packages.glasskube.dev
+  resources:
+  - packagerepositories
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - packages.glasskube.dev
+  resources:
+  - packagerepositories/status
+  verbs:
+  - get

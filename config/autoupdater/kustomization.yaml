@@ -1,0 +1,7 @@
+resources:
+  - serviceaccount.yaml
+  - cronjob.yaml
+  - rbac.yaml
+namespace: glasskube-system
+commonLabels:
+  app.kubernetes.io/name: glasskube-autoupdate
