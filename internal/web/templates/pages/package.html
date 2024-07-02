@@ -122,7 +122,7 @@
                       hx-swap="main"
                       hx-target="main"
                       hx-get="{{ .PackageHref }}"
-                      hx-include="#pkg-install-repository">
+                      {{ if gt (len .Repositories) 1 }}hx-include="#pkg-install-repository"{{ end }}>
                       {{ with $idx := .PackageIndex }}
                         {{ range $idx.Versions | Reversed }}
                           <option value="{{ .Version }}" {{ if eq .Version $.SelectedVersion }}selected{{ end }}>
