@@ -137,6 +137,7 @@ func printClusterPackageTable(packages []*list.PackageWithStatus) {
 	if listCmdOptions.ShowDescription {
 		header = append(header, "DESCRIPTION")
 	}
+
 	header = append(header, "STATUS")
 	header = append(header, "MESSAGE")
 
