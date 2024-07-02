@@ -136,6 +136,7 @@ var describeCmd = &cobra.Command{
 			if !pkg.IsNil() {
 				fmt.Println(bold("Version:    "), version(pkg, latestVersion))
 				fmt.Println(bold("Status:     "), status(pkg))
+				fmt.Println(bold("Message:     "), message(pkg))
 				fmt.Println(bold("Auto-Update:"), clientutils.AutoUpdateString(pkg, "Disabled"))
 			} else if len(pkgs) > 0 {
 				fmt.Println()
@@ -145,6 +146,7 @@ var describeCmd = &cobra.Command{
 					fmt.Println(bold("    Namespace:  "), pkg.Namespace)
 					fmt.Println(bold("    Version:    "), version(&pkg, latestVersion))
 					fmt.Println(bold("    Status:     "), status(&pkg))
+					fmt.Println(bold("    Message:     "), message(&pkg))
 					fmt.Println(bold("    Auto-Update:"), clientutils.AutoUpdateString(&pkg, "Disabled"))
 				}
 			}
@@ -327,6 +329,17 @@ func status(pkg ctrlpkg.Package) string {
 	} else {
 		return color.New(color.Faint).Sprint("Not installed")
 	}
+}
+
+func message(pkg ctrlpkg.Package) string {
+	pkgStatus := client.GetStatusOrPending(pkg)
+	if pkgStatus != nil {
+		if pkgStatus.Status == string(condition.Ready) {
+			return color.GreenString(pkgStatus.Message)
+		}
+	}
+
+	return ""
 }
 
 func version(pkg ctrlpkg.Package, latestVersion string) string {
