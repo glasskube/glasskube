@@ -129,7 +129,7 @@ func handleEmptyList(resource string) {
 }
 
 func printClusterPackageTable(packages []*list.PackageWithStatus) {
-	header := []string{"NAME", "STATUS", "VERSION", "AUTO-UPDATE"}
+	header := []string{"NAME", "VERSION", "AUTO-UPDATE"}
 	if listCmdOptions.ShowLatestVersion {
 		header = append(header, "LATEST VERSION")
 	}
@@ -137,13 +137,14 @@ func printClusterPackageTable(packages []*list.PackageWithStatus) {
 	if listCmdOptions.ShowDescription {
 		header = append(header, "DESCRIPTION")
 	}
+	header = append(header, "STATUS")
 	header = append(header, "MESSAGE")
 
 	err := cliutils.PrintTable(os.Stdout,
 		packages,
 		header,
 		func(pkg *list.PackageWithStatus) []string {
-			row := []string{pkg.Name, statusString(*pkg), versionString(*pkg),
+			row := []string{pkg.Name, versionString(*pkg),
 				clientutils.AutoUpdateString(pkg.ClusterPackage, "")}
 			if listCmdOptions.ShowLatestVersion {
 				row = append(row, pkg.LatestVersion)
@@ -164,6 +165,7 @@ func printClusterPackageTable(packages []*list.PackageWithStatus) {
 			if listCmdOptions.ShowDescription {
 				row = append(row, pkg.ShortDescription)
 			}
+			row = append(row, statusString(*pkg))
 			row = append(row, messageString(*pkg))
 			return row
 		})
@@ -174,7 +176,7 @@ func printClusterPackageTable(packages []*list.PackageWithStatus) {
 }
 
 func printPackageTable(packages []*list.PackagesWithStatus) {
-	header := []string{"PACKAGENAME", "NAMESPACE", "NAME", "STATUS", "VERSION", "AUTO-UPDATE"}
+	header := []string{"PACKAGENAME", "NAMESPACE", "NAME", "VERSION", "AUTO-UPDATE"}
 	if listCmdOptions.ShowLatestVersion {
 		header = append(header, "LATEST VERSION")
 	}
@@ -182,6 +184,7 @@ func printPackageTable(packages []*list.PackagesWithStatus) {
 	if listCmdOptions.ShowDescription {
 		header = append(header, "DESCRIPTION")
 	}
+	header = append(header, "STATUS")
 	header = append(header, "MESSAGE")
 
 	var flattenedPkgs []*list.PackageWithStatus
@@ -199,7 +202,7 @@ func printPackageTable(packages []*list.PackagesWithStatus) {
 		flattenedPkgs,
 		header,
 		func(pkg *list.PackageWithStatus) []string {
-			row := []string{pkg.Name, pkgNamespaceString(*pkg), pkgNameString(*pkg), statusString(*pkg), versionString(*pkg),
+			row := []string{pkg.Name, pkgNamespaceString(*pkg), pkgNameString(*pkg), versionString(*pkg),
 				clientutils.AutoUpdateString(pkg.Package, "")}
 			if listCmdOptions.ShowLatestVersion {
 				row = append(row, pkg.LatestVersion)
@@ -220,6 +223,7 @@ func printPackageTable(packages []*list.PackagesWithStatus) {
 			if listCmdOptions.ShowDescription {
 				row = append(row, pkg.ShortDescription)
 			}
+			row = append(row, statusString(*pkg))
 			row = append(row, messageString(*pkg))
 			return row
 		})
