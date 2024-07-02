@@ -138,12 +138,28 @@ func (t *templates) parseTemplates() {
 		},
 		"PackageDetailRefreshId": func(manifest *v1alpha1.PackageManifest, pkg ctrlpkg.Package) string {
 			var id string
+			var scope string
 			if manifest.Scope.IsCluster() {
 				id = manifest.Name
+				scope = "clusterpackage"
 			} else if !pkg.IsNil() {
 				id = fmt.Sprintf("%s-%s", pkg.GetNamespace(), pkg.GetName())
+				scope = "package"
 			}
-			return fmt.Sprintf("refresh-pkg-detail-%s", id)
+			return fmt.Sprintf("refresh-%s-detail-%s", scope, id)
+		},
+		"PackageDetailHeaderRefreshId": func(manifest *v1alpha1.PackageManifest, pkg ctrlpkg.Package) string {
+			// TODO one function/utility for all of these
+			var id string
+			var scope string
+			if manifest.Scope.IsCluster() {
+				id = manifest.Name
+				scope = "clusterpackage"
+			} else if !pkg.IsNil() {
+				id = fmt.Sprintf("%s-%s", pkg.GetNamespace(), pkg.GetName())
+				scope = "package"
+			}
+			return fmt.Sprintf("refresh-%s-detail-header-%s", scope, id)
 		},
 	}
 
