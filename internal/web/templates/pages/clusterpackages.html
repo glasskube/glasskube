@@ -10,7 +10,7 @@
     <div
       class="m-0 p-0"
       id="clusterpackage-overview-swapped"
-      hx-trigger="sse:refresh-clusterpackage-overview"
+      hx-trigger="sse:{{ ClusterPackageOverviewRefreshId }}"
       hx-get="/clusterpackages"
       hx-swap="innerHTML"
       hx-select="#clusterpackage-overview-swapped"

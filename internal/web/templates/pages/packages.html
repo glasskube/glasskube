@@ -9,7 +9,7 @@
     <div
       class="m-0 p-0"
       id="package-overview-swapped"
-      hx-trigger="sse:refresh-package-overview"
+      hx-trigger="sse:{{ PackageOverviewRefreshId }}"
       hx-get="/packages"
       hx-swap="innerHTML"
       hx-select="#package-overview-swapped"

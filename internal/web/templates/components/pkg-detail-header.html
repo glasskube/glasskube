@@ -1,109 +1,121 @@
 {{ define "pkg-detail-header" }}
-  <div class="d-flex flex-column">
-    <div class="d-flex align-items-center">
-      <div class="flex-shrink-0 ps-1 pe-2 py-1 align-self-center">
-        <a
-          class="text-reset"
-          href="{{ .PackageHref }}"
-          hx-boost="true"
-          hx-swap="outerHTML"
-          hx-select="main"
-          hx-target="main">
-          {{ if eq .Manifest.IconUrl "" }}
-            <img src="/static/assets/glasskube-logo.svg" alt="{{ .Manifest.Name }}" style="width: 8rem; height:auto" />
-          {{ else }}
-            <img src="{{ .Manifest.IconUrl }}" alt="{{ .Manifest.Name }}" style="width: 8rem; height:auto" />
-          {{ end }}
-        </a>
-      </div>
-      <div class="flex-grow-1 ps-0 pe-1 py-1">
-        <div class="mb-2">
-          <span class="d-flex ">
-            <a
-              class="text-reset text-decoration-none flex-grow-1"
-              href="{{ .PackageHref }}"
-              hx-boost="true"
-              hx-swap="outerHTML"
-              hx-select="main"
-              hx-target="main">
-              <h1 class="text-reset m-0">
-                {{ .Manifest.Name }}
-              </h1>
-            </a>
-            <span class="align-self-center mx-auto">
-              {{ template "pkg-detail-btns" ForPkgDetailBtns .Manifest.Name .Status .Manifest .Package .UpdateAvailable }}
-            </span>
-          </span>
+  <div
+    class="d-flex flex-column"
+    id="pkg-detail-header"
+    hx-swap="innerHTML"
+    hx-select="#pkg-detail-header-swapped"
+    hx-target="#pkg-detail-header-swapped"
+    hx-trigger="sse:{{ PackageDetailHeaderRefreshId .Manifest .Package }}"
+    hx-get="{{ .PackageHref }}?component=header">
+    <div id="pkg-detail-header-swapped">
+      <div class="d-flex align-items-center">
+        <div class="flex-shrink-0 ps-1 pe-2 py-1 align-self-center">
+          <a
+            class="text-reset"
+            href="{{ .PackageHref }}"
+            hx-boost="true"
+            hx-swap="outerHTML"
+            hx-select="main"
+            hx-target="main">
+            {{ if eq .Manifest.IconUrl "" }}
+              <img
+                src="/static/assets/glasskube-logo.svg"
+                alt="{{ .Manifest.Name }}"
+                style="width: 8rem; height:auto" />
+            {{ else }}
+              <img src="{{ .Manifest.IconUrl }}" alt="{{ .Manifest.Name }}" style="width: 8rem; height:auto" />
+            {{ end }}
+          </a>
         </div>
-        <span class="lh-sm">
-          {{ .Manifest.ShortDescription }}
-        </span>
-        <div class="mt-2">
-          {{ if or .ShowDiscussionLink }}
-            <a
-              id="discussion-link"
-              class="text-reset me-2 btn btn-sm bg-body-secondary border-primary border-1 px-2 position-relative"
-              hx-boost="true"
-              hx-select="main"
-              hx-target="main"
-              hx-swap="outerHTML"
-              href="{{ .PackageHref }}/discussion">
-              <span class="bi bi-heart-fill text-danger"></span>
-              <span class="bi bi-hand-thumbs-up-fill text-warning"></span>
-              <span class="bi bi-chat-left-text-fill text-info"></span>
-              <span
-                id="discussion-link-badge"
-                class="position-absolute top-0 start-100 translate-middle badge bg-accent lh-sm"
-                hx-select="#discussion-link-badge"
-                hx-target="this"
+        <div class="flex-grow-1 ps-0 pe-1 py-1">
+          <div class="mb-2">
+            <span class="d-flex ">
+              <a
+                class="text-reset text-decoration-none flex-grow-1"
+                href="{{ .PackageHref }}"
+                hx-boost="true"
                 hx-swap="outerHTML"
-                hx-get="{{ .PackageHref }}/discussion/badge"
-                hx-trigger="load"
-                hx-indicator="this">
-                &mldr;
+                hx-select="main"
+                hx-target="main">
+                <h1 class="text-reset m-0">
+                  {{ .Manifest.Name }}
+                </h1>
+              </a>
+              <span class="align-self-center mx-auto">
+                {{ template "pkg-detail-btns" ForPkgDetailBtns .Manifest.Name .Status .Manifest .Package .UpdateAvailable }}
               </span>
-            </a>
-          {{ end }}
-          {{ if PackageManifestUrl .Package }}
-            <a class="icon-link text-reset me-2 d-inline" href="{{ PackageManifestUrl .Package }}" target="_blank">
-              <span class="bi bi-box-arrow-up-right"></span>
-              Glasskube Package Manifest
-            </a>
-          {{ end }}
-          {{ range .Manifest.References }}
-            <a class="icon-link text-reset me-2 d-inline" href="{{ .Url }}" target="_blank">
-              <span class="bi bi-box-arrow-up-right"></span>
-              {{ .Label }}
-            </a>
-          {{ end }}
+            </span>
+          </div>
+          <span class="lh-sm">
+            {{ .Manifest.ShortDescription }}
+          </span>
+          <div class="mt-2">
+            {{ if or .ShowDiscussionLink }}
+              <a
+                id="discussion-link"
+                class="text-reset me-2 btn btn-sm bg-body-secondary border-primary border-1 px-2 position-relative"
+                hx-boost="true"
+                hx-select="main"
+                hx-target="main"
+                hx-swap="outerHTML"
+                href="{{ .PackageHref }}/discussion">
+                <span class="bi bi-heart-fill text-danger"></span>
+                <span class="bi bi-hand-thumbs-up-fill text-warning"></span>
+                <span class="bi bi-chat-left-text-fill text-info"></span>
+                <span
+                  id="discussion-link-badge"
+                  class="position-absolute top-0 start-100 translate-middle badge bg-accent lh-sm"
+                  hx-select="#discussion-link-badge"
+                  hx-target="this"
+                  hx-swap="outerHTML"
+                  hx-get="{{ .PackageHref }}/discussion/badge"
+                  hx-trigger="load"
+                  hx-indicator="this">
+                  &mldr;
+                </span>
+              </a>
+            {{ end }}
+            {{ if PackageManifestUrl .Package }}
+              <a class="icon-link text-reset me-2 d-inline" href="{{ PackageManifestUrl .Package }}" target="_blank">
+                <span class="bi bi-box-arrow-up-right"></span>
+                Glasskube Package Manifest
+              </a>
+            {{ end }}
+            {{ range .Manifest.References }}
+              <a class="icon-link text-reset me-2 d-inline" href="{{ .Url }}" target="_blank">
+                <span class="bi bi-box-arrow-up-right"></span>
+                {{ .Label }}
+              </a>
+            {{ end }}
+          </div>
         </div>
       </div>
+      {{ if ne .Status nil }}
+        <div class="mt-2">
+          {{ if .Manifest.Scope.IsNamespaced }}
+            <span class="badge bg-body-secondary text-primary-emphasis border-primary border border-1 p-1 fw-normal">
+              Namespace:
+              <strong>{{ .Package.Namespace }}</strong>
+            </span>
+            <span class="badge bg-body-secondary text-primary-emphasis border-primary border border-1 p-1 fw-normal">
+              Name:
+              <strong>{{ .Package.Name }}</strong>
+            </span>
+          {{ end }}
+          <span class="badge bg-body-secondary text-primary-emphasis border-primary border border-1 p-1 fw-normal">
+            Repository:
+            <strong>{{ .Package.Spec.PackageInfo.RepositoryName }}</strong>
+          </span>
+          <span class="badge bg-body-secondary text-primary-emphasis border-primary border border-1 p-1 fw-normal">
+            Installed version:
+            <strong>{{ .Package.Spec.PackageInfo.Version }}</strong>
+          </span>
+          <span class="badge bg-body-secondary text-primary-emphasis border-primary border border-1 p-1 fw-normal">
+            Auto-Update:
+            <strong>{{ .AutoUpdate }}</strong>
+          </span>
+        </div>
+      {{ end }}
     </div>
-    {{ if ne .Status nil }}
-      <div class="mt-2">
-        {{ if .Manifest.Scope.IsNamespaced }}
-          <span class="badge bg-body-secondary text-primary-emphasis border-primary border border-1 p-1 fw-normal">
-            Namespace:
-            <strong>{{ .Package.Namespace }}</strong>
-          </span>
-          <span class="badge bg-body-secondary text-primary-emphasis border-primary border border-1 p-1 fw-normal">
-            Name:
-            <strong>{{ .Package.Name }}</strong>
-          </span>
-        {{ end }}
-        <span class="badge bg-body-secondary text-primary-emphasis border-primary border border-1 p-1 fw-normal">
-          Repository:
-          <strong>{{ .Package.Spec.PackageInfo.RepositoryName }}</strong>
-        </span>
-        <span class="badge bg-body-secondary text-primary-emphasis border-primary border border-1 p-1 fw-normal">
-          Installed version:
-          <strong>{{ .Package.Spec.PackageInfo.Version }}</strong>
-        </span>
-        <span class="badge bg-body-secondary text-primary-emphasis border-primary border border-1 p-1 fw-normal">
-          Auto-Update:
-          <strong>{{ .AutoUpdate }}</strong>
-        </span>
-      </div>
-    {{ end }}
   </div>
 {{ end }}
