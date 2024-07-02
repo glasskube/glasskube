@@ -1,0 +1,173 @@
+---
+title: Quickwit on Kubernetes
+slug: Quickwit
+description: 'Learn how to install Quickwit on Kubernetes'
+authors: [ jpage ]
+tags: [ Quickwit ]
+---
+
+import CustomGitHubButton from '../src/components/buttons/CustomGitHubButton.tsx';
+import Discussion from '@site/src/components/GiscusWrapper';
+import Install from '../src/partials/_install.mdx';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+![quickwit-thumbnail](https://github.com/glasskube/glasskube/assets/38757612/03478d89-1d11-4263-93ca-f80d1607cef9)
+
+## Installation guide 🦮
+
+### Prerequisites​
+
+- Access to a Kubernetes cluster (you can easily create a local cluster by using [Minikube](https://minikube.sigs.k8s.io/docs/start/?arch=%2Fmacos%2Fx86-64%2Fstable%2Fbinary+download) or [Kind](https://kind.sigs.k8s.io/))
+- [kubectl](https://kubernetes.io/docs/tasks/tools/) isn't strictly speaking a dependency for installing packages via glasskube, but it is the recommended way to interact with the cluster. Therefore, it is highly recommended. Installation instructions are available for macOS, Linux and Windows.
+
+## Install Glasskube
+
+If you've already installed glasskube you can skip this step.
+If not, glasskube can easily be installed by following your [distribution's specific instructions](https://glasskube.dev/docs/getting-started/install/).
+
+For this demo I'll be using a MacOs distribution:
+``` yaml
+brew install glasskube/tap/glasskube # install the glasskube cli
+minikube start # start a minikube Kubernetes cluster
+glasskube bootstrap # install glasskube on the kind cluster
+```
+For more installation [guides, find them here.](https://glasskube.dev/docs/getting-started/install/)
+
+Once Glasskube has been installed access via the UI with: 
+```
+glasskube serve
+```
+The dashboard will open up on `http://localhost:8580/`. 
+
+## Creating an S3-Compatible Bucket
+
+Before installing Quickwit, you'll need to create an object storage bucket to hold your Quickwit `indexes`. You can use use your choice of Cloud provider such as [Scaleway](https://www.scaleway.com/en/), [AWS](https://aws.amazon.com/) S3 or [MinIO](https://min.io/). Refer to our official Quickwit [documentation](https://quickwit.io/docs/configuration/storage-config) for storage configuration details.
+
+Here I will be creating an `AWS S3 bucket` to store the Quickwit indexes.
+![s3-dashboard](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/a3aed8xtewfgf10filkj.png)
+
+**Steps:**
+- Navigate to the AWS management console and create a new S3 bucket.
+- In [IAM generate an API key](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html), with S3 permissions, save the 'Access Key Id' and 'Secret Key', we will need them shortly.
+
+## Deploy Quickwit​
+
+From the Glasskube dashboard, find the `Quickwit` pacakge and add your custom configuration parameters.
+
+![quickmit-parameters](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/9ye6uqvhdwciumt65aal.png)
+
+- **defaultIndexRootUri**: for this demo it's `s3://quickwit-indexes`. 
+- **metastoreUri:** we won't use PostgreSQL so let's pick the same value we used for `defaultIndexRootUri`.
+- **s3AccessKeyId:** the `"Access Key Id"` from AWS we generated before.
+- **s3Endpoint:** Custom endpoint for use with S3-compatible providers. Not needed for S3 configuration.
+- **s3Flavor:** we are using the default `empty value` for genuine S3-compatible object storage.
+- **s3Region:** `US-east-1` in my case.
+- **s3SecretAccessKey:** the `"Secret Key"` from AWS we generated before.
+
+Here you can find the [official Quickwit documentation ](https://quickwit.io/blog/glasskube)for parameter completion. 
+
+It's also possible to install and configure Quickwit using the Glasskube CLI by running: 
+
+``` bash
+glasskube install quickwit
+```
+Once installed, you can see that a `quickwit` namespace has been created:
+``` bash
+default
+flux-system
+glasskube-system
+kube-node-lease
+kube-public
+kube-system
+kubernetes-dashboard
+quickwit
+```
+Now, check to see if the pods are running:
+``` bash
+NAME                                               READY   STATUS    RESTARTS      AGE
+quickwit-quickwit-control-plane-86bd9955f7-bwm2r   1/1     Running   1 (27m ago)   29m
+quickwit-quickwit-indexer-0                        1/1     Running   1 (27m ago)   29m
+quickwit-quickwit-janitor-9479697ff-x4x2c          1/1     Running   1 (27m ago)   29m
+quickwit-quickwit-metastore-56ff74df9f-k6d2g       1/1     Running   0             29m
+quickwit-quickwit-searcher-0                       1/1     Running   1 (27m ago)   29m
+quickwit-quickwit-searcher-1                       1/1     Running   0             27m
+quickwit-quickwit-searcher-2                       1/1     Running   0             27m
+```
+
+We can try to access to the Quickwit UI by port-forwarding the Quickwit searcher (dashboard) pod:
+
+``` bash
+$ kubectl -n quickwit port-forward pod/quickwit-quickwit-searcher-0 7280
+```
+Head over to http://localhost:7280. And you should be ready to go!
+
+![quickwit dashboard](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/chju7g5d8nqx6nguzhbp.png)
+
+### Create your first index​
+
+Before adding **documents** to [Quickwit](https://quickwit.io/), you need to create an **index** configured with a YAML config file. This config file notably lets you define how to map your input documents to your index fields and whether these fields should be stored and indexed. See the [index config documentation](https://quickwit.io/docs/main-branch/configuration/index-config).
+
+Let's create an index configured to receive Stackoverflow posts (questions and answers).
+```
+# First, download the stackoverflow dataset config from Quickwit repository.
+curl -o stackoverflow-index-config.yaml https://raw.githubusercontent.com/quickwit-oss/quickwit/main/config/tutorials/stackoverflow/index-config.yaml
+```
+The index config defines three fields: **title**, **body** and **creationDate**. _title_ and _body_ [are indexed and tokenized](https://quickwit.io/docs/configuration/index-config#text-type), and they are also used as default search fields, which means they will be used for search if you do not target a specific field in your query. _creationDate_ serves as the timestamp for each record. There are no more explicit field definitions as we can use the default [dynamic mode](https://quickwit.io/docs/main-branch/configuration/index-config#mode): the undeclared fields will still be indexed, by default fast fields are enabled to enable aggregation queries. and the raw tokenizer is used for text.
+
+And here is the complete config:
+``` yaml
+# Index config file for stackoverflow dataset.
+#
+version: 0.7
+
+index_id: stackoverflow
+
+doc_mapping:
+  field_mappings:
+    - name: title
+      type: text
+      tokenizer: default
+      record: position
+      stored: true
+    - name: body
+      type: text
+      tokenizer: default
+      record: position
+      stored: true
+    - name: creationDate
+      type: datetime
+      fast: true
+      input_formats:
+        - rfc3339
+      fast_precision: seconds
+  timestamp_field: creationDate
+
+search_settings:
+  default_search_fields: [title, body]
+
+indexing_settings:
+  commit_timeout_secs: 30
+```
+Now we can create the index with the command:
+
+```
+./quickwit index create --index-config ./stackoverflow-index-config.yaml
+```
+Check that a directory `./qwdata/indexes/stackoverflow` has been created, Quickwit will write index files here and a `metastore.json` which contains the [index metadata](https://quickwit.io/docs/overview/architecture#index). You're now ready to fill the index.
+
+Continue on to the Quickwit documentation to add your [first documents](https://quickwit.io/docs/get-started/quickstart#lets-add-some-documents) and execute your [first search queries](https://quickwit.io/docs/get-started/quickstart#execute-search-queries).
+
+---
+
+If you like this sort of content and would like to see more of it, please consider supporting us by giving us a Star on [GitHub](https://github.com/glasskube/glasskube) 🙏
+[![cats-like--github-stars](https://github.com/glasskube/glasskube/assets/38757612/05a03edf-7d6a-48fd-9b24-598abcfd1e9a)](https://github.com/glasskube/glasskube)
+
+
+<div style={{ display: 'flex', justifyContent: 'right' }}>
+  <CustomGitHubButton
+    href="https://github.com/glasskube/glasskube"
+  />
+</div>
+
+<Discussion category="Guides" categoryId="DIC_kwDOLDumD84CfK3R" />
