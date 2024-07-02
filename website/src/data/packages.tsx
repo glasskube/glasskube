@@ -48,7 +48,7 @@ const Users: Package[] = [
   {
     name: 'ingress-nginx',
     shortDescription: 'Ingress-NGINX Controller for Kubernetes',
-    iconUrl: 'https://github.com/glasskube/glasskube/assets/3041752/27df77f1-7eb9-43df-b6b8-40c1d9052b69',
+    iconUrl: 'https://github.com/glasskube/glasskube/assets/3041752/6701cd57-b690-4641-b967-ef2faee646e5',
     websiteUrl: 'https://kubernetes.github.io/ingress-nginx/',
     sourceUrl: 'https://github.com/kubernetes/ingress-nginx',
     tags: ['networking'],
