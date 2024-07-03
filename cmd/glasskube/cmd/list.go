@@ -106,6 +106,7 @@ func init() {
 
 	listCmd.MarkFlagsMutuallyExclusive("show-description", "more")
 	listCmd.MarkFlagsMutuallyExclusive("show-latest", "more")
+	listCmd.MarkFlagsMutuallyExclusive("show-message", "more")
 
 	RootCmd.AddCommand(listCmd)
 }

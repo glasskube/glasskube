@@ -30,6 +30,7 @@ import (
 var updateCmdOptions struct {
 	Version string
 	Yes     bool
+	dryRun  bool
 	OutputOptions
 	NamespaceOptions
 	KindOptions
@@ -46,6 +47,10 @@ var updateCmd = &cobra.Command{
 		updater := update.NewUpdater(ctx)
 		if !rootCmdOptions.NoProgress {
 			updater.WithStatusWriter(statuswriter.Spinner())
+		}
+
+		if updateCmdOptions.dryRun {
+
 		}
 
 		var tx *update.UpdateTransaction
@@ -110,6 +115,10 @@ var updateCmd = &cobra.Command{
 			printTransaction(*tx)
 			if !updateCmdOptions.Yes && !cliutils.YesNoPrompt("Do you want to apply these updates?", false) {
 				fmt.Fprintf(os.Stderr, "⛔ Update cancelled. No changes were made.\n")
+				cliutils.ExitSuccess()
+			}
+			if updateCmdOptions.dryRun {
+				fmt.Fprintf(os.Stderr, "📝 Dry run: No changes were made.\n")
 				cliutils.ExitSuccess()
 			}
 			updatedPackages, err := updater.ApplyBlocking(ctx, tx)
@@ -272,6 +281,8 @@ func init() {
 	_ = updateCmd.RegisterFlagCompletionFunc("version", completeUpgradablePackageVersions)
 	updateCmd.PersistentFlags().BoolVarP(&updateCmdOptions.Yes, "yes", "y", false,
 		"do not ask for any confirmation")
+	updateCmd.PersistentFlags().BoolVar(&updateCmdOptions.dryRun, "dry-run", false,
+		"Do not update any packages but run all validations")
 	updateCmdOptions.OutputOptions.AddFlagsToCommand(updateCmd)
 	updateCmdOptions.KindOptions.AddFlagsToCommand(updateCmd)
 	updateCmdOptions.NamespaceOptions.AddFlagsToCommand(updateCmd)
