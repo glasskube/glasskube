@@ -47,7 +47,7 @@ type KindOptions struct {
 }
 
 func (opts *KindOptions) AddFlagsToCommand(cmd *cobra.Command) {
-	cmd.Flags().Var(&opts.Kind, "kind", "specify the kind of the resource")
+	cmd.Flags().Var(&opts.Kind, "kind", "Specify the kind of the resource")
 }
 
 func DefaultKindOptions() KindOptions {
