@@ -30,7 +30,6 @@ import (
 var updateCmdOptions struct {
 	Version string
 	Yes     bool
-	dryRun  bool
 	OutputOptions
 	NamespaceOptions
 	KindOptions
@@ -273,8 +272,6 @@ func init() {
 	_ = updateCmd.RegisterFlagCompletionFunc("version", completeUpgradablePackageVersions)
 	updateCmd.PersistentFlags().BoolVarP(&updateCmdOptions.Yes, "yes", "y", false,
 		"do not ask for any confirmation")
-	updateCmd.PersistentFlags().BoolVar(&updateCmdOptions.dryRun, "dry-run", false,
-		"Do not update any packages but run all validations")
 	updateCmdOptions.OutputOptions.AddFlagsToCommand(updateCmd)
 	updateCmdOptions.KindOptions.AddFlagsToCommand(updateCmd)
 	updateCmdOptions.NamespaceOptions.AddFlagsToCommand(updateCmd)
