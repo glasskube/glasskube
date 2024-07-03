@@ -91,21 +91,11 @@ func runConfigure(cmd *cobra.Command, args []string) {
 
 	switch pkg := pkg.(type) {
 	case *v1alpha1.ClusterPackage:
-		if err := pkgClient.ClusterPackages().Get(ctx, pkg.Name, &v1alpha1.ClusterPackage{}); err != nil {
-			// Don't exit, we can still try to call update ...
-			fmt.Fprintf(os.Stderr, "⚠️  error fetching package: %v\n", err)
-		}
-
 		if err := pkgClient.ClusterPackages().Update(ctx, pkg, opts); err != nil {
 			fmt.Fprintf(os.Stderr, "❌ error updating package: %v\n", err)
 			cliutils.ExitWithError()
 		}
 	case *v1alpha1.Package:
-		if err := pkgClient.Packages(pkg.Namespace).Get(ctx, pkg.Name, &v1alpha1.Package{}); err != nil {
-			// Don't exit, we can still try to call update ...
-			fmt.Fprintf(os.Stderr, "⚠️  error fetching package: %v\n", err)
-		}
-
 		if err := pkgClient.Packages(pkg.Namespace).Update(ctx, pkg, opts); err != nil {
 			fmt.Fprintf(os.Stderr, "❌ error updating package: %v\n", err)
 			cliutils.ExitWithError()
