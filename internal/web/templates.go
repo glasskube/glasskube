@@ -206,6 +206,8 @@ func (g *ASTTransformer) Transform(node *ast.Document, reader text.Reader, pc pa
 		case *ast.Link:
 			v.SetAttributeString("target", "_blank")
 			v.SetAttributeString("rel", "noopener noreferrer")
+		case *ast.Blockquote:
+			v.SetAttributeString("class", "border-start border-primary border-3 ps-2")
 		}
 
 		return ast.WalkContinue, nil
