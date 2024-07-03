@@ -56,11 +56,12 @@ func (p *packageClient) GetAll(ctx context.Context, target *v1alpha1.PackageList
 }
 
 // Update implements PackageInterface.
-func (p *packageClient) Update(ctx context.Context, target *v1alpha1.Package) error {
+func (p *packageClient) Update(ctx context.Context, target *v1alpha1.Package, opts v1.UpdateOptions) error {
 	return p.restClient.Put().
 		Namespace(p.ns).
 		Resource(packagesResource).
 		Name(target.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(target).
 		Do(ctx).
 		Into(target)

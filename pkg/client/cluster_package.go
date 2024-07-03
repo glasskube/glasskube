@@ -27,10 +27,14 @@ func (c *clusterPackageClient) Create(
 }
 
 // Update implements PackageInterface.
-func (c *clusterPackageClient) Update(ctx context.Context, p *v1alpha1.ClusterPackage) error {
+func (c *clusterPackageClient) Update(
+	ctx context.Context,
+	p *v1alpha1.ClusterPackage,
+	opts metav1.UpdateOptions) error {
 	return c.restClient.Put().
 		Resource(clusterPackageGVR.Resource).
 		Name(p.GetName()).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(p).
 		Do(ctx).
 		Into(p)

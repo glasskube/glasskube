@@ -211,12 +211,13 @@ func (c *updater) apply(ctx context.Context, tx *UpdateTransaction, blocking boo
 }
 
 func (c *updater) UpdatePackage(ctx context.Context, pkg ctrlpkg.Package, version string) error {
+	opts := metav1.UpdateOptions{}
 	pkg.GetSpec().PackageInfo.Version = version
 	switch pkg := pkg.(type) {
 	case *v1alpha1.ClusterPackage:
-		return c.client.ClusterPackages().Update(ctx, pkg)
+		return c.client.ClusterPackages().Update(ctx, pkg, opts)
 	case *v1alpha1.Package:
-		return c.client.Packages(pkg.GetNamespace()).Update(ctx, pkg)
+		return c.client.Packages(pkg.GetNamespace()).Update(ctx, pkg, opts)
 	default:
 		return fmt.Errorf("unexpected object kind: %v", pkg.GroupVersionKind().Kind)
 	}
