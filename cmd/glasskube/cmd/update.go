@@ -49,10 +49,6 @@ var updateCmd = &cobra.Command{
 			updater.WithStatusWriter(statuswriter.Spinner())
 		}
 
-		if updateCmdOptions.dryRun {
-
-		}
-
 		var tx *update.UpdateTransaction
 		var err error
 
@@ -115,10 +111,6 @@ var updateCmd = &cobra.Command{
 			printTransaction(*tx)
 			if !updateCmdOptions.Yes && !cliutils.YesNoPrompt("Do you want to apply these updates?", false) {
 				fmt.Fprintf(os.Stderr, "⛔ Update cancelled. No changes were made.\n")
-				cliutils.ExitSuccess()
-			}
-			if updateCmdOptions.dryRun {
-				fmt.Fprintf(os.Stderr, "📝 Dry run: No changes were made.\n")
 				cliutils.ExitSuccess()
 			}
 			updatedPackages, err := updater.ApplyBlocking(ctx, tx)
