@@ -83,8 +83,10 @@ func runConfigure(cmd *cobra.Command, args []string) {
 		fmt.Fprintf(os.Stderr, "⚠️  Some values can not be resolved: %v\n", err)
 	}
 
-	if !cliutils.YesNoPrompt("Continue?", true) {
-		cancel()
+	if !configureCmdOptions.DryRun {
+		if !cliutils.YesNoPrompt("Continue?", true) {
+			cancel()
+		}
 	}
 
 	switch pkg := pkg.(type) {
@@ -113,7 +115,11 @@ func runConfigure(cmd *cobra.Command, args []string) {
 		cliutils.ExitWithError()
 	}
 
-	fmt.Fprintln(os.Stderr, "✅ configuration changed")
+	if configureCmdOptions.DryRun {
+		fmt.Fprintln(os.Stderr, "✅ valid configuration but nothing has been changed")
+	} else {
+		fmt.Fprintln(os.Stderr, "✅ configuration changed")
+	}
 
 	if configureCmdOptions.Output != "" {
 		if gvks, _, err := scheme.Scheme.ObjectKinds(pkg); err == nil && len(gvks) == 1 {
