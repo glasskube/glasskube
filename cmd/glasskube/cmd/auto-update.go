@@ -206,9 +206,9 @@ func runAutoUpdate(cmd *cobra.Command, args []string) {
 func init() {
 	for _, cmd := range []*cobra.Command{autoUpdateEnableCmd, autoUpdateDisableCmd} {
 		cmd.Flags().BoolVar(&autoUpdateEnabledDisabledOptions.Yes, "yes",
-			autoUpdateEnabledDisabledOptions.Yes, "do not ask for confirmation")
+			autoUpdateEnabledDisabledOptions.Yes, "Do not ask for confirmation")
 		cmd.Flags().BoolVar(&autoUpdateEnabledDisabledOptions.All, "all",
-			autoUpdateEnabledDisabledOptions.All, "set for all packages")
+			autoUpdateEnabledDisabledOptions.All, "Set for all packages")
 		autoUpdateEnabledDisabledOptions.KindOptions.AddFlagsToCommand(cmd)
 		autoUpdateEnabledDisabledOptions.NamespaceOptions.AddFlagsToCommand(cmd)
 		autoUpdateCmd.AddCommand(cmd)

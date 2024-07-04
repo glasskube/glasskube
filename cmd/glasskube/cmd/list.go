@@ -90,17 +90,17 @@ var listCmd = &cobra.Command{
 
 func init() {
 	listCmd.PersistentFlags().BoolVarP(&listCmdOptions.ListInstalledOnly, "installed", "i", false,
-		"list only installed (cluster-)packages")
+		"List only installed (cluster-)packages")
 	listCmd.PersistentFlags().BoolVar(&listCmdOptions.ListOutdatedOnly, "outdated", false,
-		"list only outdated (cluster-)packages")
+		"List only outdated (cluster-)packages")
 	listCmd.PersistentFlags().BoolVar(&listCmdOptions.ShowDescription, "show-description", false,
-		"show the (cluster-)package description")
+		"Show the (cluster-)package description")
 	listCmd.PersistentFlags().BoolVar(&listCmdOptions.ShowLatestVersion, "show-latest", false,
-		"show the latest version of (cluster-)packages if available")
+		"Show the latest version of (cluster-)packages if available")
 	listCmd.PersistentFlags().BoolVar(&listCmdOptions.ShowMessage, "show-message", false,
-		"show the messages of (cluster-)packages")
+		"Show the messages of (cluster-)packages")
 	listCmd.PersistentFlags().BoolVarP(&listCmdOptions.More, "more", "m", false,
-		"show additional information about (cluster-)packages (like --show-description --show-latest)")
+		"Show additional information about (cluster-)packages (like --show-description --show-latest)")
 	listCmdOptions.OutputOptions.AddFlagsToCommand(listCmd)
 	listCmdOptions.KindOptions.AddFlagsToCommand(listCmd)
 
