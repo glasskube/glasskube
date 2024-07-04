@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.12.1](https://github.com/glasskube/glasskube/compare/v0.12.0...v0.12.1) (2024-07-03)
+
+
+### Bug Fixes
+
+* **cli:** `--outdated` and `--installed` for listing packages ([#929](https://github.com/glasskube/glasskube/issues/929)) ([0f78ea3](https://github.com/glasskube/glasskube/commit/0f78ea3ca3ec084a7aa0c04526d916c5862cc051))
+* **ui:** add blockquote styling in markdown ([#943](https://github.com/glasskube/glasskube/issues/943)) ([0510b58](https://github.com/glasskube/glasskube/commit/0510b58fc7ec180fd5b79951c4a1af5d2ff2b82d))
+* **ui:** also show validation errors in package config form ([#933](https://github.com/glasskube/glasskube/issues/933)) ([905e17f](https://github.com/glasskube/glasskube/commit/905e17feba348acce81432183f0dd5d93b28107c))
+* **ui:** avoid including repo parameter when only one present ([#931](https://github.com/glasskube/glasskube/issues/931)) ([883aff0](https://github.com/glasskube/glasskube/commit/883aff046799b56acd3c6e989aaab3986145764f))
+
+
+### Other
+
+* **config:** update autoupdater manifest and release-plase config ([#942](https://github.com/glasskube/glasskube/issues/942)) ([e8ddf5f](https://github.com/glasskube/glasskube/commit/e8ddf5ff4f7c7e1c771171ad0fdc5fcdb58cba03))
+* **deps:** update dependency esbuild to v0.23.0 ([#925](https://github.com/glasskube/glasskube/issues/925)) ([8692412](https://github.com/glasskube/glasskube/commit/869241223aae1442d4cb427ce34eeba57c1690e4))
+* **deps:** update dependency globals to v15.8.0 ([#935](https://github.com/glasskube/glasskube/issues/935)) ([f45dd7b](https://github.com/glasskube/glasskube/commit/f45dd7b1b1838289a8622b2d4a9513a5c638e6df))
+* **deps:** update dependency go to v1.22.5 ([#940](https://github.com/glasskube/glasskube/issues/940)) ([c378fbb](https://github.com/glasskube/glasskube/commit/c378fbbf7090a95a207abb14a591c46c0477c244))
+* **deps:** update dependency typescript to v5.5.3 ([#922](https://github.com/glasskube/glasskube/issues/922)) ([09f9fb3](https://github.com/glasskube/glasskube/commit/09f9fb3d3de9595bf1f23adbc6ddac10590c9523))
+* **deps:** update dependency typescript-eslint to v7.15.0 ([#923](https://github.com/glasskube/glasskube/issues/923)) ([819e01f](https://github.com/glasskube/glasskube/commit/819e01f40ad54175c68d7f5adaefa2baa72316ac))
+
+
+### Docs
+
+* **website:** change nginx logo url ([#910](https://github.com/glasskube/glasskube/issues/910)) ([4c72d66](https://github.com/glasskube/glasskube/commit/4c72d6647152e7a7fa27e86f6da72ab83d6777ac))
+
 ## [0.12.0](https://github.com/glasskube/glasskube/compare/v0.11.0...v0.12.0) (2024-07-01)
 
 

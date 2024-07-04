@@ -438,7 +438,7 @@ func printYAML(ctx context.Context,
 
 func init() {
 	describeCmd.Flags().StringVar(&describeCmdOptions.repository, "repository", describeCmdOptions.repository,
-		"specify the name of the package repository used to use when the package is not installed")
+		"Specify the name of the package repository used to use when the package is not installed")
 	describeCmdOptions.OutputOptions.AddFlagsToCommand(describeCmd)
 	describeCmdOptions.KindOptions.AddFlagsToCommand(describeCmd)
 	describeCmdOptions.NamespaceOptions.AddFlagsToCommand(describeCmd)

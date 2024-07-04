@@ -21,6 +21,7 @@ type ListCmdOptions struct {
 	ListOutdatedOnly  bool
 	ShowDescription   bool
 	ShowLatestVersion bool
+	ShowMessage       bool
 	More              bool
 	OutputOptions
 	KindOptions
@@ -49,6 +50,7 @@ var listCmd = &cobra.Command{
 		if listCmdOptions.More {
 			listCmdOptions.ShowLatestVersion = true
 			listCmdOptions.ShowDescription = true
+			listCmdOptions.ShowMessage = true
 		}
 		lister := list.NewListerWithRepoCache(ctx)
 		var clPkgs []*list.PackageWithStatus
@@ -88,20 +90,23 @@ var listCmd = &cobra.Command{
 
 func init() {
 	listCmd.PersistentFlags().BoolVarP(&listCmdOptions.ListInstalledOnly, "installed", "i", false,
-		"list only installed (cluster-)packages")
+		"List only installed (cluster-)packages")
 	listCmd.PersistentFlags().BoolVar(&listCmdOptions.ListOutdatedOnly, "outdated", false,
-		"list only outdated (cluster-)packages")
+		"List only outdated (cluster-)packages")
 	listCmd.PersistentFlags().BoolVar(&listCmdOptions.ShowDescription, "show-description", false,
-		"show the (cluster-)package description")
+		"Show the (cluster-)package description")
 	listCmd.PersistentFlags().BoolVar(&listCmdOptions.ShowLatestVersion, "show-latest", false,
-		"show the latest version of (cluster-)packages if available")
+		"Show the latest version of (cluster-)packages if available")
+	listCmd.PersistentFlags().BoolVar(&listCmdOptions.ShowMessage, "show-message", false,
+		"Show the messages of (cluster-)packages")
 	listCmd.PersistentFlags().BoolVarP(&listCmdOptions.More, "more", "m", false,
-		"show additional information about (cluster-)packages (like --show-description --show-latest)")
+		"Show additional information about (cluster-)packages (like --show-description --show-latest)")
 	listCmdOptions.OutputOptions.AddFlagsToCommand(listCmd)
 	listCmdOptions.KindOptions.AddFlagsToCommand(listCmd)
 
 	listCmd.MarkFlagsMutuallyExclusive("show-description", "more")
 	listCmd.MarkFlagsMutuallyExclusive("show-latest", "more")
+	listCmd.MarkFlagsMutuallyExclusive("show-message", "more")
 
 	RootCmd.AddCommand(listCmd)
 }
@@ -129,7 +134,7 @@ func handleEmptyList(resource string) {
 }
 
 func printClusterPackageTable(packages []*list.PackageWithStatus) {
-	header := []string{"NAME", "STATUS", "VERSION", "AUTO-UPDATE"}
+	header := []string{"NAME", "VERSION", "AUTO-UPDATE"}
 	if listCmdOptions.ShowLatestVersion {
 		header = append(header, "LATEST VERSION")
 	}
@@ -137,12 +142,16 @@ func printClusterPackageTable(packages []*list.PackageWithStatus) {
 	if listCmdOptions.ShowDescription {
 		header = append(header, "DESCRIPTION")
 	}
+	header = append(header, "STATUS")
+	if listCmdOptions.ShowMessage {
+		header = append(header, "Message")
+	}
 
 	err := cliutils.PrintTable(os.Stdout,
 		packages,
 		header,
 		func(pkg *list.PackageWithStatus) []string {
-			row := []string{pkg.Name, statusString(*pkg), versionString(*pkg),
+			row := []string{pkg.Name, versionString(*pkg),
 				clientutils.AutoUpdateString(pkg.ClusterPackage, "")}
 			if listCmdOptions.ShowLatestVersion {
 				row = append(row, pkg.LatestVersion)
@@ -163,6 +172,10 @@ func printClusterPackageTable(packages []*list.PackageWithStatus) {
 			if listCmdOptions.ShowDescription {
 				row = append(row, pkg.ShortDescription)
 			}
+			row = append(row, statusString(*pkg))
+			if listCmdOptions.ShowMessage {
+				row = append(row, messageString(*pkg))
+			}
 			return row
 		})
 	if err != nil {
@@ -172,13 +185,17 @@ func printClusterPackageTable(packages []*list.PackageWithStatus) {
 }
 
 func printPackageTable(packages []*list.PackagesWithStatus) {
-	header := []string{"PACKAGENAME", "NAMESPACE", "NAME", "STATUS", "VERSION", "AUTO-UPDATE"}
+	header := []string{"PACKAGENAME", "NAMESPACE", "NAME", "VERSION", "AUTO-UPDATE"}
 	if listCmdOptions.ShowLatestVersion {
 		header = append(header, "LATEST VERSION")
 	}
 	header = append(header, "REPOSITORY")
 	if listCmdOptions.ShowDescription {
 		header = append(header, "DESCRIPTION")
+	}
+	header = append(header, "STATUS")
+	if listCmdOptions.ShowMessage {
+		header = append(header, "MESSAGE")
 	}
 
 	var flattenedPkgs []*list.PackageWithStatus
@@ -196,7 +213,7 @@ func printPackageTable(packages []*list.PackagesWithStatus) {
 		flattenedPkgs,
 		header,
 		func(pkg *list.PackageWithStatus) []string {
-			row := []string{pkg.Name, pkgNamespaceString(*pkg), pkgNameString(*pkg), statusString(*pkg), versionString(*pkg),
+			row := []string{pkg.Name, pkgNamespaceString(*pkg), pkgNameString(*pkg), versionString(*pkg),
 				clientutils.AutoUpdateString(pkg.Package, "")}
 			if listCmdOptions.ShowLatestVersion {
 				row = append(row, pkg.LatestVersion)
@@ -216,6 +233,10 @@ func printPackageTable(packages []*list.PackagesWithStatus) {
 			row = append(row, strings.Join(s, ", "))
 			if listCmdOptions.ShowDescription {
 				row = append(row, pkg.ShortDescription)
+			}
+			row = append(row, statusString(*pkg))
+			if listCmdOptions.ShowMessage {
+				row = append(row, messageString(*pkg))
 			}
 			return row
 		})
@@ -272,6 +293,14 @@ func statusString(pkg list.PackageWithStatus) string {
 		return pkg.Status.Status
 	} else {
 		return "Not installed"
+	}
+}
+
+func messageString(pkg list.PackageWithStatus) string {
+	if pkg.Status != nil {
+		return pkg.Status.Message
+	} else {
+		return ""
 	}
 }
 
