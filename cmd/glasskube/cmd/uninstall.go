@@ -97,8 +97,8 @@ func init() {
 	uninstallCmdOptions.KindOptions.AddFlagsToCommand(uninstallCmd)
 	uninstallCmdOptions.NamespaceOptions.AddFlagsToCommand(uninstallCmd)
 	uninstallCmd.PersistentFlags().BoolVar(&uninstallCmdOptions.NoWait, "no-wait", false,
-		"perform non-blocking uninstall")
+		"Perform non-blocking uninstall")
 	uninstallCmd.PersistentFlags().BoolVarP(&uninstallCmdOptions.Yes, "yes", "y", false,
-		"do not ask for any confirmation")
+		"Do not ask for any confirmation")
 	RootCmd.AddCommand(uninstallCmd)
 }

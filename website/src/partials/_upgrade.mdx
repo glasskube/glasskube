@@ -3,19 +3,19 @@ import TabItem from '@theme/TabItem';
 
 <Tabs groupId="operating-systems">
   <TabItem value="mac" label="macOS">
-    On macOS, you can use [Homebrew](https://brew.sh/) to install and update Glasskube.
+    To upgrade Glasskube on macOS, use the following command:
     ```shell
-    brew install glasskube/tap/glasskube
+    brew upgrade glasskube
     ```
   </TabItem>
   <TabItem value="linux" label="Linux">
-    You can install Glasskube using one of the package managers below.
+    You can upgrade Glasskube by reinstalling the latest package using one of the package managers below.
     <details>
       <summary>RPM-based installation (RedHat/CentOS/Fedora)</summary>
 
       {/* x-release-please-start-version */}
       ```
-      dnf install https://releases.dl.glasskube.dev/glasskube_v0.12.1_amd64.rpm
+      dnf install https://releases.dl.glasskube.dev/glasskube_v0.10.1_amd64.rpm
       ```
       {/* x-release-please-end */}
     </details>
@@ -25,8 +25,8 @@ import TabItem from '@theme/TabItem';
 
       {/* x-release-please-start-version */}
       ```
-      curl -LO https://releases.dl.glasskube.dev/glasskube_v0.12.1_amd64.deb
-      sudo dpkg -i glasskube_v0.12.1_amd64.deb
+      curl -LO https://releases.dl.glasskube.dev/glasskube_v0.10.1_amd64.deb
+      sudo dpkg -i glasskube_v0.10.1_amd64.deb
       ```
       {/* x-release-please-end */}
     </details>
@@ -35,7 +35,7 @@ import TabItem from '@theme/TabItem';
       <summary>APK-based installation (Alpine)</summary>
       {/* x-release-please-start-version */}
       ```
-      curl -LO https://releases.dl.glasskube.dev/glasskube_v0.12.1_amd64.apk
+      curl -LO https://releases.dl.glasskube.dev/glasskube_v0.10.1_amd64.apk
       apk add glasskube.apk
       ```
       {/* x-release-please-end */}
@@ -47,9 +47,10 @@ import TabItem from '@theme/TabItem';
 
   <TabItem value="win" label="Windows">
     {/* x-release-please-start-version */}
-    Download the [windows archive](https://releases.dl.glasskube.dev/glasskube_v0.12.1_windows_x86_64.zip) from our
-    latest [Release](https://github.com/glasskube/glasskube/releases/latest) and unpack it using Windows Explorer.
+    Download the [windows archive](https://releases.dl.glasskube.dev/glasskube_v0.10.1_windows_x86_64.zip) from our
+    latest [Release](https://github.com/glasskube/glasskube/releases/latest) and unpack it using Windows Explorer and replace the existing executable with the new one.
     {/* x-release-please-end */}
+
   </TabItem>
 
   <TabItem value="nixos" label="NixOS/Nixpkgs">
@@ -63,5 +64,5 @@ import TabItem from '@theme/TabItem';
 
 <br/>
 
-After installing Glasskube on your local machine, make sure to install the necessary components in your Kubernetes cluster by running `glasskube bootstrap`.
+After upgrading Glasskube on your local machine, make sure to install the necessary components in your Kubernetes cluster by running `glasskube bootstrap`.
 For more information, check out our [bootstrap guide](/docs/getting-started/bootstrap).

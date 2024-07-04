@@ -3,6 +3,7 @@ import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
 import HomepageFeatures from '@site/src/components/HomepageFeatures';
 import Heading from '@theme/Heading';
+import { Content } from "@theme/BlogPostPage";
 
 import styles from './index.module.css';
 import React from 'react';
@@ -13,6 +14,7 @@ import TalkToFoundersButton from '@site/src/components/buttons/TalkToFoundersBut
 import SignupForWaitlistButton from '@site/src/components/buttons/SignupForWaitlistButton';
 import useBaseUrl from '@docusaurus/core/lib/client/exports/useBaseUrl';
 import Image from '@theme/IdealImage';
+import HomepageBlogs from '@site/src/components/HomepageBlogs';
 
 
 function HomepageHeader() {
@@ -211,7 +213,12 @@ class NewsletterForm extends React.Component<any, { value: string }> {
   }
 }
 
-export default function Home(): JSX.Element {
+interface HomepageProps {
+  homePageBlogMetadata: any;
+  readonly recentPosts: readonly { readonly Preview: Content; metadata: any }[];
+}
+
+export default function Home({ homePageBlogMetadata, recentPosts }: HomepageProps): JSX.Element {
   const {siteConfig} = useDocusaurusContext();
   return (
     <Layout
@@ -222,6 +229,7 @@ export default function Home(): JSX.Element {
         <HomepageFeatures/>
         <HomepageScreenshots/>
         <HomepageVideo/>
+        <HomepageBlogs homePageBlogMetadata={homePageBlogMetadata} recentPosts={recentPosts}/>
         <HomepageNewsletter/>
       </main>
     </Layout>
