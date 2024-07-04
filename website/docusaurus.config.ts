@@ -35,6 +35,14 @@ const config: Config = {
     'docusaurus-plugin-matomo',
     '@docusaurus/theme-mermaid',
     [
+      './custom-blog-plugin',
+      {
+        id: 'blog',
+        routeBasePath: 'blog',
+        path: './blog',
+      },
+    ],
+    [
       '@docusaurus/plugin-ideal-image',
       /** @type {import("@docusaurus/plugin-ideal-image").PluginOptions} */
       {
@@ -68,7 +76,7 @@ const config: Config = {
   ],
   presets: [
     [
-      'classic',
+      '@docusaurus/preset-classic',
       {
         docs: {
           sidebarPath: './sidebars.ts',
@@ -76,12 +84,7 @@ const config: Config = {
           // Remove this to remove the "edit this page" links.
           editUrl: 'https://github.com/glasskube/glasskube/tree/main/website/',
         },
-        blog: {
-          showReadingTime: true,
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
-          editUrl: 'https://github.com/glasskube/glasskube/tree/main/website/',
-        },
+        blog: false,
         theme: {
           customCss: ['./src/css/custom.css'],
         },
