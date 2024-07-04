@@ -348,16 +348,16 @@ func completeAvailablePackageVersions(
 
 func init() {
 	installCmd.PersistentFlags().StringVarP(&installCmdOptions.Version, "version", "v", "",
-		"install a specific version")
+		"Install a specific version")
 	_ = installCmd.RegisterFlagCompletionFunc("version", completeAvailablePackageVersions)
 	installCmd.PersistentFlags().BoolVar(&installCmdOptions.EnableAutoUpdates, "enable-auto-updates", false,
-		"enable automatic updates for this package")
+		"Enable automatic updates for this package")
 	installCmd.PersistentFlags().StringVar(&installCmdOptions.Repository, "repository", installCmdOptions.Repository,
-		"specify the name of the package repository to install this package from")
-	installCmd.PersistentFlags().BoolVar(&installCmdOptions.NoWait, "no-wait", false, "perform non-blocking install")
+		"Specify the name of the package repository to install this package from")
+	installCmd.PersistentFlags().BoolVar(&installCmdOptions.NoWait, "no-wait", false, "Perform non-blocking install")
 	installCmd.PersistentFlags().BoolVar(&installCmdOptions.DryRun, "dry-run", false,
-		"simulate the installation of package without actually installing it")
-	installCmd.PersistentFlags().BoolVarP(&installCmdOptions.Yes, "yes", "y", false, "do not ask for any confirmation")
+		"Simulate the installation of package without actually installing it")
+	installCmd.PersistentFlags().BoolVarP(&installCmdOptions.Yes, "yes", "y", false, "Do not ask for any confirmation")
 	installCmd.MarkFlagsMutuallyExclusive("no-wait", "dry-run")
 	installCmd.MarkFlagsMutuallyExclusive("version", "enable-auto-updates")
 	installCmdOptions.ValuesOptions.AddFlagsToCommand(installCmd)
