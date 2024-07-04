@@ -334,9 +334,7 @@ func status(pkg ctrlpkg.Package) string {
 func message(pkg ctrlpkg.Package) string {
 	pkgStatus := client.GetStatusOrPending(pkg)
 	if pkgStatus != nil {
-		if pkgStatus.Status == string(condition.Ready) {
-			return color.GreenString(pkgStatus.Message)
-		}
+		return pkgStatus.Message
 	}
 
 	return ""
