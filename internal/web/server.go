@@ -44,7 +44,6 @@ import (
 	"github.com/glasskube/glasskube/pkg/list"
 	"github.com/glasskube/glasskube/pkg/manifest"
 	"github.com/glasskube/glasskube/pkg/open"
-	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/glasskube/glasskube/pkg/uninstall"
 	"github.com/glasskube/glasskube/pkg/update"
 	"github.com/gorilla/mux"
@@ -272,7 +271,7 @@ func (s *server) update(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 
 	if r.Method == http.MethodPost {
-		updater := update.NewUpdater(ctx).WithStatusWriter(statuswriter.Stderr())
+		updater := update.NewUpdater(ctx)
 		s.updateMutex.Lock()
 		defer s.updateMutex.Unlock()
 		utIdStr := r.FormValue("updateTransactionId")
@@ -315,7 +314,7 @@ func (s *server) update(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		updater := update.NewUpdater(ctx).WithStatusWriter(statuswriter.Stderr())
+		updater := update.NewUpdater(ctx)
 		updateTx, err := updater.Prepare(ctx, updateGetters...)
 		if err != nil {
 			s.respondAlertAndLog(w, err, "An error occurred preparing update of "+pkgName, "danger")
@@ -361,7 +360,7 @@ func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 
 	if r.Method == http.MethodPost {
-		uninstaller := uninstall.NewUninstaller(s.pkgClient).WithStatusWriter(statuswriter.Stderr())
+		uninstaller := uninstall.NewUninstaller(s.pkgClient)
 		if pkgName != "" {
 			var pkg v1alpha1.ClusterPackage
 			if err := s.pkgClient.ClusterPackages().Get(ctx, pkgName, &pkg); err != nil {
@@ -577,9 +576,7 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 			WithName(requestedName).
 			BuildPackage()
 		opts := metav1.CreateOptions{}
-		err := install.NewInstaller(s.pkgClient).
-			WithStatusWriter(statuswriter.Stderr()).
-			Install(ctx, pkg, opts)
+		err := install.NewInstaller(s.pkgClient).Install(ctx, pkg, opts)
 		if err != nil {
 			s.respondAlertAndLog(w, err, "An error occurred installing "+manifestName, "danger")
 		} else {
@@ -641,9 +638,7 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 			WithValues(values).
 			BuildClusterPackage()
 		opts := metav1.CreateOptions{}
-		err := install.NewInstaller(s.pkgClient).
-			WithStatusWriter(statuswriter.Stderr()).
-			Install(ctx, pkg, opts)
+		err := install.NewInstaller(s.pkgClient).Install(ctx, pkg, opts)
 		if err != nil {
 			s.respondAlertAndLog(w, err, "An error occurred installing "+pkgName, "danger")
 		}
