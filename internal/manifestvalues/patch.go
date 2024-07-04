@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"regexp"
 	"text/template"
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
@@ -16,6 +17,17 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
+
+var resourceNameExpr = regexp.MustCompile("[^a-zA-Z0-9]+")
+
+func resourceName(s string) string {
+	return resourceNameExpr.ReplaceAllString(s, "-")
+}
+
+var tmplBase = template.New("").Funcs(template.FuncMap{
+	"base64":       func(s string) string { return base64.StdEncoding.EncodeToString([]byte(s)) },
+	"resourceName": resourceName,
+})
 
 // object combines the runtime and metav1 object interfaces.
 // This is the same as the controller-runtime client Object but we don't want any controller-runtime dependencies
@@ -93,10 +105,6 @@ func getActualValue(target v1alpha1.ValueDefinitionTarget, value string) (any, e
 	if len(target.ValueTemplate) == 0 {
 		return value, nil
 	}
-
-	tmplBase := template.New("").Funcs(template.FuncMap{
-		"base64": func(s string) string { return base64.StdEncoding.EncodeToString([]byte(s)) },
-	})
 
 	if tmpl, err := tmplBase.Parse(target.ValueTemplate); err != nil {
 		return nil, err

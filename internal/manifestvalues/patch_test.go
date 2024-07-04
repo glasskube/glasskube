@@ -178,3 +178,16 @@ var _ = Describe("ApplyToResource", func() {
 		Expect(obj).To(Equal(expected))
 	})
 })
+
+var _ = Describe("ResourceName", func() {
+	DescribeTable("Generate Resource Names",
+		func(url string, result string) {
+			Expect(resourceName(url)).To(Equal(result))
+		},
+		Entry("empty", "", ""),
+		Entry("one word", "whatever", "whatever"),
+		Entry("domain", "whatever.com", "whatever-com"),
+		Entry("long domain", "some.sub.domain.whatever.com", "some-sub-domain-whatever-com"),
+		Entry("long domain with numbers", "some.sub17.34.domain.whatev4er.com", "some-sub17-34-domain-whatev4er-com"),
+	)
+})
