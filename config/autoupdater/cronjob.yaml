@@ -12,7 +12,7 @@ spec:
             runAsNonRoot: true
           containers:
             - name: glasskube
-              image: ghcr.io/glasskube/glasskube:v0.11.0 # x-release-please-version
+              image: ghcr.io/glasskube/glasskube
               args:
                 - autoupdate
           serviceAccountName: glasskube-autoupdate
