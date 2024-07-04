@@ -501,7 +501,7 @@ func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 
 	packageUpdateAvailable := map[string]bool{}
 	var installed []*list.PackagesWithStatus
-	var available []*list.PackagesWithStatus
+	var available []*repotypes.PackageRepoIndexItem
 	var installedPkgs []ctrlpkg.Package
 	for _, pkgsWithStatus := range allPkgs {
 		if len(pkgsWithStatus.Packages) > 0 {
@@ -516,7 +516,7 @@ func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 			}
 			installed = append(installed, pkgsWithStatus)
 		} else {
-			available = append(available, pkgsWithStatus)
+			available = append(available, &pkgsWithStatus.PackageRepoIndexItem)
 		}
 	}
 
