@@ -15,6 +15,11 @@ Glasskube is still compatible with any other GitOps solution, but Flux is a nece
 
 If you already use Flux in your cluster or want to manage it yourself, first [install Flux](https://fluxcd.io/flux/installation/bootstrap/),
 and then Glasskube using a *slim* configuration by running `glasskube bootstrap --type=slim`.
+To ensure compatibility, please verify that the following flux components are installed in their respective version:
+- `source-controller` deployment: v1.3.0
+- `helm-controller` deployment: v1.0.1
+- `HelmChart` CRD: v1
+- `HelmRelease` CRD: v2
 
 For more information and command-line options check out `glasskube help bootstrap`.
 
