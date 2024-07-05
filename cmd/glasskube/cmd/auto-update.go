@@ -36,7 +36,7 @@ var autoUpdateEnableCmd = &cobra.Command{
 var autoUpdateDisableCmd = &cobra.Command{
 	Use:               "disable [...package]",
 	Short:             "Disable automatic updates for packages:",
-	PreRun:            cliutils.SetupClientContext(false, &rootCmdOptions.SkipUpdateCheck),
+	PreRun:            cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
 	ValidArgsFunction: completeInstalledPackageNames,
 	Run: runAutoUpdateEnableOrDisable(false,
 		"Enable automatic updates for the following packages", "Automatic updates disabled"),
@@ -142,7 +142,7 @@ var autoUpdateCmd = &cobra.Command{
 	Args:  cobra.NoArgs,
 	PreRun: cliutils.RunAll(
 		func(c *cobra.Command, s []string) { config.NonInteractive = true },
-		cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
+		cliutils.SetupClientContext(false, &rootCmdOptions.SkipUpdateCheck),
 	),
 	Run: runAutoUpdate,
 }
