@@ -585,7 +585,8 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 		}
 	} else {
 		pkg.Spec.Values = values
-		if err := s.pkgClient.Packages(pkg.GetNamespace()).Update(ctx, pkg); err != nil {
+		opts := metav1.UpdateOptions{}
+		if err := s.pkgClient.Packages(pkg.GetNamespace()).Update(ctx, pkg, opts); err != nil {
 			s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred updating package %v", manifestName), "danger")
 			return
 		}
@@ -643,7 +644,8 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 		}
 	} else {
 		pkg.Spec.Values = values
-		if err := s.pkgClient.ClusterPackages().Update(ctx, pkg); err != nil {
+		opts := metav1.UpdateOptions{}
+		if err := s.pkgClient.ClusterPackages().Update(ctx, pkg, opts); err != nil {
 			s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred updating package %v", pkgName), "danger")
 			return
 		}
@@ -813,13 +815,14 @@ func (s *server) handleAdvancedConfig(ctx context.Context, d *packageDetailPageC
 		}, err))
 		checkTmplError(err, fmt.Sprintf("advanced-config (%s)", d.manifestName))
 	} else if r.Method == http.MethodPost {
+		opts := metav1.UpdateOptions{}
 		d.pkg.GetSpec().PackageInfo.Version = d.selectedVersion
 		if d.repositoryName != "" {
 			d.pkg.GetSpec().PackageInfo.RepositoryName = d.repositoryName
 		}
 		switch pkg := d.pkg.(type) {
 		case *v1alpha1.ClusterPackage:
-			if err := s.pkgClient.ClusterPackages().Update(ctx, pkg); err != nil {
+			if err := s.pkgClient.ClusterPackages().Update(ctx, pkg, opts); err != nil {
 				s.respondAlertAndLog(w, err,
 					fmt.Sprintf("An error occurred updating clusterpackage %v to version %v in repo %v",
 						d.manifestName, d.selectedVersion, d.repositoryName),
@@ -829,7 +832,7 @@ func (s *server) handleAdvancedConfig(ctx context.Context, d *packageDetailPageC
 				s.respondSuccess(w)
 			}
 		case *v1alpha1.Package:
-			if err := s.pkgClient.Packages(d.pkg.GetNamespace()).Update(ctx, pkg); err != nil {
+			if err := s.pkgClient.Packages(d.pkg.GetNamespace()).Update(ctx, pkg, metav1.UpdateOptions{}); err != nil {
 				s.respondAlertAndLog(w, err,
 					fmt.Sprintf("An error occurred updating package %v to version %v in repo %v",
 						d.manifestName, d.selectedVersion, d.repositoryName),

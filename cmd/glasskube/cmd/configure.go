@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 
 	"github.com/fatih/color"
@@ -12,6 +13,7 @@ import (
 	"github.com/glasskube/glasskube/internal/manifestvalues/flags"
 	"github.com/glasskube/glasskube/pkg/manifest"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/yaml"
 )
@@ -21,6 +23,7 @@ var configureCmdOptions = struct {
 	OutputOptions
 	NamespaceOptions
 	KindOptions
+	DryRunOptions
 }{
 	ValuesOptions: flags.NewOptions(flags.WithKeepOldValuesFlag),
 	KindOptions:   DefaultKindOptions(),
@@ -40,8 +43,15 @@ func runConfigure(cmd *cobra.Command, args []string) {
 	ctx := cmd.Context()
 	pkgClient := cliutils.PackageClient(ctx)
 	valueResolver := cliutils.ValueResolver(ctx)
-
 	name := args[0]
+
+	opts := metav1.UpdateOptions{}
+	if configureCmdOptions.DryRun {
+		opts.DryRun = []string{metav1.DryRunAll}
+		fmt.Fprintln(os.Stderr,
+			"🔎 Dry-run mode is enabled. Nothing will be changed.")
+	}
+
 	pkg, err :=
 		getPackageOrClusterPackage(ctx, name, configureCmdOptions.KindOptions, configureCmdOptions.NamespaceOptions)
 	if err != nil {
@@ -74,28 +84,34 @@ func runConfigure(cmd *cobra.Command, args []string) {
 		fmt.Fprintf(os.Stderr, "⚠️  Some values can not be resolved: %v\n", err)
 	}
 
-	if !cliutils.YesNoPrompt("Continue?", true) {
-		cancel()
+	if !configureCmdOptions.DryRun {
+		if !cliutils.YesNoPrompt("Continue?", true) {
+			cancel()
+		}
 	}
 
 	switch pkg := pkg.(type) {
 	case *v1alpha1.ClusterPackage:
+		values := maps.Clone(pkg.Spec.Values)
 		if err := pkgClient.ClusterPackages().Get(ctx, pkg.Name, pkg); err != nil {
 			// Don't exit, we can still try to call update ...
 			fmt.Fprintf(os.Stderr, "⚠️  error fetching package: %v\n", err)
 		}
+		pkg.Spec.Values = values
 
-		if err := pkgClient.ClusterPackages().Update(ctx, pkg); err != nil {
+		if err := pkgClient.ClusterPackages().Update(ctx, pkg, opts); err != nil {
 			fmt.Fprintf(os.Stderr, "❌ error updating package: %v\n", err)
 			cliutils.ExitWithError()
 		}
 	case *v1alpha1.Package:
+		values := maps.Clone(pkg.Spec.Values)
 		if err := pkgClient.Packages(pkg.Namespace).Get(ctx, pkg.Name, pkg); err != nil {
 			// Don't exit, we can still try to call update ...
 			fmt.Fprintf(os.Stderr, "⚠️  error fetching package: %v\n", err)
 		}
+		pkg.Spec.Values = values
 
-		if err := pkgClient.Packages(pkg.Namespace).Update(ctx, pkg); err != nil {
+		if err := pkgClient.Packages(pkg.Namespace).Update(ctx, pkg, opts); err != nil {
 			fmt.Fprintf(os.Stderr, "❌ error updating package: %v\n", err)
 			cliutils.ExitWithError()
 		}
@@ -104,7 +120,11 @@ func runConfigure(cmd *cobra.Command, args []string) {
 		cliutils.ExitWithError()
 	}
 
-	fmt.Fprintln(os.Stderr, "✅ configuration changed")
+	if configureCmdOptions.DryRun {
+		fmt.Fprintln(os.Stderr, "✅ valid configuration but nothing has been changed")
+	} else {
+		fmt.Fprintln(os.Stderr, "✅ configuration changed")
+	}
 
 	if configureCmdOptions.Output != "" {
 		if gvks, _, err := scheme.Scheme.ObjectKinds(pkg); err == nil && len(gvks) == 1 {
@@ -134,5 +154,6 @@ func init() {
 	configureCmdOptions.OutputOptions.AddFlagsToCommand(configureCmd)
 	configureCmdOptions.NamespaceOptions.AddFlagsToCommand(configureCmd)
 	configureCmdOptions.KindOptions.AddFlagsToCommand(configureCmd)
+	configureCmdOptions.DryRunOptions.AddFlagsToCommand(configureCmd)
 	RootCmd.AddCommand(configureCmd)
 }

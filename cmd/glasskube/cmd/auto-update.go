@@ -13,6 +13,7 @@ import (
 	"github.com/glasskube/glasskube/pkg/update"
 	"github.com/spf13/cobra"
 	"go.uber.org/multierr"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var autoUpdateEnabledDisabledOptions = struct {
@@ -115,11 +116,12 @@ func runAutoUpdateEnableOrDisable(enabled bool, confirmMsg, successMsg string) f
 		for _, pkg := range pkgs {
 			if pkg.AutoUpdatesEnabled() != enabled {
 				pkg.SetAutoUpdatesEnabled(enabled)
+				opts := metav1.UpdateOptions{}
 				switch pkg := pkg.(type) {
 				case *v1alpha1.ClusterPackage:
-					multierr.AppendInto(&err, client.ClusterPackages().Update(ctx, pkg))
+					multierr.AppendInto(&err, client.ClusterPackages().Update(ctx, pkg, opts))
 				case *v1alpha1.Package:
-					multierr.AppendInto(&err, client.Packages(pkg.Namespace).Update(ctx, pkg))
+					multierr.AppendInto(&err, client.Packages(pkg.Namespace).Update(ctx, pkg, opts))
 				default:
 					panic("unexpected type")
 				}

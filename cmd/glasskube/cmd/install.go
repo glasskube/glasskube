@@ -37,9 +37,9 @@ var installCmdOptions = struct {
 	EnableAutoUpdates bool
 	NoWait            bool
 	Yes               bool
-	DryRun            bool
 	OutputOptions
 	NamespaceOptions
+	DryRunOptions
 }{
 	ValuesOptions: flags.NewOptions(),
 }
@@ -355,13 +355,12 @@ func init() {
 	installCmd.PersistentFlags().StringVar(&installCmdOptions.Repository, "repository", installCmdOptions.Repository,
 		"Specify the name of the package repository to install this package from")
 	installCmd.PersistentFlags().BoolVar(&installCmdOptions.NoWait, "no-wait", false, "Perform non-blocking install")
-	installCmd.PersistentFlags().BoolVar(&installCmdOptions.DryRun, "dry-run", false,
-		"Simulate the installation of package without actually installing it")
 	installCmd.PersistentFlags().BoolVarP(&installCmdOptions.Yes, "yes", "y", false, "Do not ask for any confirmation")
-	installCmd.MarkFlagsMutuallyExclusive("no-wait", "dry-run")
-	installCmd.MarkFlagsMutuallyExclusive("version", "enable-auto-updates")
 	installCmdOptions.ValuesOptions.AddFlagsToCommand(installCmd)
 	installCmdOptions.OutputOptions.AddFlagsToCommand(installCmd)
 	installCmdOptions.NamespaceOptions.AddFlagsToCommand(installCmd)
+	installCmdOptions.DryRunOptions.AddFlagsToCommand(installCmd)
+	installCmd.MarkFlagsMutuallyExclusive("version", "enable-auto-updates")
+	installCmd.MarkFlagsMutuallyExclusive("no-wait", "dry-run")
 	RootCmd.AddCommand(installCmd)
 }
