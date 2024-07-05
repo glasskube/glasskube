@@ -1,0 +1,102 @@
+---
+slug: quickwit
+title: Log and trace management made easy. Quickwit Integration via Glasskube
+description: "A blog post on what Quickwit is and how it can help your data search efforts"
+authors: [ jpage ]
+tags: [ glasskube ]
+image: https://github.com/glasskube/glasskube/assets/38757612/03478d89-1d11-4263-93ca-f80d1607cef9
+---
+
+import CustomGitHubButton from '@site/src/components/buttons/CustomGitHubButton.tsx';
+import Install from '../../src/partials/_install.mdx';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+![quickwit-thumbnail](https://github.com/glasskube/glasskube/assets/38757612/03478d89-1d11-4263-93ca-f80d1607cef9)
+
+Distributed application troubleshooting can be a nightmare. Unless you have the budget for expensive proprietary monitoring SaaS solutions or the expertise to run and maintain an complex ELK stack you might feel as if you are stuck in a cave without a flashlight.
+
+Luckily, viable open-source alternatives like [Quickwit](https://quickwit.io/) are here to come to the rescue. By weaving together existing tooling for log and trace ingesting as well as pairing well with dashboard and visualisation tools such as Grafana and Jaeger. And sandwiching powerful indexing storage and search capabilities in between. Even if the tool sounds new, it won’t be for long.
+
+We recently integrated Quickwit with [Glasskube](https://github.com/glasskube/glasskube) and it’s available to be easily deployed to your cluster. I spoke directly with Quickwit co-founder [François Massot](https://www.linkedin.com/in/fran%C3%A7ois-massot-473006b/) to get the insider scoop, and to learn how the tool works. Let's dive in!
+
+## But what is Quickwit exactly? 🤷
+
+Quickwit is a cloud-native search engine that emerged with the goal of creating an open-source alternative to expensive monitoring software like Datadog and Splunk. Along the way, they’ve also developed and open-sourced several components, including ChitChat (cluster membership protocol), mrecordlog (WAL), Whichlang (fast language detection), witty actors (actor framework), and bitpacking (SIMD algorithms for integer compression).
+
+![quickmit-diagram](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/154x37vzjunqayriczlx.png)
+
+Quickwit, with its robust Elasticsearch-compatible API, integrates well with tooling from the OSS ecosystem, such as Grafana, Jaeger, and OpenTelemetry. Users are successfully deploying Quickwit at scale, with hundreds of nodes and hundreds of terabytes of data ingested daily, all while enjoying significant cost reductions and how thanks to Glasskube to can get up and running in no time.
+
+Quickwit excels in handling logs, traces, security data, and append-only datasets, with plans to support metrics soon. A key feature is the usage of object storage for the indexed data, which simplifies cluster management, cuts infrastructure costs, and enhances reliability. Multiple storage options are available such as local disk, Amazon S3, Azure Blob storage or Garage, an OSS distributed object storage, are available.
+
+## Questions for the co-founder François Massot 🙋
+
+### What are the benefits of using external Object Storage as opposed to node attached storage?
+
+There are a lot of benefits! From the beginning, we chose to decouple compute and storage to make our search engine scalable, reliable, and very cost-efficient. If you want to remember one thing distinguishing Quickwit from traditional search engines, this is decoupled storage and computing.
+
+Firstly, it provides elasticity, allowing us to scale storage and compute resources independently, which is ideal for cloud environments. Secondly, it’s cost-efficient, as object storage like S3 is cheaper than traditional disk storage, especially for large volumes of log data. And you don’t need to replicate your index data; this is done by the object storage layer. Additionally, it ensures high durability and availability, reducing the risk of data loss. Last, but not least, it simplifies cluster management as most of Quickiwt’s components are stateless.
+
+### Performance Comparison: Is Quickwit Faster than Elasticsearch?
+
+It depends!
+
+On indexing, Quickwit is generally twice as fast as Elasticsearch and uses less CPU. Our users, like Binance, report a reduction of 80% of CPU usage at indexing!
+
+The story is different regarding querying, as Elasticsearch has all its data on a local disk, typically SSD, and Quickwit has its indexed data in very slow object storage. In this case, you can expect query time to be lower. But Quickwit's main goal is to be sub-second queries, which is perfectly fine in the observability/security domains. If we look at this indicator, Quickwit is on par with Elasticsearch and is even faster for demanding analytics queries, whereas the data is stored on object storage!
+
+### What's in store for quickwit in the future?
+
+We have a very ambitious roadmap! Here are the key features that will be added in the following 12 months:
+
+- **Distributed ingest (July 2024)**: High-throughput indexing on tens of thousands of indexes.
+
+- **OpenSearch Dashboard support (Q3 2024)**: This will enable OpenSearch users to migrate seamlessly to Quickwit with their existing dashboards.
+
+- **Metrics support (Q4 2024)**: New storage engine optimized for time series data.
+
+- **Distributed SQL engine (Q1 2025)**: Distributed SQL engine for analytics on top of Apache Arrow, Datafusion, and Ballista.
+
+- **Pipe-based query language (Q2 2025)**: Introduction of a flexible and powerful query language similar to SPL (Splunk Query Language)
+
+## Use cases
+
+### Log management 🪵
+
+Quickwit is built from the ground up to efficiently index unstructured data, and search it effortlessly on cloud storage. Moreover, Quickwit supports OpenTelemetry gRPC and HTTP (protobuf only) protocols out of the box and provides a REST API ready to ingest any JSON formatted logs. This makes Quickwit a perfect fit for logs!
+
+### Distributed tracing 📊
+
+Distributed Tracing involves monitoring application requests as they traverse various services like frontend, backend, and databases. It's instrumental for understanding application behavior and diagnosing performance issues.
+
+Additionally, Quickwit seamlessly integrates with OpenTelemetry using gRPC and HTTP protocols (protobuf only), as well as Jaeger's gRPC API (SpanReader only). This means you can store traces in Quickwit and effortlessly query them using Jaeger's UI.
+
+## Key features 🔑
+
+- Full-text _search_ and _aggregation_ queries
+- _Elasticsearch_ query language support
+- _Sub-second search_ on cloud storage (Amazon S3, Azure Blob Storage, …)
+- _Decoupled compute_ and _storage_, stateless _indexers & searchers_
+- _Schemaless_ or _strict_ schema _indexing_
+- _Schemaless analytics_
+- _Grafana_ data source
+- _Jaeger-native_
+- _OTEL-native_ for logs and traces
+- _Kubernetes ready_ via Glasskube
+- _RESTful API_
+
+## Want to install Quickwit via Glasskube?
+Follow the [installation guide](https://glasskube.dev/guides/quickwit/).
+
+---
+
+If you like this sort of content and would like to see more of it, please consider supporting us by giving us a Star on [GitHub](https://github.com/glasskube/glasskube) 🙏
+[![cats-like--github-stars](https://github.com/glasskube/glasskube/assets/38757612/05a03edf-7d6a-48fd-9b24-598abcfd1e9a)](https://github.com/glasskube/glasskube)
+
+
+<div style={{ display: 'flex', justifyContent: 'right' }}>
+  <CustomGitHubButton
+    href="https://github.com/glasskube/glasskube"
+  />
+</div>
