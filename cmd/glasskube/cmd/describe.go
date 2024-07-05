@@ -134,19 +134,23 @@ var describeCmd = &cobra.Command{
 			fmt.Println(bold("Package:"), nameAndDescription(manifest))
 
 			if !pkg.IsNil() {
+				pkgStatus := client.GetStatusOrPending(pkg)
+
 				fmt.Println(bold("Version:    "), version(pkg, latestVersion))
-				fmt.Println(bold("Status:     "), status(pkg))
-				fmt.Println(bold("Message:    "), message(pkg))
+				fmt.Println(bold("Status:     "), status(pkgStatus))
+				fmt.Println(bold("Message:    "), message(pkgStatus))
 				fmt.Println(bold("Auto-Update:"), clientutils.AutoUpdateString(pkg, "Disabled"))
 			} else if len(pkgs) > 0 {
 				fmt.Println()
 				fmt.Println(bold("Instances:"))
 				for i, pkg := range pkgs {
+					pkgStatus := client.GetStatusOrPending(&pkg)
+
 					fmt.Println(fmt.Sprintf(" %v.", i+1), bold("Name:       "), pkg.Name)
 					fmt.Println(bold("    Namespace:  "), pkg.Namespace)
 					fmt.Println(bold("    Version:    "), version(&pkg, latestVersion))
-					fmt.Println(bold("    Status:     "), status(&pkg))
-					fmt.Println(bold("    Message:    "), message(&pkg))
+					fmt.Println(bold("    Status:     "), status(pkgStatus))
+					fmt.Println(bold("    Message:    "), message(pkgStatus))
 					fmt.Println(bold("    Auto-Update:"), clientutils.AutoUpdateString(&pkg, "Disabled"))
 				}
 			}
@@ -315,8 +319,7 @@ func printMarkdown(w io.Writer, text string) {
 	}
 }
 
-func status(pkg ctrlpkg.Package) string {
-	pkgStatus := client.GetStatusOrPending(pkg)
+func status(pkgStatus *client.PackageStatus) string {
 	if pkgStatus != nil {
 		switch pkgStatus.Status {
 		case string(condition.Ready):
@@ -331,8 +334,7 @@ func status(pkg ctrlpkg.Package) string {
 	}
 }
 
-func message(pkg ctrlpkg.Package) string {
-	pkgStatus := client.GetStatusOrPending(pkg)
+func message(pkgStatus *client.PackageStatus) string {
 	if pkgStatus != nil {
 		return pkgStatus.Message
 	}
