@@ -19,6 +19,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/glasskube/glasskube/internal/web/sse"
+	"github.com/glasskube/glasskube/internal/web/sse/refresh"
+
 	clientadapter "github.com/glasskube/glasskube/internal/adapter/goclient"
 
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
@@ -103,7 +106,7 @@ type server struct {
 	nonCachedClient    client.PackageV1Alpha1Client
 	repoClientset      repoclient.RepoClientset
 	k8sClient          *kubernetes.Clientset
-	sseHub             *SSEHub
+	broadcaster        *sse.Broadcaster
 	namespaceLister    *corev1.NamespaceLister
 	configMapLister    *corev1.ConfigMapLister
 	secretLister       *corev1.SecretLister
@@ -159,7 +162,7 @@ func (s *server) Start(ctx context.Context) error {
 			fmt.Fprintf(os.Stderr, "templates will not be parsed after changes: %v\n", err)
 		}
 	}
-	s.sseHub = NewHub()
+	s.broadcaster = sse.NewBroadcaster()
 	_ = s.ensureBootstrapped(ctx)
 
 	root, err := fs.Sub(webFs, "root")
@@ -173,7 +176,7 @@ func (s *server) Start(ctx context.Context) error {
 	router.Use(telemetry.HttpMiddleware(telemetry.WithPathRedactor(packagesPathRedactor)))
 	router.PathPrefix("/static/").Handler(fileServer)
 	router.Handle("/favicon.ico", fileServer)
-	router.HandleFunc("/events", s.sseHub.handler)
+	router.HandleFunc("/events", s.broadcaster.Handler)
 	router.HandleFunc("/support", s.supportPage)
 	router.HandleFunc("/kubeconfig", s.kubeconfigPage)
 	router.Handle("/bootstrap", s.requireKubeconfig(s.bootstrapPage))
@@ -253,7 +256,7 @@ func (s *server) Start(ctx context.Context) error {
 		_ = cliutils.OpenInBrowser("http://" + bindAddr)
 	}
 
-	go s.sseHub.Run()
+	go s.broadcaster.Run()
 	server := &http.Server{}
 	err = server.Serve(s.listener)
 	if err != nil && err != http.ErrServerClosed {
@@ -1138,10 +1141,29 @@ func (s *server) broadcastUpdatesWhenInitiallySynced(controllers ...cache.Contro
 	defer tick.Stop()
 	for {
 		if s.allControllersInitiallySynced(controllers...) {
-			s.sseHub.Broadcast <- &sse{
-				event: refreshClusterPkgOverview,
+			var allPkgs []ctrlpkg.Package
+
+			var clpkgs v1alpha1.ClusterPackageList
+			if err := s.pkgClient.ClusterPackages().GetAll(context.TODO(), &clpkgs); err != nil {
+				fmt.Fprintf(os.Stderr, "failed to get all clusterpackages to broadcast all updates: %v\n", err)
+			} else {
+				for _, clpkg := range clpkgs.Items {
+					p := &clpkg
+					allPkgs = append(allPkgs, p)
+				}
 			}
-			// TODO all possible refreshes
+
+			var pkgs v1alpha1.PackageList
+			if err := s.pkgClient.Packages("").GetAll(context.TODO(), &pkgs); err != nil {
+				fmt.Fprintf(os.Stderr, "failed to get all packages to broadcast all updates: %v\n", err)
+			} else {
+				for _, pkg := range pkgs.Items {
+					p := &pkg
+					allPkgs = append(allPkgs, p)
+				}
+			}
+
+			s.broadcaster.UpdatesAvailable(refresh.RefreshTriggerAll, allPkgs...)
 			break
 		}
 		<-tick.C
@@ -1233,17 +1255,19 @@ func (s *server) initClusterPackageStoreAndController(ctx context.Context) (cach
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj any) {
 				if pkg, ok := obj.(*v1alpha1.ClusterPackage); ok {
-					s.broadcastClusterPackageRefreshTriggers(pkg)
+					s.broadcaster.UpdatesAvailableForPackage(nil, pkg)
 				}
 			},
 			UpdateFunc: func(oldObj, newObj any) {
-				if pkg, ok := newObj.(*v1alpha1.ClusterPackage); ok {
-					s.broadcastClusterPackageRefreshTriggers(pkg)
+				if oldPkg, ok := oldObj.(*v1alpha1.ClusterPackage); ok {
+					if newPkg, ok := newObj.(*v1alpha1.ClusterPackage); ok {
+						s.broadcaster.UpdatesAvailableForPackage(oldPkg, newPkg)
+					}
 				}
 			},
 			DeleteFunc: func(obj any) {
 				if pkg, ok := obj.(*v1alpha1.ClusterPackage); ok {
-					s.broadcastClusterPackageRefreshTriggers(pkg)
+					s.broadcaster.UpdatesAvailableForPackage(pkg, nil)
 					fwName := pkg.GetName()
 					if result, ok := s.forwarders[fwName]; ok {
 						result.Stop()
@@ -1273,17 +1297,19 @@ func (s *server) initPackageStoreAndController(ctx context.Context) (cache.Store
 		cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj any) {
 				if pkg, ok := obj.(*v1alpha1.Package); ok {
-					s.broadcastPackageRefreshTriggers(pkg)
+					s.broadcaster.UpdatesAvailableForPackage(nil, pkg)
 				}
 			},
 			UpdateFunc: func(oldObj, newObj any) {
-				if pkg, ok := newObj.(*v1alpha1.Package); ok {
-					s.broadcastPackageRefreshTriggers(pkg)
+				if oldPkg, ok := oldObj.(*v1alpha1.Package); ok {
+					if newPkg, ok := newObj.(*v1alpha1.Package); ok {
+						s.broadcaster.UpdatesAvailableForPackage(oldPkg, newPkg)
+					}
 				}
 			},
 			DeleteFunc: func(obj any) {
 				if pkg, ok := obj.(*v1alpha1.Package); ok {
-					s.broadcastPackageRefreshTriggers(pkg)
+					s.broadcaster.UpdatesAvailableForPackage(pkg, nil)
 					fwName := cache.ObjectName{Namespace: pkg.GetNamespace(), Name: pkg.GetName()}.String()
 					if result, ok := s.forwarders[fwName]; ok {
 						result.Stop()
@@ -1293,24 +1319,6 @@ func (s *server) initPackageStoreAndController(ctx context.Context) (cache.Store
 			},
 		},
 	)
-}
-
-func (s *server) broadcastClusterPackageRefreshTriggers(pkg *v1alpha1.ClusterPackage) {
-	s.sseHub.Broadcast <- &sse{
-		event: refreshClusterPkgOverview,
-	}
-	s.sseHub.Broadcast <- &sse{
-		event: fmt.Sprintf("refresh-pkg-detail-%s", pkg.Name),
-	}
-}
-
-func (s *server) broadcastPackageRefreshTriggers(pkg *v1alpha1.Package) {
-	s.sseHub.Broadcast <- &sse{
-		event: refreshPkgOverview,
-	}
-	s.sseHub.Broadcast <- &sse{
-		event: fmt.Sprintf("refresh-pkg-detail-%s-%s", pkg.Namespace, pkg.Name),
-	}
 }
 
 func (s *server) initPackageInfoStoreAndController(ctx context.Context) (cache.Store, cache.Controller) {
