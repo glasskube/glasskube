@@ -21,14 +21,11 @@
         <span>Installation Failed</span>
       </div>
     {{ else if .UpdateAvailable }}
-      <!-- TODO update modal only for clpkgs or all?-->
       <button
         hx-get="{{ .PackageHref }}/update"
         hx-target="#modal-container"
         hx-swap="innerHTML"
         hx-select="#pkg-update-modal"
-        name="packageName"
-        value="{{ .PackageName }}"
         class="btn btn-warning btn-sm w-100"
         data-bs-toggle="modal"
         data-bs-target="#modal-container">
