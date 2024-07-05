@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
+	"github.com/glasskube/glasskube/internal/manifestvalues/cli"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clicontext"
@@ -19,6 +21,7 @@ import (
 	"github.com/glasskube/glasskube/internal/semver"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/kubeconfig"
+	"github.com/glasskube/glasskube/pkg/manifest"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/glasskube/glasskube/pkg/update"
 	"github.com/spf13/cobra"
@@ -112,6 +115,16 @@ var updateCmd = &cobra.Command{
 				fmt.Fprintf(os.Stderr, "⛔ Update cancelled. No changes were made.\n")
 				cliutils.ExitSuccess()
 			}
+
+			for _, item := range tx.Items {
+				if item.UpdateRequired() {
+					if err := updateConfigurationIfNeeded(ctx, item.Package, item.Version); err != nil {
+						fmt.Fprintf(os.Stderr, "❌ error updating configuration for %s: %v\n", item.Package.GetName(), err)
+						cliutils.ExitWithError()
+					}
+				}
+			}
+
 			updatedPackages, err := updater.ApplyBlocking(ctx, tx)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "❌ update failed: %v\n", err)
@@ -264,6 +277,26 @@ func completeUpgradablePackageVersions(
 		}
 	}
 	return versions, dir
+}
+
+func updateConfigurationIfNeeded(ctx context.Context, pkg ctrlpkg.Package, newVersion string) error {
+	newManifest, err := manifest.GetManifestForPackage(ctx, pkg, newVersion)
+	if err != nil {
+		return fmt.Errorf("error getting manifest for new version: %v", err)
+	}
+
+	if len(newManifest.ValueDefinitions) > 0 {
+		if cliutils.YesNoPrompt(fmt.Sprintf("Do you want to update the configuration for %s?", pkg.GetName()), false) {
+
+			values, err := cli.Configure(*newManifest, pkg.GetSpec().Values)
+			if err != nil {
+				return fmt.Errorf("error during configuration: %v", err)
+			}
+			pkg.GetSpec().Values = values
+		}
+	}
+
+	return nil
 }
 
 func init() {
