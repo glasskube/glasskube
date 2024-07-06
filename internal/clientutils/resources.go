@@ -38,6 +38,9 @@ func FetchResources(url string) ([]unstructured.Unstructured, error) {
 			}
 			return nil, fmt.Errorf("could not decode manifest %v: %w", url, err)
 		}
+		if len(object.Object) == 0 {
+			continue
+		}
 		resources = append(resources, object)
 	}
 	return resources, nil
