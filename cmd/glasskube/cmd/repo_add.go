@@ -21,6 +21,7 @@ var repoAddCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error
 		var defaultRepo *v1alpha1.PackageRepository
+		opts := metav1.UpdateOptions{}
 
 		ctx := cmd.Context()
 		client := cliutils.PackageClient(ctx)
@@ -53,7 +54,7 @@ var repoAddCmd = &cobra.Command{
 				cliutils.ExitWithError()
 			} else if defaultRepo.Name != repoName {
 				defaultRepo.SetDefaultRepositoryBool(false)
-				if err := client.PackageRepositories().Update(ctx, defaultRepo); err != nil {
+				if err := client.PackageRepositories().Update(ctx, defaultRepo, opts); err != nil {
 					fmt.Fprintf(os.Stderr, "❌ error updating current default package repository: %v\n", err)
 					cliutils.ExitWithError()
 				}
@@ -65,7 +66,7 @@ var repoAddCmd = &cobra.Command{
 
 			if repoAddCmdOptions.Default && defaultRepo != nil && defaultRepo.Name != repoName {
 				defaultRepo.SetDefaultRepositoryBool(true)
-				if err := client.PackageRepositories().Update(ctx, defaultRepo); err != nil {
+				if err := client.PackageRepositories().Update(ctx, defaultRepo, opts); err != nil {
 					fmt.Fprintf(os.Stderr, "❌ error rolling back to default package repository: %v\n", err)
 				}
 			}

@@ -92,7 +92,7 @@ func (s *server) handlePackageDiscussionPage(w http.ResponseWriter, r *http.Requ
 		}
 	}
 
-	pkgHref := util.GetPackageHref(d.pkg, d.manifest)
+	pkgHref := util.GetPackageHrefWithFallback(d.pkg, d.manifest)
 
 	err := s.templates.pkgDiscussionPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
 		"Giscus":             giscus.Client().Config,

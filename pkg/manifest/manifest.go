@@ -38,3 +38,21 @@ func GetInstalledManifestForPackage(ctx context.Context, pkg ctrlpkg.Package) (*
 		return nil, ErrPackageNoManifest
 	}
 }
+
+func GetManifestForPackage(
+	ctx context.Context,
+	pkg ctrlpkg.Package,
+	version string,
+) (*v1alpha1.PackageManifest, error) {
+	repoClient := cliutils.RepositoryClientset(ctx)
+	var manifest v1alpha1.PackageManifest
+	err := repoClient.ForPackage(pkg).FetchPackageManifest(
+		pkg.GetSpec().PackageInfo.Name,
+		version,
+		&manifest,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching manifest: %w", err)
+	}
+	return &manifest, nil
+}

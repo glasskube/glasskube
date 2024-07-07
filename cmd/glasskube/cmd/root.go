@@ -49,10 +49,10 @@ func init() {
 	RootCmd.PersistentFlags().BoolVar(&rootCmdOptions.SkipUpdateCheck, "skip-update-check", config.IsDevBuild(),
 		"Do not check for Glasskube updates")
 	RootCmd.PersistentFlags().StringVar(&config.Kubeconfig, "kubeconfig", "",
-		fmt.Sprintf("path to the kubeconfig file, whose current-context will be used (defaults to %v)",
+		fmt.Sprintf("Path to the kubeconfig file, whose current-context will be used (defaults to %v)",
 			clientcmd.RecommendedHomeFile))
 	RootCmd.PersistentFlags().BoolVar(&config.NonInteractive, "non-interactive", config.NonInteractive,
-		"run in non-interactive mode. "+
+		"Run in non-interactive mode. "+
 			"If interactivity would be required, the command will terminate with a non-zero exit code.")
 	RootCmd.PersistentFlags().BoolVar(&rootCmdOptions.NoProgress, "no-progress", false,
 		"Prevent progress logging to the cli")

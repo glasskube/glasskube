@@ -9,7 +9,7 @@
     <div
       class="m-0 p-0"
       id="package-overview-swapped"
-      hx-trigger="sse:refresh-package-overview"
+      hx-trigger="sse:{{ PackageOverviewRefreshId }}"
       hx-get="/packages"
       hx-swap="innerHTML"
       hx-select="#package-overview-swapped"
@@ -65,7 +65,7 @@
                     </span>
                   </span>
 
-                  <table class="table table-sm table-borderless m-0 ms-1">
+                  <table class="table table-sm table-borderless table-hover m-0 ms-1">
                     <thead>
                       <tr>
                         <th scope="col" class="bg-body-secondary p-0">Name</th>
@@ -95,6 +95,26 @@
                           <td class="bg-body-secondary p-0">{{ .Package.Spec.PackageInfo.Version }}</td>
                           <td class="bg-body-secondary p-0">{{ .Status.Status }}</td>
                           <td class="bg-body-secondary p-0 pe-2 text-end">
+                            {{ if and (eq .Status.Status "Ready") .InstalledManifest .InstalledManifest.Entrypoints }}
+                              <button
+                                hx-post="/packages/{{ .Name }}/{{ .Package.Namespace }}/{{ .Package.Name }}/open"
+                                class="px-1 py-0 btn btn-sm btn-success fw-normal border-1"
+                                hx-swap="none">
+                                <i class="bi bi-box-arrow-up-right me-1"></i>Open
+                              </button>
+                            {{ end }}
+                            {{ if (index $.PackageUpdateAvailable (print .Package.Namespace "/" .Package.Name)) }}
+                              <button
+                                hx-get="/packages/{{ .Name }}/{{ .Package.Namespace }}/{{ .Package.Name }}/update"
+                                hx-target="#modal-container"
+                                hx-swap="innerHTML"
+                                hx-select="#pkg-update-modal"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modal-container"
+                                class="px-1 py-0 btn btn-sm btn-warning fw-normal border-1">
+                                Update
+                              </button>
+                            {{ end }}
                             <a
                               href="/packages/{{ .Name }}/{{ .Package.Namespace }}/{{ .Package.Name }}"
                               class="px-1 py-0 btn btn-sm btn-outline-primary fw-normal border-1"
@@ -180,8 +200,4 @@
       </div>
     </div>
   </div>
-{{ end }}
-
-{{ define "installed-pkg-table-cell" }}
-
 {{ end }}

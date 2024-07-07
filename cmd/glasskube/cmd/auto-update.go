@@ -13,6 +13,7 @@ import (
 	"github.com/glasskube/glasskube/pkg/update"
 	"github.com/spf13/cobra"
 	"go.uber.org/multierr"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var autoUpdateEnabledDisabledOptions = struct {
@@ -35,7 +36,7 @@ var autoUpdateEnableCmd = &cobra.Command{
 var autoUpdateDisableCmd = &cobra.Command{
 	Use:               "disable [...package]",
 	Short:             "Disable automatic updates for packages:",
-	PreRun:            cliutils.SetupClientContext(false, &rootCmdOptions.SkipUpdateCheck),
+	PreRun:            cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
 	ValidArgsFunction: completeInstalledPackageNames,
 	Run: runAutoUpdateEnableOrDisable(false,
 		"Enable automatic updates for the following packages", "Automatic updates disabled"),
@@ -115,11 +116,12 @@ func runAutoUpdateEnableOrDisable(enabled bool, confirmMsg, successMsg string) f
 		for _, pkg := range pkgs {
 			if pkg.AutoUpdatesEnabled() != enabled {
 				pkg.SetAutoUpdatesEnabled(enabled)
+				opts := metav1.UpdateOptions{}
 				switch pkg := pkg.(type) {
 				case *v1alpha1.ClusterPackage:
-					multierr.AppendInto(&err, client.ClusterPackages().Update(ctx, pkg))
+					multierr.AppendInto(&err, client.ClusterPackages().Update(ctx, pkg, opts))
 				case *v1alpha1.Package:
-					multierr.AppendInto(&err, client.Packages(pkg.Namespace).Update(ctx, pkg))
+					multierr.AppendInto(&err, client.Packages(pkg.Namespace).Update(ctx, pkg, opts))
 				default:
 					panic("unexpected type")
 				}
@@ -140,7 +142,7 @@ var autoUpdateCmd = &cobra.Command{
 	Args:  cobra.NoArgs,
 	PreRun: cliutils.RunAll(
 		func(c *cobra.Command, s []string) { config.NonInteractive = true },
-		cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
+		cliutils.SetupClientContext(false, &rootCmdOptions.SkipUpdateCheck),
 	),
 	Run: runAutoUpdate,
 }
@@ -204,9 +206,9 @@ func runAutoUpdate(cmd *cobra.Command, args []string) {
 func init() {
 	for _, cmd := range []*cobra.Command{autoUpdateEnableCmd, autoUpdateDisableCmd} {
 		cmd.Flags().BoolVar(&autoUpdateEnabledDisabledOptions.Yes, "yes",
-			autoUpdateEnabledDisabledOptions.Yes, "do not ask for confirmation")
+			autoUpdateEnabledDisabledOptions.Yes, "Do not ask for confirmation")
 		cmd.Flags().BoolVar(&autoUpdateEnabledDisabledOptions.All, "all",
-			autoUpdateEnabledDisabledOptions.All, "set for all packages")
+			autoUpdateEnabledDisabledOptions.All, "Set for all packages")
 		autoUpdateEnabledDisabledOptions.KindOptions.AddFlagsToCommand(cmd)
 		autoUpdateEnabledDisabledOptions.NamespaceOptions.AddFlagsToCommand(cmd)
 		autoUpdateCmd.AddCommand(cmd)

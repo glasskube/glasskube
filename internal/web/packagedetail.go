@@ -26,11 +26,12 @@ import (
 )
 
 type packageDetailPageContext struct {
-	repositoryName  string
-	selectedVersion string
-	manifestName    string
-	pkg             ctrlpkg.Package
-	manifest        *v1alpha1.PackageManifest
+	repositoryName    string
+	selectedVersion   string
+	manifestName      string
+	pkg               ctrlpkg.Package
+	manifest          *v1alpha1.PackageManifest
+	renderedComponent string
 }
 
 func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
@@ -40,6 +41,7 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 	repositoryName := r.FormValue("repositoryName")
 	selectedVersion := r.FormValue("selectedVersion")
+	component := r.FormValue("component")
 
 	var pkg *v1alpha1.Package
 	var manifest *v1alpha1.PackageManifest
@@ -61,11 +63,12 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.handlePackageDetailPage(ctx, &packageDetailPageContext{
-		repositoryName:  repositoryName,
-		selectedVersion: selectedVersion,
-		manifestName:    manifestName,
-		pkg:             pkg,
-		manifest:        manifest,
+		repositoryName:    repositoryName,
+		selectedVersion:   selectedVersion,
+		manifestName:      manifestName,
+		pkg:               pkg,
+		manifest:          manifest,
+		renderedComponent: component,
 	}, r, w)
 }
 
@@ -74,6 +77,7 @@ func (s *server) clusterPackageDetail(w http.ResponseWriter, r *http.Request) {
 	pkgName := mux.Vars(r)["pkgName"]
 	repositoryName := r.FormValue("repositoryName")
 	selectedVersion := r.FormValue("selectedVersion")
+	component := r.FormValue("component")
 
 	pkg, manifest, err := describe.DescribeInstalledClusterPackage(ctx, pkgName)
 	if err != nil && !errors.IsNotFound(err) {
@@ -86,11 +90,12 @@ func (s *server) clusterPackageDetail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.handlePackageDetailPage(ctx, &packageDetailPageContext{
-		repositoryName:  repositoryName,
-		selectedVersion: selectedVersion,
-		manifestName:    pkgName,
-		pkg:             pkg,
-		manifest:        manifest,
+		repositoryName:    repositoryName,
+		selectedVersion:   selectedVersion,
+		manifestName:      pkgName,
+		pkg:               pkg,
+		manifest:          manifest,
+		renderedComponent: component,
 	}, r, w)
 }
 
@@ -155,7 +160,7 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 		}
 	}
 
-	err = s.templates.pkgPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
+	templateData := map[string]any{
 		"Package":            d.pkg,
 		"Status":             client.GetStatusOrPending(d.pkg),
 		"Manifest":           d.manifest,
@@ -173,8 +178,15 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 		"DatalistOptions":    datalistOptions,
 		"ShowDiscussionLink": usedRepo.IsGlasskubeRepo(),
 		"PackageHref":        webutil.GetPackageHrefWithFallback(d.pkg, d.manifest),
-	}, err))
-	checkTmplError(err, fmt.Sprintf("package-detail (%s)", d.manifestName))
+	}
+
+	if d.renderedComponent == "header" {
+		err = s.templates.pkgDetailHeaderTmpl.Execute(w, templateData)
+		checkTmplError(err, fmt.Sprintf("package-detail-header (%s)", d.manifestName))
+	} else {
+		err = s.templates.pkgPageTmpl.Execute(w, s.enrichPage(r, templateData, err))
+		checkTmplError(err, fmt.Sprintf("package-detail (%s)", d.manifestName))
+	}
 }
 
 func (s *server) getVersions(repositoryName string, pkgName string, selectedVersion string) (repo.PackageIndex, string, string, error) {

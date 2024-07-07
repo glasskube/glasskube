@@ -37,5 +37,5 @@ type OutputOptions struct {
 
 func (opts *OutputOptions) AddFlagsToCommand(cmd *cobra.Command) {
 	flags := cmd.Flags()
-	flags.VarP(&opts.Output, "output", "o", "output format")
+	flags.VarP(&opts.Output, "output", "o", "Output format")
 }

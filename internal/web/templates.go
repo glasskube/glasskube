@@ -8,6 +8,8 @@ import (
 	"path"
 	"reflect"
 
+	webutil "github.com/glasskube/glasskube/internal/web/sse/refresh"
+
 	"github.com/fsnotify/fsnotify"
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
@@ -41,6 +43,7 @@ type templates struct {
 	bootstrapPageTmpl       *template.Template
 	kubeconfigPageTmpl      *template.Template
 	settingsPageTmpl        *template.Template
+	pkgDetailHeaderTmpl     *template.Template
 	pkgUpdateModalTmpl      *template.Template
 	pkgConfigInput          *template.Template
 	pkgConfigAdvancedTmpl   *template.Template
@@ -84,7 +87,7 @@ func (t *templates) parseTemplates() {
 		"PackageManifestUrl": func(pkg ctrlpkg.Package) string {
 			if !pkg.IsNil() {
 				url, err := t.repoClientset.ForPackage(pkg).
-					GetPackageManifestURL(pkg.GetName(), pkg.GetSpec().PackageInfo.Version)
+					GetPackageManifestURL(pkg.GetSpec().PackageInfo.Name, pkg.GetSpec().PackageInfo.Version)
 				if err == nil {
 					return url
 				}
@@ -136,15 +139,10 @@ func (t *templates) parseTemplates() {
 			cond := meta.FindStatusCondition(repo.Status.Conditions, string(condition.Ready))
 			return cond != nil && cond.Status == metav1.ConditionTrue
 		},
-		"PackageDetailRefreshId": func(manifest *v1alpha1.PackageManifest, pkg ctrlpkg.Package) string {
-			var id string
-			if manifest.Scope.IsCluster() {
-				id = manifest.Name
-			} else if !pkg.IsNil() {
-				id = fmt.Sprintf("%s-%s", pkg.GetNamespace(), pkg.GetName())
-			}
-			return fmt.Sprintf("refresh-pkg-detail-%s", id)
-		},
+		"PackageDetailRefreshId":          webutil.PackageRefreshDetailId,
+		"PackageDetailHeaderRefreshId":    webutil.PackageRefreshDetailHeaderId,
+		"PackageOverviewRefreshId":        webutil.PackageOverviewRefreshId,
+		"ClusterPackageOverviewRefreshId": webutil.ClusterPackageOverviewRefreshId,
 	}
 
 	t.baseTemplate = template.Must(template.New("base.html").
@@ -158,6 +156,7 @@ func (t *templates) parseTemplates() {
 	t.bootstrapPageTmpl = t.pageTmpl("bootstrap.html")
 	t.kubeconfigPageTmpl = t.pageTmpl("kubeconfig.html")
 	t.settingsPageTmpl = t.pageTmpl("settings.html")
+	t.pkgDetailHeaderTmpl = t.componentTmpl("pkg-detail-header", "pkg-detail-btns")
 	t.pkgUpdateModalTmpl = t.componentTmpl("pkg-update-modal")
 	t.pkgConfigInput = t.componentTmpl("pkg-config-input", "datalist")
 	t.pkgConfigAdvancedTmpl = t.componentTmpl("pkg-config-advanced")

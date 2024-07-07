@@ -151,8 +151,8 @@ func (c *readWriteCacheClient[T, L]) Create(ctx context.Context, target *T, opts
 	return c.fallback.Create(ctx, target, opts)
 }
 
-func (c *readWriteCacheClient[T, L]) Update(ctx context.Context, target *T) error {
-	return c.fallback.Update(ctx, target)
+func (c *readWriteCacheClient[T, L]) Update(ctx context.Context, target *T, opts metav1.UpdateOptions) error {
+	return c.fallback.Update(ctx, target, opts)
 }
 
 func (c *readWriteCacheClient[T, L]) Delete(ctx context.Context, target *T, options metav1.DeleteOptions) error {
