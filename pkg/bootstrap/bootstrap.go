@@ -207,6 +207,7 @@ func (c *BootstrapClient) applyManifests(
 	bar := progressbar.Default(int64(len(objs)), "Applying manifests")
 	progressbar.OptionClearOnFinish()(bar)
 	progressbar.OptionOnCompletion(nil)(bar)
+	progressbar.OptionThrottle(0)(bar)
 	defer func(bar *progressbar.ProgressBar) { _ = bar.Exit() }(bar)
 
 	var checkWorkloads []*unstructured.Unstructured
@@ -253,7 +254,9 @@ func (c *BootstrapClient) applyManifests(
 
 	for _, obj := range checkWorkloads {
 		bar.Describe(fmt.Sprintf("Checking Status of %v (%v)", obj.GetName(), obj.GetKind()))
-		if err := c.checkWorkloadReady(obj.GetNamespace(), obj.GetName(), obj.GetKind(), 5*time.Minute); err != nil {
+		ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+		defer cancel() // release the context in case checkWorkloadReady returned early
+		if err := c.checkWorkloadReady(ctx, obj.GetNamespace(), obj.GetName(), obj.GetKind()); err != nil {
 			return err
 		}
 		_ = bar.Add(1)
@@ -310,10 +313,10 @@ func defaultRepository() unstructured.Unstructured {
 }
 
 func (c *BootstrapClient) checkWorkloadReady(
+	ctx context.Context,
 	namespace string,
 	workloadName string,
 	workloadType string,
-	timeout time.Duration,
 ) error {
 	dynamicClient, err := dynamic.NewForConfig(c.clientConfig)
 	if err != nil {
@@ -337,7 +340,7 @@ func (c *BootstrapClient) checkWorkloadReady(
 		workload, err := dynamicClient.
 			Resource(workloadRes).
 			Namespace(namespace).
-			Get(context.Background(), workloadName, metav1.GetOptions{})
+			Get(ctx, workloadName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -369,15 +372,15 @@ func (c *BootstrapClient) checkWorkloadReady(
 		return nil
 	}
 
-	timeoutCh := time.After(timeout)
 	tick := time.NewTicker(2 * time.Second)
 	tickC := tick.C
 	defer tick.Stop()
 
 	for {
 		select {
-		case <-timeoutCh:
-			return fmt.Errorf("%s is not ready within the specified timeout", workloadType)
+		case <-ctx.Done():
+			return fmt.Errorf("%v %v (%v) was not ready within the specified timeout: %w",
+				workloadType, workloadName, namespace, ctx.Err())
 		case <-tickC:
 			if ok, err := checkReady(); err != nil {
 				return err
