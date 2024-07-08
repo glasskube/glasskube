@@ -1140,13 +1140,14 @@ func (s *server) repositoryconfig(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) handleGetRepositoryConfig(w http.ResponseWriter, r *http.Request) {
-	var repos v1alpha1.PackageRepositoryList
-	if err := s.pkgClient.PackageRepositories().GetAll(r.Context(), &repos); err != nil {
+	reposName = mux.Vars(r)["repoName"]
+	repos := v1alpha1.PackageRepositoryList{}
+	if err := s.pkgClient.PackageRepositories().Get(r.Context(), reposName, repos); err != nil {
 		s.respondAlertAndLog(w, err, "Failed to fetch repositories", "danger")
 		return
 	}
 
-	tmplErr := s.templates.settingsPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
+	tmplErr := s.templates.repositoryTmpl.Execute(w, s.enrichPage(r, map[string]any{
 		"Repositories": repos.Items,
 	}, nil))
 	checkTmplError(tmplErr, "repository")
