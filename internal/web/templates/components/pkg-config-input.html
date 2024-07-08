@@ -213,7 +213,7 @@
 
 {{ define "pkg-config-input-help" }}
   <div id="input-help-{{ .ValueName }}" class="form-text">
-    {{ .ValueDefinition.Metadata.Description }}
+    {{ .ValueDefinition.Metadata.Description | Markdown }}
   </div>
 {{ end }}
 
