@@ -9,13 +9,14 @@ In order to install packages in a Kubernetes cluster using Glasskube, it is nece
 Conveniently, for most users this can be achieved by running `glasskube bootstrap` in a terminal.
 
 The bootstrap command installs the Package Operator and it's associated Custom Resource Definitions (CRDs).
-By default, the Package Operator is installed in an *All-In-One* (AIO) configuration.
+By default, the Package Operator is installed in an _All-In-One_ (AIO) configuration.
 This configuration comes bundled with a subset of Flux.
 Glasskube is still compatible with any other GitOps solution, but Flux is a necessary requirement of the Package Operator.
 
 If you already use Flux in your cluster or want to manage it yourself, first [install Flux](https://fluxcd.io/flux/installation/bootstrap/),
-and then Glasskube using a *slim* configuration by running `glasskube bootstrap --type=slim`.
+and then Glasskube using a _slim_ configuration by running `glasskube bootstrap --type=slim`.
 To ensure compatibility, please verify that the following flux components are installed in their respective version:
+
 - `source-controller` deployment: v1.3.0
 - `helm-controller` deployment: v1.0.1
 - `HelmChart` CRD: v1
@@ -23,3 +24,11 @@ To ensure compatibility, please verify that the following flux components are in
 
 For more information and command-line options check out `glasskube help bootstrap`.
 
+## Common Issues
+
+### Deployments do not become ready
+
+By default, the `Deployment`s included in the bootstrapped configuration do not contain any taint tolerations.
+Please make sure that your cluster has at least one schedulable node that is not tainted.
+This issue was reported by users trying to bootstrap Glasskube on Amazon EKS clusters consisting exclusively of Fargate nodes.
+Fargate nodes come with the taint `eks.amazonaws.com/compute-type=fargate:NoSchedule` by default, which results in the `Pods` associated with the Glasskube `Deployments` to be unschedulable.
