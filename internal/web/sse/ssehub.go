@@ -21,6 +21,8 @@ type sseHub struct {
 
 	// Registered clients.
 	clients sync.Map // map[*sseClient]struct{}
+
+	stopped bool
 }
 
 type sse struct {
@@ -47,12 +49,26 @@ func newHub() *sseHub {
 }
 
 // Run handles communication operations with sseHub
-func (h *sseHub) run() {
+func (h *sseHub) run(stopCh chan struct{}) {
 	for {
 		select {
+		case <-stopCh:
+			h.stopped = true
+			fmt.Fprintf(os.Stderr, "ssehub received stop\n")
+			h.clients.Range(func(key, value any) bool {
+				if client, ok := key.(*sseClient); ok {
+					client.send <- &sse{event: "close"}
+					fmt.Fprintf(os.Stderr, "sent close to client\n")
+					close(client.send)
+					fmt.Fprintf(os.Stderr, "closed?\n")
+				}
+				return true
+			})
+			return
 		case client := <-h.register:
 			h.clients.Store(client, struct{}{})
 		case client := <-h.unregister:
+			fmt.Fprintf(os.Stderr, "unregister\n")
 			close(client.send)
 			h.clients.Delete(client)
 		case message := <-h.broadcast:
@@ -75,7 +91,7 @@ func (h *sseHub) handler(w http.ResponseWriter) {
 
 	w.Header().Set("Content-Type", "text/event-stream")
 	client := &sseClient{
-		send: make(chan *sse),
+		send: make(chan *sse, 1),
 	}
 	h.register <- client
 
@@ -89,5 +105,9 @@ func (h *sseHub) handler(w http.ResponseWriter) {
 		}
 		flusher.Flush()
 	}
-	h.unregister <- client
+	fmt.Fprintf(os.Stderr, "done 1 \n")
+	if !h.stopped {
+		h.unregister <- client
+	}
+	fmt.Fprintf(os.Stderr, "done 2 \n")
 }

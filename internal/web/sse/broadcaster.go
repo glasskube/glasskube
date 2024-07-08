@@ -18,8 +18,8 @@ func NewBroadcaster() *Broadcaster {
 	}
 }
 
-func (b *Broadcaster) Run() {
-	b.sseHub.run()
+func (b *Broadcaster) Run(stopCh chan struct{}) {
+	b.sseHub.run(stopCh)
 }
 
 func (b *Broadcaster) Handler(w http.ResponseWriter, r *http.Request) {

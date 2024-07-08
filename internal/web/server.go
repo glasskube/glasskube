@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"slices"
 	"strconv"
 	"strings"
@@ -256,12 +257,33 @@ func (s *server) Start(ctx context.Context) error {
 		_ = cliutils.OpenInBrowser("http://" + bindAddr)
 	}
 
-	go s.broadcaster.Run()
+	broadcasterStopCh := make(chan struct{}, 1)
+	go s.broadcaster.Run(broadcasterStopCh)
 	server := &http.Server{}
+
+	shutdownCh := make(chan struct{})
+	go func() {
+		sigint := make(chan os.Signal, 1)
+		signal.Notify(sigint, os.Interrupt)
+		<-sigint
+		fmt.Fprintf(os.Stderr, "received sigint\n")
+		close(broadcasterStopCh)
+		fmt.Fprintf(os.Stderr, "shutting down\n")
+		if err := server.Shutdown(context.Background()); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to shutdown server: %v\n", err)
+		}
+		close(shutdownCh)
+	}()
+
 	err = server.Serve(s.listener)
 	if err != nil && err != http.ErrServerClosed {
 		return err
 	}
+
+	fmt.Fprintf(os.Stderr, "waiting for open connections to be closed\n")
+	<-shutdownCh
+	fmt.Fprintf(os.Stderr, "connections closed\n")
+
 	return nil
 }
 
