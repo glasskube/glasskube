@@ -189,6 +189,7 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle("/packages/{pkgName}/configuration/{valueName}/datalists/names", s.requireReady(s.namesDatalist))
 	router.Handle("/packages/{pkgName}/configuration/{valueName}/datalists/keys", s.requireReady(s.keysDatalist))
 	router.Handle("/settings", s.requireReady(s.settingsPage))
+	router.Handle("/settings/repository/{repoName}", s.requireReady(s.repositoryconfig))
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/packages", http.StatusFound)
 	})
@@ -1121,4 +1122,36 @@ func isPortConflictError(err error) bool {
 		}
 	}
 	return false
+}
+
+func (s *server) repositoryconfig(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		// Handle GET request: Render the repository.html template
+		s.handleGetRepositoryConfig(w, r)
+	case http.MethodPost:
+		// Handle POST request: Update the repository configuration
+		// s.handlePostRepositoryConfig(w, r)
+		fmt.Printf("POST Mehtod Part")
+	default:
+		// Method not allowed
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func (s *server) handleGetRepositoryConfig(w http.ResponseWriter, r *http.Request) {
+	var repos v1alpha1.PackageRepositoryList
+	if err := s.pkgClient.PackageRepositories().GetAll(r.Context(), &repos); err != nil {
+		s.respondAlertAndLog(w, err, "Failed to fetch repositories", "danger")
+		return
+	}
+
+	tmplErr := s.templates.settingsPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
+		"Repositories": repos.Items,
+	}, nil))
+	checkTmplError(tmplErr, "repository")
+}
+
+func handlePostRepositoryConfig(w http.ResponseWriter, r *http.Request){
+
 }

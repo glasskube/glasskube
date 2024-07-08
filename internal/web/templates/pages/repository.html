@@ -1,0 +1,33 @@
+{{define "content"}}
+<div class="container mx-auto p-4 bg-white shadow-md rounded-lg mt-8">
+    <h1 class="text-2xl font-bold mb-4">Repository Configuration</h1>
+    <form method="POST" action="/settings/repository/{{ .RepoName }}" class="space-y-4">
+        <!-- Name Field -->
+        <div>
+            <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
+            <input type="text" id="name" name="name" value="{{ .RepoName }}" disabled class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+        </div>
+
+        <!-- URL Field -->
+        <div>
+            <label for="url" class="block text-sm font-medium text-gray-700">URL</label>
+            <input type="text" id="url" name="url" value="{{ .URL }}" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+        </div>
+
+        <!-- Default Checkbox -->
+        <div>
+            <label for="default" class="inline-flex items-center">
+                <input type="checkbox" id="default" name="default" {{ if .Default }}checked{{ end }} class="form-checkbox h-4 w-4 text-indigo-600 transition duration-150 ease-in-out" />
+                <span class="ml-2 text-sm text-gray-700">Default</span>
+            </label>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex space-x-4">
+            <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">Submit</button>
+            <a href="/settings" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">Cancel</a>
+        </div>
+    </form>
+</div>
+
+{{end}}
