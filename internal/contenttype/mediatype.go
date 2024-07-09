@@ -7,16 +7,18 @@ import (
 )
 
 const (
-	MediaTypeJSON      = "application/json"
-	MediaTypeYAML      = "application/yaml"
-	MediaTypeTextYAML  = "text/yaml"
-	MediaTypeTextPlain = "text/plain"
+	MediaTypeJSON        = "application/json"
+	MediaTypeYAML        = "application/yaml"
+	MediaTypeOctetStream = "application/octet-stream"
+	MediaTypeTextYAML    = "text/yaml"
+	MediaTypeTextPlain   = "text/plain"
 )
 
 func IsJsonOrYaml(response *http.Response) error {
 	return HasMediaType(response,
 		MediaTypeJSON,
 		MediaTypeYAML,
+		MediaTypeOctetStream,
 		MediaTypeTextYAML,
 		MediaTypeTextPlain)
 }
