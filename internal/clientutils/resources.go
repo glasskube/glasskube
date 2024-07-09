@@ -5,13 +5,20 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/glasskube/glasskube/internal/contenttype"
 	"github.com/glasskube/glasskube/internal/httperror"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
 func FetchResources(url string) ([]unstructured.Unstructured, error) {
-	response, err := httperror.CheckResponse(http.Get(url))
+	request, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Add("Accept", contenttype.MediaTypeJSON)
+	request.Header.Add("Accept", contenttype.MediaTypeYAML)
+	response, err := httperror.CheckResponse(http.DefaultClient.Do(request))
 	if err != nil {
 		switch {
 		case httperror.IsNotFound(err):
@@ -27,6 +34,10 @@ func FetchResources(url string) ([]unstructured.Unstructured, error) {
 	defer func(Body io.ReadCloser) {
 		_ = Body.Close()
 	}(response.Body)
+
+	if err := contenttype.IsJsonOrYaml(response); err != nil {
+		return nil, fmt.Errorf("could not decode manifest %v: %w", url, err)
+	}
 
 	decoder := yaml.NewYAMLOrJSONDecoder(response.Body, 4096)
 	resources := make([]unstructured.Unstructured, 0)
