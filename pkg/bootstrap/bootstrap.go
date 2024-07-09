@@ -254,9 +254,13 @@ func (c *BootstrapClient) applyManifests(
 
 	for _, obj := range checkWorkloads {
 		bar.Describe(fmt.Sprintf("Checking Status of %v (%v)", obj.GetName(), obj.GetKind()))
-		ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
-		defer cancel() // release the context in case checkWorkloadReady returned early
-		if err := c.checkWorkloadReady(ctx, obj.GetNamespace(), obj.GetName(), obj.GetKind()); err != nil {
+		var err error
+		func() {
+			ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+			defer cancel() // release the context in case checkWorkloadReady returned early
+			err = c.checkWorkloadReady(ctx, obj.GetNamespace(), obj.GetName(), obj.GetKind())
+		}()
+		if err != nil {
 			return err
 		}
 		_ = bar.Add(1)
