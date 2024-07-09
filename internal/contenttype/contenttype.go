@@ -7,7 +7,7 @@ import (
 
 type ContentType struct {
 	MediaType string
-	Chartset  string
+	Charset   string
 	Boundary  string
 }
 
@@ -22,7 +22,7 @@ func ParseContentType(value string) (*ContentType, error) {
 			if len(parts) == 2 {
 				switch parts[0] {
 				case "charset":
-					result.Chartset = parts[1]
+					result.Charset = parts[1]
 				case "boundary":
 					result.Boundary = parts[1]
 				default:
