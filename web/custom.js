@@ -28,7 +28,7 @@ window.advancedOptions = function (currentContext) {
 };
 
 // TODO fix disconnected when graceful close!!
-
+// hoping for this to be merged & released soon: https://github.com/bigskysoftware/htmx-extensions/pull/31
 function setSSEDisconnected() {
   document
     .getElementById('sse-error-container')
