@@ -4,15 +4,20 @@ metadata:
   name: glasskube-autoupdate
 rules:
   - verbs:
-      - get
       - update
       - patch
-      - list
     apiGroups:
       - packages.glasskube.dev
     resources:
       - packages
       - clusterpackages
+  - verbs:
+      - get
+      - list
+    apiGroups:
+      - packages.glasskube.dev
+    resources:
+      - "*"
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
