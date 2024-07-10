@@ -315,7 +315,7 @@ func (s *server) update(w http.ResponseWriter, r *http.Request) {
 				toast.WithErr(fmt.Errorf("failed to find updateTransactionId %v", utId)),
 				toast.WithStatusCode(http.StatusNotFound))
 			return
-		} else if _, err := updater.Apply(ctx, &ut); err != nil {
+		} else if _, err := updater.Apply(ctx, &ut, false); err != nil {
 			delete(s.updateTransactions, utId)
 			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to apply update: %w", err)))
 			return

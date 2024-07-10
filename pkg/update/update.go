@@ -176,15 +176,15 @@ outer:
 	return &tx, nil
 }
 
-func (c *updater) Apply(ctx context.Context, tx *UpdateTransaction) ([]ctrlpkg.Package, error) {
-	return c.apply(ctx, tx, false)
+func (c *updater) Apply(ctx context.Context, tx *UpdateTransaction, DryRun bool) ([]ctrlpkg.Package, error) {
+	return c.apply(ctx, tx, false, DryRun)
 }
 
-func (c *updater) ApplyBlocking(ctx context.Context, tx *UpdateTransaction) ([]ctrlpkg.Package, error) {
-	return c.apply(ctx, tx, true)
+func (c *updater) ApplyBlocking(ctx context.Context, tx *UpdateTransaction, DryRun bool) ([]ctrlpkg.Package, error) {
+	return c.apply(ctx, tx, true, DryRun)
 }
 
-func (c *updater) apply(ctx context.Context, tx *UpdateTransaction, blocking bool) ([]ctrlpkg.Package, error) {
+func (c *updater) apply(ctx context.Context, tx *UpdateTransaction, blocking bool, DryRun bool) ([]ctrlpkg.Package, error) {
 	c.status.Start()
 	defer c.status.Stop()
 	var updatedPackages []ctrlpkg.Package
@@ -193,7 +193,7 @@ func (c *updater) apply(ctx context.Context, tx *UpdateTransaction, blocking boo
 			c.status.SetStatus(fmt.Sprintf("Updating %v", item.Package.GetName()))
 			err := retry.OnError(retry.DefaultRetry,
 				apierrors.IsNotFound,
-				func() error { return c.UpdatePackage(ctx, item.Package, item.Version) },
+				func() error { return c.UpdatePackage(ctx, item.Package, item.Version, DryRun) },
 			)
 			if err != nil {
 				return nil, fmt.Errorf("could not update package %v: %w", item.Package.GetName(), err)
@@ -210,8 +210,11 @@ func (c *updater) apply(ctx context.Context, tx *UpdateTransaction, blocking boo
 	return updatedPackages, nil
 }
 
-func (c *updater) UpdatePackage(ctx context.Context, pkg ctrlpkg.Package, version string) error {
+func (c *updater) UpdatePackage(ctx context.Context, pkg ctrlpkg.Package, version string, DryRun bool) error {
 	opts := metav1.UpdateOptions{}
+	if DryRun {
+		opts.DryRun = []string{metav1.DryRunAll}
+	}
 	pkg.GetSpec().PackageInfo.Version = version
 	switch pkg := pkg.(type) {
 	case *v1alpha1.ClusterPackage:
