@@ -184,7 +184,12 @@ func (c *updater) ApplyBlocking(ctx context.Context, tx *UpdateTransaction, DryR
 	return c.apply(ctx, tx, true, DryRun)
 }
 
-func (c *updater) apply(ctx context.Context, tx *UpdateTransaction, blocking bool, DryRun bool) ([]ctrlpkg.Package, error) {
+func (c *updater) apply(
+	ctx context.Context,
+	tx *UpdateTransaction,
+	blocking bool,
+	DryRun bool,
+) ([]ctrlpkg.Package, error) {
 	c.status.Start()
 	defer c.status.Stop()
 	var updatedPackages []ctrlpkg.Package
