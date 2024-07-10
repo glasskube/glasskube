@@ -114,22 +114,26 @@
             Auto-Update:
             <strong>{{ .AutoUpdate }}</strong>
           </span>
-          <span 
-          class="badge p-1 fw-normal {{ if eq .Status.Status "Failed" }}bg-danger text-white border border-1 border-danger{{ else }}bg-body-secondary text-primary-emphasis border-primary border border-1 p-1 fw-normal{{ end }}"
-          data-bs-toggle="popover"
-          data-bs-title="Status"
-          data-bs-content="{{ .Status.Reason }}"
-          data-bs-html="true"
-          data-bs-trigger="focus"
-          tabindex="0">
-          Status: <strong>{{ .Status.Status }}</strong>
-        </span>
+          <span
+            class="badge p-1 fw-normal {{ if eq .Status.Status " Failed" }}
+              bg-danger text-white border border-1 border-danger
+            {{ else }}
+              bg-body-secondary text-primary-emphasis border-primary border border-1 p-1 fw-normal
+            {{ end }}"
+            data-bs-toggle="popover"
+            data-bs-title="Status"
+            data-bs-content="{{ .Status.Reason }}"
+            data-bs-html="true"
+            data-bs-trigger="focus"
+            tabindex="0">
+            Status: <strong>{{ .Status.Status }}</strong>
+          </span>
         </div>
         {{ if eq .Status.Status "Failed" }}
-        <div class="mt-2 alert alert-danger">
-          <div>{{ .Status.Message }}</div>
-        </div>
-        {{end}}
+          <div class="mt-2 alert alert-danger">
+            <div>{{ .Status.Message }}</div>
+          </div>
+        {{ end }}
       {{ end }}
     </div>
   </div>
