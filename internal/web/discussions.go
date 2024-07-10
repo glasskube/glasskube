@@ -32,8 +32,9 @@ func (s *server) packageDiscussion(w http.ResponseWriter, r *http.Request) {
 	repositoryName := mux.Vars(r)["repositoryName"]
 	pkg, manifest, err := describe.DescribeInstalledPackage(r.Context(), namespace, name)
 	if err != nil && !errors.IsNotFound(err) {
-		s.respondAlertAndLog(w, err,
-			fmt.Sprintf("An error occurred fetching installed package %v", name), "danger")
+		s.newToastResponse().
+			withErr(fmt.Errorf("failed to fetch installed package %v/%v: %w", namespace, name, err)).
+			send(w)
 		return
 	}
 
@@ -56,8 +57,9 @@ func (s *server) clusterPackageDiscussion(w http.ResponseWriter, r *http.Request
 	repositoryName := mux.Vars(r)["repositoryName"]
 	pkg, manifest, err := describe.DescribeInstalledClusterPackage(r.Context(), pkgName)
 	if err != nil && !errors.IsNotFound(err) {
-		s.respondAlertAndLog(w, err,
-			fmt.Sprintf("An error occurred fetching installed package %v", pkgName), "danger")
+		s.newToastResponse().
+			withErr(fmt.Errorf("failed to fetch installed clusterpackage %v: %w", pkgName, err)).
+			send(w)
 		return
 	}
 
@@ -77,7 +79,9 @@ func (s *server) handleGiscus(r *http.Request) {
 func (s *server) handlePackageDiscussionPage(w http.ResponseWriter, r *http.Request, d *packageDetailPageContext) {
 	var idx repo.PackageIndex
 	if err := s.repoClientset.ForRepoWithName(d.repositoryName).FetchPackageIndex(d.manifestName, &idx); err != nil {
-		s.respondAlertAndLog(w, err, "An error occurred fetching versions of "+d.manifestName, "danger")
+		s.newToastResponse().
+			withErr(fmt.Errorf("failed to fetch package index of %v in repo %v: %w", d.manifestName, d.repositoryName, err)).
+			send(w)
 		return
 	}
 
@@ -85,9 +89,8 @@ func (s *server) handlePackageDiscussionPage(w http.ResponseWriter, r *http.Requ
 		d.manifest = &v1alpha1.PackageManifest{}
 		if err := s.repoClientset.ForRepoWithName(d.repositoryName).
 			FetchPackageManifest(d.manifestName, idx.LatestVersion, d.manifest); err != nil {
-			s.respondAlertAndLog(w, err,
-				fmt.Sprintf("An error occurred fetching manifest of %v in version %v in repository %v",
-					d.manifest, idx.LatestVersion, d.repositoryName), "danger")
+			s.newToastResponse().
+				withErr(fmt.Errorf("failed to fetch manifest of %v (%v) in repo %v: %w", d.manifestName, idx.LatestVersion, d.repositoryName, err))
 			return
 		}
 	}

@@ -27,17 +27,16 @@ window.advancedOptions = function (currentContext) {
   return localStorage.getItem('advancedOptions_' + currentContext) === 'true';
 };
 
-// TODO fix disconnected when graceful close!!
-// hoping for this to be merged & released soon: https://github.com/bigskysoftware/htmx-extensions/pull/31
 function setSSEDisconnected() {
-  document
-    .getElementById('sse-error-container')
-    .classList.remove('visually-hidden');
-  document.getElementById('sse-error-container-message').innerHTML =
-    'You are disconnected from the server. Make sure to run <code>glasskube serve</code> and refresh this page!';
+  const elem = document.getElementById('disconnected-toast');
+  if (elem && !elem.classList.contains('show')) {
+    document.getElementById('disconnected-toast').classList.add('show');
+  }
 }
 document.addEventListener('htmx:sseError', setSSEDisconnected);
 document.addEventListener('htmx:sseMessage', function (evt) {
+  // TODO fix disconnected when graceful close!!
+  // hoping for this to be merged & released soon: https://github.com/bigskysoftware/htmx-extensions/pull/31
   console.log(evt.detail.type);
   if (evt && evt.detail && evt.detail.type === 'close') {
     console.log('closing');

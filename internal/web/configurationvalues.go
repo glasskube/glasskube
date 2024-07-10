@@ -155,10 +155,9 @@ func (s *server) handleConfigurationInput(w http.ResponseWriter, r *http.Request
 		d.manifest = &v1alpha1.PackageManifest{}
 		if err := s.repoClientset.ForRepoWithName(d.repositoryName).
 			FetchPackageManifest(d.manifestName, d.selectedVersion, d.manifest); err != nil {
-			// TODO check error handling again?
-			s.respondAlertAndLog(w, err,
-				fmt.Sprintf("An error occurred fetching manifest of %v in version %v", d.manifestName, d.selectedVersion),
-				"danger")
+			s.newToastResponse().
+				withErr(fmt.Errorf("failed to fetch manifest of %v in version %v: %w", d.manifestName, d.selectedVersion, err)).
+				send(w)
 			return
 		}
 	}

@@ -301,14 +301,14 @@ func (s *server) update(w http.ResponseWriter, r *http.Request) {
 		defer s.updateMutex.Unlock()
 		utIdStr := r.FormValue("updateTransactionId")
 		if utId, err := strconv.Atoi(utIdStr); err != nil {
-			s.respondAlertAndLog(w, err, "Failed to parse updateTransactionId", "danger")
+			s.respondErrorToastAndLog(w, err, "Failed to parse updateTransactionId", "danger")
 			return
 		} else if ut, ok := s.updateTransactions[utId]; !ok {
-			s.respondAlert(w, fmt.Sprintf("Failed to find UpdateTransaction with ID %d", utId), "danger")
+			s.respondToast(w, fmt.Sprintf("Failed to find UpdateTransaction with ID %d", utId), "danger")
 			return
 		} else if _, err := updater.Apply(ctx, &ut); err != nil {
 			delete(s.updateTransactions, utId)
-			s.respondAlertAndLog(w, err, "An error occurred during the update", "danger")
+			s.respondErrorToastAndLog(w, err, "An error occurred during the update", "danger")
 			return
 		} else {
 			delete(s.updateTransactions, utId)
@@ -342,7 +342,7 @@ func (s *server) update(w http.ResponseWriter, r *http.Request) {
 		updater := update.NewUpdater(ctx)
 		updateTx, err := updater.Prepare(ctx, updateGetters...)
 		if err != nil {
-			s.respondAlertAndLog(w, err, "An error occurred preparing update of "+pkgName, "danger")
+			s.respondErrorToastAndLog(w, err, "An error occurred preparing update of "+pkgName, "danger")
 			return
 		}
 		utId := rand.Int()
@@ -389,21 +389,21 @@ func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
 		if pkgName != "" {
 			var pkg v1alpha1.ClusterPackage
 			if err := s.pkgClient.ClusterPackages().Get(ctx, pkgName, &pkg); err != nil {
-				s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred fetching %v during uninstall", pkgName), "danger")
+				s.respondErrorToastAndLog(w, err, fmt.Sprintf("An error occurred fetching %v during uninstall", pkgName), "danger")
 				return
 			}
 			if err := uninstaller.Uninstall(ctx, &pkg); err != nil {
-				s.respondAlertAndLog(w, err, "An error occurred uninstalling "+pkgName, "danger")
+				s.respondErrorToastAndLog(w, err, "An error occurred uninstalling "+pkgName, "danger")
 				return
 			}
 		} else {
 			var pkg v1alpha1.Package
 			if err := s.pkgClient.Packages(namespace).Get(ctx, name, &pkg); err != nil {
-				s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred fetching %v during uninstall", name), "danger")
+				s.respondErrorToastAndLog(w, err, fmt.Sprintf("An error occurred fetching %v during uninstall", name), "danger")
 				return
 			}
 			if err := uninstaller.Uninstall(ctx, &pkg); err != nil {
-				s.respondAlertAndLog(w, err, "An error occurred uninstalling "+name, "danger")
+				s.respondErrorToastAndLog(w, err, "An error occurred uninstalling "+name, "danger")
 				return
 			}
 		}
@@ -448,14 +448,14 @@ func (s *server) open(w http.ResponseWriter, r *http.Request) {
 	if pkgName != "" {
 		var pkg v1alpha1.ClusterPackage
 		if err := s.pkgClient.ClusterPackages().Get(ctx, pkgName, &pkg); err != nil {
-			s.respondAlertAndLog(w, err, "Could not get ClusterPackage", "danger")
+			s.respondErrorToastAndLog(w, err, "Could not get ClusterPackage", "danger")
 			return
 		}
 		s.handleOpen(ctx, w, &pkg)
 	} else {
 		var pkg v1alpha1.Package
 		if err := s.pkgClient.Packages(namespace).Get(ctx, name, &pkg); err != nil {
-			s.respondAlertAndLog(w, err, "Could not get Package", "danger")
+			s.respondErrorToastAndLog(w, err, "Could not get Package", "danger")
 			return
 		}
 		s.handleOpen(ctx, w, &pkg)
@@ -472,7 +472,7 @@ func (s *server) handleOpen(ctx context.Context, w http.ResponseWriter, pkg ctrl
 
 	result, err := open.NewOpener().Open(ctx, pkg, "", 0)
 	if err != nil {
-		s.respondAlertAndLog(w, err, "Could not open "+pkg.GetName(), "danger")
+		s.respondErrorToastAndLog(w, err, "Could not open "+pkg.GetName(), "danger")
 	} else {
 		s.forwarders[fwName] = result
 		result.WaitReady()
@@ -576,7 +576,7 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 	pkg := &v1alpha1.Package{}
 	var mf *v1alpha1.PackageManifest
 	if err := s.pkgClient.Packages(namespace).Get(ctx, name, pkg); err != nil && !apierrors.IsNotFound(err) {
-		s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred fetching package details of %v", name), "danger")
+		s.respondErrorToastAndLog(w, err, fmt.Sprintf("An error occurred fetching package details of %v", name), "danger")
 		return
 	} else if err != nil {
 		pkg = nil
@@ -584,12 +584,12 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 
 	repositoryName, mf, err = s.getUsedRepoAndManifest(ctx, pkg, repositoryName, manifestName, selectedVersion)
 	if err != nil {
-		s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred getting manifest and repo for %s", manifestName), "danger")
+		s.respondErrorToastAndLog(w, err, fmt.Sprintf("An error occurred getting manifest and repo for %s", manifestName), "danger")
 		return
 	}
 
 	if values, err := extractValues(r, mf); err != nil {
-		s.respondAlertAndLog(w, err, "An error occurred parsing the form", "danger")
+		s.respondErrorToastAndLog(w, err, "An error occurred parsing the form", "danger")
 		return
 	} else if pkg == nil {
 		pkg = client.PackageBuilder(manifestName).WithVersion(selectedVersion).
@@ -603,7 +603,7 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 		opts := metav1.CreateOptions{}
 		err := install.NewInstaller(s.pkgClient).Install(ctx, pkg, opts)
 		if err != nil {
-			s.respondAlertAndLog(w, err, "An error occurred installing "+manifestName, "danger")
+			s.respondErrorToastAndLog(w, err, "An error occurred installing "+manifestName, "danger")
 		} else {
 			s.swappingRedirect(w, "/packages", "main", "main")
 			w.WriteHeader(http.StatusAccepted)
@@ -612,13 +612,13 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 		pkg.Spec.Values = values
 		opts := metav1.UpdateOptions{}
 		if err := s.pkgClient.Packages(pkg.GetNamespace()).Update(ctx, pkg, opts); err != nil {
-			s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred updating package %v", manifestName), "danger")
+			s.respondErrorToastAndLog(w, err, fmt.Sprintf("An error occurred updating package %v", manifestName), "danger")
 			return
 		}
 		if _, err := s.valueResolver.Resolve(ctx, values); err != nil {
-			s.respondAlertAndLog(w, err, "Some values could not be resolved: ", "warning")
+			s.respondErrorToastAndLog(w, err, "Some values could not be resolved: ", "warning")
 		} else {
-			s.respondSuccess(w)
+			s.newToastResponse().withMessage("Configuration updated successfully").send(w)
 		}
 	}
 }
@@ -640,7 +640,7 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 	pkg := &v1alpha1.ClusterPackage{}
 	var mf *v1alpha1.PackageManifest
 	if err = s.pkgClient.ClusterPackages().Get(ctx, pkgName, pkg); err != nil && !apierrors.IsNotFound(err) {
-		s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred fetching package details of %v", pkgName), "danger")
+		s.respondErrorToastAndLog(w, err, fmt.Sprintf("An error occurred fetching package details of %v", pkgName), "danger")
 		return
 	} else if err != nil {
 		pkg = nil
@@ -648,12 +648,12 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 
 	repositoryName, mf, err = s.getUsedRepoAndManifest(ctx, pkg, repositoryName, pkgName, selectedVersion)
 	if err != nil {
-		s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred getting manifest and repo for %s", pkgName), "danger")
+		s.respondErrorToastAndLog(w, err, fmt.Sprintf("An error occurred getting manifest and repo for %s", pkgName), "danger")
 		return
 	}
 
 	if values, err := extractValues(r, mf); err != nil {
-		s.respondAlertAndLog(w, err, "An error occurred parsing the form", "danger")
+		s.respondErrorToastAndLog(w, err, "An error occurred parsing the form", "danger")
 		return
 	} else if pkg == nil {
 		pkg = client.PackageBuilder(pkgName).WithVersion(selectedVersion).
@@ -665,19 +665,19 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 		opts := metav1.CreateOptions{}
 		err := install.NewInstaller(s.pkgClient).Install(ctx, pkg, opts)
 		if err != nil {
-			s.respondAlertAndLog(w, err, "An error occurred installing "+pkgName, "danger")
+			s.respondErrorToastAndLog(w, err, "An error occurred installing "+pkgName, "danger")
 		}
 	} else {
 		pkg.Spec.Values = values
 		opts := metav1.UpdateOptions{}
 		if err := s.pkgClient.ClusterPackages().Update(ctx, pkg, opts); err != nil {
-			s.respondAlertAndLog(w, err, fmt.Sprintf("An error occurred updating package %v", pkgName), "danger")
+			s.respondErrorToastAndLog(w, err, fmt.Sprintf("An error occurred updating package %v", pkgName), "danger")
 			return
 		}
 		if _, err := s.valueResolver.Resolve(ctx, values); err != nil {
-			s.respondAlertAndLog(w, err, "Some values could not be resolved: ", "warning")
+			s.respondErrorToastAndLog(w, err, "Some values could not be resolved: ", "warning")
 		} else {
-			s.respondSuccess(w)
+			s.newToastResponse().withMessage("Configuration updated successfully").send(w)
 		}
 	}
 }
@@ -730,12 +730,12 @@ func (s *server) advancedClusterPackageConfiguration(w http.ResponseWriter, r *h
 	selectedVersion := r.FormValue("selectedVersion")
 	pkg, manifest, err := describe.DescribeInstalledClusterPackage(ctx, pkgName)
 	if err != nil && !apierrors.IsNotFound(err) {
-		s.respondAlertAndLog(w, err,
+		s.respondErrorToastAndLog(w, err,
 			fmt.Sprintf("An error occurred fetching package details of installed package %v", pkgName),
 			"danger")
 		return
 	} else if pkg == nil {
-		s.respondAlertAndLog(w, err,
+		s.respondErrorToastAndLog(w, err,
 			fmt.Sprintf("Package %v is not installed", pkgName),
 			"danger")
 		return
@@ -761,12 +761,12 @@ func (s *server) advancedPackageConfiguration(w http.ResponseWriter, r *http.Req
 	selectedVersion := r.FormValue("selectedVersion")
 	pkg, manifest, err := describe.DescribeInstalledPackage(ctx, namespace, name)
 	if err != nil && !apierrors.IsNotFound(err) {
-		s.respondAlertAndLog(w, err,
+		s.respondErrorToastAndLog(w, err,
 			fmt.Sprintf("An error occurred fetching package details of installed package %v", manifestName),
 			"danger")
 		return
 	} else if pkg == nil {
-		s.respondAlertAndLog(w, err,
+		s.respondErrorToastAndLog(w, err,
 			fmt.Sprintf("Package %v is not installed", manifestName),
 			"danger")
 		return
@@ -789,7 +789,7 @@ func (s *server) handleAdvancedConfig(ctx context.Context, d *packageDetailPageC
 		fmt.Fprintf(os.Stderr, "error getting repos for package; %v", err)
 	} else if d.repositoryName == "" {
 		if len(repos) == 0 {
-			s.respondAlertAndLog(w, fmt.Errorf("%v not found in any repository", d.manifestName), "", "danger")
+			s.respondErrorToastAndLog(w, fmt.Errorf("%v not found in any repository", d.manifestName), "", "danger")
 			return
 		}
 		for _, r := range repos {
@@ -803,7 +803,7 @@ func (s *server) handleAdvancedConfig(ctx context.Context, d *packageDetailPageC
 	if r.Method == http.MethodGet {
 		var idx repo.PackageIndex
 		if err := s.repoClientset.ForRepoWithName(d.repositoryName).FetchPackageIndex(d.manifestName, &idx); err != nil {
-			s.respondAlertAndLog(w, err,
+			s.respondErrorToastAndLog(w, err,
 				fmt.Sprintf("An error occurred fetching package index of %v in repository %v", d.manifestName, d.repositoryName),
 				"danger")
 			return
@@ -820,7 +820,7 @@ func (s *server) handleAdvancedConfig(ctx context.Context, d *packageDetailPageC
 
 		res, err := s.dependencyMgr.Validate(r.Context(), d.manifest, d.selectedVersion)
 		if err != nil {
-			s.respondAlertAndLog(w, err,
+			s.respondErrorToastAndLog(w, err,
 				fmt.Sprintf("An error occurred validating dependencies of %v in version %v", d.manifestName, d.selectedVersion),
 				"danger")
 			return
@@ -848,23 +848,23 @@ func (s *server) handleAdvancedConfig(ctx context.Context, d *packageDetailPageC
 		switch pkg := d.pkg.(type) {
 		case *v1alpha1.ClusterPackage:
 			if err := s.pkgClient.ClusterPackages().Update(ctx, pkg, opts); err != nil {
-				s.respondAlertAndLog(w, err,
+				s.respondErrorToastAndLog(w, err,
 					fmt.Sprintf("An error occurred updating clusterpackage %v to version %v in repo %v",
 						d.manifestName, d.selectedVersion, d.repositoryName),
 					"danger")
 				return
 			} else {
-				s.respondSuccess(w)
+				s.newToastResponse().withMessage("Configuration updated successfully").send(w)
 			}
 		case *v1alpha1.Package:
 			if err := s.pkgClient.Packages(d.pkg.GetNamespace()).Update(ctx, pkg, metav1.UpdateOptions{}); err != nil {
-				s.respondAlertAndLog(w, err,
+				s.respondErrorToastAndLog(w, err,
 					fmt.Sprintf("An error occurred updating package %v to version %v in repo %v",
 						d.manifestName, d.selectedVersion, d.repositoryName),
 					"danger")
 				return
 			} else {
-				s.respondSuccess(w)
+				s.newToastResponse().withMessage("Configuration updated successfully").send(w)
 			}
 		default:
 			panic("unexpected package type")
@@ -956,7 +956,7 @@ func (s *server) kubeconfigPage(w http.ResponseWriter, r *http.Request) {
 func (s *server) settingsPage(w http.ResponseWriter, r *http.Request) {
 	var repos v1alpha1.PackageRepositoryList
 	if err := s.pkgClient.PackageRepositories().GetAll(r.Context(), &repos); err != nil {
-		s.respondAlertAndLog(w, err, "Failed to fetch repositories", "danger")
+		s.respondErrorToastAndLog(w, err, "Failed to fetch repositories", "danger")
 		return
 	}
 
