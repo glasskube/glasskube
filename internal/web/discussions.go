@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/glasskube/glasskube/internal/web/components/toast"
+
 	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/web/util"
 
@@ -32,9 +34,8 @@ func (s *server) packageDiscussion(w http.ResponseWriter, r *http.Request) {
 	repositoryName := mux.Vars(r)["repositoryName"]
 	pkg, manifest, err := describe.DescribeInstalledPackage(r.Context(), namespace, name)
 	if err != nil && !errors.IsNotFound(err) {
-		s.newToastResponse().
-			WithErr(fmt.Errorf("failed to fetch installed package %v/%v: %w", namespace, name, err)).
-			Send(w)
+		s.sendToast(w,
+			toast.WithErr(fmt.Errorf("failed to fetch installed package %v/%v: %w", namespace, name, err)))
 		return
 	}
 
@@ -57,9 +58,8 @@ func (s *server) clusterPackageDiscussion(w http.ResponseWriter, r *http.Request
 	repositoryName := mux.Vars(r)["repositoryName"]
 	pkg, manifest, err := describe.DescribeInstalledClusterPackage(r.Context(), pkgName)
 	if err != nil && !errors.IsNotFound(err) {
-		s.newToastResponse().
-			WithErr(fmt.Errorf("failed to fetch installed clusterpackage %v: %w", pkgName, err)).
-			Send(w)
+		s.sendToast(w,
+			toast.WithErr(fmt.Errorf("failed to fetch installed clusterpackage %v: %w", pkgName, err)))
 		return
 	}
 
@@ -79,9 +79,8 @@ func (s *server) handleGiscus(r *http.Request) {
 func (s *server) handlePackageDiscussionPage(w http.ResponseWriter, r *http.Request, d *packageDetailPageContext) {
 	var idx repo.PackageIndex
 	if err := s.repoClientset.ForRepoWithName(d.repositoryName).FetchPackageIndex(d.manifestName, &idx); err != nil {
-		s.newToastResponse().
-			WithErr(fmt.Errorf("failed to fetch package index of %v in repo %v: %w", d.manifestName, d.repositoryName, err)).
-			Send(w)
+		s.sendToast(w,
+			toast.WithErr(fmt.Errorf("failed to fetch package index of %v in repo %v: %w", d.manifestName, d.repositoryName, err)))
 		return
 	}
 
@@ -89,8 +88,8 @@ func (s *server) handlePackageDiscussionPage(w http.ResponseWriter, r *http.Requ
 		d.manifest = &v1alpha1.PackageManifest{}
 		if err := s.repoClientset.ForRepoWithName(d.repositoryName).
 			FetchPackageManifest(d.manifestName, idx.LatestVersion, d.manifest); err != nil {
-			s.newToastResponse().
-				WithErr(fmt.Errorf("failed to fetch manifest of %v (%v) in repo %v: %w", d.manifestName, idx.LatestVersion, d.repositoryName, err))
+			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch manifest of %v (%v) in repo %v: %w",
+				d.manifestName, idx.LatestVersion, d.repositoryName, err)))
 			return
 		}
 	}
