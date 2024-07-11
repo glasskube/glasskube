@@ -1,5 +1,5 @@
-{{ define "alert" }}
-  <div class="toast text-bg-{{ .Type }} border-0 show" role="alert" aria-live="assertive" aria-atomic="true">
+{{ define "toast" }}
+  <div class="toast text-bg-{{ .CssClass }} border-0 show" role="alert" aria-live="assertive" aria-atomic="true">
     <div class="d-flex">
       <div class="toast-body">
         <strong>{{ .Message }}</strong>

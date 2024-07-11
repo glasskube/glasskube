@@ -33,8 +33,8 @@ func (s *server) packageDiscussion(w http.ResponseWriter, r *http.Request) {
 	pkg, manifest, err := describe.DescribeInstalledPackage(r.Context(), namespace, name)
 	if err != nil && !errors.IsNotFound(err) {
 		s.newToastResponse().
-			withErr(fmt.Errorf("failed to fetch installed package %v/%v: %w", namespace, name, err)).
-			send(w)
+			WithErr(fmt.Errorf("failed to fetch installed package %v/%v: %w", namespace, name, err)).
+			Send(w)
 		return
 	}
 
@@ -58,8 +58,8 @@ func (s *server) clusterPackageDiscussion(w http.ResponseWriter, r *http.Request
 	pkg, manifest, err := describe.DescribeInstalledClusterPackage(r.Context(), pkgName)
 	if err != nil && !errors.IsNotFound(err) {
 		s.newToastResponse().
-			withErr(fmt.Errorf("failed to fetch installed clusterpackage %v: %w", pkgName, err)).
-			send(w)
+			WithErr(fmt.Errorf("failed to fetch installed clusterpackage %v: %w", pkgName, err)).
+			Send(w)
 		return
 	}
 
@@ -80,8 +80,8 @@ func (s *server) handlePackageDiscussionPage(w http.ResponseWriter, r *http.Requ
 	var idx repo.PackageIndex
 	if err := s.repoClientset.ForRepoWithName(d.repositoryName).FetchPackageIndex(d.manifestName, &idx); err != nil {
 		s.newToastResponse().
-			withErr(fmt.Errorf("failed to fetch package index of %v in repo %v: %w", d.manifestName, d.repositoryName, err)).
-			send(w)
+			WithErr(fmt.Errorf("failed to fetch package index of %v in repo %v: %w", d.manifestName, d.repositoryName, err)).
+			Send(w)
 		return
 	}
 
@@ -90,7 +90,7 @@ func (s *server) handlePackageDiscussionPage(w http.ResponseWriter, r *http.Requ
 		if err := s.repoClientset.ForRepoWithName(d.repositoryName).
 			FetchPackageManifest(d.manifestName, idx.LatestVersion, d.manifest); err != nil {
 			s.newToastResponse().
-				withErr(fmt.Errorf("failed to fetch manifest of %v (%v) in repo %v: %w", d.manifestName, idx.LatestVersion, d.repositoryName, err))
+				WithErr(fmt.Errorf("failed to fetch manifest of %v (%v) in repo %v: %w", d.manifestName, idx.LatestVersion, d.repositoryName, err))
 			return
 		}
 	}
@@ -109,7 +109,7 @@ func (s *server) handlePackageDiscussionPage(w http.ResponseWriter, r *http.Requ
 		"DiscussionHref":     fmt.Sprintf("%s/discussion", pkgHref),
 		"AutoUpdate":         clientutils.AutoUpdateString(d.pkg, "Disabled"),
 	}, nil))
-	checkTmplError(err, fmt.Sprintf("package-discussion (%s)", d.manifestName))
+	util.CheckTmplError(err, fmt.Sprintf("package-discussion (%s)", d.manifestName))
 }
 
 func (s *server) discussionBadge(w http.ResponseWriter, r *http.Request) {
@@ -131,5 +131,5 @@ func (s *server) discussionBadge(w http.ResponseWriter, r *http.Request) {
 	err = s.templates.pkgDiscussionBadgeTmpl.Execute(w, s.enrichPage(r, map[string]any{
 		"TotalCount": totalCount,
 	}, err))
-	checkTmplError(err, fmt.Sprintf("discussion-badge (%s)", pkgName))
+	util.CheckTmplError(err, fmt.Sprintf("discussion-badge (%s)", pkgName))
 }

@@ -50,8 +50,8 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 		pkg, manifest, err = describe.DescribeInstalledPackage(ctx, namespace, name)
 		if err != nil && !errors.IsNotFound(err) {
 			s.newToastResponse().
-				withErr(fmt.Errorf("failed to fetch installed package %v/%v: %w", namespace, name, err)).
-				send(w)
+				WithErr(fmt.Errorf("failed to fetch installed package %v/%v: %w", namespace, name, err)).
+				Send(w)
 			return
 		} else if errors.IsNotFound(err) {
 			s.swappingRedirect(w, "/packages", "main", "main")
@@ -82,8 +82,8 @@ func (s *server) clusterPackageDetail(w http.ResponseWriter, r *http.Request) {
 	pkg, manifest, err := describe.DescribeInstalledClusterPackage(ctx, pkgName)
 	if err != nil && !errors.IsNotFound(err) {
 		s.newToastResponse().
-			withErr(fmt.Errorf("failed to fetch installed clusterpackage %v: %w", pkgName, err)).
-			send(w)
+			WithErr(fmt.Errorf("failed to fetch installed clusterpackage %v: %w", pkgName, err)).
+			Send(w)
 		return
 	} else if pkg != nil {
 		repositoryName = pkg.Spec.PackageInfo.RepositoryName
@@ -105,7 +105,7 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 	var usedRepo *v1alpha1.PackageRepository
 	if d.repositoryName, repos, usedRepo, err = s.getRepos(
 		ctx, d.manifestName, d.repositoryName); err != nil {
-		s.newToastResponse().withErr(err).send(w)
+		s.newToastResponse().WithErr(err).Send(w)
 		return
 	}
 
@@ -114,8 +114,8 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 	if idx, latestVersion, d.selectedVersion, err = s.getVersions(
 		d.repositoryName, d.manifestName, d.selectedVersion); err != nil {
 		s.newToastResponse().
-			withErr(fmt.Errorf("failed to fetch package index of %v in repo %v: %w", d.manifestName, d.repositoryName, err)).
-			send(w)
+			WithErr(fmt.Errorf("failed to fetch package index of %v in repo %v: %w", d.manifestName, d.repositoryName, err)).
+			Send(w)
 		return
 	}
 
@@ -124,8 +124,8 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 		if err := s.repoClientset.ForRepoWithName(d.repositoryName).
 			FetchPackageManifest(d.manifestName, d.selectedVersion, d.manifest); err != nil {
 			s.newToastResponse().
-				withErr(fmt.Errorf("failed to fetch manifest of %v (%v) in repo %v: %w", d.manifestName, d.selectedVersion, d.repositoryName, err)).
-				send(w)
+				WithErr(fmt.Errorf("failed to fetch manifest of %v (%v) in repo %v: %w", d.manifestName, d.selectedVersion, d.repositoryName, err)).
+				Send(w)
 			return
 		}
 	}
@@ -133,8 +133,8 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 	res, err := s.dependencyMgr.Validate(r.Context(), d.manifest, d.selectedVersion)
 	if err != nil {
 		s.newToastResponse().
-			withErr(fmt.Errorf("failed to validate dependencies of %v (%v): %w", d.manifestName, d.selectedVersion, err)).
-			send(w)
+			WithErr(fmt.Errorf("failed to validate dependencies of %v (%v): %w", d.manifestName, d.selectedVersion, err)).
+			Send(w)
 		return
 	}
 
@@ -181,10 +181,10 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 
 	if d.renderedComponent == "header" {
 		err = s.templates.pkgDetailHeaderTmpl.Execute(w, templateData)
-		checkTmplError(err, fmt.Sprintf("package-detail-header (%s)", d.manifestName))
+		webutil.CheckTmplError(err, fmt.Sprintf("package-detail-header (%s)", d.manifestName))
 	} else {
 		err = s.templates.pkgPageTmpl.Execute(w, s.enrichPage(r, templateData, err))
-		checkTmplError(err, fmt.Sprintf("package-detail (%s)", d.manifestName))
+		webutil.CheckTmplError(err, fmt.Sprintf("package-detail (%s)", d.manifestName))
 	}
 }
 

@@ -2,9 +2,7 @@ package web
 
 import (
 	"bytes"
-	"fmt"
 	"html/template"
-	"os"
 	"path"
 	"reflect"
 
@@ -15,12 +13,12 @@ import (
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	"github.com/glasskube/glasskube/internal/semver"
-	"github.com/glasskube/glasskube/internal/web/components/alert"
 	"github.com/glasskube/glasskube/internal/web/components/datalist"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_detail_btns"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_overview_btn"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_update_alert"
+	"github.com/glasskube/glasskube/internal/web/components/toast"
 	"github.com/glasskube/glasskube/pkg/condition"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
@@ -48,7 +46,7 @@ type templates struct {
 	pkgConfigInput          *template.Template
 	pkgConfigAdvancedTmpl   *template.Template
 	pkgUninstallModalTmpl   *template.Template
-	alertTmpl               *template.Template
+	toastTmpl               *template.Template
 	datalistTmpl            *template.Template
 	pkgDiscussionBadgeTmpl  *template.Template
 	repoClientset           repoclient.RepoClientset
@@ -94,7 +92,7 @@ func (t *templates) parseTemplates() {
 			}
 			return ""
 		},
-		"ForAlert":          alert.ForAlert,
+		"ForToast":          toast.ForToast,
 		"ForPkgConfigInput": pkg_config_input.ForPkgConfigInput,
 		"ForDatalist":       datalist.ForDatalist,
 		"IsUpgradable":      semver.IsUpgradable,
@@ -161,7 +159,7 @@ func (t *templates) parseTemplates() {
 	t.pkgConfigInput = t.componentTmpl("pkg-config-input", "datalist")
 	t.pkgConfigAdvancedTmpl = t.componentTmpl("pkg-config-advanced")
 	t.pkgUninstallModalTmpl = t.componentTmpl("pkg-uninstall-modal")
-	t.alertTmpl = t.componentTmpl("alert")
+	t.toastTmpl = t.componentTmpl("toast")
 	t.datalistTmpl = t.componentTmpl("datalist")
 	t.pkgDiscussionBadgeTmpl = t.componentTmpl("discussion-badge")
 }
@@ -184,13 +182,6 @@ func (t *templates) componentTmpl(id string, requiredTemplates ...string) *templ
 		template.New(id).Funcs(t.templateFuncs).ParseFS(
 			webFs,
 			tpls...))
-}
-
-func checkTmplError(e error, tmplName string) {
-	if e != nil {
-		fmt.Fprintf(os.Stderr, "\nUnexpected error rendering %v: %v\n – This is most likely a BUG – "+
-			"Please report it here: https://github.com/glasskube/glasskube\n\n", tmplName, e)
-	}
 }
 
 type ASTTransformer struct{}
