@@ -6,10 +6,10 @@ type ToastInput struct {
 	CssClass    string
 }
 
-func ForToast(err error, cssClass string) ToastInput {
+func ForToast(err error, cssClass string, dismissible bool) ToastInput {
 	return ToastInput{
 		Message:     err.Error(),
-		Dismissible: false,
+		Dismissible: dismissible,
 		CssClass:    cssClass,
 	}
 }

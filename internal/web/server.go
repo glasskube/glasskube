@@ -20,6 +20,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/glasskube/glasskube/internal/web/components/toast"
+
 	"github.com/glasskube/glasskube/internal/web/sse"
 	"github.com/glasskube/glasskube/internal/web/sse/refresh"
 
@@ -301,22 +303,18 @@ func (s *server) update(w http.ResponseWriter, r *http.Request) {
 		defer s.updateMutex.Unlock()
 		utIdStr := r.FormValue("updateTransactionId")
 		if utId, err := strconv.Atoi(utIdStr); err != nil {
-			s.newToastResponse().
-				WithErr(fmt.Errorf("failed to parse updateTransactionId %v: %w", utIdStr, err)).
-				WithStatus(http.StatusBadRequest).
-				Send(w)
+			s.sendToast(w,
+				toast.WithErr(fmt.Errorf("failed to parse updateTransactionId %v: %w", utIdStr, err)),
+				toast.WithStatusCode(http.StatusBadRequest))
 			return
 		} else if ut, ok := s.updateTransactions[utId]; !ok {
-			s.newToastResponse().
-				WithErr(fmt.Errorf("failed to find updateTransactionId %v", utId)).
-				WithStatus(http.StatusNotFound).
-				Send(w)
+			s.sendToast(w,
+				toast.WithErr(fmt.Errorf("failed to find updateTransactionId %v", utId)),
+				toast.WithStatusCode(http.StatusNotFound))
 			return
 		} else if _, err := updater.Apply(ctx, &ut); err != nil {
 			delete(s.updateTransactions, utId)
-			s.newToastResponse().
-				WithErr(fmt.Errorf("failed to apply update: %w", err)).
-				Send(w)
+			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to apply update: %w", err)))
 			return
 		} else {
 			delete(s.updateTransactions, utId)
@@ -350,9 +348,7 @@ func (s *server) update(w http.ResponseWriter, r *http.Request) {
 		updater := update.NewUpdater(ctx)
 		updateTx, err := updater.Prepare(ctx, updateGetters...)
 		if err != nil {
-			s.newToastResponse().
-				WithErr(fmt.Errorf("failed to prepare update: %w", err)).
-				Send(w)
+			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to prepare update: %w", err)))
 			return
 		}
 		utId := rand.Int()
@@ -399,29 +395,21 @@ func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
 		if pkgName != "" {
 			var pkg v1alpha1.ClusterPackage
 			if err := s.pkgClient.ClusterPackages().Get(ctx, pkgName, &pkg); err != nil {
-				s.newToastResponse().
-					WithErr(fmt.Errorf("failed to fetch clusterpackage %v: %w", pkgName, err)).
-					Send(w)
+				s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch clusterpackage %v: %w", pkgName, err)))
 				return
 			}
 			if err := uninstaller.Uninstall(ctx, &pkg); err != nil {
-				s.newToastResponse().
-					WithErr(fmt.Errorf("failed to uninstall clusterpackage %v: %w", pkgName, err)).
-					Send(w)
+				s.sendToast(w, toast.WithErr(fmt.Errorf("failed to uninstall clusterpackage %v: %w", pkgName, err)))
 				return
 			}
 		} else {
 			var pkg v1alpha1.Package
 			if err := s.pkgClient.Packages(namespace).Get(ctx, name, &pkg); err != nil {
-				s.newToastResponse().
-					WithErr(fmt.Errorf("failed to fetch package %v/%v: %w", namespace, name, err)).
-					Send(w)
+				s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch package %v/%v: %w", namespace, name, err)))
 				return
 			}
 			if err := uninstaller.Uninstall(ctx, &pkg); err != nil {
-				s.newToastResponse().
-					WithErr(fmt.Errorf("failed to uninstall package %v/%v: %w", namespace, name, err)).
-					Send(w)
+				s.sendToast(w, toast.WithErr(fmt.Errorf("failed to uninstall package %v/%v: %w", namespace, name, err)))
 				return
 			}
 		}
@@ -466,18 +454,14 @@ func (s *server) open(w http.ResponseWriter, r *http.Request) {
 	if pkgName != "" {
 		var pkg v1alpha1.ClusterPackage
 		if err := s.pkgClient.ClusterPackages().Get(ctx, pkgName, &pkg); err != nil {
-			s.newToastResponse().
-				WithErr(fmt.Errorf("failed to fetch clusterpackage %v: %w", pkgName, err)).
-				Send(w)
+			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch clusterpackage %v: %w", pkgName, err)))
 			return
 		}
 		s.handleOpen(ctx, w, &pkg)
 	} else {
 		var pkg v1alpha1.Package
 		if err := s.pkgClient.Packages(namespace).Get(ctx, name, &pkg); err != nil {
-			s.newToastResponse().
-				WithErr(fmt.Errorf("failed to fetch package %v/%v: %w", namespace, name, err)).
-				Send(w)
+			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch package %v/%v: %w", namespace, name, err)))
 			return
 		}
 		s.handleOpen(ctx, w, &pkg)
@@ -494,9 +478,7 @@ func (s *server) handleOpen(ctx context.Context, w http.ResponseWriter, pkg ctrl
 
 	result, err := open.NewOpener().Open(ctx, pkg, "", 0)
 	if err != nil {
-		s.newToastResponse().
-			WithErr(fmt.Errorf("failed to open %v: %w", pkg.GetName(), err)).
-			Send(w)
+		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to open %v: %w", pkg.GetName(), err)))
 	} else {
 		s.forwarders[fwName] = result
 		result.WaitReady()
@@ -600,9 +582,7 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 	pkg := &v1alpha1.Package{}
 	var mf *v1alpha1.PackageManifest
 	if err := s.pkgClient.Packages(namespace).Get(ctx, name, pkg); err != nil && !apierrors.IsNotFound(err) {
-		s.newToastResponse().
-			WithErr(fmt.Errorf("failed to fetch package %v/%v: %w", namespace, name, err)).
-			Send(w)
+		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch package %v/%v: %w", namespace, name, err)))
 		return
 	} else if err != nil {
 		pkg = nil
@@ -610,16 +590,12 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 
 	repositoryName, mf, err = s.getUsedRepoAndManifest(ctx, pkg, repositoryName, manifestName, selectedVersion)
 	if err != nil {
-		s.newToastResponse().
-			WithErr(fmt.Errorf("failed to get manifest and repo of %v: %w", manifestName, err)).
-			Send(w)
+		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to get manifest and repo of %v: %w", manifestName, err)))
 		return
 	}
 
 	if values, err := extractValues(r, mf); err != nil {
-		s.newToastResponse().
-			WithErr(fmt.Errorf("failed to parse values: %w", err)).
-			Send(w)
+		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to parse values: %w", err)))
 		return
 	} else if pkg == nil {
 		pkg = client.PackageBuilder(manifestName).WithVersion(selectedVersion).
@@ -633,9 +609,7 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 		opts := metav1.CreateOptions{}
 		err := install.NewInstaller(s.pkgClient).Install(ctx, pkg, opts)
 		if err != nil {
-			s.newToastResponse().
-				WithErr(fmt.Errorf("failed to install %v: %w", manifestName, err)).
-				Send(w)
+			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to install %v: %w", manifestName, err)))
 		} else {
 			s.swappingRedirect(w, "/packages", "main", "main")
 			w.WriteHeader(http.StatusAccepted)
@@ -644,19 +618,16 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 		pkg.Spec.Values = values
 		opts := metav1.UpdateOptions{}
 		if err := s.pkgClient.Packages(pkg.GetNamespace()).Update(ctx, pkg, opts); err != nil {
-			s.newToastResponse().
-				WithErr(fmt.Errorf("failed to configure %v: %w", manifestName, err)).
-				Send(w)
+			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to configure %v: %w", manifestName, err)))
 			return
 		}
 		if _, err := s.valueResolver.Resolve(ctx, values); err != nil {
-			s.newToastResponse().
-				WithErr(fmt.Errorf("some values could not be resolved: %w", err)).
-				WithDisplayClass("warning").
-				WithStatus(http.StatusAccepted).
-				Send(w)
+			s.sendToast(w,
+				toast.WithErr(fmt.Errorf("some values could not be resolved: %w", err)),
+				toast.WithCssClass("warning"),
+				toast.WithStatusCode(http.StatusAccepted))
 		} else {
-			s.newToastResponse().WithMessage("Configuration updated successfully").Send(w)
+			s.sendToast(w, toast.WithMessage("Configuration updated successfully"))
 		}
 	}
 }
@@ -678,9 +649,7 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 	pkg := &v1alpha1.ClusterPackage{}
 	var mf *v1alpha1.PackageManifest
 	if err = s.pkgClient.ClusterPackages().Get(ctx, pkgName, pkg); err != nil && !apierrors.IsNotFound(err) {
-		s.newToastResponse().
-			WithErr(fmt.Errorf("failed to fetch clusterpackage %v: %w", pkgName, err)).
-			Send(w)
+		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch clusterpackage %v: %w", pkgName, err)))
 		return
 	} else if err != nil {
 		pkg = nil
@@ -688,16 +657,12 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 
 	repositoryName, mf, err = s.getUsedRepoAndManifest(ctx, pkg, repositoryName, pkgName, selectedVersion)
 	if err != nil {
-		s.newToastResponse().
-			WithErr(fmt.Errorf("failed to get manifest and repo of %v: %w", pkgName, err)).
-			Send(w)
+		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to get manifest and repo of %v: %w", pkgName, err)))
 		return
 	}
 
 	if values, err := extractValues(r, mf); err != nil {
-		s.newToastResponse().
-			WithErr(fmt.Errorf("failed to parse values: %w", err)).
-			Send(w)
+		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to parse values: %w", err)))
 		return
 	} else if pkg == nil {
 		pkg = client.PackageBuilder(pkgName).WithVersion(selectedVersion).
@@ -709,28 +674,23 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 		opts := metav1.CreateOptions{}
 		err := install.NewInstaller(s.pkgClient).Install(ctx, pkg, opts)
 		if err != nil {
-			s.newToastResponse().
-				WithErr(fmt.Errorf("failed to install %v: %w", pkgName, err)).
-				Send(w)
+			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to install %v: %w", pkgName, err)))
 			return
 		}
 	} else {
 		pkg.Spec.Values = values
 		opts := metav1.UpdateOptions{}
 		if err := s.pkgClient.ClusterPackages().Update(ctx, pkg, opts); err != nil {
-			s.newToastResponse().
-				WithErr(fmt.Errorf("failed to configure %v: %w", pkgName, err)).
-				Send(w)
+			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to configure %v: %w", pkgName, err)))
 			return
 		}
 		if _, err := s.valueResolver.Resolve(ctx, values); err != nil {
-			s.newToastResponse().
-				WithErr(fmt.Errorf("some values could not be resolved: %w", err)).
-				WithDisplayClass("warning").
-				WithStatus(http.StatusAccepted).
-				Send(w)
+			s.sendToast(w,
+				toast.WithErr(fmt.Errorf("some values could not be resolved: %w", err)),
+				toast.WithCssClass("warning"),
+				toast.WithStatusCode(http.StatusAccepted))
 		} else {
-			s.newToastResponse().WithMessage("Configuration updated successfully").Send(w)
+			s.sendToast(w, toast.WithMessage("Configuration updated successfully"))
 		}
 	}
 }
@@ -783,15 +743,12 @@ func (s *server) advancedClusterPackageConfiguration(w http.ResponseWriter, r *h
 	selectedVersion := r.FormValue("selectedVersion")
 	pkg, manifest, err := describe.DescribeInstalledClusterPackage(ctx, pkgName)
 	if err != nil && !apierrors.IsNotFound(err) {
-		s.newToastResponse().
-			WithErr(fmt.Errorf("failed to fetch clusterpackage %v: %w", pkgName, err)).
-			Send(w)
+		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch clusterpackage %v: %w", pkgName, err)))
 		return
 	} else if pkg == nil {
-		s.newToastResponse().
-			WithErr(fmt.Errorf("clusterpackage %v is not installed", pkgName)).
-			WithStatus(http.StatusNotFound).
-			Send(w)
+		s.sendToast(w,
+			toast.WithErr(fmt.Errorf("clusterpackage %v is not installed", pkgName)),
+			toast.WithStatusCode(http.StatusNotFound))
 		return
 	} else if repositoryName == "" {
 		repositoryName = pkg.Spec.PackageInfo.RepositoryName
@@ -815,15 +772,12 @@ func (s *server) advancedPackageConfiguration(w http.ResponseWriter, r *http.Req
 	selectedVersion := r.FormValue("selectedVersion")
 	pkg, manifest, err := describe.DescribeInstalledPackage(ctx, namespace, name)
 	if err != nil && !apierrors.IsNotFound(err) {
-		s.newToastResponse().
-			WithErr(fmt.Errorf("failed to fetch package %v/%v: %w", namespace, name, err)).
-			Send(w)
+		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch package %v/%v: %w", namespace, name, err)))
 		return
 	} else if pkg == nil {
-		s.newToastResponse().
-			WithErr(fmt.Errorf("package %v/%v is not installed", namespace, name)).
-			WithStatus(http.StatusNotFound).
-			Send(w)
+		s.sendToast(w,
+			toast.WithErr(fmt.Errorf("package %v/%v is not installed", namespace, name)),
+			toast.WithStatusCode(http.StatusNotFound))
 		return
 	} else if repositoryName == "" {
 		repositoryName = pkg.Spec.PackageInfo.RepositoryName
@@ -844,10 +798,9 @@ func (s *server) handleAdvancedConfig(ctx context.Context, d *packageDetailPageC
 		fmt.Fprintf(os.Stderr, "error getting repos for package; %v", err)
 	} else if d.repositoryName == "" {
 		if len(repos) == 0 {
-			s.newToastResponse().
-				WithErr(fmt.Errorf("manifest %v not found in any repo", d.manifestName)).
-				WithStatus(http.StatusNotFound).
-				Send(w)
+			s.sendToast(w,
+				toast.WithErr(fmt.Errorf("manifest %v not found in any repo", d.manifestName)),
+				toast.WithStatusCode(http.StatusNotFound))
 			return
 		}
 		for _, r := range repos {
@@ -861,9 +814,8 @@ func (s *server) handleAdvancedConfig(ctx context.Context, d *packageDetailPageC
 	if r.Method == http.MethodGet {
 		var idx repo.PackageIndex
 		if err := s.repoClientset.ForRepoWithName(d.repositoryName).FetchPackageIndex(d.manifestName, &idx); err != nil {
-			s.newToastResponse().
-				WithErr(fmt.Errorf("failed to fetch package index of %v in repo %v: %w", d.manifestName, d.repositoryName, err)).
-				Send(w)
+			s.sendToast(w,
+				toast.WithErr(fmt.Errorf("failed to fetch package index of %v in repo %v: %w", d.manifestName, d.repositoryName, err)))
 			return
 		}
 		latestVersion := idx.LatestVersion
@@ -878,9 +830,8 @@ func (s *server) handleAdvancedConfig(ctx context.Context, d *packageDetailPageC
 
 		res, err := s.dependencyMgr.Validate(r.Context(), d.manifest, d.selectedVersion)
 		if err != nil {
-			s.newToastResponse().
-				WithErr(fmt.Errorf("failed to validate dependencies of %v in version %v: %w", d.manifestName, d.selectedVersion, err)).
-				Send(w)
+			s.sendToast(w,
+				toast.WithErr(fmt.Errorf("failed to validate dependencies of %v in version %v: %w", d.manifestName, d.selectedVersion, err)))
 			return
 		}
 
@@ -906,23 +857,21 @@ func (s *server) handleAdvancedConfig(ctx context.Context, d *packageDetailPageC
 		switch pkg := d.pkg.(type) {
 		case *v1alpha1.ClusterPackage:
 			if err := s.pkgClient.ClusterPackages().Update(ctx, pkg, opts); err != nil {
-				s.newToastResponse().
-					WithErr(fmt.Errorf("failed to update clusterpackage %v to version %v in repo %v: %w",
-						d.manifestName, d.selectedVersion, d.repositoryName, err)).
-					Send(w)
+				s.sendToast(w,
+					toast.WithErr(fmt.Errorf("failed to update clusterpackage %v to version %v in repo %v: %w",
+						d.manifestName, d.selectedVersion, d.repositoryName, err)))
 				return
 			} else {
-				s.newToastResponse().WithMessage("Configuration updated successfully").Send(w)
+				s.sendToast(w, toast.WithMessage("Configuration updated successfully"))
 			}
 		case *v1alpha1.Package:
 			if err := s.pkgClient.Packages(d.pkg.GetNamespace()).Update(ctx, pkg, metav1.UpdateOptions{}); err != nil {
-				s.newToastResponse().
-					WithErr(fmt.Errorf("failed to update clusterpackage %v to version %v in repo %v: %w",
-						d.manifestName, d.selectedVersion, d.repositoryName, err)).
-					Send(w)
+				s.sendToast(w,
+					toast.WithErr(fmt.Errorf("failed to update clusterpackage %v to version %v in repo %v: %w",
+						d.manifestName, d.selectedVersion, d.repositoryName, err)))
 				return
 			} else {
-				s.newToastResponse().WithMessage("Configuration updated successfully").Send(w)
+				s.sendToast(w, toast.WithMessage("Configuration updated successfully"))
 			}
 		default:
 			panic("unexpected package type")
@@ -1014,9 +963,7 @@ func (s *server) kubeconfigPage(w http.ResponseWriter, r *http.Request) {
 func (s *server) settingsPage(w http.ResponseWriter, r *http.Request) {
 	var repos v1alpha1.PackageRepositoryList
 	if err := s.pkgClient.PackageRepositories().GetAll(r.Context(), &repos); err != nil {
-		s.newToastResponse().
-			WithErr(fmt.Errorf("failed to fetch repositories: %w", err)).
-			Send(w)
+		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch repositories: %w", err)))
 		return
 	}
 

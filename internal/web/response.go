@@ -2,17 +2,36 @@ package web
 
 import (
 	"encoding/json"
-	"github.com/glasskube/glasskube/internal/web/components/toast"
+	"fmt"
 	"net/http"
+	"os"
+
+	"github.com/glasskube/glasskube/internal/web/components/toast"
+	"github.com/glasskube/glasskube/internal/web/util"
 )
 
-type Response struct {
-	statusCode int
-	templateId string
-}
+// sendToast builds a toast from the given options and sends it to the given response writer. If the response
+// contains an error, this is also logged to stderr.
+func (s *server) sendToast(w http.ResponseWriter, options ...toast.ResponseOption) {
+	response := toast.Response{ToastInput: toast.ToastInput{Dismissible: true}}
+	for _, opt := range options {
+		opt(&response)
+	}
+	response.Apply()
 
-func (s *server) newToastResponse() *toast.ResponseBuilder {
-	return toast.NewResponseBuilder(s.templates.toastTmpl).WithDismissible(true)
+	// htmx headers to overwrite any existing/inherited hx-select, hx-swap, hx-target on the client
+	w.Header().Add("Hx-Reselect", "div.toast")
+	w.Header().Add("Hx-Reswap", "afterbegin")
+	w.Header().Add("Hx-Retarget", "#toast-container")
+
+	w.WriteHeader(response.StatusCode)
+
+	err := s.templates.toastTmpl.Execute(w, response.ToastInput)
+	util.CheckTmplError(err, "toast")
+
+	if response.Err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", response.Err)
+	}
 }
 
 // swappingRedirect adds the Hx-Location header to the response, which, when interpreted by htmx.js, will make

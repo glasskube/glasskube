@@ -3,12 +3,14 @@ package web
 import (
 	"context"
 	"fmt"
-	"github.com/glasskube/glasskube/internal/web/util"
 	"net/http"
 	"os"
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/glasskube/glasskube/internal/web/components/toast"
+	"github.com/glasskube/glasskube/internal/web/util"
 
 	"github.com/glasskube/glasskube/pkg/manifest"
 
@@ -156,9 +158,8 @@ func (s *server) handleConfigurationInput(w http.ResponseWriter, r *http.Request
 		d.manifest = &v1alpha1.PackageManifest{}
 		if err := s.repoClientset.ForRepoWithName(d.repositoryName).
 			FetchPackageManifest(d.manifestName, d.selectedVersion, d.manifest); err != nil {
-			s.newToastResponse().
-				WithErr(fmt.Errorf("failed to fetch manifest of %v in version %v: %w", d.manifestName, d.selectedVersion, err)).
-				Send(w)
+			s.sendToast(w,
+				toast.WithErr(fmt.Errorf("failed to fetch manifest of %v in version %v: %w", d.manifestName, d.selectedVersion, err)))
 			return
 		}
 	}
