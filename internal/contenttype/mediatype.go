@@ -7,11 +7,13 @@ import (
 )
 
 const (
-	MediaTypeJSON        = "application/json"
-	MediaTypeYAML        = "application/yaml"
-	MediaTypeOctetStream = "application/octet-stream"
-	MediaTypeTextYAML    = "text/yaml"
-	MediaTypeTextPlain   = "text/plain"
+	MediaTypeJSON             = "application/json"
+	MediaTypeYAML             = "application/yaml"
+	MediaTypeOctetStream      = "application/octet-stream"
+	MediaTypeTextYAML         = "text/yaml"
+	MediaTypeTextPlain        = "text/plain"
+	MediaTypeTextXYaml        = "text/x-yaml"
+	MediaTypeApplicationXYaml = "application/x-yaml"
 )
 
 func IsJsonOrYaml(response *http.Response) error {
@@ -20,7 +22,9 @@ func IsJsonOrYaml(response *http.Response) error {
 		MediaTypeYAML,
 		MediaTypeOctetStream,
 		MediaTypeTextYAML,
-		MediaTypeTextPlain)
+		MediaTypeTextPlain,
+		MediaTypeTextXYaml,
+		MediaTypeApplicationXYaml)
 }
 
 func HasMediaType(response *http.Response, acceptedContentTypes ...string) error {
