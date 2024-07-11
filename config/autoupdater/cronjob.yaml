@@ -4,6 +4,7 @@ metadata:
   name: glasskube-autoupdate
 spec:
   schedule: "0 0 * * *"
+  concurrencyPolicy: Replace
   jobTemplate:
     spec:
       template:
@@ -15,5 +16,6 @@ spec:
               image: ghcr.io/glasskube/glasskube
               args:
                 - auto-update
+                - --skip-update-check
           serviceAccountName: glasskube-autoupdate
           restartPolicy: OnFailure
