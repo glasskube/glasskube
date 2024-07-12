@@ -230,7 +230,7 @@ var installCmd = &cobra.Command{
 			}
 			fmt.Fprintf(os.Stderr,
 				"☑️  %v is being installed in the background.\n"+
-					"💡 Run \"glasskube describe %v\" to get the current status",
+					"💡 Run \"glasskube describe %v\" to get the current status\n",
 				packageName, packageName)
 		} else {
 			status, err := installer.InstallBlocking(ctx, pkg, opts)
