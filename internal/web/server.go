@@ -90,11 +90,13 @@ type ServerOptions struct {
 
 func NewServer(options ServerOptions) *server {
 	server := server{
-		ServerOptions:      options,
-		configLoader:       &defaultConfigLoader{options.Kubeconfig},
-		forwarders:         make(map[string]*open.OpenResult),
-		updateTransactions: make(map[int]update.UpdateTransaction),
-		templates:          templates{},
+		ServerOptions:           options,
+		configLoader:            &defaultConfigLoader{options.Kubeconfig},
+		forwarders:              make(map[string]*open.OpenResult),
+		updateTransactions:      make(map[int]update.UpdateTransaction),
+		templates:               templates{},
+		stopCh:                  make(chan struct{}, 1),
+		httpServerHasShutdownCh: make(chan struct{}, 1),
 	}
 	return &server
 }
@@ -102,24 +104,27 @@ func NewServer(options ServerOptions) *server {
 type server struct {
 	ServerOptions
 	configLoader
-	listener           net.Listener
-	restConfig         *rest.Config
-	rawConfig          *api.Config
-	pkgClient          client.PackageV1Alpha1Client
-	nonCachedClient    client.PackageV1Alpha1Client
-	repoClientset      repoclient.RepoClientset
-	k8sClient          *kubernetes.Clientset
-	broadcaster        *sse.Broadcaster
-	namespaceLister    *corev1.NamespaceLister
-	configMapLister    *corev1.ConfigMapLister
-	secretLister       *corev1.SecretLister
-	forwarders         map[string]*open.OpenResult
-	dependencyMgr      *dependency.DependendcyManager
-	updateMutex        sync.Mutex
-	updateTransactions map[int]update.UpdateTransaction
-	valueResolver      *manifestvalues.Resolver
-	isBootstrapped     bool
-	templates          templates
+	listener                net.Listener
+	restConfig              *rest.Config
+	rawConfig               *api.Config
+	pkgClient               client.PackageV1Alpha1Client
+	nonCachedClient         client.PackageV1Alpha1Client
+	repoClientset           repoclient.RepoClientset
+	k8sClient               *kubernetes.Clientset
+	broadcaster             *sse.Broadcaster
+	namespaceLister         *corev1.NamespaceLister
+	configMapLister         *corev1.ConfigMapLister
+	secretLister            *corev1.SecretLister
+	forwarders              map[string]*open.OpenResult
+	dependencyMgr           *dependency.DependendcyManager
+	updateMutex             sync.Mutex
+	updateTransactions      map[int]update.UpdateTransaction
+	valueResolver           *manifestvalues.Resolver
+	isBootstrapped          bool
+	templates               templates
+	httpServer              *http.Server
+	httpServerHasShutdownCh chan struct{}
+	stopCh                  chan struct{}
 }
 
 func (s *server) RestConfig() *rest.Config {
@@ -259,32 +264,35 @@ func (s *server) Start(ctx context.Context) error {
 		_ = cliutils.OpenInBrowser("http://" + bindAddr)
 	}
 
-	broadcasterStopCh := make(chan struct{}, 1)
-	go s.broadcaster.Run(broadcasterStopCh)
-	server := &http.Server{}
+	go s.broadcaster.Run(s.stopCh)
+	s.httpServer = &http.Server{}
 
-	var receivedSig os.Signal
-	shutdownCh := make(chan struct{})
+	var receivedSig *os.Signal
 	go func() {
 		sigint := make(chan os.Signal, 1)
 		signal.Notify(sigint, syscall.SIGTERM, syscall.SIGINT)
-		receivedSig = <-sigint
-		close(broadcasterStopCh)
-		if err := server.Shutdown(context.Background()); err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to shutdown server: %v\n", err)
-		}
-		close(shutdownCh)
+		sig := <-sigint
+		receivedSig = &sig
+		s.shutdown()
 	}()
 
-	err = server.Serve(s.listener)
+	err = s.httpServer.Serve(s.listener)
 	if err != nil && err != http.ErrServerClosed {
 		return err
 	}
 
-	<-shutdownCh
-	cliutils.ExitFromSignal(&receivedSig)
+	<-s.httpServerHasShutdownCh
+	cliutils.ExitFromSignal(receivedSig)
 
 	return nil
+}
+
+func (s *server) shutdown() {
+	close(s.stopCh)
+	if err := s.httpServer.Shutdown(context.Background()); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to shutdown server: %v\n", err)
+	}
+	close(s.httpServerHasShutdownCh)
 }
 
 // uninstall is an endpoint, which returns the modal html for GET requests, and performs the update for POST
@@ -1153,7 +1161,7 @@ func (server *server) initCachedClient(ctx context.Context) {
 			case err := <-pkgRepoVerifier.errCh:
 				server.handleVerificationError(err)
 			}
-			cliutils.ExitWithError()
+			server.shutdown()
 		}
 	}()
 
