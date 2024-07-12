@@ -33,15 +33,13 @@ function setSSEDisconnected() {
     document.getElementById('disconnected-toast').classList.add('show');
   }
 }
-document.addEventListener('htmx:sseError', setSSEDisconnected);
-document.addEventListener('htmx:sseMessage', function (evt) {
-  // TODO fix disconnected when graceful close!!
-  // hoping for this to be merged & released soon: https://github.com/bigskysoftware/htmx-extensions/pull/31
-  console.log(evt.detail.type);
-  if (evt && evt.detail && evt.detail.type === 'close') {
-    console.log('closing');
-    setSSEDisconnected();
-  }
+document.addEventListener('htmx:sseError', function (evt) {
+  console.log('htmx:sseError', evt);
+  setSSEDisconnected();
+});
+document.addEventListener('htmx:sseClose', function (evt) {
+  console.log('htmx:sseClose', evt);
+  setSSEDisconnected();
 });
 
 window.giscusReported = false;
