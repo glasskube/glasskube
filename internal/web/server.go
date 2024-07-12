@@ -189,7 +189,7 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle("/packages/{pkgName}/configuration/{valueName}/datalists/names", s.requireReady(s.namesDatalist))
 	router.Handle("/packages/{pkgName}/configuration/{valueName}/datalists/keys", s.requireReady(s.keysDatalist))
 	router.Handle("/settings", s.requireReady(s.settingsPage))
-	router.Handle("/settings/repository/{repoName}", s.requireReady(s.repositoryconfig))
+	router.Handle("/settings/repositories/{repoName}", s.requireReady(s.repositoryconfig))
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/packages", http.StatusFound)
 	})
@@ -1141,13 +1141,17 @@ func (s *server) repositoryconfig(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) handleGetRepositoryConfig(w http.ResponseWriter, r *http.Request) {
 	
-	if err := s.pkgClient.PackageRepositories().Get(); err != nil {
+	repoName := mux.Vars(r)["repoName"]
+	var repo v1alpha1.PackageRepository
+	if err := s.pkgClient.PackageRepositories().Get(r.Context(), repoName, &repo); err != nil {
+    	// error handling
 		s.respondAlertAndLog(w, err, "Failed to fetch repositories", "danger")
-		return
+    	return
 	}
 
+
 	tmplErr := s.templates.repositoryTmpl.Execute(w, s.enrichPage(r, map[string]any{
-		"Repositories": repos,
+		"Repositories": repo,
 	}, nil))
 	checkTmplError(tmplErr, "repository")
 }
