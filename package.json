@@ -11,7 +11,7 @@
     "@glasskube/theme": "0.1.1",
     "bootstrap": "5.3.3",
     "giscus": "^1.5.0",
-    "htmx.org": "2.0.0",
+    "htmx.org": "2.0.1",
     "htmx-ext-sse": "2.2.1",
     "htmx-ext-response-targets": "2.0.0"
   },
