@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/config"
@@ -30,10 +31,10 @@ var (
 			}
 
 			signals := make(chan os.Signal, 1)
-			signal.Notify(signals, os.Interrupt)
+			signal.Notify(signals, syscall.SIGTERM, syscall.SIGINT)
 			go func() {
-				sig := <-signals
 				if !hasCustomShutdownLogic(cmd) {
+					sig := <-signals
 					cliutils.ExitFromSignal(&sig)
 				}
 			}()

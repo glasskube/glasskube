@@ -263,14 +263,13 @@ func (s *server) Start(ctx context.Context) error {
 	go s.broadcaster.Run(broadcasterStopCh)
 	server := &http.Server{}
 
+	var receivedSig os.Signal
 	shutdownCh := make(chan struct{})
 	go func() {
 		sigint := make(chan os.Signal, 1)
-		signal.Notify(sigint, os.Interrupt)
-		<-sigint
-		fmt.Fprintf(os.Stderr, "received sigint\n")
+		signal.Notify(sigint, syscall.SIGTERM, syscall.SIGINT)
+		receivedSig = <-sigint
 		close(broadcasterStopCh)
-		fmt.Fprintf(os.Stderr, "shutting down\n")
 		if err := server.Shutdown(context.Background()); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to shutdown server: %v\n", err)
 		}
@@ -282,9 +281,8 @@ func (s *server) Start(ctx context.Context) error {
 		return err
 	}
 
-	fmt.Fprintf(os.Stderr, "waiting for open connections to be closed\n")
 	<-shutdownCh
-	fmt.Fprintf(os.Stderr, "connections closed\n")
+	cliutils.ExitFromSignal(&receivedSig)
 
 	return nil
 }
