@@ -3,17 +3,18 @@ import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
 import HomepageFeatures from '@site/src/components/HomepageFeatures';
 import Heading from '@theme/Heading';
+import { Content } from "@theme/BlogPostPage";
 
 import styles from './index.module.css';
 import React from 'react';
 import Typewriter from 'typewriter-effect';
 import BrowserOnly from '@docusaurus/BrowserOnly';
-import AsciinemaPlayer from '../components/asciinema-player';
 import HomepageScreenshots from '@site/src/components/HomepageScreenshots';
 import TalkToFoundersButton from '@site/src/components/buttons/TalkToFoundersButton';
 import SignupForWaitlistButton from '@site/src/components/buttons/SignupForWaitlistButton';
 import useBaseUrl from '@docusaurus/core/lib/client/exports/useBaseUrl';
 import Image from '@theme/IdealImage';
+import HomepageBlogs from '@site/src/components/HomepageBlogs';
 
 
 function HomepageHeader() {
@@ -108,14 +109,9 @@ function HomepageVideo() {
         <div className="row">
           <div className="col col--8 col--offset-2 margin-vert--lg">
             <Heading as={'h2'} className={styles.colorWhite}>
-              Learn how to install cert-manager in less than 2 minutes using Glasskube
+              Learn how to use Glasskube in less than 2 minutes
             </Heading>
-            <AsciinemaPlayer
-              src='/cast/634355.cast'
-              rows='22'
-              idleTimeLimit={7}
-              poster='npt:0:19'
-              controls={false}/>
+            <iframe width="100%" height="460" src="https://www.youtube-nocookie.com/embed/aIeTHGWsG2c?si=KUcqvY4coU89GmdK" title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen></iframe>
           </div>
         </div>
       </div>
@@ -217,7 +213,12 @@ class NewsletterForm extends React.Component<any, { value: string }> {
   }
 }
 
-export default function Home(): JSX.Element {
+interface HomepageProps {
+  homePageBlogMetadata: any;
+  readonly recentPosts: readonly { readonly Preview: Content; metadata: any }[];
+}
+
+export default function Home({ homePageBlogMetadata, recentPosts }: HomepageProps): JSX.Element {
   const {siteConfig} = useDocusaurusContext();
   return (
     <Layout
@@ -228,6 +229,7 @@ export default function Home(): JSX.Element {
         <HomepageFeatures/>
         <HomepageScreenshots/>
         <HomepageVideo/>
+        <HomepageBlogs homePageBlogMetadata={homePageBlogMetadata} recentPosts={recentPosts}/>
         <HomepageNewsletter/>
       </main>
     </Layout>

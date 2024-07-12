@@ -7,7 +7,7 @@ import (
 	"time"
 
 	helmv2 "github.com/fluxcd/helm-controller/api/v2"
-	sourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
+	sourcev1 "github.com/fluxcd/source-controller/api/v1"
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/controller/labels"
@@ -38,7 +38,7 @@ func NewAdapter() manifest.ManifestAdapter {
 }
 
 func (a *FluxHelmAdapter) ControllerInit(buildr *builder.Builder, client client.Client, scheme *runtime.Scheme) error {
-	if err := sourcev1beta2.AddToScheme(scheme); err != nil {
+	if err := sourcev1.AddToScheme(scheme); err != nil {
 		return err
 	}
 	if err := helmv2.AddToScheme(scheme); err != nil {
@@ -48,7 +48,7 @@ func (a *FluxHelmAdapter) ControllerInit(buildr *builder.Builder, client client.
 		a.OwnerManager = owners.NewOwnerManager(scheme)
 	}
 	a.Client = client
-	buildr.Owns(&sourcev1beta2.HelmRepository{})
+	buildr.Owns(&sourcev1.HelmRepository{})
 	buildr.Owns(&helmv2.HelmRelease{}, builder.MatchEveryOwner)
 	buildr.Owns(&corev1.Namespace{})
 	return nil
@@ -121,14 +121,14 @@ func (a *FluxHelmAdapter) ensureHelmRepository(
 	ctx context.Context,
 	pkg ctrlpkg.Package,
 	manifest *packagesv1alpha1.PackageManifest,
-) (*sourcev1beta2.HelmRepository, error) {
+) (*sourcev1.HelmRepository, error) {
 	var namespace string
 	if pkg.IsNamespaceScoped() {
 		namespace = pkg.GetNamespace()
 	} else {
 		namespace = manifest.DefaultNamespace
 	}
-	helmRepository := sourcev1beta2.HelmRepository{
+	helmRepository := sourcev1.HelmRepository{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      names.HelmResourceName(pkg, manifest),
 			Namespace: namespace,

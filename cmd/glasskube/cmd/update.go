@@ -2,12 +2,16 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"slices"
 	"strings"
 	"text/tabwriter"
+
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
+	"github.com/glasskube/glasskube/internal/manifestvalues/cli"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clicontext"
@@ -17,10 +21,12 @@ import (
 	"github.com/glasskube/glasskube/internal/semver"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/kubeconfig"
+	"github.com/glasskube/glasskube/pkg/manifest"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/glasskube/glasskube/pkg/update"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/yaml"
 )
 
@@ -28,16 +34,17 @@ var updateCmdOptions struct {
 	Version string
 	Yes     bool
 	OutputOptions
+	NamespaceOptions
+	KindOptions
 }
 
 var updateCmd = &cobra.Command{
-	Use:               "update [packages...]",
+	Use:               "update [<package-name>...]",
 	Short:             "Update some or all packages in your cluster",
 	PreRun:            cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
 	ValidArgsFunction: completeInstalledPackageNames,
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
-		packageNames := args
 
 		updater := update.NewUpdater(ctx)
 		if !rootCmdOptions.NoProgress {
@@ -51,17 +58,51 @@ var updateCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "Updating to specific version is only possible for a single package\n")
 			cliutils.ExitWithError()
 		}
+
 		if len(args) == 1 && updateCmdOptions.Version != "" {
 			if !strings.HasPrefix(updateCmdOptions.Version, "v") {
 				updateCmdOptions.Version = "v" + updateCmdOptions.Version
 			}
-			tx, err = updater.PrepareForVersion(ctx, args[0], updateCmdOptions.Version)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "error in updating the package version : %v\n", err)
+
+			if pkg, err := getPackageOrClusterPackage(ctx, args[0],
+				updateCmdOptions.KindOptions, updateCmdOptions.NamespaceOptions); err != nil {
+				fmt.Fprintf(os.Stderr, "Could not get %v: %v\n", args[0], err)
 				cliutils.ExitWithError()
+			} else {
+				tx, err = updater.PrepareForVersion(ctx, pkg, updateCmdOptions.Version)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "error in updating the package version : %v\n", err)
+					cliutils.ExitWithError()
+				}
 			}
 		} else {
-			tx, err = updater.Prepare(ctx, packageNames)
+			var updateGetters []update.PackagesGetter
+			if len(args) > 0 {
+				pkgs := make([]ctrlpkg.Package, len(args))
+				for i, name := range args {
+					if pkg, err := getPackageOrClusterPackage(ctx, name,
+						updateCmdOptions.KindOptions, updateCmdOptions.NamespaceOptions); err != nil {
+						fmt.Fprintf(os.Stderr, "Could not get %v: %v\n", name, err)
+						cliutils.ExitWithError()
+					} else {
+						pkgs[i] = pkg
+					}
+				}
+				updateGetters = append(updateGetters, update.GetExact(pkgs))
+			} else if updateCmdOptions.Namespace != "" {
+				updateGetters = append(updateGetters, update.GetAllPackages(updateCmdOptions.Namespace))
+			} else {
+				switch updateCmdOptions.Kind {
+				case KindClusterPackage:
+					updateGetters = append(updateGetters, update.GetAllClusterPackages())
+				case KindPackage:
+					updateGetters = append(updateGetters, update.GetAllPackages(""))
+				default:
+					updateGetters = append(updateGetters, update.GetAllClusterPackages(), update.GetAllPackages(""))
+				}
+			}
+
+			tx, err = updater.Prepare(ctx, updateGetters...)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "❌ update preparation failed: %v\n", err)
 				cliutils.ExitWithError()
@@ -74,7 +115,17 @@ var updateCmd = &cobra.Command{
 				fmt.Fprintf(os.Stderr, "⛔ Update cancelled. No changes were made.\n")
 				cliutils.ExitSuccess()
 			}
-			updatedPackages, err := updater.Apply(ctx, tx)
+
+			for _, item := range tx.Items {
+				if item.UpdateRequired() {
+					if err := updateConfigurationIfNeeded(ctx, item.Package, item.Version); err != nil {
+						fmt.Fprintf(os.Stderr, "❌ error updating configuration for %s: %v\n", item.Package.GetName(), err)
+						cliutils.ExitWithError()
+					}
+				}
+			}
+
+			updatedPackages, err := updater.ApplyBlocking(ctx, tx)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "❌ update failed: %v\n", err)
 				cliutils.ExitWithError()
@@ -90,11 +141,18 @@ func printTransaction(tx update.UpdateTransaction) {
 	w := tabwriter.NewWriter(os.Stderr, 0, 0, 1, ' ', 0)
 	for _, item := range tx.Items {
 		if item.UpdateRequired() {
-			fmt.Fprintf(w, "%v:\t%v\t-> %v\n",
-				item.Package.Name, item.Package.Spec.PackageInfo.Version, item.Version)
+			fmt.Fprintf(w, "%v\t%v:\t%v\t-> %v\n",
+				item.Package.GetSpec().PackageInfo.Name,
+				cache.MetaObjectToName(item.Package),
+				item.Package.GetSpec().PackageInfo.Version,
+				item.Version,
+			)
 		} else {
-			fmt.Fprintf(w, "%v:\t%v\t(up-to-date)\n",
-				item.Package.Name, item.Package.Spec.PackageInfo.Version)
+			fmt.Fprintf(w, "%v\t%v:\t%v\t(up-to-date)\n",
+				item.Package.GetSpec().PackageInfo.Name,
+				cache.MetaObjectToName(item.Package),
+				item.Package.GetSpec().PackageInfo.Version,
+			)
 		}
 	}
 	for _, req := range tx.Requirements {
@@ -103,7 +161,7 @@ func printTransaction(tx update.UpdateTransaction) {
 	_ = w.Flush()
 }
 
-func handleOutput(pkgs []v1alpha1.ClusterPackage) {
+func handleOutput(pkgs []ctrlpkg.Package) {
 	if updateCmdOptions.Output == "" {
 		return
 	}
@@ -111,7 +169,7 @@ func handleOutput(pkgs []v1alpha1.ClusterPackage) {
 	var outputData []byte
 	var err error
 	for i := range pkgs {
-		if gvks, _, err := scheme.Scheme.ObjectKinds(&pkgs[i]); err == nil && len(gvks) == 1 {
+		if gvks, _, err := scheme.Scheme.ObjectKinds(pkgs[i]); err == nil && len(gvks) == 1 {
 			pkgs[i].SetGroupVersionKind(gvks[0])
 		} else {
 			fmt.Fprintf(os.Stderr, "❌ failed to set GVK for package: %v\n", err)
@@ -221,12 +279,34 @@ func completeUpgradablePackageVersions(
 	return versions, dir
 }
 
+func updateConfigurationIfNeeded(ctx context.Context, pkg ctrlpkg.Package, newVersion string) error {
+	newManifest, err := manifest.GetManifestForPackage(ctx, pkg, newVersion)
+	if err != nil {
+		return fmt.Errorf("error getting manifest for new version: %v", err)
+	}
+
+	if len(newManifest.ValueDefinitions) > 0 {
+		if cliutils.YesNoPrompt(fmt.Sprintf("Do you want to update the configuration for %s?", pkg.GetName()), false) {
+
+			values, err := cli.Configure(*newManifest, pkg.GetSpec().Values)
+			if err != nil {
+				return fmt.Errorf("error during configuration: %v", err)
+			}
+			pkg.GetSpec().Values = values
+		}
+	}
+
+	return nil
+}
+
 func init() {
 	updateCmd.PersistentFlags().StringVarP(&updateCmdOptions.Version, "version", "v", "",
-		"update to a specific version")
+		"Update to a specific version")
 	_ = updateCmd.RegisterFlagCompletionFunc("version", completeUpgradablePackageVersions)
 	updateCmd.PersistentFlags().BoolVarP(&updateCmdOptions.Yes, "yes", "y", false,
-		"do not ask for any confirmation")
+		"Do not ask for any confirmation")
 	updateCmdOptions.OutputOptions.AddFlagsToCommand(updateCmd)
+	updateCmdOptions.KindOptions.AddFlagsToCommand(updateCmd)
+	updateCmdOptions.NamespaceOptions.AddFlagsToCommand(updateCmd)
 	RootCmd.AddCommand(updateCmd)
 }

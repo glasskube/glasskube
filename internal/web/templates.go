@@ -8,6 +8,8 @@ import (
 	"path"
 	"reflect"
 
+	webutil "github.com/glasskube/glasskube/internal/web/sse/refresh"
+
 	"github.com/fsnotify/fsnotify"
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
@@ -31,24 +33,28 @@ import (
 )
 
 type templates struct {
-	templateFuncs          template.FuncMap
-	baseTemplate           *template.Template
-	pkgsPageTmpl           *template.Template
-	pkgPageTmpl            *template.Template
-	pkgDiscussionPageTmpl  *template.Template
-	supportPageTmpl        *template.Template
-	bootstrapPageTmpl      *template.Template
-	kubeconfigPageTmpl     *template.Template
-	settingsPageTmpl       *template.Template
-	pkgUpdateModalTmpl     *template.Template
-	pkgConfigInput         *template.Template
-	pkgConfigAdvancedTmpl  *template.Template
-	pkgUninstallModalTmpl  *template.Template
-	alertTmpl              *template.Template
-	datalistTmpl           *template.Template
-	pkgDiscussionBadgeTmpl *template.Template
-	repoClientset          repoclient.RepoClientset
-	repositoryTmpl			*template.Template
+
+	templateFuncs           template.FuncMap
+	baseTemplate            *template.Template
+	clusterPkgsPageTemplate *template.Template
+	pkgsPageTmpl            *template.Template
+	pkgPageTmpl             *template.Template
+	pkgDiscussionPageTmpl   *template.Template
+	supportPageTmpl         *template.Template
+	bootstrapPageTmpl       *template.Template
+	kubeconfigPageTmpl      *template.Template
+	settingsPageTmpl        *template.Template
+	pkgDetailHeaderTmpl     *template.Template
+	pkgUpdateModalTmpl      *template.Template
+	pkgConfigInput          *template.Template
+	pkgConfigAdvancedTmpl   *template.Template
+	pkgUninstallModalTmpl   *template.Template
+	alertTmpl               *template.Template
+	datalistTmpl            *template.Template
+	pkgDiscussionBadgeTmpl  *template.Template
+	repoClientset           repoclient.RepoClientset
+	repositoryPageTmpl		*template.Template
+
 }
 
 var (
@@ -78,13 +84,13 @@ func (t *templates) watchTemplates() error {
 
 func (t *templates) parseTemplates() {
 	t.templateFuncs = template.FuncMap{
-		"ForPkgOverviewBtn": pkg_overview_btn.ForPkgOverviewBtn,
-		"ForPkgDetailBtns":  pkg_detail_btns.ForPkgDetailBtns,
-		"ForPkgUpdateAlert": pkg_update_alert.ForPkgUpdateAlert,
+		"ForClPkgOverviewBtn": pkg_overview_btn.ForClPkgOverviewBtn,
+		"ForPkgDetailBtns":    pkg_detail_btns.ForPkgDetailBtns,
+		"ForPkgUpdateAlert":   pkg_update_alert.ForPkgUpdateAlert,
 		"PackageManifestUrl": func(pkg ctrlpkg.Package) string {
 			if !pkg.IsNil() {
 				url, err := t.repoClientset.ForPackage(pkg).
-					GetPackageManifestURL(pkg.GetName(), pkg.GetSpec().PackageInfo.Version)
+					GetPackageManifestURL(pkg.GetSpec().PackageInfo.Name, pkg.GetSpec().PackageInfo.Version)
 				if err == nil {
 					return url
 				}
@@ -136,11 +142,16 @@ func (t *templates) parseTemplates() {
 			cond := meta.FindStatusCondition(repo.Status.Conditions, string(condition.Ready))
 			return cond != nil && cond.Status == metav1.ConditionTrue
 		},
+		"PackageDetailRefreshId":          webutil.PackageRefreshDetailId,
+		"PackageDetailHeaderRefreshId":    webutil.PackageRefreshDetailHeaderId,
+		"PackageOverviewRefreshId":        webutil.PackageOverviewRefreshId,
+		"ClusterPackageOverviewRefreshId": webutil.ClusterPackageOverviewRefreshId,
 	}
 
 	t.baseTemplate = template.Must(template.New("base.html").
 		Funcs(t.templateFuncs).
 		ParseFS(webFs, path.Join(templatesDir, "layout", "base.html")))
+	t.clusterPkgsPageTemplate = t.pageTmpl("clusterpackages.html")
 	t.pkgsPageTmpl = t.pageTmpl("packages.html")
 	t.pkgPageTmpl = t.pageTmpl("package.html")
 	t.pkgDiscussionPageTmpl = t.pageTmpl("discussion.html")
@@ -148,6 +159,7 @@ func (t *templates) parseTemplates() {
 	t.bootstrapPageTmpl = t.pageTmpl("bootstrap.html")
 	t.kubeconfigPageTmpl = t.pageTmpl("kubeconfig.html")
 	t.settingsPageTmpl = t.pageTmpl("settings.html")
+	t.pkgDetailHeaderTmpl = t.componentTmpl("pkg-detail-header", "pkg-detail-btns")
 	t.pkgUpdateModalTmpl = t.componentTmpl("pkg-update-modal")
 	t.pkgConfigInput = t.componentTmpl("pkg-config-input", "datalist")
 	t.pkgConfigAdvancedTmpl = t.componentTmpl("pkg-config-advanced")
@@ -155,7 +167,7 @@ func (t *templates) parseTemplates() {
 	t.alertTmpl = t.componentTmpl("alert")
 	t.datalistTmpl = t.componentTmpl("datalist")
 	t.pkgDiscussionBadgeTmpl = t.componentTmpl("discussion-badge")
-	t.repositoryTmpl = t.componentTmpl("repository.html")
+	t.repositoryPageTmpl = t.pageTmpl("repository.html")
 }
 
 func (t *templates) pageTmpl(fileName string) *template.Template {
@@ -197,6 +209,8 @@ func (g *ASTTransformer) Transform(node *ast.Document, reader text.Reader, pc pa
 		case *ast.Link:
 			v.SetAttributeString("target", "_blank")
 			v.SetAttributeString("rel", "noopener noreferrer")
+		case *ast.Blockquote:
+			v.SetAttributeString("class", "border-start border-primary border-3 ps-2")
 		}
 
 		return ast.WalkContinue, nil

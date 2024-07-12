@@ -28,7 +28,7 @@ func (t *repoAuthType) Set(v string) error {
 }
 
 func (e *repoAuthType) Type() string {
-	return fmt.Sprintf("[%v|%v|%v]", repoNoAuth, repoBasicAuth, repoBearerAuth)
+	return fmt.Sprintf("(%v|%v|%v)", repoNoAuth, repoBasicAuth, repoBearerAuth)
 }
 
 const (
@@ -47,14 +47,14 @@ type repoOptions struct {
 }
 
 func (opts *repoOptions) BindToCmdFlags(cmd *cobra.Command, update bool) {
-	cmd.Flags().BoolVar(&opts.Default, "default", opts.Default, "use this repository as default")
-	cmd.Flags().Var(&opts.Auth, "auth", "type of authentication")
+	cmd.Flags().BoolVar(&opts.Default, "default", opts.Default, "Use this repository as default")
+	cmd.Flags().Var(&opts.Auth, "auth", "Type of authentication")
 	if update {
-		cmd.Flags().StringVar(&opts.Url, "url", opts.Url, "new url for the repository")
+		cmd.Flags().StringVar(&opts.Url, "url", opts.Url, "New url for the repository")
 	}
-	cmd.Flags().StringVar(&opts.Username, "username", opts.Username, "username for basic authentication")
-	cmd.Flags().StringVar(&opts.Password, "password", opts.Password, "password for basic authentication")
-	cmd.Flags().StringVar(&opts.Token, "token", opts.Token, "token for bearer authentication")
+	cmd.Flags().StringVar(&opts.Username, "username", opts.Username, "Username for basic authentication")
+	cmd.Flags().StringVar(&opts.Password, "password", opts.Password, "Password for basic authentication")
+	cmd.Flags().StringVar(&opts.Token, "token", opts.Token, "Token for bearer authentication")
 	cmd.MarkFlagsMutuallyExclusive("username", "token")
 	cmd.MarkFlagsMutuallyExclusive("password", "token")
 }

@@ -29,6 +29,7 @@ type bootstrapOptions struct {
 	force                   bool
 	createDefaultRepository bool
 	yes                     bool
+	DryRunOptions
 	OutputOptions
 }
 
@@ -76,6 +77,12 @@ var bootstrapCmd = &cobra.Command{
 			}
 		}
 
+		if bootstrapCmdOptions.DryRun {
+			fmt.Fprintln(os.Stderr,
+				"🔎 Dry-run mode is enabled. "+
+					"Nothing will be changed in your cluster, but validations will still be run.")
+		}
+
 		verifyLegalUpdate(ctx, installedVersion, targetVersion)
 
 		manifests, err := client.Bootstrap(ctx, bootstrapCmdOptions.asBootstrapOptions())
@@ -83,7 +90,7 @@ var bootstrapCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "\nAn error occurred during bootstrap:\n%v\n", err)
 			cliutils.ExitWithError()
 		}
-		if err := printBootsrap(
+		if err := printBootstrap(
 			manifests,
 			bootstrapCmdOptions.Output,
 		); err != nil {
@@ -101,10 +108,11 @@ func (o bootstrapOptions) asBootstrapOptions() bootstrap.BootstrapOptions {
 		DisableTelemetry:        o.disableTelemetry,
 		Force:                   o.force,
 		CreateDefaultRepository: o.createDefaultRepository,
+		DryRun:                  o.DryRun,
 	}
 }
 
-func printBootsrap(manifests []unstructured.Unstructured, output OutputFormat) error {
+func printBootstrap(manifests []unstructured.Unstructured, output OutputFormat) error {
 	if output != "" {
 		if err := convertAndPrintManifests(manifests, output); err != nil {
 			return err
@@ -214,7 +222,6 @@ func init() {
 	bootstrapCmd.Flags().VarP(&bootstrapCmdOptions.bootstrapType, "type", "t", `Type of manifest to use for bootstrapping`)
 	bootstrapCmd.Flags().BoolVar(&bootstrapCmdOptions.latest, "latest", config.IsDevBuild(),
 		"Fetch and bootstrap the latest version")
-	bootstrapCmdOptions.OutputOptions.AddFlagsToCommand(bootstrapCmd)
 	bootstrapCmd.Flags().BoolVarP(&bootstrapCmdOptions.force, "force", "f", bootstrapCmdOptions.force,
 		"Do not bail out if pre-checks fail")
 	bootstrapCmd.Flags().BoolVar(&bootstrapCmdOptions.disableTelemetry, "disable-telemetry", false, "Disable telemetry")
@@ -222,6 +229,10 @@ func init() {
 		bootstrapCmdOptions.createDefaultRepository,
 		"Toggle creation of the default glasskube package repository")
 	bootstrapCmd.Flags().BoolVar(&bootstrapCmdOptions.yes, "yes", false, "Skip confirmation prompt")
+
+	bootstrapCmdOptions.OutputOptions.AddFlagsToCommand(bootstrapCmd)
+	bootstrapCmdOptions.DryRunOptions.AddFlagsToCommand(bootstrapCmd)
+
 	bootstrapCmd.MarkFlagsMutuallyExclusive("url", "type")
 	bootstrapCmd.MarkFlagsMutuallyExclusive("url", "latest")
 }

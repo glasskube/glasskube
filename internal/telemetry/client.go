@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -214,7 +215,25 @@ func (t *ClientTelemetry) close() {
 	}
 }
 
-func HttpMiddleware() func(http.Handler) http.Handler {
+type PathRedactor = func(url string) string
+
+type httpMiddlewareOptions struct {
+	PathRedactors []PathRedactor
+}
+
+type HttpMiddlewareConfigurator = func(opt *httpMiddlewareOptions)
+
+func WithPathRedactor(pr PathRedactor) HttpMiddlewareConfigurator {
+	return func(opt *httpMiddlewareOptions) {
+		opt.PathRedactors = append(opt.PathRedactors, pr)
+	}
+}
+
+func HttpMiddleware(conf ...HttpMiddlewareConfigurator) func(http.Handler) http.Handler {
+	var options httpMiddlewareOptions
+	for _, c := range conf {
+		c(&options)
+	}
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
@@ -222,10 +241,11 @@ func HttpMiddleware() func(http.Handler) http.Handler {
 			defer func() {
 				if instance != nil {
 					go func() {
+						redactedUrl := redactedPath(r, options.PathRedactors)
 						ev := instance.getBaseEvent("ui_endpoint", false)
-						ev.Properties["$current_url"] = r.URL.String()
+						ev.Properties["$current_url"] = redactedUrl.String()
 						ev.Properties["method"] = r.Method
-						ev.Properties["path"] = r.URL
+						ev.Properties["path"] = redactedUrl
 						ev.Properties["execution_time"] = time.Since(start).Milliseconds()
 						ev.Properties["user_agent"] = r.UserAgent()
 						_ = instance.posthog.Enqueue(ev)
@@ -234,6 +254,14 @@ func HttpMiddleware() func(http.Handler) http.Handler {
 			}()
 		})
 	}
+}
+
+func redactedPath(r *http.Request, redactors []PathRedactor) url.URL {
+	result := *r.URL
+	for _, redactor := range redactors {
+		result.Path = redactor(result.Path)
+	}
+	return result
 }
 
 func SetUserProperty(key string, value string) {
@@ -246,4 +274,10 @@ func SetUserProperty(key string, value string) {
 			},
 		},
 	})
+}
+
+func ReportCacheVerificationError(err error) {
+	ev := instance.getBaseEvent("error_cache_verification", false)
+	ev.Properties["err"] = err.Error()
+	_ = instance.posthog.Enqueue(ev)
 }

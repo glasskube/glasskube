@@ -8,12 +8,13 @@ import (
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var repoUpdateCmdOptions = repoOptions{}
 
 var repoUpdateCmd = &cobra.Command{
-	Use:    "update [name]",
+	Use:    "update <name>",
 	Short:  "Update a package repository for the current cluster",
 	Args:   cobra.ExactArgs(1),
 	PreRun: cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
@@ -21,6 +22,7 @@ var repoUpdateCmd = &cobra.Command{
 		var err error
 		var repo v1alpha1.PackageRepository
 		var defaultRepo *v1alpha1.PackageRepository
+		opts := metav1.UpdateOptions{}
 
 		ctx := cmd.Context()
 		client := cliutils.PackageClient(ctx)
@@ -56,7 +58,7 @@ var repoUpdateCmd = &cobra.Command{
 				cliutils.ExitWithError()
 			} else if defaultRepo.Name != repoName {
 				defaultRepo.SetDefaultRepositoryBool(false)
-				if err := client.PackageRepositories().Update(ctx, defaultRepo); err != nil {
+				if err := client.PackageRepositories().Update(ctx, defaultRepo, opts); err != nil {
 					fmt.Fprintf(os.Stderr, "❌ error updating current default package repository: %v\n", err)
 					cliutils.ExitWithError()
 				}
@@ -64,12 +66,12 @@ var repoUpdateCmd = &cobra.Command{
 			}
 		}
 
-		if err := client.PackageRepositories().Update(ctx, &repo); err != nil {
+		if err := client.PackageRepositories().Update(ctx, &repo, opts); err != nil {
 			fmt.Fprintf(os.Stderr, "❌ error updating the package repository: %v\n", err)
 
 			if repoUpdateCmdOptions.Default && defaultRepo != nil && defaultRepo.Name != repoName {
 				defaultRepo.SetDefaultRepositoryBool(true)
-				if err := client.PackageRepositories().Update(ctx, defaultRepo); err != nil {
+				if err := client.PackageRepositories().Update(ctx, defaultRepo, opts); err != nil {
 					fmt.Fprintf(os.Stderr, "❌ error rolling back to default package repository: %v\n", err)
 				}
 			}

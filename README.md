@@ -15,7 +15,7 @@
   </a>
   <img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=899d5aee-625c-4345-bad0-713d29caf929" />
 
-<h3 align="center">🧊 The next generation Package Manager for Kubernetes 📦 (Beta Version)</h3>
+<h3 align="center">🧊 The next generation Package Manager for Kubernetes 📦</h3>
 
   <p align="center">
     <a href="https://glasskube.dev/docs/getting-started/install?utm_source=github"><strong>Getting started »</strong></a>

@@ -6,17 +6,19 @@ import (
 )
 
 type result struct {
-	IndexItem    *types.MetaIndexItem
-	Package      *v1alpha1.ClusterPackage
-	PackageInfo  *v1alpha1.PackageInfo
-	Repositories []*v1alpha1.PackageRepository
+	IndexItem      *types.MetaIndexItem
+	ClusterPackage *v1alpha1.ClusterPackage
+	Packages       []*v1alpha1.Package
+	PackageInfo    *v1alpha1.PackageInfo
+	Repositories   []*v1alpha1.PackageRepository
 }
 
-func (item result) Installed() bool {
-	return item.Package != nil
+func (item result) ClusterPackageInstalled() bool {
+	return item.ClusterPackage != nil
 }
 
-func (item result) Outdated() bool {
-	return item.Package != nil && item.IndexItem != nil &&
-		item.Package.Spec.PackageInfo.Version != item.IndexItem.LatestVersion
+func (item result) ClusterPackageOutdated() bool {
+	// TODO check again whether this works correctly in relation with multiple repos?
+	return item.ClusterPackage != nil && item.IndexItem != nil &&
+		item.ClusterPackage.Spec.PackageInfo.Version != item.IndexItem.LatestVersion
 }

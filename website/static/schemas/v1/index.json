@@ -15,12 +15,21 @@
         },
         "latestVersion": {
           "type": "string"
+        },
+        "scope": {
+          "$ref": "#/$defs/PackageScope"
         }
       },
       "additionalProperties": false,
       "type": "object",
       "required": [
         "name"
+      ]
+    },
+    "PackageScope": {
+      "enum": [
+        "Cluster",
+        "Namespaced"
       ]
     }
   },

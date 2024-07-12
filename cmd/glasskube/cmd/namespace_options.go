@@ -12,12 +12,12 @@ type NamespaceOptions struct {
 }
 
 func (opt *NamespaceOptions) AddFlagsToCommand(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&opt.Namespace, "namespace", "n", opt.Namespace, "namespace for resources")
+	cmd.Flags().StringVarP(&opt.Namespace, "namespace", "n", opt.Namespace, "Namespace for resources")
 }
 
 func (opt *NamespaceOptions) GetActualNamespace(ctx context.Context) string {
-	if configureCmdOptions.Namespace != "" {
-		return configureCmdOptions.Namespace
+	if opt.Namespace != "" {
+		return opt.Namespace
 	} else {
 		rawConfig := clicontext.RawConfigFromContext(ctx)
 		if current, ok := rawConfig.Contexts[rawConfig.CurrentContext]; ok && current.Namespace != "" {

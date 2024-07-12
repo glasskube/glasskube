@@ -31,10 +31,14 @@ func (c *packageRepositoryClient) Create(
 }
 
 // Update implements PackageRepositoryInterface.
-func (c *packageRepositoryClient) Update(ctx context.Context, obj *v1alpha1.PackageRepository) error {
+func (c *packageRepositoryClient) Update(
+	ctx context.Context,
+	obj *v1alpha1.PackageRepository,
+	opts metav1.UpdateOptions) error {
 	return c.restClient.Put().
 		Resource(packageRepositoryGVR.Resource).
 		Name(obj.GetName()).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(obj).
 		Do(ctx).
 		Into(obj)

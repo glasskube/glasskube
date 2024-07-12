@@ -16,6 +16,7 @@ type PackageV1Alpha1Client interface {
 	PackageRepositories() PackageRepositoryInterface
 	WithStores(
 		clusterPackageStore cache.Store,
+		packageStore cache.Store,
 		packageInfoStore cache.Store,
 		packageRepositoryStore cache.Store,
 	) PackageV1Alpha1Client
@@ -46,6 +47,6 @@ type readOnlyClientInterface[T any, L any] interface {
 type readWriteClientInterface[T any, L any] interface {
 	readOnlyClientInterface[T, L]
 	Create(ctx context.Context, target *T, opts metav1.CreateOptions) error
-	Update(ctx context.Context, target *T) error
-	Delete(ctx context.Context, target *T, options metav1.DeleteOptions) error
+	Update(ctx context.Context, target *T, opts metav1.UpdateOptions) error
+	Delete(ctx context.Context, target *T, opts metav1.DeleteOptions) error
 }

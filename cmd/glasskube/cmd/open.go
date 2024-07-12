@@ -24,7 +24,7 @@ var (
 )
 
 var openCmd = &cobra.Command{
-	Use:   "open [package-name] [entrypoint]",
+	Use:   "open <package-name> [<entrypoint>]",
 	Short: "Open the Web UI of a package",
 	Long: `Open the Web UI of a package.
 If the package manifest has more than one entrypoint, specify the name of the entrypoint to open.`,
@@ -89,9 +89,8 @@ If the package manifest has more than one entrypoint, specify the name of the en
 }
 
 func init() {
-	// TODO: Enable these flags to support namespaced packages
-	// openCmdOptions.KindOptions.AddFlagsToCommand(openCmd)
-	// openCmdOptions.NamespaceOptions.AddFlagsToCommand(openCmd)
-	openCmd.Flags().Int32Var(&openCmdOptions.Port, "port", openCmdOptions.Port, "custom port for opening the package")
+	openCmdOptions.KindOptions.AddFlagsToCommand(openCmd)
+	openCmdOptions.NamespaceOptions.AddFlagsToCommand(openCmd)
+	openCmd.Flags().Int32Var(&openCmdOptions.Port, "port", openCmdOptions.Port, "Custom port for opening the package")
 	RootCmd.AddCommand(openCmd)
 }

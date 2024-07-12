@@ -46,10 +46,16 @@ type BootstrapOptions struct {
 	DisableTelemetry        bool
 	Force                   bool
 	CreateDefaultRepository bool
+	DryRun                  bool
 }
 
 func DefaultOptions() BootstrapOptions {
-	return BootstrapOptions{Type: BootstrapTypeAio, Latest: config.IsDevBuild(), CreateDefaultRepository: true}
+	return BootstrapOptions{
+		Type:                    BootstrapTypeAio,
+		Latest:                  config.IsDevBuild(),
+		CreateDefaultRepository: true,
+		DryRun:                  false,
+	}
 }
 
 const installMessage = `
@@ -135,7 +141,7 @@ func (c *BootstrapClient) Bootstrap(
 
 	statusMessage("Applying Glasskube manifests", true)
 
-	if err = c.applyManifests(ctx, manifests); err != nil {
+	if err = c.applyManifests(ctx, manifests, options); err != nil {
 		telemetry.BootstrapFailure(time.Since(start))
 		statusMessage(fmt.Sprintf("Couldn't apply manifests: %v", err), false)
 		return nil, err
@@ -193,10 +199,15 @@ func (c *BootstrapClient) preprocessManifests(
 	return compositeErr
 }
 
-func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructured.Unstructured) error {
+func (c *BootstrapClient) applyManifests(
+	ctx context.Context,
+	objs []unstructured.Unstructured,
+	options BootstrapOptions,
+) error {
 	bar := progressbar.Default(int64(len(objs)), "Applying manifests")
 	progressbar.OptionClearOnFinish()(bar)
 	progressbar.OptionOnCompletion(nil)(bar)
+	progressbar.OptionThrottle(0)(bar)
 	defer func(bar *progressbar.ProgressBar) { _ = bar.Exit() }(bar)
 
 	var checkWorkloads []*unstructured.Unstructured
@@ -204,16 +215,17 @@ func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructure
 		gvk := obj.GroupVersionKind()
 		mapping, err := c.mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 		if err != nil {
-			return fmt.Errorf("could not get restmapping for %v %v: %w", obj.GetKind(), obj.GetName(), err)
+			if options.DryRun {
+				continue
+			} else {
+				return fmt.Errorf("could not get restmapping for %v %v: %w", obj.GetKind(), obj.GetName(), err)
+			}
 		}
 
 		bar.Describe(fmt.Sprintf("Applying %v (%v)", obj.GetName(), obj.GetKind()))
 		if obj.GetKind() == "Job" {
-			options := metav1.DeletePropagationBackground
-			err := c.client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).Delete(
-				ctx,
-				obj.GetName(),
-				metav1.DeleteOptions{PropagationPolicy: &options})
+			err := c.client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).
+				Delete(ctx, obj.GetName(), getDeleteOptions(options))
 			if err != nil && !apierrors.IsNotFound(err) {
 				return err
 			}
@@ -221,13 +233,13 @@ func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructure
 
 		if err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
 			_, err = c.client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).
-				Apply(ctx, obj.GetName(), &obj, metav1.ApplyOptions{Force: true, FieldManager: "glasskube"})
+				Apply(ctx, obj.GetName(), &obj, getApplyOptions(options))
 			return err
-		}); err != nil {
+		}); err != nil && (!options.DryRun || !apierrors.IsNotFound(err)) {
 			return err
 		}
 
-		if obj.GetKind() == constants.Deployment {
+		if obj.GetKind() == constants.Deployment && !options.DryRun {
 			checkWorkloads = append(checkWorkloads, &objs[i])
 			bar.ChangeMax(bar.GetMax() + 1)
 		} else if obj.GetKind() == "CustomResourceDefinition" {
@@ -242,12 +254,37 @@ func (c *BootstrapClient) applyManifests(ctx context.Context, objs []unstructure
 
 	for _, obj := range checkWorkloads {
 		bar.Describe(fmt.Sprintf("Checking Status of %v (%v)", obj.GetName(), obj.GetKind()))
-		if err := c.checkWorkloadReady(obj.GetNamespace(), obj.GetName(), obj.GetKind(), 5*time.Minute); err != nil {
+		var err error
+		func() {
+			ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+			defer cancel() // release the context in case checkWorkloadReady returned early
+			err = c.checkWorkloadReady(ctx, obj.GetNamespace(), obj.GetName(), obj.GetKind())
+		}()
+		if err != nil {
 			return err
 		}
 		_ = bar.Add(1)
 	}
+
 	return nil
+}
+
+func getApplyOptions(options BootstrapOptions) metav1.ApplyOptions {
+	applyOptions := metav1.ApplyOptions{Force: true, FieldManager: "glasskube"}
+	if options.DryRun {
+		applyOptions.DryRun = []string{metav1.DryRunAll}
+	}
+	return applyOptions
+}
+
+func getDeleteOptions(options BootstrapOptions) metav1.DeleteOptions {
+	deleteOptions := metav1.DeleteOptions{
+		PropagationPolicy: util.Pointer(metav1.DeletePropagationBackground),
+	}
+	if options.DryRun {
+		deleteOptions.DryRun = []string{metav1.DryRunAll}
+	}
+	return deleteOptions
 }
 
 func (c *BootstrapClient) handleTelemetry(disabled bool, elapsed time.Duration) {
@@ -280,10 +317,10 @@ func defaultRepository() unstructured.Unstructured {
 }
 
 func (c *BootstrapClient) checkWorkloadReady(
+	ctx context.Context,
 	namespace string,
 	workloadName string,
 	workloadType string,
-	timeout time.Duration,
 ) error {
 	dynamicClient, err := dynamic.NewForConfig(c.clientConfig)
 	if err != nil {
@@ -307,7 +344,7 @@ func (c *BootstrapClient) checkWorkloadReady(
 		workload, err := dynamicClient.
 			Resource(workloadRes).
 			Namespace(namespace).
-			Get(context.Background(), workloadName, metav1.GetOptions{})
+			Get(ctx, workloadName, metav1.GetOptions{})
 		if err != nil {
 			return false, err
 		}
@@ -339,15 +376,15 @@ func (c *BootstrapClient) checkWorkloadReady(
 		return nil
 	}
 
-	timeoutCh := time.After(timeout)
 	tick := time.NewTicker(2 * time.Second)
 	tickC := tick.C
 	defer tick.Stop()
 
 	for {
 		select {
-		case <-timeoutCh:
-			return fmt.Errorf("%s is not ready within the specified timeout", workloadType)
+		case <-ctx.Done():
+			return fmt.Errorf("%v %v (%v) was not ready within the specified timeout: %w",
+				workloadType, workloadName, namespace, ctx.Err())
 		case <-tickC:
 			if ok, err := checkReady(); err != nil {
 				return err

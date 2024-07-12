@@ -39,7 +39,7 @@ func (kind *ResourceKind) String() string {
 
 // Type implements pflag.Value.
 func (r *ResourceKind) Type() string {
-	return fmt.Sprintf("[%v|%v]", KindPackage, KindClusterPackage)
+	return fmt.Sprintf("(%v|%v)", KindPackage, KindClusterPackage)
 }
 
 type KindOptions struct {
@@ -47,13 +47,12 @@ type KindOptions struct {
 }
 
 func (opts *KindOptions) AddFlagsToCommand(cmd *cobra.Command) {
-	cmd.Flags().Var(&opts.Kind, "kind", "specify the kind of the resource")
+	cmd.Flags().Var(&opts.Kind, "kind", "Specify the kind of the resource")
 }
 
 func DefaultKindOptions() KindOptions {
 	return KindOptions{
-		// TODO: Change to KindUnspecified to support namespaced packages
-		Kind: KindClusterPackage,
+		Kind: KindUnspecified,
 	}
 }
 
@@ -105,7 +104,7 @@ func getPackageOrClusterPackage(
 	pNotFound := !pkgTried || errp != nil
 	cpNotFound := !cpkgTried || errcp != nil
 	if pNotFound && cpNotFound {
-		return nil, fmt.Errorf("no Package or ClusterPackage found with name %v", name)
+		return nil, fmt.Errorf("no Package or ClusterPackage found with name %v: %w; %w", name, errp, errcp)
 	} else if !pNotFound && !cpNotFound {
 		return nil, fmt.Errorf("both Package and ClusterPackage found with name %v. Please specify the kind explicitly", name)
 	} else if !pNotFound && cpNotFound {
