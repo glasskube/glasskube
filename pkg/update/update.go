@@ -176,19 +176,19 @@ outer:
 	return &tx, nil
 }
 
-func (c *updater) Apply(ctx context.Context, tx *UpdateTransaction, DryRun bool) ([]ctrlpkg.Package, error) {
-	return c.apply(ctx, tx, false, DryRun)
+type ApplyUpdateOptions struct {
+	Blocking bool
+	DryRun   bool
 }
 
-func (c *updater) ApplyBlocking(ctx context.Context, tx *UpdateTransaction, DryRun bool) ([]ctrlpkg.Package, error) {
-	return c.apply(ctx, tx, true, DryRun)
+func (c *updater) Apply(ctx context.Context, tx *UpdateTransaction, opts ApplyUpdateOptions) ([]ctrlpkg.Package, error) {
+	return c.apply(ctx, tx, ApplyUpdateOptions{Blocking: opts.Blocking, DryRun: opts.DryRun})
 }
 
 func (c *updater) apply(
 	ctx context.Context,
 	tx *UpdateTransaction,
-	blocking bool,
-	DryRun bool,
+	opts ApplyUpdateOptions,
 ) ([]ctrlpkg.Package, error) {
 	c.status.Start()
 	defer c.status.Stop()
@@ -198,12 +198,12 @@ func (c *updater) apply(
 			c.status.SetStatus(fmt.Sprintf("Updating %v", item.Package.GetName()))
 			err := retry.OnError(retry.DefaultRetry,
 				apierrors.IsNotFound,
-				func() error { return c.UpdatePackage(ctx, item.Package, item.Version, DryRun) },
+				func() error { return c.UpdatePackage(ctx, item.Package, item.Version, opts.DryRun) },
 			)
 			if err != nil {
 				return nil, fmt.Errorf("could not update package %v: %w", item.Package.GetName(), err)
 			}
-			if blocking {
+			if opts.Blocking {
 				c.status.SetStatus(fmt.Sprintf("Checking %v", item.Package.GetName()))
 				if err := c.awaitUpdate(ctx, item.Package); err != nil {
 					return nil, fmt.Errorf("package update for %v failed: %w", item.Package.GetName(), err)

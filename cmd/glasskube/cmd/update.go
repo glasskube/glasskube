@@ -126,7 +126,13 @@ var updateCmd = &cobra.Command{
 				}
 			}
 
-			updatedPackages, err := updater.ApplyBlocking(ctx, tx, updateCmdOptions.dryRun)
+			updatedPackages, err := updater.Apply(
+				ctx,
+				tx,
+				update.ApplyUpdateOptions{
+					Blocking: true,
+					DryRun:   updateCmdOptions.dryRun,
+				})
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "❌ update failed: %v\n", err)
 				cliutils.ExitWithError()
