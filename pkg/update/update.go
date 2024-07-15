@@ -181,7 +181,11 @@ type ApplyUpdateOptions struct {
 	DryRun   bool
 }
 
-func (c *updater) Apply(ctx context.Context, tx *UpdateTransaction, opts ApplyUpdateOptions) ([]ctrlpkg.Package, error) {
+func (c *updater) Apply(
+	ctx context.Context,
+	tx *UpdateTransaction,
+	opts ApplyUpdateOptions,
+) ([]ctrlpkg.Package, error) {
 	return c.apply(ctx, tx, ApplyUpdateOptions{Blocking: opts.Blocking, DryRun: opts.DryRun})
 }
 
