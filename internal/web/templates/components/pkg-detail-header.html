@@ -114,8 +114,29 @@
             Auto-Update:
             <strong>{{ .AutoUpdate }}</strong>
           </span>
+          {{ if eq .Status.Status "Failed" }}
+            {{ template "failed-badge" . }}
+          {{ else }}
+            {{ template "badge" . }}
+          {{ end }}
         </div>
+        {{ if eq .Status.Status "Failed" }}
+          <div class="mt-2 alert alert-danger">
+            <div>{{ .Status.Message }}</div>
+          </div>
+        {{ end }}
       {{ end }}
     </div>
   </div>
+{{ end }}
+{{ define "failed-badge" }}
+  <span class="badge p-1 fw-normal bg-danger text-white border border-1 border-danger">
+    Status: <strong>{{ .Status.Status }}</strong>
+  </span>
+{{ end }}
+{{ define "badge" }}
+  <span
+    class="badge p-1 fw-normal bg-body-secondary text-primary-emphasis border-primary border border-1 p-1 fw-normal">
+    Status: <strong>{{ .Status.Status }}</strong>
+  </span>
 {{ end }}
