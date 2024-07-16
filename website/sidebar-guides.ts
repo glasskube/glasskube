@@ -12,7 +12,7 @@ const sidebars: SidebarsConfig = {
           '⚠️ Learn how to install your favorite Kubernetes add-ons using the Glasskube package manager ⚠️',
         slug: '/categories/',
       },
-      items: ['cert-manager', 'ingress-nginx', 'rabbitmq', 'quickwit'],
+      items: ['cert-manager', 'ingress-nginx', 'rabbitmq', 'quickwit', 'kube-prom-stack'],
     },
     {
       type: 'category',
