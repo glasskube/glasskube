@@ -148,8 +148,8 @@ const config: Config = {
           activeBaseRegex: `/guides/`,
         },
         {to: '/blog', label: 'Blog', position: 'left'},
-        {to: '/roadmap', label: 'Roadmap', position: 'left'},
         {to: '/packages', label: 'Packages', position: 'left'},
+        {to: '/pricing', label: 'Pricing', position: 'left'},
         {
           type: 'search',
           position: 'left',
@@ -220,6 +220,10 @@ const config: Config = {
             {
               label: 'Blog',
               to: '/blog',
+            },
+            {
+              label: 'Roadmap',
+              to: '/roadmap',
             },
             {
               label: 'Talk to founders',
