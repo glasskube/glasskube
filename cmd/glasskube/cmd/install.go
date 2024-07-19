@@ -37,6 +37,7 @@ var installCmdOptions = struct {
 	EnableAutoUpdates bool
 	NoWait            bool
 	Yes               bool
+	ShowAllMetadata   bool
 	OutputOptions
 	NamespaceOptions
 	DryRunOptions
@@ -251,6 +252,18 @@ var installCmd = &cobra.Command{
 				cliutils.ExitWithError()
 			}
 		}
+		if !installCmdOptions.ShowAllMetadata {
+			switch p := pkg.(type) {
+			case *v1alpha1.ClusterPackage:
+				p.ObjectMeta = pruneExtraFields(p.ObjectMeta)
+				pkg = p
+			case *v1alpha1.Package:
+				p.ObjectMeta = pruneExtraFields(p.ObjectMeta)
+				pkg = p
+			default:
+				panic("unexpected package type")
+			}
+		}
 		if installCmdOptions.OutputOptions.Output != "" {
 			output, err := formatOutput(pkg, installCmdOptions.OutputOptions.Output)
 			if err != nil {
@@ -260,6 +273,15 @@ var installCmd = &cobra.Command{
 			fmt.Println(output)
 		}
 	},
+}
+
+func pruneExtraFields(original metav1.ObjectMeta) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Name:        original.Name,
+		Namespace:   original.Namespace,
+		Labels:      original.Labels,
+		Annotations: original.Annotations,
+	}
 }
 
 func formatOutput(pkg ctrlpkg.Package, format OutputFormat) (string, error) {
@@ -356,6 +378,8 @@ func init() {
 		"Specify the name of the package repository to install this package from")
 	installCmd.PersistentFlags().BoolVar(&installCmdOptions.NoWait, "no-wait", false, "Perform non-blocking install")
 	installCmd.PersistentFlags().BoolVarP(&installCmdOptions.Yes, "yes", "y", false, "Do not ask for any confirmation")
+	installCmd.PersistentFlags().BoolVar(&installCmdOptions.ShowAllMetadata, "show-all-metadata", false,
+		"Additionally print metadata fields other than name, namespace, annotations and labels")
 	installCmdOptions.ValuesOptions.AddFlagsToCommand(installCmd)
 	installCmdOptions.OutputOptions.AddFlagsToCommand(installCmd)
 	installCmdOptions.NamespaceOptions.AddFlagsToCommand(installCmd)
