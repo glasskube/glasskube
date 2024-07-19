@@ -24,7 +24,7 @@ const sidebars: SidebarsConfig = {
           '⚠️ Contributors are what make open source great, here is where we share some resources to support you. ⚠️',
         slug: '/categories/contributors',
       },
-      items: ['git-guide', 'kubectl-guide'],
+      items: ['git-guide', 'kubectl-guide', 'package-creation'],
     },
   ],
 };
