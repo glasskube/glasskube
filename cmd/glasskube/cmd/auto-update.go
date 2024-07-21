@@ -189,7 +189,7 @@ func runAutoUpdate(cmd *cobra.Command, args []string) {
 	}
 	printTransaction(*tx)
 
-	if updated, err := updater.Apply(ctx, tx, update.ApplyUpdateOptions{Blocking: false, DryRun: false}); err != nil {
+	if updated, err := updater.Apply(ctx, tx, update.ApplyUpdateOptions{Blocking: true, DryRun: false}); err != nil {
 		fmt.Fprintf(os.Stderr, "Error applying update: %v\n", err)
 		cliutils.ExitWithError()
 	} else {

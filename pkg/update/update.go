@@ -186,14 +186,6 @@ func (c *updater) Apply(
 	tx *UpdateTransaction,
 	opts ApplyUpdateOptions,
 ) ([]ctrlpkg.Package, error) {
-	return c.apply(ctx, tx, ApplyUpdateOptions{Blocking: opts.Blocking, DryRun: opts.DryRun})
-}
-
-func (c *updater) apply(
-	ctx context.Context,
-	tx *UpdateTransaction,
-	opts ApplyUpdateOptions,
-) ([]ctrlpkg.Package, error) {
 	c.status.Start()
 	defer c.status.Stop()
 	var updatedPackages []ctrlpkg.Package

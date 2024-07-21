@@ -33,7 +33,7 @@ import (
 var updateCmdOptions struct {
 	Version string
 	Yes     bool
-	dryRun  bool
+	dryRun  DryRunOptions
 	OutputOptions
 	NamespaceOptions
 	KindOptions
@@ -131,7 +131,7 @@ var updateCmd = &cobra.Command{
 				tx,
 				update.ApplyUpdateOptions{
 					Blocking: true,
-					DryRun:   updateCmdOptions.dryRun,
+					DryRun:   updateCmdOptions.dryRun.DryRun,
 				})
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "❌ update failed: %v\n", err)
@@ -312,8 +312,6 @@ func init() {
 	_ = updateCmd.RegisterFlagCompletionFunc("version", completeUpgradablePackageVersions)
 	updateCmd.PersistentFlags().BoolVarP(&updateCmdOptions.Yes, "yes", "y", false,
 		"Do not ask for any confirmation")
-	updateCmd.PersistentFlags().BoolVar(&updateCmdOptions.dryRun, "dry-run", false,
-		"DryRun to update pacakage")
 	updateCmdOptions.OutputOptions.AddFlagsToCommand(updateCmd)
 	updateCmdOptions.KindOptions.AddFlagsToCommand(updateCmd)
 	updateCmdOptions.NamespaceOptions.AddFlagsToCommand(updateCmd)
