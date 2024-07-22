@@ -7,7 +7,7 @@ description: Discover Glasskube, a fresh Kubernetes package manager challenging 
 
 # Glasskube vs Helm Comparison
 
-In late 2023, we published a [blog post](https://glasskube.eu/en/r/knowledge/5-helm-shortcomings/) about, what we thought, were the biggest shortcomings of [Helm](https://helm.sh/)—undoubtedly the most popular package manager for Kubernetes.
+In late 2023, we published a [blog post](/blog/5-helm-shortcomings/) about, what we thought, were the biggest shortcomings of [Helm](https://helm.sh/)—undoubtedly the most popular package manager for Kubernetes.
 After receiving *TONS* of feedback from the community we realized that we were not alone in being unsatisfied with the status quo.
 That is why we started thinking about and prototyping Glasskube—a *new* vision of what a package manager for Kubernetes could look like.
 
@@ -25,3 +25,20 @@ That is why Glasskube is laser focused on delivering a tool for administrators w
 
 With that being said, **Glasskube is not a full replacement of Helm**, neither do we aspire for it to become one in the future.
 Rather, Glasskube is designed to integrate with established workflows and work in synergy with existing tools, such as Helm, Flux, ArgoCD and many more.
+
+## "Helm or no Helm?" podcast with Matt Butcher
+
+On July 12th 2024 the **Creator of Helm Matt Butcher** ([@technosophos](https://x.com/technosophos)) and the **Glasskube Co-Founder Philip Miglinci** ([@pmigat](https://x.com/pmigat)) talked about Helm or no Helm:
+
+- The founding story of Helm & Glasskube
+- Reflacting on a decade of Kubernetes and why new abstractions are created constantly
+- Why Helm is playing from behind
+- Upcoming Helm 4 release
+- The first momemt Helm and Glasskube got the initial traction
+- Community Q&A
+
+_Link to recording:_ https://x.com/i/spaces/1nAKEpOOdwZxL
+
+[![Glasskube vs Helm](https://pbs.twimg.com/media/GSS6LCEagAM9wH1?format=jpg)](https://x.com/i/spaces/1nAKEpOOdwZxL)
+
+_Thanks to [Kubesimplify](https://kubesimplify.com/) for hosting the podcast._
