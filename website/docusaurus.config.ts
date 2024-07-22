@@ -123,7 +123,7 @@ const config: Config = {
     },
     announcementBar: {
       id: 'announcementBar-1', // Increment on change
-      content: `🧊 Glasskube is fully open-source! 😎 <a target="_blank" href="https://github.com/glasskube/glasskube/">Star us on GitHub</a> 🌟`,
+      content: `🧊 Glasskube Native Packages are on the horizon! 😎 <a target="_blank" href="https://github.com/glasskube/glasskube/discussions/1018">Help us make architecture decisions</a> 💡`,
       isCloseable: false,
     },
     image:
