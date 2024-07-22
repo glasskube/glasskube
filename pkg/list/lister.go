@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
+	"go.uber.org/multierr"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/names"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	repotypes "github.com/glasskube/glasskube/internal/repo/types"
 	"github.com/glasskube/glasskube/pkg/client"
-	"go.uber.org/multierr"
 )
 
 type PackageWithStatus struct {
@@ -33,6 +33,7 @@ type ListOptions struct {
 	IncludePackageInfos bool
 	OnlyInstalled       bool
 	OnlyOutdated        bool
+	Repository          string
 }
 
 type lister struct {
@@ -144,7 +145,6 @@ func (l *lister) fetchRepoAndInstalled(ctx context.Context, options ListOptions,
 	var packageInfos v1alpha1.PackageInfoList
 	var repoErr, clPkgErr, pkgErr, pkgInfoErr error
 	wg := new(sync.WaitGroup)
-
 	if !l.useCache || l.cachedIndex == nil {
 		wg.Add(1)
 		go func() {
@@ -197,11 +197,15 @@ func (l *lister) fetchRepoAndInstalled(ctx context.Context, options ListOptions,
 	}
 
 	// TODO what if a package is namespaced in one repository, and with the same name cluster scoped in another??
-
 	resultLs := make([]result, 0)
-	for i, indexPackage := range index.Packages {
+	for _, indexPackage := range index.Packages {
+		// removes the repos which are not of interest i.e. options.Repository
+		filterRepo(options.Repository, &indexPackage)
+		if len(indexPackage.Repos) == 0 {
+			continue
+		}
 		res := result{
-			IndexItem: &index.Packages[i],
+			IndexItem: &indexPackage,
 		}
 		if indexPackage.Scope.IsCluster() && typeOpts&includeClusterPackages != 0 {
 			for j, pkg := range clusterPackages.Items {
@@ -224,6 +228,24 @@ func (l *lister) fetchRepoAndInstalled(ctx context.Context, options ListOptions,
 	}
 
 	return resultLs, compositeErr
+}
+
+func filterRepo(repo string, indexPackages *repotypes.MetaIndexItem) {
+	if repo == "" {
+		return
+	}
+	repoPresent := false
+	for _, indexRepo := range indexPackages.Repos {
+		if repo == indexRepo {
+			repoPresent = true
+			break
+		}
+	}
+	if repoPresent {
+		indexPackages.Repos = []string{repo}
+	} else {
+		indexPackages.Repos = make([]string, 0)
+	}
 }
 
 func setPackageInfo(packageInfos v1alpha1.PackageInfoList, res *result, pkg ctrlpkg.Package) {

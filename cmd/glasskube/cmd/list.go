@@ -6,14 +6,14 @@ import (
 	"os"
 	"strings"
 
-	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
+	"github.com/spf13/cobra"
+	"sigs.k8s.io/yaml"
 
 	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/cliutils"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/semver"
 	"github.com/glasskube/glasskube/pkg/list"
-	"github.com/spf13/cobra"
-	"sigs.k8s.io/yaml"
 )
 
 type ListCmdOptions struct {
@@ -23,6 +23,7 @@ type ListCmdOptions struct {
 	ShowLatestVersion bool
 	ShowMessage       bool
 	More              bool
+	Repository        string
 	OutputOptions
 	KindOptions
 }
@@ -31,6 +32,7 @@ func (o ListCmdOptions) toListOptions() list.ListOptions {
 	return list.ListOptions{
 		OnlyInstalled: o.ListInstalledOnly,
 		OnlyOutdated:  o.ListOutdatedOnly,
+		Repository:    o.Repository,
 	}
 }
 
@@ -101,6 +103,8 @@ func init() {
 		"Show the messages of (cluster-)packages")
 	listCmd.PersistentFlags().BoolVarP(&listCmdOptions.More, "more", "m", false,
 		"Show additional information about (cluster-)packages (like --show-description --show-latest)")
+	listCmd.PersistentFlags().StringVarP(&listCmdOptions.Repository, "repository", "r", "",
+		"Filter based on the repository provided")
 	listCmdOptions.OutputOptions.AddFlagsToCommand(listCmd)
 	listCmdOptions.KindOptions.AddFlagsToCommand(listCmd)
 
