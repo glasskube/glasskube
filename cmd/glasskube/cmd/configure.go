@@ -74,7 +74,7 @@ func runConfigure(cmd *cobra.Command, args []string) {
 			fmt.Fprintf(os.Stderr, "❌ error during configure: %v\n", err)
 			cliutils.ExitWithError()
 		} else if len(pkgManifest.ValueDefinitions) == 0 {
-			fmt.Fprintln(os.Stderr, "❌ this package has no configuration values:")
+			fmt.Fprintln(os.Stderr, "❌ this package has no configuration values")
 			cliutils.ExitWithError()
 		} else {
 			pkg.GetSpec().Values = values
