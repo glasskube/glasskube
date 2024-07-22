@@ -145,6 +145,7 @@ func (l *lister) fetchRepoAndInstalled(ctx context.Context, options ListOptions,
 	var packageInfos v1alpha1.PackageInfoList
 	var repoErr, clPkgErr, pkgErr, pkgInfoErr error
 	wg := new(sync.WaitGroup)
+
 	if !l.useCache || l.cachedIndex == nil {
 		wg.Add(1)
 		go func() {
@@ -197,6 +198,7 @@ func (l *lister) fetchRepoAndInstalled(ctx context.Context, options ListOptions,
 	}
 
 	// TODO what if a package is namespaced in one repository, and with the same name cluster scoped in another??
+
 	resultLs := make([]result, 0)
 	for _, indexPackage := range index.Packages {
 		// removes the repos which are not of interest i.e. options.Repository
