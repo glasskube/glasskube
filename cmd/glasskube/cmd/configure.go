@@ -59,11 +59,6 @@ func runConfigure(cmd *cobra.Command, args []string) {
 		cliutils.ExitWithError()
 	}
 
-	if len(pkg.GetSpec().Values) == 0 {
-		fmt.Fprintln(os.Stderr, "❌ This package has no configuration values")
-		cliutils.ExitWithError()
-	}
-
 	if configureCmdOptions.IsValuesSet() {
 		if values, err := configureCmdOptions.ParseValues(pkg.GetSpec().Values); err != nil {
 			fmt.Fprintf(os.Stderr, "❌ invalid values in command line flags: %v\n", err)
@@ -77,6 +72,9 @@ func runConfigure(cmd *cobra.Command, args []string) {
 			cliutils.ExitWithError()
 		} else if values, err := cli.Configure(*pkgManifest, pkg.GetSpec().Values); err != nil {
 			fmt.Fprintf(os.Stderr, "❌ error during configure: %v\n", err)
+			cliutils.ExitWithError()
+		} else if len(pkgManifest.ValueDefinitions) == 0 {
+			fmt.Fprintln(os.Stderr, "❌ this package has no configuration values:")
 			cliutils.ExitWithError()
 		} else {
 			pkg.GetSpec().Values = values
