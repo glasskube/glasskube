@@ -33,6 +33,7 @@ import (
 )
 
 type templates struct {
+
 	templateFuncs           template.FuncMap
 	baseTemplate            *template.Template
 	clusterPkgsPageTemplate *template.Template
@@ -52,6 +53,8 @@ type templates struct {
 	datalistTmpl            *template.Template
 	pkgDiscussionBadgeTmpl  *template.Template
 	repoClientset           repoclient.RepoClientset
+	repositoryPageTmpl		*template.Template
+
 }
 
 var (
@@ -164,6 +167,7 @@ func (t *templates) parseTemplates() {
 	t.alertTmpl = t.componentTmpl("alert")
 	t.datalistTmpl = t.componentTmpl("datalist")
 	t.pkgDiscussionBadgeTmpl = t.componentTmpl("discussion-badge")
+	t.repositoryPageTmpl = t.pageTmpl("repository.html")
 }
 
 func (t *templates) pageTmpl(fileName string) *template.Template {

@@ -222,6 +222,7 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle("/datalists/{valueName}/keys", s.requireReady(s.keysDatalist))
 	// settings
 	router.Handle("/settings", s.requireReady(s.settingsPage))
+	router.Handle("/settings/repositories/{repoName}", s.requireReady(s.repositoryconfig))
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/clusterpackages", http.StatusFound)
 	})
@@ -1382,4 +1383,40 @@ func isPortConflictError(err error) bool {
 		}
 	}
 	return false
+}
+
+func (s *server) repositoryconfig(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		// Handle GET request: Render the repository.html template
+		s.handleGetRepositoryConfig(w, r)
+	case http.MethodPost:
+		// Handle POST request: Update the repository configuration
+		// s.handlePostRepositoryConfig(w, r)
+		fmt.Printf("POST Mehtod Part")
+	default:
+		// Method not allowed
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func (s *server) handleGetRepositoryConfig(w http.ResponseWriter, r *http.Request) {
+	
+	repoName := mux.Vars(r)["repoName"]
+	var repo v1alpha1.PackageRepository
+	if err := s.pkgClient.PackageRepositories().Get(r.Context(), repoName, &repo); err != nil {
+    	// error handling
+		s.respondAlertAndLog(w, err, "Failed to fetch repositories", "danger")
+    	return
+	}
+
+
+	tmplErr := s.templates.repositoryPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
+		"Repositories": repo,
+	}, nil))
+	checkTmplError(tmplErr, "repository")
+}
+
+func handlePostRepositoryConfig(w http.ResponseWriter, r *http.Request){
+
 }
