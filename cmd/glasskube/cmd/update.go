@@ -316,4 +316,5 @@ func init() {
 	updateCmdOptions.KindOptions.AddFlagsToCommand(updateCmd)
 	updateCmdOptions.NamespaceOptions.AddFlagsToCommand(updateCmd)
 	RootCmd.AddCommand(updateCmd)
+	updateCmdOptions.dryRun.AddFlagsToCommand(updateCmd)
 }
