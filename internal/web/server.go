@@ -289,7 +289,9 @@ func (s *server) Start(ctx context.Context) error {
 
 func (s *server) shutdown() {
 	close(s.stopCh)
-	if err := s.httpServer.Shutdown(context.Background()); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := s.httpServer.Shutdown(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to shutdown server: %v\n", err)
 	}
 	close(s.httpServerHasShutdownCh)
