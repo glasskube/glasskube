@@ -194,9 +194,7 @@ h2 {
   padding-bottom: 5px;
 }
 
-[data-theme='dark'] {
-  h2 {
-    text-shadow:  0 0 5px var(--glasskube-pink);
-  }
+[data-theme='dark'] h2 {
+  text-shadow: 0 0 5px var(--glasskube-pink);
 }
 
