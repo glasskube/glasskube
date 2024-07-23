@@ -79,7 +79,7 @@ func init() {
 
 type ServerOptions struct {
 	Host               string
-	Port               int32
+	Port               string
 	Kubeconfig         string
 	LogLevel           int
 	SkipOpeningBrowser bool
@@ -227,33 +227,28 @@ func (s *server) Start(ctx context.Context) error {
 	})
 	http.Handle("/", s.enrichContext(router))
 
-	bindAddr := fmt.Sprintf("%v:%d", s.Host, s.Port)
-
-	s.listener, err = net.Listen("tcp", bindAddr)
+	s.listener, err = net.Listen("tcp", net.JoinHostPort(s.Host, s.Port))
 	if err != nil {
-		// Checks if Port Conflict Error exists
-		if isPortConflictError(err) {
-			userInput := cliutils.YesNoPrompt(
-				"Port is already in use.\nShould glasskube use a different port? (Y/n): ", true)
-			if userInput {
-				s.listener, err = net.Listen("tcp", ":0")
+		// if the error is "address already in use", try to get the OS to assign a random free port
+		if errors.Is(err, syscall.EADDRINUSE) {
+			fmt.Fprintf(os.Stderr, "could not start server: %v\n", err)
+			if cliutils.YesNoPrompt("Should glasskube try to use a different (random) port?", true) {
+				s.listener, err = net.Listen("tcp", net.JoinHostPort(s.Host, "0"))
 				if err != nil {
-					panic(err)
+					return err
 				}
-				bindAddr = fmt.Sprintf("%v:%d", s.Host, s.listener.Addr().(*net.TCPAddr).Port)
 			} else {
-				fmt.Println("Exiting. User chose not to use a different port.")
-				cliutils.ExitWithError()
+				return err
 			}
 		} else {
-			// If no Port Conflict error is found, return other errors
 			return err
 		}
 	}
 
-	fmt.Printf("glasskube UI is available at http://%v\n", bindAddr)
+	browseUrl := fmt.Sprintf("http://%s", s.listener.Addr())
+	fmt.Fprintln(os.Stderr, "glasskube UI is available at", browseUrl)
 	if !s.SkipOpeningBrowser {
-		_ = cliutils.OpenInBrowser("http://" + bindAddr)
+		_ = cliutils.OpenInBrowser(browseUrl)
 	}
 
 	go s.broadcaster.Run()
@@ -1373,13 +1368,4 @@ func (s *server) isUpdateAvailable(ctx context.Context, pkgs []ctrlpkg.Package) 
 	} else {
 		return !tx.IsEmpty()
 	}
-}
-
-func isPortConflictError(err error) bool {
-	if opErr, ok := err.(*net.OpError); ok {
-		if osErr, ok := opErr.Err.(*os.SyscallError); ok {
-			return osErr.Err == syscall.EADDRINUSE
-		}
-	}
-	return false
 }

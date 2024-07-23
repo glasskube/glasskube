@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/glasskube/glasskube/internal/cliutils"
 
@@ -11,11 +12,29 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var serveCmdOptions struct {
-	port        int
-	logLevel    int
-	skipOpenFlg bool
+type ServeCmdOptions struct {
+	host     string
+	port     int
+	logLevel int
+	skipOpen bool
 }
+
+func (opts ServeCmdOptions) ServerOptions() web.ServerOptions {
+	return web.ServerOptions{
+		Host:               opts.host,
+		Port:               strconv.Itoa(opts.port),
+		Kubeconfig:         config.Kubeconfig,
+		LogLevel:           opts.logLevel,
+		SkipOpeningBrowser: opts.skipOpen,
+	}
+}
+
+var (
+	serveCmdOptions = ServeCmdOptions{
+		host: "localhost",
+		port: 8050,
+	}
+)
 
 var serveCmd = &cobra.Command{
 	Use:     "serve",
@@ -24,14 +43,7 @@ var serveCmd = &cobra.Command{
 	Long:    `Start server and open the UI.`,
 	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		options := web.ServerOptions{
-			Host:               "localhost",
-			Port:               int32(serveCmdOptions.port),
-			Kubeconfig:         config.Kubeconfig,
-			LogLevel:           serveCmdOptions.logLevel,
-			SkipOpeningBrowser: serveCmdOptions.skipOpenFlg,
-		}
-		server := web.NewServer(options)
+		server := web.NewServer(serveCmdOptions.ServerOptions())
 		if err := server.Start(cmd.Context()); err != nil {
 			fmt.Fprintf(os.Stderr, "An error occurred starting the webserver:\n\n%v\n", err)
 			cliutils.ExitWithError()
@@ -40,9 +52,13 @@ var serveCmd = &cobra.Command{
 }
 
 func init() {
-	serveCmd.Flags().IntVarP(&serveCmdOptions.port, "port", "p", 8580, "Port for the webserver")
-	serveCmd.Flags().IntVarP(&serveCmdOptions.logLevel, "log-level", "l", 0,
+	serveCmd.Flags().StringVar(&serveCmdOptions.host, "host", serveCmdOptions.host,
+		"Hostname for the webserver")
+	serveCmd.Flags().IntVarP(&serveCmdOptions.port, "port", "p", serveCmdOptions.port,
+		"Port for the webserver")
+	serveCmd.Flags().IntVarP(&serveCmdOptions.logLevel, "log-level", "l", serveCmdOptions.logLevel,
 		"Level for additional logging, where 0 is the least verbose")
-	serveCmd.Flags().BoolVarP(&serveCmdOptions.skipOpenFlg, "skip-open", "s", false, "Skip opening the browser")
+	serveCmd.Flags().BoolVarP(&serveCmdOptions.skipOpen, "skip-open", "s", serveCmdOptions.skipOpen,
+		"Skip opening the browser")
 	RootCmd.AddCommand(serveCmd)
 }
