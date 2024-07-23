@@ -48,7 +48,7 @@
     "@docusaurus/tsconfig": "3.4.0",
     "@docusaurus/types": "3.4.0",
     "@eslint/js": "^9.5.0",
-    "@types/eslint": "^8.56.10",
+    "@types/eslint": "^9.0.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-import": "^2.29.1",
