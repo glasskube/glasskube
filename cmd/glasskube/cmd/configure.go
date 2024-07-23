@@ -70,6 +70,9 @@ func runConfigure(cmd *cobra.Command, args []string) {
 		if pkgManifest, err := manifest.GetInstalledManifestForPackage(ctx, pkg); err != nil {
 			fmt.Fprintf(os.Stderr, "❌ error getting installed manifest: %v\n", err)
 			cliutils.ExitWithError()
+		} else if len(pkgManifest.ValueDefinitions) == 0 {
+			fmt.Fprintln(os.Stderr, "❌ this package has no configuration values")
+			cliutils.ExitWithError()
 		} else if values, err := cli.Configure(*pkgManifest, pkg.GetSpec().Values); err != nil {
 			fmt.Fprintf(os.Stderr, "❌ error during configure: %v\n", err)
 			cliutils.ExitWithError()
