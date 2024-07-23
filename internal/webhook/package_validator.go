@@ -119,6 +119,13 @@ func (p *PackageValidatingWebhook) validateCreateOrUpdate(ctx context.Context, p
 		return err
 	}
 
+	// Scope validation
+	if (manifest.Scope == nil || *manifest.Scope == "Cluster") && pkg.IsNamespaceScoped() {
+		return errors.New("invalid scope, expected ClusterPackage but found Package")
+	} else if (manifest.Scope != nil && *manifest.Scope == "Namespaced") && !pkg.IsNamespaceScoped() {
+		return errors.New("invalid scope, expected Package but found ClusterPackage")
+	}
+
 	if err := manifestvalues.ValidatePackage(manifest, pkg); err != nil {
 		return err
 	}
