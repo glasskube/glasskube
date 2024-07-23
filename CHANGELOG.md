@@ -1,5 +1,64 @@
 # Changelog
 
+## [0.14.0](https://github.com/glasskube/glasskube/compare/v0.13.0...v0.14.0) (2024-07-23)
+
+
+### Features
+
+* **cli:** add `--host` flag for `serve` to change the hostname for the listener ([#1027](https://github.com/glasskube/glasskube/issues/1027)) ([ae2d2c0](https://github.com/glasskube/glasskube/commit/ae2d2c0ac5d7bdf627325dda53471c1552a7246e))
+* **cli:** add `--show-all-metadata` flag for `install` command ([#1015](https://github.com/glasskube/glasskube/issues/1015)) ([0c16760](https://github.com/glasskube/glasskube/commit/0c1676040b8bd91016e42cbb5911393349df31d4))
+* **cli:** add `glasskube configure` showing an error for package with no value definitions ([#1026](https://github.com/glasskube/glasskube/issues/1026)) ([150e7e6](https://github.com/glasskube/glasskube/commit/150e7e634fb3a0ffd74471301f4e1f1c7486ed1e))
+* **ui:** status message on package details page ([#987](https://github.com/glasskube/glasskube/issues/987)) ([6b216ec](https://github.com/glasskube/glasskube/commit/6b216ec93233c5955bae48bd857972c544b33a6a))
+
+
+### Bug Fixes
+
+* allow additional yaml content types ([#989](https://github.com/glasskube/glasskube/issues/989)) ([3a89958](https://github.com/glasskube/glasskube/commit/3a89958a0aca2c734e7d76d885a8f205975f1c8d))
+* **cli:** `list` command with `--output` flag respects `--kind` flag ([#967](https://github.com/glasskube/glasskube/issues/967)) ([193fcee](https://github.com/glasskube/glasskube/commit/193fcee3058abd8b3ccf1508b5cc15df053b9e01))
+* **cli:** add handling of `--no-progress` flag for `glasskube bootstrap` ([#1007](https://github.com/glasskube/glasskube/issues/1007)) ([263e915](https://github.com/glasskube/glasskube/commit/263e9158b06dc318905b3e0757b2bbaa59096be5))
+* **config:** add missing rbac permissions for autoupdater ([#984](https://github.com/glasskube/glasskube/issues/984)) ([ab9e71a](https://github.com/glasskube/glasskube/commit/ab9e71aec4a518f004541816688a59f201f07554))
+* **deps:** update dependency @easyops-cn/docusaurus-search-local to v0.44.4 ([#1016](https://github.com/glasskube/glasskube/issues/1016)) ([858323f](https://github.com/glasskube/glasskube/commit/858323ff064c3fb301ff985c362880937d57aa4b))
+* **deps:** update dependency htmx-ext-sse to v2.2.1 ([#994](https://github.com/glasskube/glasskube/issues/994)) ([0a6cd6c](https://github.com/glasskube/glasskube/commit/0a6cd6ca28264ca17764f358a7f09d89a4bc1836))
+* **deps:** update dependency htmx.org to v2.0.1 ([#996](https://github.com/glasskube/glasskube/issues/996)) ([e2364bf](https://github.com/glasskube/glasskube/commit/e2364bf68a2ae5058610d38ae3866b4681f771be))
+* **deps:** update dependency posthog-docusaurus to v2.0.1 ([#1023](https://github.com/glasskube/glasskube/issues/1023)) ([5c2b5a5](https://github.com/glasskube/glasskube/commit/5c2b5a55e01507ebc98636aa7056033e8c4032c6))
+* **deps:** update font awesome to v6.6.0 ([#1009](https://github.com/glasskube/glasskube/issues/1009)) ([b585af2](https://github.com/glasskube/glasskube/commit/b585af27ee4a56ff4cb533c7f92546555d167f94))
+* **deps:** update kubernetes packages to v0.30.3 ([#1013](https://github.com/glasskube/glasskube/issues/1013)) ([16bd0dc](https://github.com/glasskube/glasskube/commit/16bd0dc6eb11bad15d1b73d3dba7ec44407286be))
+* **deps:** update module github.com/google/go-containerregistry to v0.20.0 ([#975](https://github.com/glasskube/glasskube/issues/975)) ([f3f4cb9](https://github.com/glasskube/glasskube/commit/f3f4cb9a5d69f05d6e5dfbe3af64ad918a26d9c6))
+* **deps:** update module github.com/google/go-containerregistry to v0.20.1 ([#1010](https://github.com/glasskube/glasskube/issues/1010)) ([2f36645](https://github.com/glasskube/glasskube/commit/2f366452ce6d26794c6504e6a75d69986b17a7f9))
+* **ui:** broken link to required package ([#1004](https://github.com/glasskube/glasskube/issues/1004)) ([35582d9](https://github.com/glasskube/glasskube/commit/35582d9fe1d6e3c91a49e93734a5a5618d66278a))
+* **ui:** gracefully close sse and refactor to toast feedback ([#991](https://github.com/glasskube/glasskube/issues/991)) ([74bbc52](https://github.com/glasskube/glasskube/commit/74bbc526c77a7e63042201a52157042db28cbbf5))
+
+
+### Other
+
+* **cli:** add missing newline ([#992](https://github.com/glasskube/glasskube/issues/992)) ([a3dc1fb](https://github.com/glasskube/glasskube/commit/a3dc1fbcaa0f8396d6a12c8e0936058940998bc2))
+* **cli:** revert accidental change of default `serve` port ([#1034](https://github.com/glasskube/glasskube/issues/1034)) ([3dfb995](https://github.com/glasskube/glasskube/commit/3dfb99599ff1f49f50e96865df36c0447f164d56))
+* **deps:** update actions/setup-go digest to 0a12ed9 ([#986](https://github.com/glasskube/glasskube/issues/986)) ([b572d52](https://github.com/glasskube/glasskube/commit/b572d526bda440753525e992f145bf64c5b06266))
+* **deps:** update actions/setup-node action to v4.0.3 ([#980](https://github.com/glasskube/glasskube/issues/980)) ([5e0f52a](https://github.com/glasskube/glasskube/commit/5e0f52ab881bcfadaf8f1528f2ed9b7b8417b281))
+* **deps:** update actions/setup-node digest to 1e60f62 ([#982](https://github.com/glasskube/glasskube/issues/982)) ([278f314](https://github.com/glasskube/glasskube/commit/278f3145c8fb889cd41ea4e5fb5a403faa4185ab))
+* **deps:** update dependency @eslint/js to v9.7.0 ([#999](https://github.com/glasskube/glasskube/issues/999)) ([63a3be2](https://github.com/glasskube/glasskube/commit/63a3be2646d9906044d7f84cbf7901a2ca6e7812))
+* **deps:** update dependency @types/eslint to v8.56.11 ([#1028](https://github.com/glasskube/glasskube/issues/1028)) ([73160d4](https://github.com/glasskube/glasskube/commit/73160d444363e3006449e8e81ab547e2bfde5dc7))
+* **deps:** update dependency eslint-plugin-prettier to v5.2.1 ([#1012](https://github.com/glasskube/glasskube/issues/1012)) ([30d0d04](https://github.com/glasskube/glasskube/commit/30d0d04f8420f67e49c44a61c6a25d5c5cbb55a9))
+* **deps:** update dependency eslint-plugin-react to v7.34.4 ([#1002](https://github.com/glasskube/glasskube/issues/1002)) ([cd34171](https://github.com/glasskube/glasskube/commit/cd34171b1c793f365ea441123b9c436e28c06d73))
+* **deps:** update dependency eslint-plugin-react to v7.35.0 ([#1020](https://github.com/glasskube/glasskube/issues/1020)) ([df665ae](https://github.com/glasskube/glasskube/commit/df665aeb2a8812fd9d99dc43485006bd2bf66425))
+* **deps:** update dependency prettier to v3.3.3 ([#1000](https://github.com/glasskube/glasskube/issues/1000)) ([887838c](https://github.com/glasskube/glasskube/commit/887838c59a6e362009a848e8346c53cf4fe7079f))
+* **deps:** update dependency prettier to v3.3.3 ([#1001](https://github.com/glasskube/glasskube/issues/1001)) ([65a0bbd](https://github.com/glasskube/glasskube/commit/65a0bbd87a5cb7a96703ffc088dfd7a9f6b58c7c))
+* **deps:** update dependency typescript to v5.5.4 ([#1032](https://github.com/glasskube/glasskube/issues/1032)) ([8f8ea41](https://github.com/glasskube/glasskube/commit/8f8ea4161cb00b21ad003248a1c07fb389f6256c))
+* **deps:** update dependency typescript-eslint to v7.16.1 ([#1006](https://github.com/glasskube/glasskube/issues/1006)) ([16b35b2](https://github.com/glasskube/glasskube/commit/16b35b26e887014b28380a5a5837813583a1bb9a))
+* **deps:** update dependency typescript-eslint to v7.17.0 ([#1029](https://github.com/glasskube/glasskube/issues/1029)) ([2b7fa65](https://github.com/glasskube/glasskube/commit/2b7fa65c85cb479f68f1dddfcbfd962c3118da58))
+* **deps:** update docker/login-action digest to 9780b0c ([#1024](https://github.com/glasskube/glasskube/issues/1024)) ([4f1250f](https://github.com/glasskube/glasskube/commit/4f1250fc6a0486598e15979d5150e59374446e8a))
+* **website:** css minimizer warnings in website build ([#1033](https://github.com/glasskube/glasskube/issues/1033)) ([37edc3a](https://github.com/glasskube/glasskube/commit/37edc3a0a4fd7732a8c4160eafbd60658037671b))
+
+
+### Docs
+
+* **website:** add Helm or no Helm podcast ([#998](https://github.com/glasskube/glasskube/issues/998)) ([3e48fd0](https://github.com/glasskube/glasskube/commit/3e48fd06a320f19a617e77f9fc0f9727ce33f9c6))
+* **website:** added kube-prometheus-stack guide ([#1005](https://github.com/glasskube/glasskube/issues/1005)) ([e976ee2](https://github.com/glasskube/glasskube/commit/e976ee23f70d8fe3012190af3eab750be2113558))
+* **website:** added new package creation guide ([#1011](https://github.com/glasskube/glasskube/issues/1011)) ([ed25dd3](https://github.com/glasskube/glasskube/commit/ed25dd3eb8aaab57b97b35c0d42887a744cc5967))
+* **website:** call for help in GNP design ([#1019](https://github.com/glasskube/glasskube/issues/1019)) ([41cc4ba](https://github.com/glasskube/glasskube/commit/41cc4ba711b9d4e9db7c8b04912a82e9f384a5a3))
+* **website:** migrate 5 helm shortcomings blog to glasskube.dev ([#995](https://github.com/glasskube/glasskube/issues/995)) ([1f36fe9](https://github.com/glasskube/glasskube/commit/1f36fe9c67b2ed8647227cbda4ee25f56905c0e4))
+* **website:** updated packages page + reorder in alphabetical order ([#1014](https://github.com/glasskube/glasskube/issues/1014)) ([26e22b1](https://github.com/glasskube/glasskube/commit/26e22b1d86fd5132eb7897f7e2f9bfdb34d70ecf))
+
 ## [0.13.0](https://github.com/glasskube/glasskube/compare/v0.12.1...v0.13.0) (2024-07-09)
 
 
