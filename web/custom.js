@@ -27,22 +27,19 @@ window.advancedOptions = function (currentContext) {
   return localStorage.getItem('advancedOptions_' + currentContext) === 'true';
 };
 
-var sseOnline = true;
-document.addEventListener('htmx:sseError', function () {
-  sseOnline = false;
-  document
-    .getElementById('sse-error-container')
-    .classList.remove('visually-hidden');
-  document.getElementById('sse-error-container-message').innerHTML =
-    'You are disconnected from the server. Make sure to run <code>glasskube serve</code> and refresh this page!';
-});
-document.addEventListener('htmx:sseOpen', function () {
-  if (!sseOnline) {
-    sseOnline = true;
-    const msg = document.getElementById('sse-error-container-message');
-    msg.innerText =
-      'You have been disconnected for a while. Please refresh this page to make sure you are up to date!';
+function setSSEDisconnected() {
+  const elem = document.getElementById('disconnected-toast');
+  if (elem && !elem.classList.contains('show')) {
+    document.getElementById('disconnected-toast').classList.add('show');
   }
+}
+document.addEventListener('htmx:sseError', function (evt) {
+  console.log('htmx:sseError', evt);
+  setSSEDisconnected();
+});
+document.addEventListener('htmx:sseClose', function (evt) {
+  console.log('htmx:sseClose', evt);
+  setSSEDisconnected();
 });
 
 window.giscusReported = false;

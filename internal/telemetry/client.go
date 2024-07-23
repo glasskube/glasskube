@@ -239,7 +239,7 @@ func HttpMiddleware(conf ...HttpMiddlewareConfigurator) func(http.Handler) http.
 			start := time.Now()
 			next.ServeHTTP(w, r)
 			defer func() {
-				if instance != nil {
+				if instance != nil && instance.properties.Enabled() {
 					go func() {
 						redactedUrl := redactedPath(r, options.PathRedactors)
 						ev := instance.getBaseEvent("ui_endpoint", false)

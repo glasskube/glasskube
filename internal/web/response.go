@@ -5,35 +5,33 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+
+	"github.com/glasskube/glasskube/internal/web/components/toast"
+	"github.com/glasskube/glasskube/internal/web/util"
 )
 
-func (s *server) respondSuccess(w http.ResponseWriter) {
-	err := s.templates.alertTmpl.Execute(w, map[string]any{
-		"Message":     "Configuration updated successfully",
-		"Dismissible": true,
-		"Type":        "success",
-	})
-	checkTmplError(err, "success")
-}
-
-func (s *server) respondAlertAndLog(w http.ResponseWriter, err error, wrappingMsg string, alertType string) {
-	if wrappingMsg != "" {
-		err = fmt.Errorf("%v: %w", wrappingMsg, err)
+// sendToast builds a toast from the given options and sends it to the given response writer. If the response
+// contains an error, this is also logged to stderr.
+func (s *server) sendToast(w http.ResponseWriter, options ...toast.ResponseOption) {
+	response := toast.Response{ToastInput: toast.ToastInput{Dismissible: true}}
+	for _, opt := range options {
+		opt(&response)
 	}
-	fmt.Fprintf(os.Stderr, "%v\n", err)
-	s.respondAlert(w, err.Error(), alertType)
-}
+	response.Apply()
 
-func (s *server) respondAlert(w http.ResponseWriter, message string, alertType string) {
-	w.Header().Add("Hx-Reselect", "div.alert") // overwrite any existing hx-select (which was a little intransparent sometimes)
+	// htmx headers to overwrite any existing/inherited hx-select, hx-swap, hx-target on the client
+	w.Header().Add("Hx-Reselect", "div.toast")
 	w.Header().Add("Hx-Reswap", "afterbegin")
-	w.WriteHeader(http.StatusBadRequest)
-	err := s.templates.alertTmpl.Execute(w, map[string]any{
-		"Message":     message,
-		"Dismissible": true,
-		"Type":        alertType,
-	})
-	checkTmplError(err, "alert")
+	w.Header().Add("Hx-Retarget", "#toast-container")
+
+	w.WriteHeader(response.StatusCode)
+
+	err := s.templates.toastTmpl.Execute(w, response.ToastInput)
+	util.CheckTmplError(err, "toast")
+
+	if response.Err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", response.Err)
+	}
 }
 
 // swappingRedirect adds the Hx-Location header to the response, which, when interpreted by htmx.js, will make

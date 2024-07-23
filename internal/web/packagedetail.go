@@ -7,6 +7,8 @@ import (
 	"os"
 	"slices"
 
+	"github.com/glasskube/glasskube/internal/web/components/toast"
+
 	"github.com/glasskube/glasskube/internal/manifestvalues"
 
 	webutil "github.com/glasskube/glasskube/internal/web/util"
@@ -49,9 +51,8 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 		var err error
 		pkg, manifest, err = describe.DescribeInstalledPackage(ctx, namespace, name)
 		if err != nil && !errors.IsNotFound(err) {
-			s.respondAlertAndLog(w, err,
-				fmt.Sprintf("An error occurred fetching package details of installed package %v in namespace %v", name, namespace),
-				"danger")
+			s.sendToast(w,
+				toast.WithErr(fmt.Errorf("failed to fetch installed package %v/%v: %w", namespace, name, err)))
 			return
 		} else if errors.IsNotFound(err) {
 			s.swappingRedirect(w, "/packages", "main", "main")
@@ -81,9 +82,8 @@ func (s *server) clusterPackageDetail(w http.ResponseWriter, r *http.Request) {
 
 	pkg, manifest, err := describe.DescribeInstalledClusterPackage(ctx, pkgName)
 	if err != nil && !errors.IsNotFound(err) {
-		s.respondAlertAndLog(w, err,
-			fmt.Sprintf("An error occurred fetching package details of installed package %v", pkgName),
-			"danger")
+		s.sendToast(w,
+			toast.WithErr(fmt.Errorf("failed to fetch installed clusterpackage %v: %w", pkgName, err)))
 		return
 	} else if pkg != nil {
 		repositoryName = pkg.Spec.PackageInfo.RepositoryName
@@ -105,7 +105,7 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 	var usedRepo *v1alpha1.PackageRepository
 	if d.repositoryName, repos, usedRepo, err = s.getRepos(
 		ctx, d.manifestName, d.repositoryName); err != nil {
-		s.respondAlertAndLog(w, err, "", "danger")
+		s.sendToast(w, toast.WithErr(err))
 		return
 	}
 
@@ -113,9 +113,8 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 	var latestVersion string
 	if idx, latestVersion, d.selectedVersion, err = s.getVersions(
 		d.repositoryName, d.manifestName, d.selectedVersion); err != nil {
-		s.respondAlertAndLog(w, err,
-			fmt.Sprintf("An error occurred fetching package index of %v in repository %v", d.manifestName, d.repositoryName),
-			"danger")
+		s.sendToast(w,
+			toast.WithErr(fmt.Errorf("failed to fetch package index of %v in repo %v: %w", d.manifestName, d.repositoryName, err)))
 		return
 	}
 
@@ -123,19 +122,16 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 		d.manifest = &v1alpha1.PackageManifest{}
 		if err := s.repoClientset.ForRepoWithName(d.repositoryName).
 			FetchPackageManifest(d.manifestName, d.selectedVersion, d.manifest); err != nil {
-			s.respondAlertAndLog(w, err,
-				fmt.Sprintf("An error occurred fetching manifest of %v in version %v in repository %v",
-					d.manifestName, d.selectedVersion, d.repositoryName),
-				"danger")
+			s.sendToast(w,
+				toast.WithErr(fmt.Errorf("failed to fetch manifest of %v (%v) in repo %v: %w", d.manifestName, d.selectedVersion, d.repositoryName, err)))
 			return
 		}
 	}
 
 	res, err := s.dependencyMgr.Validate(r.Context(), d.manifest, d.selectedVersion)
 	if err != nil {
-		s.respondAlertAndLog(w, err,
-			fmt.Sprintf("An error occurred validating dependencies of %v in version %v", d.manifestName, d.selectedVersion),
-			"danger")
+		s.sendToast(w,
+			toast.WithErr(fmt.Errorf("failed to validate dependencies of %v (%v): %w", d.manifestName, d.selectedVersion, err)))
 		return
 	}
 
@@ -182,10 +178,10 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 
 	if d.renderedComponent == "header" {
 		err = s.templates.pkgDetailHeaderTmpl.Execute(w, templateData)
-		checkTmplError(err, fmt.Sprintf("package-detail-header (%s)", d.manifestName))
+		webutil.CheckTmplError(err, fmt.Sprintf("package-detail-header (%s)", d.manifestName))
 	} else {
 		err = s.templates.pkgPageTmpl.Execute(w, s.enrichPage(r, templateData, err))
-		checkTmplError(err, fmt.Sprintf("package-detail (%s)", d.manifestName))
+		webutil.CheckTmplError(err, fmt.Sprintf("package-detail (%s)", d.manifestName))
 	}
 }
 
