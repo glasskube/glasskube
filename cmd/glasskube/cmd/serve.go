@@ -32,7 +32,7 @@ func (opts ServeCmdOptions) ServerOptions() web.ServerOptions {
 var (
 	serveCmdOptions = ServeCmdOptions{
 		host: "localhost",
-		port: 8050,
+		port: 8580,
 	}
 )
 
