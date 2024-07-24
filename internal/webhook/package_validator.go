@@ -120,9 +120,9 @@ func (p *PackageValidatingWebhook) validateCreateOrUpdate(ctx context.Context, p
 	}
 
 	// Scope validation
-	if (manifest.Scope == nil || *manifest.Scope == "Cluster") && pkg.IsNamespaceScoped() {
+	if manifest.Scope.IsCluster() && pkg.IsNamespaceScoped() {
 		return errors.New("invalid scope, expected ClusterPackage but found Package")
-	} else if (manifest.Scope != nil && *manifest.Scope == "Namespaced") && !pkg.IsNamespaceScoped() {
+	} else if manifest.Scope.IsNamespaced() && !pkg.IsNamespaceScoped() {
 		return errors.New("invalid scope, expected Package but found ClusterPackage")
 	}
 
