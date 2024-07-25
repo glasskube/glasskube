@@ -150,9 +150,16 @@ func (l *lister) fetchRepoAndInstalled(ctx context.Context, options ListOptions,
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if err := l.repoClient.Meta().FetchMetaIndex(&index); err != nil {
+			if options.Repository != "" {
+				if err := l.repoClient.Meta().FetchMetaIndexForRepo(options.Repository, &index); err != nil {
+					repoErr = fmt.Errorf("could not fetch package repository index for repo %s : %w",
+						options.Repository,
+						err)
+				}
+			} else if err := l.repoClient.Meta().FetchMetaIndex(&index); err != nil {
 				repoErr = fmt.Errorf("could not fetch package repository index: %w", err)
 			}
+
 			l.cachedIndex = &index
 		}()
 	} else {
@@ -201,11 +208,6 @@ func (l *lister) fetchRepoAndInstalled(ctx context.Context, options ListOptions,
 
 	resultLs := make([]result, 0)
 	for _, indexPackage := range index.Packages {
-		// removes the repos which are not of interest i.e. options.Repository
-		filterRepo(options.Repository, &indexPackage)
-		if len(indexPackage.Repos) == 0 {
-			continue
-		}
 		res := result{
 			IndexItem: &indexPackage,
 		}
@@ -230,24 +232,6 @@ func (l *lister) fetchRepoAndInstalled(ctx context.Context, options ListOptions,
 	}
 
 	return resultLs, compositeErr
-}
-
-func filterRepo(repo string, indexPackages *repotypes.MetaIndexItem) {
-	if repo == "" {
-		return
-	}
-	repoPresent := false
-	for _, indexRepo := range indexPackages.Repos {
-		if repo == indexRepo {
-			repoPresent = true
-			break
-		}
-	}
-	if repoPresent {
-		indexPackages.Repos = []string{repo}
-	} else {
-		indexPackages.Repos = make([]string, 0)
-	}
 }
 
 func setPackageInfo(packageInfos v1alpha1.PackageInfoList, res *result, pkg ctrlpkg.Package) {

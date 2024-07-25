@@ -4,12 +4,13 @@ import (
 	"context"
 	"slices"
 
+	"go.uber.org/multierr"
+
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/maputils"
 	"github.com/glasskube/glasskube/internal/repo/types"
 	"github.com/glasskube/glasskube/internal/semver"
 	"github.com/glasskube/glasskube/internal/util"
-	"go.uber.org/multierr"
 )
 
 type metaclient struct {
@@ -63,6 +64,27 @@ func (d metaclient) FetchMetaIndex(target *types.MetaIndex) error {
 		}
 		return compositeErr
 	}
+}
+
+func (d metaclient) FetchMetaIndexForRepo(repo string, target *types.MetaIndex) error {
+	var index types.PackageRepoIndex
+	if err := d.clientset.ForRepoWithName(repo).FetchPackageRepoIndex(&index); err != nil {
+		return err
+	}
+	indexMap := make(map[string]types.MetaIndexItem)
+	for _, item := range index.Packages {
+		indexMap[item.Name] = types.MetaIndexItem{
+			PackageRepoIndexItem: item,
+			Repos:                []string{repo},
+		}
+	}
+	*target = types.MetaIndex{
+		Packages: make([]types.MetaIndexItem, len(indexMap)),
+	}
+	for i, name := range maputils.KeysSorted(indexMap) {
+		target.Packages[i] = indexMap[name]
+	}
+	return nil
 }
 
 // GetLatestVersion implements RepoMetaclient.

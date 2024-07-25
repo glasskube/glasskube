@@ -23,6 +23,7 @@ type RepoMetaclient interface {
 	LatestVersionGetter
 	FetchMetaIndex(target *types.MetaIndex) error
 	GetReposForPackage(name string) ([]packagesv1alpha1.PackageRepository, error)
+	FetchMetaIndexForRepo(repo string, target *types.MetaIndex) error
 }
 
 type RepoClientset interface {
