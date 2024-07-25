@@ -18,16 +18,15 @@ function PricingHeader() {
   );
 }
 
-
 export default function PackagePage(): JSX.Element {
   return (
     <Layout title={TITLE} description={DESCRIPTION}>
       <main className="margin-vert--lg">
-        <PricingHeader/>
-        <Pricing/>
-        <div className="margin-vert--xl"/>
-        <PricingFaq/>
-        <div className="margin-vert--md"/>
+        <PricingHeader />
+        <Pricing />
+        <div className="margin-vert--xl" />
+        <PricingFaq />
+        <div className="margin-vert--md" />
       </main>
     </Layout>
   );
