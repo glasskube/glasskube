@@ -17,11 +17,13 @@ function posthogId() {
   return '';
 }
 
-const SignupForWaitlistButton: FC<SignupForWaitlistButtonProps> = ({additionalClassNames}) => (
+const SignupForWaitlistButton: FC<SignupForWaitlistButtonProps> = ({
+  additionalClassNames,
+}) => (
   <Link
-    className={`button button--accent ${additionalClassNames}`}
+    className={`button button--outline ${additionalClassNames}`}
     to={`https://glasskube.cloud${posthogId()}`}>
-    Glasskube Cloud signup
+    Glasskube Cloud waitlist
   </Link>
 );
 
