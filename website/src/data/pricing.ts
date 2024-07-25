@@ -4,7 +4,7 @@ export const PricingFAQs: PricingFAQ[] = [
   {
     id: 'free-trial',
     question: 'Do you offer free trials?',
-    answer: 'Please <a href="https://glasskube.cloud/" target="_blank">contact us</a> regarding the enterprise mode for an individual offer.',
+    answer: 'Please <a href="https://cal.glasskube.eu/team/founder/enterprise" target="_blank">contact us</a> regarding the enterprise mode for an individual offer.',
   },
   {
     id: 'free-tier',
@@ -34,7 +34,7 @@ export const PricingFAQs: PricingFAQ[] = [
   {
     id: 'kubernetes',
     question: 'Do I need to manage the Kubernetes cluster myself?',
-    answer: 'Generally yes, please <a href="https://glasskube.cloud/" target="_blank">contact us</a> regarding your individual challenges.',
+    answer: 'Generally yes, please <a href="https://cal.glasskube.eu/team/founder/enterprise" target="_blank">contact us</a> regarding your individual challenges.',
   },
 ];
 

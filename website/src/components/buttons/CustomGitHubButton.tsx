@@ -13,8 +13,7 @@ const CustomGitHubButton: FC<CustomGitHubButtonProps> = ({href, ...props}) => (
     data-size="large"
     data-show-count="true"
     aria-label={`Star ${href} on GitHub`}
-    {...props}
-  >
+    {...props}>
     Star
   </GitHubButton>
 );

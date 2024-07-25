@@ -3,6 +3,7 @@ import DemoButton from '@site/src/components/buttons/DemoButton';
 import SignupForWaitlistButton from '@site/src/components/buttons/SignupForWaitlistButton';
 import React from 'react';
 import styles from './styles.module.css';
+import ContactSalesButton from '@site/src/components/buttons/ContactSalesButton';
 
 function Pricing() {
   return (
@@ -18,12 +19,14 @@ function Pricing() {
               <hr />
               <div className="card__body">
                 <p>
-                  Ideal for individuals and companies building and managing their own pipelines and workflows utilizing
-                  the Glasskube Package Manager.
+                  Ideal for individuals and companies building and managing
+                  their own pipelines and workflows utilizing the Glasskube
+                  Package Manager.
                 </p>
                 <ul className={styles.pricingItemList}>
                   <li>Apache 2.0 licensed</li>
                   <li>Package installation CLI and UI</li>
+                  <li>Basic GitOps Integration with Renovate</li>
                   <li>GitHub & Discord community support</li>
                   <li>
                     Use our public package repository or host private packages
@@ -56,10 +59,14 @@ function Pricing() {
                 </p>
                 <ul className={styles.pricingItemList}>
                   <li>
-                    GitOps Integration with pull request enhancement and change
-                    preview on a manifest level
+                    Advanced GitOps Integration with pull request enhancement
+                    and change preview on a manifest level
                   </li>
                   <li>Backup and restore your installed packages</li>
+                  <li>
+                    Secrets management for Glasskube Packages and CI
+                    integrations
+                  </li>
                   <li>
                     Private hosted packages for secure package distribution
                   </li>
@@ -75,6 +82,8 @@ function Pricing() {
                 <SignupForWaitlistButton
                   additionalClassNames={'button--lg button--block'}
                 />
+                <div className="margin-top--md" />
+                <DemoButton additionalClassNames={'button--lg button--block'} />
               </div>
             </div>
           </div>
@@ -98,7 +107,9 @@ function Pricing() {
                 </ul>
               </div>
               <div className="card__footer">
-                <DemoButton additionalClassNames={'button--lg button--block'} />
+                <ContactSalesButton
+                  additionalClassNames={'button--lg button--block'}
+                />
               </div>
             </div>
           </div>
