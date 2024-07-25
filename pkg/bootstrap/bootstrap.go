@@ -47,6 +47,7 @@ type BootstrapOptions struct {
 	Force                   bool
 	CreateDefaultRepository bool
 	DryRun                  bool
+	NoProgress              bool
 }
 
 func DefaultOptions() BootstrapOptions {
@@ -113,25 +114,27 @@ func (c *BootstrapClient) Bootstrap(
 			version, options.Type)
 	}
 
-	fmt.Fprintln(os.Stderr, installMessage)
+	if !options.NoProgress {
+		fmt.Fprintln(os.Stderr, installMessage)
+	}
 
-	statusMessage("Fetching Glasskube manifest from "+options.Url, true)
+	statusMessage("Fetching Glasskube manifest from "+options.Url, true, options.NoProgress)
 	manifests, err := clientutils.FetchResources(options.Url)
 	if err != nil {
-		statusMessage("Couldn't fetch Glasskube manifests", false)
+		statusMessage("Couldn't fetch Glasskube manifests", false, false)
 		telemetry.BootstrapFailure(time.Since(start))
 		return nil, err
 	}
 
-	statusMessage("Validating existing installation", true)
+	statusMessage("Validating existing installation", true, options.NoProgress)
 
 	if err = c.preprocessManifests(ctx, manifests, &options); err != nil {
 		telemetry.BootstrapFailure(time.Since(start))
-		statusMessage(fmt.Sprintf("Couldn't prepare manifests: %v", err), false)
+		statusMessage(fmt.Sprintf("Couldn't prepare manifests: %v", err), false, false)
 		if !options.Force {
 			return nil, err
 		} else {
-			statusMessage("Attempting to force bootstrap anyways (Force option is enabled)", true)
+			statusMessage("Attempting to force bootstrap anyways (Force option is enabled)", true, false)
 		}
 	}
 
@@ -139,18 +142,19 @@ func (c *BootstrapClient) Bootstrap(
 		manifests = append(manifests, defaultRepository())
 	}
 
-	statusMessage("Applying Glasskube manifests", true)
+	statusMessage("Applying Glasskube manifests", true, options.NoProgress)
 
 	if err = c.applyManifests(ctx, manifests, options); err != nil {
 		telemetry.BootstrapFailure(time.Since(start))
-		statusMessage(fmt.Sprintf("Couldn't apply manifests: %v", err), false)
+		statusMessage(fmt.Sprintf("Couldn't apply manifests: %v", err), false, false)
 		return nil, err
 	}
 
 	elapsed := time.Since(start)
 	c.handleTelemetry(options.DisableTelemetry, elapsed)
 
-	statusMessage(fmt.Sprintf("Glasskube successfully installed! (took %v)", elapsed.Round(time.Second)), true)
+	statusMessage(fmt.Sprintf("Glasskube successfully installed! (took %v)", elapsed.Round(time.Second)), true,
+		options.NoProgress)
 	return manifests, nil
 }
 
@@ -204,7 +208,7 @@ func (c *BootstrapClient) applyManifests(
 	objs []unstructured.Unstructured,
 	options BootstrapOptions,
 ) error {
-	bar := progressbar.Default(int64(len(objs)), "Applying manifests")
+	bar := getProgressBar(options.NoProgress, int64(len(objs)), "Applying manifests")
 	progressbar.OptionClearOnFinish()(bar)
 	progressbar.OptionOnCompletion(nil)(bar)
 	progressbar.OptionThrottle(0)(bar)
@@ -290,7 +294,7 @@ func getDeleteOptions(options BootstrapOptions) metav1.DeleteOptions {
 func (c *BootstrapClient) handleTelemetry(disabled bool, elapsed time.Duration) {
 	if !disabled {
 		statusMessage("Telemetry is enabled for this cluster – "+
-			"Run \"glasskube telemetry status\" for more info.", true)
+			"Run \"glasskube telemetry status\" for more info.", true, false)
 		telemetry.BootstrapSuccess(elapsed)
 	}
 }
@@ -395,7 +399,10 @@ func (c *BootstrapClient) checkWorkloadReady(
 	}
 }
 
-func statusMessage(input string, success bool) {
+func statusMessage(input string, success bool, noProgress bool) {
+	if noProgress {
+		return
+	}
 	if success {
 		green := color.New(color.FgGreen).SprintFunc()
 		fmt.Fprintln(os.Stderr, green("* "+input))
@@ -403,4 +410,11 @@ func statusMessage(input string, success bool) {
 		red := color.New(color.FgRed).SprintFunc()
 		fmt.Fprintln(os.Stderr, red("* "+input))
 	}
+}
+
+func getProgressBar(noProgress bool, max int64, description string) *progressbar.ProgressBar {
+	if noProgress {
+		return progressbar.DefaultSilent(max, description)
+	}
+	return progressbar.Default(max, description)
 }

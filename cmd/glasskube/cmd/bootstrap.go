@@ -109,6 +109,7 @@ func (o bootstrapOptions) asBootstrapOptions() bootstrap.BootstrapOptions {
 		Force:                   o.force,
 		CreateDefaultRepository: o.createDefaultRepository,
 		DryRun:                  o.DryRun,
+		NoProgress:              rootCmdOptions.NoProgress,
 	}
 }
 

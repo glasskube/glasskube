@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/glasskube/glasskube/internal/web/components/toast"
+
 	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/web/util"
 
@@ -32,8 +34,8 @@ func (s *server) packageDiscussion(w http.ResponseWriter, r *http.Request) {
 	repositoryName := mux.Vars(r)["repositoryName"]
 	pkg, manifest, err := describe.DescribeInstalledPackage(r.Context(), namespace, name)
 	if err != nil && !errors.IsNotFound(err) {
-		s.respondAlertAndLog(w, err,
-			fmt.Sprintf("An error occurred fetching installed package %v", name), "danger")
+		s.sendToast(w,
+			toast.WithErr(fmt.Errorf("failed to fetch installed package %v/%v: %w", namespace, name, err)))
 		return
 	}
 
@@ -56,8 +58,8 @@ func (s *server) clusterPackageDiscussion(w http.ResponseWriter, r *http.Request
 	repositoryName := mux.Vars(r)["repositoryName"]
 	pkg, manifest, err := describe.DescribeInstalledClusterPackage(r.Context(), pkgName)
 	if err != nil && !errors.IsNotFound(err) {
-		s.respondAlertAndLog(w, err,
-			fmt.Sprintf("An error occurred fetching installed package %v", pkgName), "danger")
+		s.sendToast(w,
+			toast.WithErr(fmt.Errorf("failed to fetch installed clusterpackage %v: %w", pkgName, err)))
 		return
 	}
 
@@ -77,7 +79,8 @@ func (s *server) handleGiscus(r *http.Request) {
 func (s *server) handlePackageDiscussionPage(w http.ResponseWriter, r *http.Request, d *packageDetailPageContext) {
 	var idx repo.PackageIndex
 	if err := s.repoClientset.ForRepoWithName(d.repositoryName).FetchPackageIndex(d.manifestName, &idx); err != nil {
-		s.respondAlertAndLog(w, err, "An error occurred fetching versions of "+d.manifestName, "danger")
+		s.sendToast(w,
+			toast.WithErr(fmt.Errorf("failed to fetch package index of %v in repo %v: %w", d.manifestName, d.repositoryName, err)))
 		return
 	}
 
@@ -85,9 +88,8 @@ func (s *server) handlePackageDiscussionPage(w http.ResponseWriter, r *http.Requ
 		d.manifest = &v1alpha1.PackageManifest{}
 		if err := s.repoClientset.ForRepoWithName(d.repositoryName).
 			FetchPackageManifest(d.manifestName, idx.LatestVersion, d.manifest); err != nil {
-			s.respondAlertAndLog(w, err,
-				fmt.Sprintf("An error occurred fetching manifest of %v in version %v in repository %v",
-					d.manifest, idx.LatestVersion, d.repositoryName), "danger")
+			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch manifest of %v (%v) in repo %v: %w",
+				d.manifestName, idx.LatestVersion, d.repositoryName, err)))
 			return
 		}
 	}
@@ -106,7 +108,7 @@ func (s *server) handlePackageDiscussionPage(w http.ResponseWriter, r *http.Requ
 		"DiscussionHref":     fmt.Sprintf("%s/discussion", pkgHref),
 		"AutoUpdate":         clientutils.AutoUpdateString(d.pkg, "Disabled"),
 	}, nil))
-	checkTmplError(err, fmt.Sprintf("package-discussion (%s)", d.manifestName))
+	util.CheckTmplError(err, fmt.Sprintf("package-discussion (%s)", d.manifestName))
 }
 
 func (s *server) discussionBadge(w http.ResponseWriter, r *http.Request) {
@@ -128,5 +130,5 @@ func (s *server) discussionBadge(w http.ResponseWriter, r *http.Request) {
 	err = s.templates.pkgDiscussionBadgeTmpl.Execute(w, s.enrichPage(r, map[string]any{
 		"TotalCount": totalCount,
 	}, err))
-	checkTmplError(err, fmt.Sprintf("discussion-badge (%s)", pkgName))
+	util.CheckTmplError(err, fmt.Sprintf("discussion-badge (%s)", pkgName))
 }

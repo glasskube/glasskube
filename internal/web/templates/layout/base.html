@@ -7,6 +7,7 @@
     <script src="/static/bundle/index.min.js?v={{ .CacheBustingString }}"></script>
     <script type="text/javascript">
       // htmx.logAll();
+      htmx.config.scrollIntoViewOnBoost = false; // TODO put somewhere else?
     </script>
   </head>
 
@@ -14,8 +15,9 @@
     class="d-flex flex-column vh-100"
     hx-ext="sse,response-targets"
     sse-connect="/events"
+    sse-close="close"
     hx-indicator="#indicator"
-    hx-target-error="#error-container">
+    hx-target-error="#toast-container">
     <nav class="navbar navbar-expand-lg navbar-dark bg-secondary sticky-top">
       <div id="indicator" class="progress-container bg-transparent w-100 position-fixed top-0 start-0">
         <div class="htmx-indicator progress-bar bg-primary h-100 w-100"></div>
@@ -72,12 +74,31 @@
         </div>
       </div>
     </nav>
+
     <main id="main">
-      <div id="sse-error-container" class="visually-hidden container-lg mt-2">
-        <div class="alert alert-danger" role="alert" id="sse-error-container-message"></div>
+      <div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3 pt-4 mt-4">
+        <div
+          hx-preserve="disconnected-toast"
+          id="disconnected-toast"
+          class="toast text-bg-danger border-0"
+          role="alert"
+          aria-live="assertive"
+          aria-atomic="true">
+          <div class="d-flex">
+            <div class="toast-body">
+              <p><strong>You are disconnected from the server!</strong></p>
+              Make sure to run <code class="text-reset">glasskube serve</code> and
+              <a href="javascript:window.location.reload()" class="text-reset">refresh</a> this page!
+            </div>
+          </div>
+        </div>
+
+        {{ if .Error }}
+          {{ template "toast" (ForToast .Error "danger" true) }}
+        {{ end }}
       </div>
 
-      <div id="error-container" class="container-lg mt-2">
+      <div id="info-container" class="container-lg mt-2">
         <div
           id="cloud-info"
           hx-preserve="cloud-info"
@@ -95,9 +116,7 @@
             data-bs-dismiss="alert"
             aria-label="Close"></button>
         </div>
-        {{ if .Error }}
-          {{ template "alert" (ForAlert .Error "danger") }}
-        {{ end }}
+
         {{ if .VersionMismatchWarning }}
           {{ template "version-mismatch-warning" .VersionDetails }}
         {{ end }}

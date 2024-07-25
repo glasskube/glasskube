@@ -1,31 +1,31 @@
-import globals from "globals";
-import pluginJs from "@eslint/js";
-import * as tseslint from "typescript-eslint";
-import pluginReactConfig from "eslint-plugin-react/configs/recommended.js";
-import prettierEslintPlugin from "eslint-plugin-prettier";
-import docusaurusEslintPlugin from "@docusaurus/eslint-plugin";
-import pluginPrettierConfig from "eslint-config-prettier";
+import globals from 'globals';
+import pluginJs from '@eslint/js';
+import * as tseslint from 'typescript-eslint';
+import pluginReactConfig from 'eslint-plugin-react/configs/recommended.js';
+import prettierEslintPlugin from 'eslint-plugin-prettier';
+import docusaurusEslintPlugin from '@docusaurus/eslint-plugin';
+import pluginPrettierConfig from 'eslint-config-prettier';
 
 /** @type {import('eslint').Linter.FlatConfig[]} */
 export default [
-  {ignores: [".docusaurus/*", "build/*"]},
+  {ignores: ['.docusaurus/*', 'build/*']},
   {
     plugins: {
       prettier: prettierEslintPlugin,
-      "@docusaurus": docusaurusEslintPlugin,
+      '@docusaurus': docusaurusEslintPlugin,
     },
   },
   {
     languageOptions: {
-      parser: tseslint.parser, 
+      parser: tseslint.parser,
       parserOptions: {
         ecmaFeatures: {jsx: true},
-        sourceType: "module"
+        sourceType: 'module',
       },
       globals: {
         ...globals.browser,
         ...globals.es2021,
-        ...globals.node 
+        ...globals.node,
       },
     },
   },
@@ -36,17 +36,17 @@ export default [
   {
     settings: {
       react: {
-        version: "detect",
+        version: 'detect',
       },
     },
   },
   {
     rules: {
-      "prettier/prettier": "warn",
-      "@docusaurus/string-literal-i18n-messages": "warn",
-      "@docusaurus/no-untranslated-text": "warn",
-      "@docusaurus/no-html-links": "warn",
-      "react/react-in-jsx-scope": "off"
+      '@docusaurus/no-html-links': 'warn',
+      '@docusaurus/no-untranslated-text': 'off',
+      '@docusaurus/string-literal-i18n-messages': 'warn',
+      'prettier/prettier': 'warn',
+      'react/react-in-jsx-scope': 'off',
     },
   },
 ];

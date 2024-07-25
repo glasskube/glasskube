@@ -7,12 +7,7 @@
       data loss and a broken cluster! <b>Use at your own risk!</b>
     </div>
 
-    <form
-      hx-post="{{ .SelfHref }}"
-      hx-target="#error-container"
-      hx-target-error="#error-container"
-      hx-select="div.alert"
-      hx-swap="innerHTML">
+    <form hx-post="{{ .SelfHref }}" hx-swap="none">
       {{ if gt (len .Repositories) 1 }}
         <label class="form-label" for="advanced-pkg-install-repository">Repository</label>
         <div class="input-group mb-2">

@@ -68,22 +68,22 @@ var listCmd = &cobra.Command{
 		}
 		noPkgs := len(pkgs) == 0 && listCmdOptions.Kind != KindClusterPackage
 		noClPkgs := len(clPkgs) == 0 && listCmdOptions.Kind != KindPackage
-		if noPkgs {
-			handleEmptyList("packages")
-		} else if len(pkgs) > 0 {
-			printPackageTable(pkgs)
-			if listCmdOptions.Kind != KindPackage {
-				fmt.Fprintln(os.Stderr, "")
+		if listCmdOptions.Output == OutputFormatJSON {
+			printPackageJSON(allPkgs(clPkgs, pkgs))
+		} else if listCmdOptions.Output == OutputFormatYAML {
+			printPackageYAML(allPkgs(clPkgs, pkgs))
+		} else {
+			if noPkgs {
+				handleEmptyList("packages")
+			} else if len(pkgs) > 0 {
+				printPackageTable(pkgs)
+				if listCmdOptions.Kind != KindPackage {
+					fmt.Fprintln(os.Stderr, "")
+				}
 			}
-		}
-		if noClPkgs {
-			handleEmptyList("clusterpackages")
-		} else if len(clPkgs) > 0 {
-			if listCmdOptions.Output == OutputFormatJSON {
-				printPackageJSON(clPkgs)
-			} else if listCmdOptions.Output == OutputFormatYAML {
-				printPackageYAML(clPkgs)
-			} else {
+			if noClPkgs {
+				handleEmptyList("clusterpackages")
+			} else if len(clPkgs) > 0 {
 				printClusterPackageTable(clPkgs)
 			}
 		}
@@ -135,6 +135,21 @@ func handleEmptyList(resource string) {
 	} else {
 		fmt.Fprintf(os.Stderr, "No %s found in the available repositories.\n", resource)
 	}
+}
+
+func allPkgs(clpkgs []*list.PackageWithStatus, pkgs []*list.PackagesWithStatus) []*list.PackageWithStatus {
+	result := make([]*list.PackageWithStatus, 0, len(clpkgs)+len(pkgs))
+	result = append(result, clpkgs...)
+	for _, pkg := range pkgs {
+		if len(pkg.Packages) > 0 {
+			result = append(result, pkg.Packages...)
+		} else {
+			result = append(result, &list.PackageWithStatus{
+				MetaIndexItem: pkg.MetaIndexItem,
+			})
+		}
+	}
+	return result
 }
 
 func printClusterPackageTable(packages []*list.PackageWithStatus) {

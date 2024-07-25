@@ -81,14 +81,7 @@
                 {{ end }}
               </h2>
 
-              <div id="configuration-error-container" class="mt-2"></div>
-
-              <form
-                hx-post="{{ .PackageHref }}/configure"
-                hx-target="#configuration-error-container"
-                hx-target-error="#configuration-error-container"
-                hx-select="div.alert"
-                hx-swap="innerHTML">
+              <form hx-post="{{ .PackageHref }}/configure" hx-swap="none">
                 {{ if eq .Status nil }}
                   {{ if gt (len .Repositories) 1 }}
                     <label class="form-label" for="pkg-install-repository">Repository</label>

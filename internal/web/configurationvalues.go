@@ -9,6 +9,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/glasskube/glasskube/internal/web/components/toast"
+	"github.com/glasskube/glasskube/internal/web/util"
+
 	"github.com/glasskube/glasskube/pkg/manifest"
 
 	"github.com/glasskube/glasskube/internal/maputils"
@@ -155,10 +158,8 @@ func (s *server) handleConfigurationInput(w http.ResponseWriter, r *http.Request
 		d.manifest = &v1alpha1.PackageManifest{}
 		if err := s.repoClientset.ForRepoWithName(d.repositoryName).
 			FetchPackageManifest(d.manifestName, d.selectedVersion, d.manifest); err != nil {
-			// TODO check error handling again?
-			s.respondAlertAndLog(w, err,
-				fmt.Sprintf("An error occurred fetching manifest of %v in version %v", d.manifestName, d.selectedVersion),
-				"danger")
+			s.sendToast(w,
+				toast.WithErr(fmt.Errorf("failed to fetch manifest of %v in version %v: %w", d.manifestName, d.selectedVersion, err)))
 			return
 		}
 	}
@@ -187,7 +188,7 @@ func (s *server) handleConfigurationInput(w http.ResponseWriter, r *http.Request
 				DesiredRefKind: &refKind,
 			})
 		err := s.templates.pkgConfigInput.Execute(w, input)
-		checkTmplError(err, fmt.Sprintf("package config input (%s, %s)", d.manifestName, valueName))
+		util.CheckTmplError(err, fmt.Sprintf("package config input (%s, %s)", d.manifestName, valueName))
 	}
 }
 
@@ -220,7 +221,7 @@ func (s *server) namesDatalist(w http.ResponseWriter, r *http.Request) {
 		"Options": options,
 		"Id":      id,
 	})
-	checkTmplError(tmplErr, "names-datalist")
+	util.CheckTmplError(tmplErr, "names-datalist")
 }
 
 func (s *server) keysDatalist(w http.ResponseWriter, r *http.Request) {
@@ -251,7 +252,7 @@ func (s *server) keysDatalist(w http.ResponseWriter, r *http.Request) {
 		"Options": options,
 		"Id":      r.FormValue("id"),
 	})
-	checkTmplError(tmplErr, "keys-datalist")
+	util.CheckTmplError(tmplErr, "keys-datalist")
 }
 
 func (s *server) getDatalistOptions(ctx context.Context, ref *v1alpha1.ValueReference, namespaceOptions []string, pkgsOptions []string) (*pkg_config_input.PkgConfigInputDatalistOptions, error) {

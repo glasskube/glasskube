@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"syscall"
 
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/config"
@@ -30,11 +31,10 @@ var (
 			}
 
 			signals := make(chan os.Signal, 1)
-			signal.Notify(signals, os.Interrupt)
+			signal.Notify(signals, syscall.SIGTERM, syscall.SIGINT)
 			go func() {
-				sig := <-signals
-				// TODO find another way
-				if cmd.Name() != openCmd.Name() {
+				if !hasCustomShutdownLogic(cmd) {
+					sig := <-signals
 					cliutils.ExitFromSignal(&sig)
 				}
 			}()
@@ -56,4 +56,14 @@ func init() {
 			"If interactivity would be required, the command will terminate with a non-zero exit code.")
 	RootCmd.PersistentFlags().BoolVar(&rootCmdOptions.NoProgress, "no-progress", false,
 		"Prevent progress logging to the cli")
+}
+
+func hasCustomShutdownLogic(cmd *cobra.Command) bool {
+	switch cmd {
+	case openCmd:
+		return true
+	case serveCmd:
+		return true
+	}
+	return false
 }

@@ -1,7 +1,7 @@
 import styles from './styles.module.css';
 import CustomGitHubButton from '@site/src/components/buttons/CustomGitHubButton';
-import TalkToFoundersButton from '@site/src/components/buttons/TalkToFoundersButton';
 import SignupForWaitlistButton from '@site/src/components/buttons/SignupForWaitlistButton';
+import DemoButton from '@site/src/components/buttons/DemoButton';
 
 
 function Index() {
@@ -9,14 +9,14 @@ function Index() {
     <>
       <div className={styles.wrapper}>
         <div className={styles.center}>
-          <CustomGitHubButton href='https://github.com/glasskube/glasskube'/>
+          <CustomGitHubButton href='https://github.com/glasskube/glasskube' />
         </div>
       </div>
       <div className={styles.ctaWrapper}>
         <div className={styles.center}>
-          <TalkToFoundersButton additionalClassNames={''}/>
+          <SignupForWaitlistButton additionalClassNames={''} />
           &nbsp;&nbsp;
-          <SignupForWaitlistButton additionalClassNames={''}/>
+          <DemoButton additionalClassNames={''} />
         </div>
       </div>
 
