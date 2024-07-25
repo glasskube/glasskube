@@ -18,8 +18,8 @@ function Pricing() {
               <hr />
               <div className="card__body">
                 <p>
-                  Ideal for home labs and testing out the Glasskube package
-                  manager
+                  Ideal for individuals and companies building and managing their own pipelines and workflows utilizing
+                  the Glasskube Package Manager.
                 </p>
                 <ul className={styles.pricingItemList}>
                   <li>Apache 2.0 licensed</li>
@@ -52,7 +52,7 @@ function Pricing() {
               <div className="card__body">
                 <p>
                   Accelerate your company&apos;s DevOps workflows with private
-                  hosted packages and improved cloud security
+                  hosted packages and improved cloud security.
                 </p>
                 <ul className={styles.pricingItemList}>
                   <li>
@@ -88,7 +88,7 @@ function Pricing() {
               <div className="card__body">
                 <p>
                   Tailor-made solutions for the highest level of cloud security
-                  and reliability
+                  and reliability and personal support.
                 </p>
                 <p>All Glasskube Cloud features and:</p>
                 <ul className={styles.pricingItemList}>
