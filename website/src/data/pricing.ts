@@ -7,6 +7,11 @@ export const PricingFAQs: PricingFAQ[] = [
     answer: 'Please <a href="https://glasskube.cloud/" target="_blank">contact us</a> regarding the enterprise mode for an individual offer.',
   },
   {
+    id: 'free-tier',
+    question: 'How are 5 nodes defined?',
+    answer: 'Only worker nodes are counting towards your free node quote. Control plane nodes are not counted in.',
+  },
+  {
     id: 'invoice',
     question: 'Do you also support pay by invoice?',
     answer: 'Yes, individual offers from the enterprise plan can also be paid by invoice.',
