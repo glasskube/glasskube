@@ -9,7 +9,7 @@ const TalkToFoundersButton: FC<TalkToFoundersButtonProps> = ({
   additionalClassNames,
 }) => (
   <Link
-    className={`button button--outline ${additionalClassNames}`}
+    className={`glasskube-telemetry-founders button button--outline ${additionalClassNames}`}
     to="https://cal.glasskube.eu/team/founder/30min">
     Talk to founders
   </Link>

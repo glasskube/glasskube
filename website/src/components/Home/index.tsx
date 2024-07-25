@@ -15,6 +15,7 @@ import SignupForWaitlistButton from '@site/src/components/buttons/SignupForWaitl
 import useBaseUrl from '@docusaurus/core/lib/client/exports/useBaseUrl';
 import Image from '@theme/IdealImage';
 import HomepageBlogs from '@site/src/components/HomepageBlogs';
+import DemoButton from '@site/src/components/buttons/DemoButton';
 
 
 function HomepageHeader() {
@@ -34,8 +35,8 @@ function HomepageHeader() {
         <div className="row row--no-gutters">
           <div className={clsx('col', styles.heroCol)}>
             <div className={styles.buttons}>
-              <TalkToFoundersButton additionalClassNames={'button--lg light'}/>
-              <SignupForWaitlistButton additionalClassNames={'button--lg'}/>
+              <SignupForWaitlistButton additionalClassNames={'button--lg light'}/>
+              <DemoButton additionalClassNames={'button--lg light'}/>
             </div>
             <div className={styles.yc}>
               <h4>Backed by</h4>
