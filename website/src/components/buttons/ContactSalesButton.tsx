@@ -9,7 +9,7 @@ const ContactSalesButton: FC<ContactSalesButtonProps> = ({
   additionalClassNames,
 }) => (
   <Link
-    className={`button button--info ${additionalClassNames}`}
+    className={`glasskube-telemetry-sales button button--info ${additionalClassNames}`}
     to="https://cal.glasskube.eu/team/founder/enterprise">
     Contact Sales
   </Link>
