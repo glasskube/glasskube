@@ -33,6 +33,7 @@ import (
 var updateCmdOptions struct {
 	Version string
 	Yes     bool
+	DryRunOptions
 	OutputOptions
 	NamespaceOptions
 	KindOptions
@@ -125,7 +126,13 @@ var updateCmd = &cobra.Command{
 				}
 			}
 
-			updatedPackages, err := updater.ApplyBlocking(ctx, tx)
+			updatedPackages, err := updater.Apply(
+				ctx,
+				tx,
+				update.ApplyUpdateOptions{
+					Blocking: true,
+					DryRun:   updateCmdOptions.DryRun,
+				})
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "❌ update failed: %v\n", err)
 				cliutils.ExitWithError()
@@ -309,4 +316,5 @@ func init() {
 	updateCmdOptions.KindOptions.AddFlagsToCommand(updateCmd)
 	updateCmdOptions.NamespaceOptions.AddFlagsToCommand(updateCmd)
 	RootCmd.AddCommand(updateCmd)
+	updateCmdOptions.DryRunOptions.AddFlagsToCommand(updateCmd)
 }
