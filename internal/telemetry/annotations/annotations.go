@@ -9,6 +9,7 @@ import (
 const (
 	TelemetryIdAnnotation      = "packages.glasskube.dev/telemetry-id"
 	TelemetryEnabledAnnotation = "packages.glasskube.dev/telemetry-enabled"
+	GitopsModeEnabled          = "packages.glasskube.dev/gitops-mode-enabled"
 )
 
 func IsTelemetryEnabled(annotations map[string]string) bool {
@@ -36,4 +37,9 @@ func UpdateTelemetryAnnotations(currentAnnotations map[string]string, disabled b
 	 * hasAnnotation && enabled && disabled: set annotation to false
 	 * hasAnnotation && disabled && disabled: do not change anything (update of a telemetry-disabled installation with explicit --disable too)
 	 */
+}
+
+func IsGitopsModeEnabled(annotations map[string]string) bool {
+	enabledAnnotation, _ := strconv.ParseBool(annotations[GitopsModeEnabled])
+	return enabledAnnotation
 }

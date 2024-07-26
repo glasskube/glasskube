@@ -34,6 +34,7 @@ type ClusterProperties struct {
 	kubernetesVersion string
 	provider          string
 	nnodes            int
+	gitopsMode        bool
 }
 
 type RepositoryProperties struct {
@@ -78,6 +79,11 @@ func (g PropertyGetter) ClusterProperties() (p ClusterProperties) {
 					break
 				}
 			}
+		}
+	}
+	if g.NamespaceGetter != nil {
+		if ns, err := g.NamespaceGetter.GetNamespace(context.Background(), "glasskube-system"); err == nil {
+			p.gitopsMode = annotations.IsGitopsModeEnabled(ns.Annotations)
 		}
 	}
 	return

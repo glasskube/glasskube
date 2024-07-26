@@ -3,9 +3,11 @@ package bootstrap
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/fatih/color"
@@ -46,6 +48,7 @@ type BootstrapOptions struct {
 	DisableTelemetry        bool
 	Force                   bool
 	CreateDefaultRepository bool
+	GitopsMode              bool
 	DryRun                  bool
 	NoProgress              bool
 }
@@ -190,8 +193,12 @@ func (c *BootstrapClient) preprocessManifests(
 				existingAnnotations := existing.GetAnnotations()
 				nsAnnotations[annotations.TelemetryEnabledAnnotation] = existingAnnotations[annotations.TelemetryEnabledAnnotation]
 				nsAnnotations[annotations.TelemetryIdAnnotation] = existingAnnotations[annotations.TelemetryIdAnnotation]
+				nsAnnotations[annotations.GitopsModeEnabled] = existingAnnotations[annotations.GitopsModeEnabled]
 			}
 			annotations.UpdateTelemetryAnnotations(nsAnnotations, options.DisableTelemetry)
+			if options.GitopsMode {
+				nsAnnotations[annotations.GitopsModeEnabled] = strconv.FormatBool(options.GitopsMode)
+			}
 			obj.SetAnnotations(nsAnnotations)
 			options.DisableTelemetry = !annotations.IsTelemetryEnabled(nsAnnotations)
 		}
@@ -240,6 +247,14 @@ func (c *BootstrapClient) applyManifests(
 				Apply(ctx, obj.GetName(), &obj, getApplyOptions(options))
 			return err
 		}); err != nil && (!options.DryRun || !apierrors.IsNotFound(err)) {
+			// we can recover from dry-run errors appearing because an old job has not been deleted
+			var statusErr *apierrors.StatusError
+			if options.DryRun && options.Force && obj.GetKind() == "Job" && errors.As(err, &statusErr) {
+				if statusErr.ErrStatus.Status == "Failure" && statusErr.ErrStatus.Reason == "Invalid" {
+					statusMessage("Ignoring Job immutable error in dry-run", true, false)
+					return nil
+				}
+			}
 			return err
 		}
 

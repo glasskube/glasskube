@@ -3,6 +3,8 @@ kind: Job
 metadata:
   name: webhook-cert-init
   namespace: system
+  annotations:
+    argocd.argoproj.io/sync-options: Force=true,Replace=true
 spec:
   template:
     spec:

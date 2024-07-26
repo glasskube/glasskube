@@ -66,9 +66,9 @@ var listCmd = &cobra.Command{
 		}
 		noPkgs := len(pkgs) == 0 && listCmdOptions.Kind != KindClusterPackage
 		noClPkgs := len(clPkgs) == 0 && listCmdOptions.Kind != KindPackage
-		if listCmdOptions.Output == OutputFormatJSON {
+		if listCmdOptions.Output == outputFormatJSON {
 			printPackageJSON(allPkgs(clPkgs, pkgs))
-		} else if listCmdOptions.Output == OutputFormatYAML {
+		} else if listCmdOptions.Output == outputFormatYAML {
 			printPackageYAML(allPkgs(clPkgs, pkgs))
 		} else {
 			if noPkgs {
