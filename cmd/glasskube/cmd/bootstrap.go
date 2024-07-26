@@ -236,4 +236,6 @@ func init() {
 
 	bootstrapCmd.MarkFlagsMutuallyExclusive("url", "type")
 	bootstrapCmd.MarkFlagsMutuallyExclusive("url", "latest")
+
+	bootstrapCmd.AddCommand(bootstrapGitopsCmd)
 }

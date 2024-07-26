@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/fatih/color"
@@ -46,6 +47,7 @@ type BootstrapOptions struct {
 	DisableTelemetry        bool
 	Force                   bool
 	CreateDefaultRepository bool
+	GitopsMode              bool
 	DryRun                  bool
 	NoProgress              bool
 }
@@ -190,8 +192,12 @@ func (c *BootstrapClient) preprocessManifests(
 				existingAnnotations := existing.GetAnnotations()
 				nsAnnotations[annotations.TelemetryEnabledAnnotation] = existingAnnotations[annotations.TelemetryEnabledAnnotation]
 				nsAnnotations[annotations.TelemetryIdAnnotation] = existingAnnotations[annotations.TelemetryIdAnnotation]
+				nsAnnotations[annotations.GitopsModeEnabled] = existingAnnotations[annotations.GitopsModeEnabled]
 			}
 			annotations.UpdateTelemetryAnnotations(nsAnnotations, options.DisableTelemetry)
+			if options.GitopsMode {
+				nsAnnotations[annotations.GitopsModeEnabled] = strconv.FormatBool(options.GitopsMode)
+			}
 			obj.SetAnnotations(nsAnnotations)
 			options.DisableTelemetry = !annotations.IsTelemetryEnabled(nsAnnotations)
 		}
