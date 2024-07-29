@@ -49,6 +49,7 @@ type templates struct {
 	toastTmpl               *template.Template
 	datalistTmpl            *template.Template
 	pkgDiscussionBadgeTmpl  *template.Template
+	yamlModalTmpl           *template.Template
 	repoClientset           repoclient.RepoClientset
 }
 
@@ -162,6 +163,7 @@ func (t *templates) parseTemplates() {
 	t.toastTmpl = t.componentTmpl("toast")
 	t.datalistTmpl = t.componentTmpl("datalist")
 	t.pkgDiscussionBadgeTmpl = t.componentTmpl("discussion-badge")
+	t.yamlModalTmpl = t.componentTmpl("yaml-modal")
 }
 
 func (t *templates) pageTmpl(fileName string) *template.Template {

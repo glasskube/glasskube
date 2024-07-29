@@ -133,7 +133,11 @@
       <div class="container">
         <div class="row">
           <div class="col-4 ">
-            <span class="text-muted text-wrap text-break">Context: {{ .CurrentContext }}</span>
+            <div class="text-muted text-wrap text-break">Context: {{ .CurrentContext }}</div>
+
+            <span class="text-muted text-wrap text-break"
+              >GitopsMode: {{ if .GitopsMode }}Enabled{{ else }}Disabled{{ end }}</span
+            >
           </div>
           <div class="col-4 text-center">
             <span class="text-muted">Glasskube cluster version: {{ .VersionDetails.OperatorVersion }}</span>

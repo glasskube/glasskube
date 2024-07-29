@@ -1,10 +1,11 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"maps"
 	"os"
+
+	"github.com/glasskube/glasskube/internal/clientutils"
 
 	"github.com/fatih/color"
 	"github.com/glasskube/glasskube/api/v1alpha1"
@@ -14,8 +15,6 @@ import (
 	"github.com/glasskube/glasskube/pkg/manifest"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/scheme"
-	"sigs.k8s.io/yaml"
 )
 
 var configureCmdOptions = struct {
@@ -130,25 +129,13 @@ func runConfigure(cmd *cobra.Command, args []string) {
 	}
 
 	if configureCmdOptions.Output != "" {
-		if gvks, _, err := scheme.Scheme.ObjectKinds(pkg); err == nil && len(gvks) == 1 {
-			pkg.SetGroupVersionKind(gvks[0])
-		}
-		var output []byte
-		var err error
-		switch configureCmdOptions.Output {
-		case OutputFormatJSON:
-			output, err = json.MarshalIndent(pkg, "", "  ")
-		case OutputFormatYAML:
-			output, err = yaml.Marshal(pkg)
-		default:
-			fmt.Fprintf(os.Stderr, "❌ invalid output format: %s\n", configureCmdOptions.Output)
-			cliutils.ExitWithError()
-		}
-		if err != nil {
+		if out, err := clientutils.Format(configureCmdOptions.Output.OutputFormat(),
+			configureCmdOptions.ShowAll, pkg); err != nil {
 			fmt.Fprintf(os.Stderr, "❌ error marshalling output: %v\n", err)
 			cliutils.ExitWithError()
+		} else {
+			fmt.Print(out)
 		}
-		fmt.Println(string(output))
 	}
 }
 
