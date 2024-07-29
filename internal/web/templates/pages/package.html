@@ -193,11 +193,16 @@
                 <button
                   type="submit"
                   class="btn btn-primary d-flex ms-auto {{ if .ShowConflicts }}disabled{{ end }}"
+                  name="dryRun"
+                  value="{{ .GitopsMode }}"
+                  {{ if .GitopsMode }}
+                    data-bs-toggle="modal" data-bs-target="#modal-container"
+                  {{ end }}
                   {{ if .ShowConflicts }}disabled{{ end }}>
                   {{ if eq .Status nil }}
-                    Install
+                    {{ if .GitopsMode }}Show YAML{{ else }}Install{{ end }}
                   {{ else }}
-                    Save Configuration
+                    {{ if .GitopsMode }}Show YAML{{ else }}Save Configuration{{ end }}
                   {{ end }}
                 </button>
               </form>
