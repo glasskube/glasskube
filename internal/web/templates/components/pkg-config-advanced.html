@@ -1,6 +1,12 @@
 {{ define "pkg-config-advanced" }}
   <div class="mt-3 border-warning border border-1 rounded-1 p-2 bg-body-secondary" id="advanced-options">
     <h2 class="text-reset">Advanced Options</h2>
+    {{ if .GitopsMode }}
+      <div class="alert alert-warning" role="alert">
+        <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>
+        Even though GitopsMode is enabled, changes done here will be <b>applied directly!</b>
+      </div>
+    {{ end }}
     <div class="alert alert-warning" role="alert">
       <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>Changing the repository or downgrading the
       package version is not recommended and should never be done except in dev/test environments. This could lead to
