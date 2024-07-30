@@ -1079,7 +1079,8 @@ func (s *server) persistKubeconfig(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		if !defaultKubeconfigExists() {
 			if err := clientcmd.WriteToFile(*s.rawConfig, clientcmd.RecommendedHomeFile); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				http.Error(w, "Failed to save kubeconfig", http.StatusInternalServerError)
+				fmt.Fprintf(os.Stderr, "Error saving kubeconfig: %v\n", err)
 			} else {
 				http.Redirect(w, r, "/", http.StatusFound)
 			}
