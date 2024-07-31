@@ -22,12 +22,12 @@ type defaultClientsetClient struct {
 }
 
 type defaultClientset struct {
-	client            defaultClientsetClient
-	clients           map[string]repoClientWithState
-	clientAge         map[string]time.Time
-	repoWithNameMutex sync.Mutex
-	repoMutex         sync.Mutex
-	maxCacheAge       time.Duration
+	client                  defaultClientsetClient
+	clients                 map[string]repoClientWithState
+	repoWithNameMutex       sync.Mutex
+	repoMutex               sync.Mutex
+	maxCacheAge             time.Duration
+	clientInfoCheckInterval time.Duration
 }
 
 var _ RepoClientset = &defaultClientset{}
@@ -47,16 +47,17 @@ func (s *repoClientWithState) checkRepoSpec(repo v1alpha1.PackageRepository) boo
 }
 
 func NewClientset(pkgClient adapter.PackageClientAdapter, k8sClient adapter.KubernetesClientAdapter) RepoClientset {
-	return NewClientsetWithMaxCacheAge(pkgClient, k8sClient, 30*time.Second)
+	return NewClientsetWithMaxCacheAge(pkgClient, k8sClient, 30*time.Second, 5*time.Minute)
 }
 
 func NewClientsetWithMaxCacheAge(pkgClient adapter.PackageClientAdapter, k8sClient adapter.KubernetesClientAdapter,
+	clientInfoCheckInterval time.Duration,
 	maxCacheAge time.Duration) RepoClientset {
 	return &defaultClientset{
-		client:      defaultClientsetClient{pkgClient, k8sClient},
-		maxCacheAge: maxCacheAge,
-		clients:     make(map[string]repoClientWithState),
-		clientAge:   make(map[string]time.Time),
+		client:                  defaultClientsetClient{pkgClient, k8sClient},
+		clients:                 make(map[string]repoClientWithState),
+		maxCacheAge:             maxCacheAge,
+		clientInfoCheckInterval: clientInfoCheckInterval,
 	}
 }
 
@@ -69,7 +70,7 @@ func (d *defaultClientset) ForPackage(pkg ctrlpkg.Package) RepoClient {
 func (d *defaultClientset) ForRepoWithName(name string) RepoClient {
 	d.repoWithNameMutex.Lock()
 	defer d.repoWithNameMutex.Unlock()
-	if clientState, ok := d.clients[name]; ok && clientState.lastCheckedRepoSpecAgo(d.maxCacheAge) {
+	if clientState, ok := d.clients[name]; ok && clientState.lastCheckedRepoSpecAgo(d.clientInfoCheckInterval) {
 		return clientState.client
 	}
 	if len(name) > 0 {
