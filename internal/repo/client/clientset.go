@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"reflect"
 	"sync"
 	"time"
 
@@ -21,25 +22,42 @@ type defaultClientsetClient struct {
 }
 
 type defaultClientset struct {
-	client            defaultClientsetClient
-	clients           map[string]RepoClient
-	repoWithNameMutex sync.Mutex
-	repoMutex         sync.Mutex
-	maxCacheAge       time.Duration
+	client                  defaultClientsetClient
+	clients                 map[string]repoClientWithState
+	repoWithNameMutex       sync.Mutex
+	repoMutex               sync.Mutex
+	maxCacheAge             time.Duration
+	clientInfoCheckInterval time.Duration
 }
 
 var _ RepoClientset = &defaultClientset{}
 
+type repoClientWithState struct {
+	client              RepoClient
+	lastCheckedRepoSpec time.Time
+	repo                v1alpha1.PackageRepository
+}
+
+func (s *repoClientWithState) lastCheckedRepoSpecAgo(maxAge time.Duration) bool {
+	return s.lastCheckedRepoSpec.Add(maxAge).After(time.Now())
+}
+
+func (s *repoClientWithState) checkRepoSpec(repo v1alpha1.PackageRepository) bool {
+	return reflect.DeepEqual(s.repo.Spec, repo.Spec)
+}
+
 func NewClientset(pkgClient adapter.PackageClientAdapter, k8sClient adapter.KubernetesClientAdapter) RepoClientset {
-	return NewClientsetWithMaxCacheAge(pkgClient, k8sClient, 5*time.Minute)
+	return NewClientsetWithMaxCacheAge(pkgClient, k8sClient, 30*time.Second, 5*time.Minute)
 }
 
 func NewClientsetWithMaxCacheAge(pkgClient adapter.PackageClientAdapter, k8sClient adapter.KubernetesClientAdapter,
+	clientInfoCheckInterval time.Duration,
 	maxCacheAge time.Duration) RepoClientset {
 	return &defaultClientset{
-		client:      defaultClientsetClient{pkgClient, k8sClient},
-		maxCacheAge: maxCacheAge,
-		clients:     make(map[string]RepoClient),
+		client:                  defaultClientsetClient{pkgClient, k8sClient},
+		clients:                 make(map[string]repoClientWithState),
+		maxCacheAge:             maxCacheAge,
+		clientInfoCheckInterval: clientInfoCheckInterval,
 	}
 }
 
@@ -52,9 +70,8 @@ func (d *defaultClientset) ForPackage(pkg ctrlpkg.Package) RepoClient {
 func (d *defaultClientset) ForRepoWithName(name string) RepoClient {
 	d.repoWithNameMutex.Lock()
 	defer d.repoWithNameMutex.Unlock()
-	if client, ok := d.clients[name]; ok {
-		// TODO: update client details if older than maxCacheAge
-		return client
+	if clientState, ok := d.clients[name]; ok && clientState.lastCheckedRepoSpecAgo(d.clientInfoCheckInterval) {
+		return clientState.client
 	}
 	if len(name) > 0 {
 		if repo, err := d.client.GetPackageRepository(context.TODO(), name); err != nil {
@@ -85,15 +102,19 @@ func (d *defaultClientset) Default() RepoClient {
 func (d *defaultClientset) ForRepo(repo v1alpha1.PackageRepository) RepoClient {
 	d.repoMutex.Lock()
 	defer d.repoMutex.Unlock()
-	if client, ok := d.clients[repo.Name]; ok {
-		// TODO: update client details if older than maxCacheAge
-		return client
+	if clientState, ok := d.clients[repo.Name]; ok && clientState.checkRepoSpec(repo) {
+		clientState.lastCheckedRepoSpec = time.Now()
+		return clientState.client
 	} else {
 		if headers, err := d.getAuthHeaders(repo); err != nil {
 			return &errorclient{fmt.Errorf("invalid auth config: %w", err)}
 		} else {
 			client := New(repo.Spec.Url, headers, d.maxCacheAge)
-			d.clients[repo.Name] = client
+			d.clients[repo.Name] = repoClientWithState{
+				client:              client,
+				lastCheckedRepoSpec: time.Now(),
+				repo:                repo,
+			}
 			return client
 		}
 	}
