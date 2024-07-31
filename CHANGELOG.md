@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.15.0](https://github.com/glasskube/glasskube/compare/v0.14.0...v0.15.0) (2024-07-31)
+
+
+### Features
+
+* **cli:** add --dry-run to update command ([#985](https://github.com/glasskube/glasskube/issues/985)) ([196495e](https://github.com/glasskube/glasskube/commit/196495efda28f53fb9a027d82aae2fe95ba337f6))
+* open entrypoint with custom hostname ([#1055](https://github.com/glasskube/glasskube/issues/1055)) ([98bcdaa](https://github.com/glasskube/glasskube/commit/98bcdaadd4e1c2468bfe266fc266fb81f4416db6))
+* **website:** add pricing page ([#1041](https://github.com/glasskube/glasskube/issues/1041)) ([c840a3f](https://github.com/glasskube/glasskube/commit/c840a3f6db26f3bd22c0fd67c0191b453aa42334))
+
+
+### Bug Fixes
+
+* add repoclient invalidation ([#1054](https://github.com/glasskube/glasskube/issues/1054)) ([c9fe944](https://github.com/glasskube/glasskube/commit/c9fe94444831ac6d6e50209c3c14513ed6112348))
+* **deps:** update module github.com/onsi/ginkgo/v2 to v2.19.1 ([#1046](https://github.com/glasskube/glasskube/issues/1046)) ([f613dd0](https://github.com/glasskube/glasskube/commit/f613dd0f272fd8f9a0d7bac8beec9af799e57aca))
+* **deps:** update module github.com/onsi/gomega to v1.34.1 ([#1045](https://github.com/glasskube/glasskube/issues/1045)) ([d626d1c](https://github.com/glasskube/glasskube/commit/d626d1c04e9a7682c02a5bbcd972a79318a9000b))
+* **deps:** update module github.com/schollz/progressbar/v3 to v3.14.5 ([#1048](https://github.com/glasskube/glasskube/issues/1048)) ([d4a2168](https://github.com/glasskube/glasskube/commit/d4a21680a2dd0334394055438423f3ddc4de812b))
+* **package-operator:** add validation of scope during package creation/update ([#1035](https://github.com/glasskube/glasskube/issues/1035)) ([8bccd08](https://github.com/glasskube/glasskube/commit/8bccd089f4b06500b86b35bc187f7df53bc957b9))
+
+
+### Other
+
+* **deps:** update dependency @eslint/js to v9.8.0 ([#1047](https://github.com/glasskube/glasskube/issues/1047)) ([e6eeaf1](https://github.com/glasskube/glasskube/commit/e6eeaf14480a82668ef29ce6068c3f9593214e28))
+* **deps:** update dependency typescript-eslint to v7.18.0 ([#1049](https://github.com/glasskube/glasskube/issues/1049)) ([3d1a611](https://github.com/glasskube/glasskube/commit/3d1a611d2f9bb4c4477555e5181c261e07844cf2))
+* use glasskube telemetry url ([#1037](https://github.com/glasskube/glasskube/issues/1037)) ([cdb5f7b](https://github.com/glasskube/glasskube/commit/cdb5f7bba976924b1df787e844ad7480e3b79b12))
+
+
+### Docs
+
+* **website:** improve pricing page light mode ([#1044](https://github.com/glasskube/glasskube/issues/1044)) ([0fb7e56](https://github.com/glasskube/glasskube/commit/0fb7e56756dff7dc43c55ceea7ddffbaa8b5a8cb))
+
 ## [0.14.0](https://github.com/glasskube/glasskube/compare/v0.13.0...v0.14.0) (2024-07-23)
 
 
