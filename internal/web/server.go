@@ -485,7 +485,7 @@ func (s *server) handleOpen(ctx context.Context, w http.ResponseWriter, pkg ctrl
 		return
 	}
 
-	result, err := open.NewOpener().Open(ctx, pkg, "", 0)
+	result, err := open.NewOpener().Open(ctx, pkg, "", s.Host, 0)
 	if err != nil {
 		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to open %v: %w", pkg.GetName(), err)))
 	} else {
