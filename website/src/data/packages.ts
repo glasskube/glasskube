@@ -24,7 +24,8 @@ export type TagType =
   | 'monitoring'
   | 'networking'
   | 'security'
-  | 'visualization';
+  | 'visualization'
+  | 'webassembly';
 
 // Add sites to this list
 // prettier-ignore
@@ -198,6 +199,14 @@ const Users: Package[] = [
     tags: ['planned', 'ai', 'visualization', 'configuration', 'delivery'],
   },
   {
+    name: 'Kwasm',
+    shortDescription: 'KWasm allows fine-grained control over node provisioning',
+    iconUrl: 'https://avatars.githubusercontent.com/u/113929551',
+    websiteUrl: 'https://kwasm.sh/',
+    sourceUrl: 'https://github.com/KWasm/kwasm-operator/',
+    tags: ['webassembly', 'delivery', 'planned'],
+  },
+  {
     name: 'Litmus',
     shortDescription: 'Litmus helps SREs and developers practice chaos engineering in a Cloud-native way',
     iconUrl: 'https://github.com/glasskube/glasskube/assets/3041752/7e791499-5677-476b-8cd4-5172ac235e5a',
@@ -216,10 +225,10 @@ const Users: Package[] = [
   {
     name: 'Node Feature Discovery',
     shortDescription: 'Node Feature Discovery (NFD) is a Kubernetes add-on for detecting hardware features and system configuration.',
-    iconUrl: 'https://avatars.githubusercontent.com/u/1728152',
+    iconUrl: 'https://github.com/glasskube/glasskube/assets/3041752/6701cd57-b690-4641-b967-ef2faee646e5',
     websiteUrl: 'https://github.com/NVIDIA/gpu-operator/tree/main/deployments/gpu-operator/charts/node-feature-discovery',
     sourceUrl: 'https://github.com/NVIDIA/gpu-operator/tree/main/deployments/gpu-operator/charts/node-feature-discovery',
-    tags: ['planned', 'configuration'],
+    tags: ['configuration'],
   },
   {
     name: 'Quickwit',
@@ -236,6 +245,14 @@ const Users: Package[] = [
     websiteUrl: 'https://www.rabbitmq.com/kubernetes/operator/operator-overview',
     sourceUrl: 'https://github.com/rabbitmq/cluster-operator',
     tags: ['messaging'],
+  },
+  {
+    name: 'SpinKube',
+    shortDescription: 'The Spin Operator enables deploying Spin applications to Kubernetes.',
+    iconUrl: 'https://avatars.githubusercontent.com/u/157650797',
+    websiteUrl: 'https://www.spinkube.dev/',
+    sourceUrl: 'https://github.com/spinkube/spin-operator',
+    tags: ['webassembly', 'delivery', 'planned'],
   },
   {
     name: 'Velero',
@@ -324,6 +341,11 @@ export const Tags: { [type in TagType]: Tag } = {
   visualization: {
     label: 'visualization',
     color: '#ab9a2c',
+  },
+
+  webassembly: {
+    label: 'webassembly',
+    color: '#8b6a2f',
   },
 };
 

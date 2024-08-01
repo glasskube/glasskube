@@ -42,7 +42,7 @@ func NewOpener() *opener {
 }
 
 func (o *opener) Open(
-	ctx context.Context, pkg ctrlpkg.Package, entrypointName string, port int32) (*OpenResult, error) {
+	ctx context.Context, pkg ctrlpkg.Package, entrypointName string, host string, port int32) (*OpenResult, error) {
 
 	if err := o.initFromContext(ctx); err != nil {
 		return nil, err
@@ -91,7 +91,7 @@ func (o *opener) Open(
 			stopCh := make(chan struct{})
 			o.readyCh = append(o.readyCh, readyCh)
 			o.stopCh = append(o.stopCh, stopCh)
-			entrypointFuture, err := o.open(ctx, pkg, manifest, namespace, e, readyCh, stopCh)
+			entrypointFuture, err := o.open(ctx, pkg, manifest, namespace, host, e, readyCh, stopCh)
 			if err != nil {
 				o.stop()
 				epName := e.Name
@@ -104,7 +104,7 @@ func (o *opener) Open(
 			// attach the first url to the result
 			// TODO: Maybe there is a more elegant way to do this.
 			if result.Url == "" {
-				result.Url = getBrowserUrl(e)
+				result.Url = getBrowserUrl(host, e)
 			}
 		}
 	}
@@ -146,11 +146,18 @@ func (o *opener) open(
 	pkg ctrlpkg.Package,
 	manifest *v1alpha1.PackageManifest,
 	namespace string,
+	listenAddress string,
 	entrypoint v1alpha1.PackageEntrypoint,
 	readyChannel chan struct{},
 	stopChannel chan struct{},
 ) (future.Future, error) {
 	if err := checkLocalPort(entrypoint); err != nil {
+		return nil, err
+	}
+
+	var listenAddresses []string
+	var err error
+	if listenAddresses, err = resolveListenAddress(listenAddress); err != nil {
 		return nil, err
 	}
 
@@ -177,7 +184,8 @@ func (o *opener) open(
 	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: roundTripper}, "POST", url)
 	stdout := prefixWriter{prefix: fmt.Sprintf("%v\t |I| ", entrypoint.Name), writer: os.Stderr}
 	stderr := prefixWriter{prefix: fmt.Sprintf("%v\t |E| ", entrypoint.Name), writer: os.Stderr}
-	forwarder, err := portforward.New(dialer, []string{port}, stopChannel, readyChannel, stdout, stderr)
+	forwarder, err := portforward.NewOnAddresses(
+		dialer, listenAddresses, []string{port}, stopChannel, readyChannel, stdout, stderr)
 	if err != nil {
 		return nil, fmt.Errorf("could not create PortForwarder: %w", err)
 	}
@@ -304,10 +312,24 @@ func getLocalPort(entrypoint v1alpha1.PackageEntrypoint) int32 {
 	}
 }
 
-func getBrowserUrl(entrypoint v1alpha1.PackageEntrypoint) string {
+func resolveListenAddress(listenAddress string) ([]string, error) {
+	if listenAddress != "" {
+		if listenAddresses, err := net.LookupHost(listenAddress); err != nil {
+			return nil, err
+		} else {
+			return listenAddresses, nil
+		}
+	}
+	return []string{"0.0.0.0"}, nil
+}
+
+func getBrowserUrl(host string, entrypoint v1alpha1.PackageEntrypoint) string {
+	if host == "" {
+		host = "localhost"
+	}
 	url := url.URL{
 		Scheme: "http",
-		Host:   fmt.Sprintf("localhost:%v", getLocalPort(entrypoint)),
+		Host:   net.JoinHostPort(host, fmt.Sprint(getLocalPort(entrypoint))),
 	}
 	if entrypoint.Scheme != "" {
 		url.Scheme = entrypoint.Scheme

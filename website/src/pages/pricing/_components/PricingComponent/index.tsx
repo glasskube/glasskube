@@ -11,7 +11,7 @@ function Pricing() {
       <div className="container">
         <div className="row">
           <div className="col col--4">
-            <div className="card margin-top--lg">
+            <div className="card margin-top--lg shadow--md">
               <div className="card__header text--center">
                 <h3>Totally free</h3>
                 <h4>$0</h4>
@@ -44,7 +44,7 @@ function Pricing() {
             </div>
           </div>
           <div className="col col--4">
-            <div className="card">
+            <div className="card shadow--md">
               <div className="card__header text--center">
                 <h3>Best value champion</h3>
                 Free for clusters with less than 5 nodes
@@ -88,7 +88,7 @@ function Pricing() {
             </div>
           </div>
           <div className="col">
-            <div className="card col--4 margin-top--lg">
+            <div className="card col--4 margin-top--lg shadow--md">
               <div className="card__header text--center">
                 <h3>Enterprise mode</h3>
                 <h4>Custom quote</h4>

@@ -315,7 +315,13 @@ func (s *server) update(w http.ResponseWriter, r *http.Request) {
 				toast.WithErr(fmt.Errorf("failed to find updateTransactionId %v", utId)),
 				toast.WithStatusCode(http.StatusNotFound))
 			return
-		} else if _, err := updater.Apply(ctx, &ut); err != nil {
+		} else if _, err := updater.Apply(
+			ctx,
+			&ut,
+			update.ApplyUpdateOptions{
+				Blocking: false,
+				DryRun:   false,
+			}); err != nil {
 			delete(s.updateTransactions, utId)
 			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to apply update: %w", err)))
 			return
@@ -479,7 +485,7 @@ func (s *server) handleOpen(ctx context.Context, w http.ResponseWriter, pkg ctrl
 		return
 	}
 
-	result, err := open.NewOpener().Open(ctx, pkg, "", 0)
+	result, err := open.NewOpener().Open(ctx, pkg, "", s.Host, 0)
 	if err != nil {
 		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to open %v: %w", pkg.GetName(), err)))
 	} else {

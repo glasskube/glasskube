@@ -12,7 +12,7 @@ function FAQ({faq}: {faq: PricingFAQ}) {
         id={faq.id}
         className={clsx('margin-bottom--xl', styles.marginTop50)}
       />
-      <div className="card">
+      <div className="card shadow--md">
         <div className="card__header">
           <h3 className="anchor">
             {faq.question}
