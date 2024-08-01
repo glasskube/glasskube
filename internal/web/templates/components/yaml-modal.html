@@ -5,9 +5,9 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        {{ if .Error }}
+        {{ if .AlertContent }}
           <div class="alert alert-danger" role="alert">
-            {{ .Error }}
+            {{ .AlertContent }}
           </div>
         {{ end }}
         <pre id="yaml-modal-code">{{ .Object }}</pre>

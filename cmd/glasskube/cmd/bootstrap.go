@@ -113,7 +113,7 @@ func (o bootstrapOptions) asBootstrapOptions() bootstrap.BootstrapOptions {
 	}
 }
 
-func printBootstrap(manifests []unstructured.Unstructured, output outputFormatValue) error {
+func printBootstrap(manifests []unstructured.Unstructured, output outputFormat) error {
 	if output != "" {
 		if err := convertAndPrintManifests(manifests, output); err != nil {
 			return err
@@ -186,7 +186,7 @@ func verifyLegalUpdate(ctx context.Context, installedVersion, targetVersion *sem
 
 func convertAndPrintManifests(
 	objs []unstructured.Unstructured,
-	output outputFormatValue,
+	output outputFormat,
 ) error {
 	switch output {
 	case outputFormatJSON:

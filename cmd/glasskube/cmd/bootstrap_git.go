@@ -20,8 +20,6 @@ import (
 	"github.com/spf13/cobra"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
 )
 
 type bootstrapGitOptions struct {
@@ -29,6 +27,16 @@ type bootstrapGitOptions struct {
 }
 
 var bootstrapGitCmdOptions = bootstrapGitOptions{}
+
+const doneMessage = `
+glasskube argo-cd application applied successfully!
+
+You have successfully installed Glasskube and ArgoCD in this cluster.
+Right now, ArgoCD is starting up and will soon sync with your GitOps repo – this might take a couple of minutes!
+Run "glasskube serve" to open the Glasskube UI and either open the ArgoCD UI there, or with "glasskube open argo-cd".
+Follow the ArgoCD docs to get and reset the password to log in:
+https://argo-cd.readthedocs.io/en/stable/getting_started/#4-login-using-the-cli
+`
 
 var bootstrapGitCmd = &cobra.Command{
 	Use:    "git",
@@ -78,27 +86,37 @@ var bootstrapGitCmd = &cobra.Command{
 		fmt.Fprintf(os.Stderr, "\nInstalling argo-cd...")
 		cliutils.SetupClientContext(true, util.Pointer(true))(cmd, make([]string, 0))
 
-		// get defined argo-cd version from repo:
+		// get defined argo-cd version and repo from repo:
 		argocdPath := fmt.Sprintf("%v/packages/argo-cd/clusterpackage.yaml", basePath)
-		argocdVersion := "v2.11.5+1"
+		argocdVersion := "v2.11.7+1"
+		argocdRepo := "glasskube"
 		if objs, err := clientutils.FetchResources(argocdPath); err != nil {
-			fmt.Fprintf(os.Stderr, "\nAn error occurred fetching argo-cd version (will use %v instead): %v\n",
-				argocdVersion, err)
+			fmt.Fprintf(os.Stderr, "\nAn error occurred fetching argo-cd clusterpackage "+
+				"(will use %v from repo %v instead): %v\n", argocdVersion, argocdRepo, err)
+		} else if len(objs) != 1 {
+			fmt.Fprintf(os.Stderr, "\nUnexpectedly found %v objects in %v – there should only be one. Aborting.\n",
+				len(objs), argocdPath)
+			cliutils.ExitWithError()
 		} else {
-			for _, obj := range objs {
-				if v, ok, err :=
-					unstructured.NestedString(obj.Object, "spec", "packageInfo", "version"); !ok || err != nil {
-					fmt.Fprintf(os.Stderr, "\nAn error occurred trying to read the argo-cd version "+
-						"(will use %v instead): %v\n", argocdVersion, err)
-				} else {
-					argocdVersion = v
-					break
-				}
+			obj := objs[0]
+			if v, ok, err :=
+				unstructured.NestedString(obj.Object, "spec", "packageInfo", "version"); !ok || err != nil {
+				fmt.Fprintf(os.Stderr, "\nAn error occurred trying to read the argo-cd version "+
+					"(will use %v instead): %v\n", argocdVersion, err)
+			} else {
+				argocdVersion = v
+			}
+			if repo, ok, err :=
+				unstructured.NestedString(obj.Object, "spec", "packageInfo", "repositoryName"); !ok || err != nil {
+				fmt.Fprintf(os.Stderr, "\nAn error occurred trying to read the argo-cd repositoryName "+
+					"(will use %v instead): %v\n", argocdRepo, err)
+			} else {
+				argocdRepo = repo
 			}
 		}
 		// install argo-cd package
 		argoCdPkg := client.PackageBuilder("argo-cd").
-			WithRepositoryName("glasskube").
+			WithRepositoryName(argocdRepo).
 			WithVersion(argocdVersion).
 			BuildClusterPackage()
 		if _, err := install.NewInstaller(cliutils.PackageClient(cmd.Context())).
@@ -114,16 +132,21 @@ var bootstrapGitCmd = &cobra.Command{
 		if objs, err := clientutils.FetchResources(appPath); err != nil {
 			fmt.Fprintf(os.Stderr, "\nAn error occurred fetching the bootstrap application:\n%v\n", err)
 			cliutils.ExitWithError()
-		} else if client, err := dynamic.NewForConfig(cfg); err != nil {
-			fmt.Fprintf(os.Stderr, "\nAn error occurred initializing the dynamic client:\n%v\n", err)
-			cliutils.ExitWithError()
 		} else {
+			// re-initialize the rest mapper because with argo-cd installed, new kinds will be available
+			if err := bootstrapClient.InitRestMapper(); err != nil {
+				fmt.Fprintf(os.Stderr, "\nAn error occurred setting up the restmapper: %v\n", err)
+				cliutils.ExitWithError()
+			}
 			for _, obj := range objs {
-				if _, err = client.Resource(schema.GroupVersionResource{
-					Group:    "argoproj.io",
-					Version:  "v1alpha1",
-					Resource: "applications",
-				}).Namespace(obj.GetNamespace()).Apply(ctx, obj.GetName(), &obj, metav1.ApplyOptions{
+				gvk := obj.GroupVersionKind()
+				mapping, err := bootstrapClient.Mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "\nAn error occurred preparing %v/%v:\n%v\n", obj.GetNamespace(), obj.GetName(), err)
+					cliutils.ExitWithError()
+				}
+				if _, err := bootstrapClient.Client.Resource(mapping.Resource).
+					Namespace(obj.GetNamespace()).Apply(ctx, obj.GetName(), &obj, metav1.ApplyOptions{
 					FieldManager: "glasskube", // TODO not sure if correct
 				}); err != nil {
 					fmt.Fprintf(os.Stderr, "\nAn error occurred applying the bootstrap application:\n%v\n", err)
@@ -132,14 +155,7 @@ var bootstrapGitCmd = &cobra.Command{
 			}
 		}
 
-		fmt.Fprintf(os.Stderr, "\nglasskube argo-cd application applied successfully!\n\n")
-		fmt.Fprintf(os.Stderr, "You have successfully installed Glasskube and ArgoCD in this cluster.\n")
-		fmt.Fprintf(os.Stderr, "Right now, ArgoCD is starting up and will soon sync with your GitOps repo. ")
-		fmt.Fprintf(os.Stderr, "Please note, that this might take a couple of minutes!\n\n")
-		fmt.Fprintf(os.Stderr, "Run glasskube serve to open the Glasskube UI and either open the ArgoCD UI there, "+
-			"or with the command `glasskube open argo-cd` – but of course you can also use the Argo CLI.\n"+
-			"Follow the ArgoCD docs to get and reset the password to log in: "+
-			"https://argo-cd.readthedocs.io/en/stable/getting_started/#4-login-using-the-cli)")
+		fmt.Fprint(os.Stderr, doneMessage)
 	},
 }
 

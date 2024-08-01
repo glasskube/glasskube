@@ -7,37 +7,37 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type outputFormatValue string
+type outputFormat string
 
 const (
-	outputFormatJSON outputFormatValue = outputFormatValue(clientutils.OutputFormatJSON)
-	outputFormatYAML outputFormatValue = outputFormatValue(clientutils.OutputFormatYAML)
+	outputFormatJSON outputFormat = outputFormat(clientutils.OutputFormatJSON)
+	outputFormatYAML outputFormat = outputFormat(clientutils.OutputFormatYAML)
 )
 
-func (of *outputFormatValue) String() string {
+func (of *outputFormat) String() string {
 	return string(*of)
 }
 
-func (of *outputFormatValue) Set(value string) error {
+func (of *outputFormat) Set(value string) error {
 	switch value {
 	case string(outputFormatJSON), string(outputFormatYAML):
-		*of = outputFormatValue(value)
+		*of = outputFormat(value)
 		return nil
 	default:
 		return fmt.Errorf("invalid output format: %s", value)
 	}
 }
 
-func (of *outputFormatValue) Type() string {
+func (of *outputFormat) Type() string {
 	return fmt.Sprintf("(%v|%v)", outputFormatJSON, outputFormatYAML)
 }
 
-func (of *outputFormatValue) OutputFormat() clientutils.OutputFormat {
+func (of *outputFormat) OutputFormat() clientutils.OutputFormat {
 	return clientutils.OutputFormat(of.String())
 }
 
 type OutputOptions struct {
-	Output  outputFormatValue
+	Output  outputFormat
 	ShowAll bool
 }
 

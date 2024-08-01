@@ -37,8 +37,8 @@ import (
 
 type BootstrapClient struct {
 	clientConfig *rest.Config
-	mapper       meta.RESTMapper
-	client       dynamic.Interface
+	Mapper       meta.RESTMapper
+	Client       dynamic.Interface
 }
 
 type BootstrapOptions struct {
@@ -70,13 +70,13 @@ func NewBootstrapClient(config *rest.Config) *BootstrapClient {
 	return &BootstrapClient{clientConfig: config}
 }
 
-func (c *BootstrapClient) initRestMapper() error {
+func (c *BootstrapClient) InitRestMapper() error {
 	if discoveryClient, err := discovery.NewDiscoveryClientForConfig(c.clientConfig); err != nil {
 		return err
 	} else if groupResources, err := restmapper.GetAPIGroupResources(discoveryClient); err != nil {
 		return err
 	} else {
-		c.mapper = restmapper.NewDiscoveryRESTMapper(groupResources)
+		c.Mapper = restmapper.NewDiscoveryRESTMapper(groupResources)
 		return nil
 	}
 }
@@ -87,14 +87,14 @@ func (c *BootstrapClient) Bootstrap(
 ) ([]unstructured.Unstructured, error) {
 	telemetry.BootstrapAttempt()
 
-	if err := c.initRestMapper(); err != nil {
+	if err := c.InitRestMapper(); err != nil {
 		return nil, err
 	}
 
 	if client, err := dynamic.NewForConfig(c.clientConfig); err != nil {
 		return nil, err
 	} else {
-		c.client = client
+		c.Client = client
 	}
 
 	start := time.Now()
@@ -169,11 +169,11 @@ func (c *BootstrapClient) preprocessManifests(
 	var compositeErr error
 	for _, obj := range objs {
 		gvk := obj.GroupVersionKind()
-		mapping, err := c.mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+		mapping, err := c.Mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 		if err != nil {
 			return err
 		}
-		existing, err := c.client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).
+		existing, err := c.Client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).
 			Get(ctx, obj.GetName(), metav1.GetOptions{})
 		if err != nil && !apierrors.IsNotFound(err) {
 			return err
@@ -202,6 +202,15 @@ func (c *BootstrapClient) preprocessManifests(
 			obj.SetAnnotations(nsAnnotations)
 			options.DisableTelemetry = !annotations.IsTelemetryEnabled(nsAnnotations)
 		}
+
+		if obj.GetKind() == constants.Job && obj.GetName() == "webhook-cert-init" && options.GitopsMode {
+			jobAnnotations := obj.GetAnnotations()
+			if jobAnnotations == nil {
+				jobAnnotations = make(map[string]string)
+			}
+			jobAnnotations["argocd.argoproj.io/sync-options"] = "Force=true,Replace=true"
+			obj.SetAnnotations(jobAnnotations)
+		}
 	}
 
 	if compositeErr != nil {
@@ -224,7 +233,7 @@ func (c *BootstrapClient) applyManifests(
 	var checkWorkloads []*unstructured.Unstructured
 	for i, obj := range objs {
 		gvk := obj.GroupVersionKind()
-		mapping, err := c.mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+		mapping, err := c.Mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 		if err != nil {
 			if options.DryRun {
 				continue
@@ -234,8 +243,8 @@ func (c *BootstrapClient) applyManifests(
 		}
 
 		bar.Describe(fmt.Sprintf("Applying %v (%v)", obj.GetName(), obj.GetKind()))
-		if obj.GetKind() == "Job" {
-			err := c.client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).
+		if obj.GetKind() == constants.Job {
+			err := c.Client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).
 				Delete(ctx, obj.GetName(), getDeleteOptions(options))
 			if err != nil && !apierrors.IsNotFound(err) {
 				return err
@@ -243,13 +252,13 @@ func (c *BootstrapClient) applyManifests(
 		}
 
 		if err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			_, err = c.client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).
+			_, err = c.Client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).
 				Apply(ctx, obj.GetName(), &obj, getApplyOptions(options))
 			return err
 		}); err != nil && (!options.DryRun || !apierrors.IsNotFound(err)) {
 			// we can recover from dry-run errors appearing because an old job has not been deleted
 			var statusErr *apierrors.StatusError
-			if options.DryRun && options.Force && obj.GetKind() == "Job" && errors.As(err, &statusErr) {
+			if options.DryRun && options.Force && obj.GetKind() == constants.Job && errors.As(err, &statusErr) {
 				if statusErr.ErrStatus.Status == "Failure" && statusErr.ErrStatus.Reason == "Invalid" {
 					statusMessage("Ignoring Job immutable error in dry-run", true, false)
 					return nil
@@ -263,7 +272,7 @@ func (c *BootstrapClient) applyManifests(
 			bar.ChangeMax(bar.GetMax() + 1)
 		} else if obj.GetKind() == "CustomResourceDefinition" {
 			// The RESTMapping must be re-created after applying a CRD, so we can create resources of that kind immediately.
-			if err := c.initRestMapper(); err != nil {
+			if err := c.InitRestMapper(); err != nil {
 				return err
 			}
 		}
