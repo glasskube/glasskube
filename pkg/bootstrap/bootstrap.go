@@ -167,6 +167,7 @@ func (c *BootstrapClient) preprocessManifests(
 	options *BootstrapOptions,
 ) error {
 	var compositeErr error
+	existingInstallationInGitopsMode := false
 	for _, obj := range objs {
 		gvk := obj.GroupVersionKind()
 		mapping, err := c.Mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
@@ -194,6 +195,9 @@ func (c *BootstrapClient) preprocessManifests(
 				nsAnnotations[annotations.TelemetryEnabledAnnotation] = existingAnnotations[annotations.TelemetryEnabledAnnotation]
 				nsAnnotations[annotations.TelemetryIdAnnotation] = existingAnnotations[annotations.TelemetryIdAnnotation]
 				nsAnnotations[annotations.GitopsModeEnabled] = existingAnnotations[annotations.GitopsModeEnabled]
+				if annotations.IsGitopsModeEnabled(existingAnnotations) {
+					existingInstallationInGitopsMode = true
+				}
 			}
 			annotations.UpdateTelemetryAnnotations(nsAnnotations, options.DisableTelemetry)
 			if options.GitopsMode {
@@ -202,8 +206,11 @@ func (c *BootstrapClient) preprocessManifests(
 			obj.SetAnnotations(nsAnnotations)
 			options.DisableTelemetry = !annotations.IsTelemetryEnabled(nsAnnotations)
 		}
+	}
 
-		if obj.GetKind() == constants.Job && obj.GetName() == "webhook-cert-init" && options.GitopsMode {
+	for _, obj := range objs {
+		if obj.GetKind() == constants.Job && obj.GetName() == "glasskube-webhook-cert-init" &&
+			(options.GitopsMode || existingInstallationInGitopsMode) {
 			jobAnnotations := obj.GetAnnotations()
 			if jobAnnotations == nil {
 				jobAnnotations = make(map[string]string)
