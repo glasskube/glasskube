@@ -24,8 +24,10 @@ type ListCmdOptions struct {
 	ShowMessage       bool
 	More              bool
 	Repository        string
+	packageName       string
 	OutputOptions
 	KindOptions
+	NamespaceOptions
 }
 
 func (o ListCmdOptions) toListOptions() list.ListOptions {
@@ -33,6 +35,8 @@ func (o ListCmdOptions) toListOptions() list.ListOptions {
 		OnlyInstalled: o.ListInstalledOnly,
 		OnlyOutdated:  o.ListOutdatedOnly,
 		Repository:    o.Repository,
+		PackageName:   o.packageName,
+		Namespace:     o.Namespace,
 	}
 }
 
@@ -41,12 +45,13 @@ var listCmdOptions = ListCmdOptions{
 }
 
 var listCmd = &cobra.Command{
-	Use:     "list",
+	Use:     "list [<package-name>]",
 	Aliases: []string{"ls", "l"},
 	Short:   "List packages",
 	Long: "List packages. By default, all available packages of the given repository are shown, " +
 		"as well as their installation status in your cluster.\nYou can choose to only show installed packages.",
 	PreRun: cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
+	Args:   cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 		if listCmdOptions.More {
@@ -54,11 +59,20 @@ var listCmd = &cobra.Command{
 			listCmdOptions.ShowDescription = true
 			listCmdOptions.ShowMessage = true
 		}
+		if len(args) > 0 {
+			listCmdOptions.packageName = args[0]
+		}
+		if listCmdOptions.Kind == KindClusterPackage &&
+			(listCmdOptions.packageName != "" || listCmdOptions.Namespace != "") {
+			fmt.Fprintf(os.Stderr, "Argument [<package-name>] or flag [--namespace] not supported with kind %s.\n",
+				KindClusterPackage)
+			cliutils.ExitWithError()
+		}
 		lister := list.NewListerWithRepoCache(ctx)
 		var clPkgs []*list.PackageWithStatus
 		var pkgs []*list.PackagesWithStatus
 		var err error
-		if listCmdOptions.Kind != KindPackage {
+		if listCmdOptions.Kind != KindPackage && listCmdOptions.packageName == "" && listCmdOptions.Namespace == "" {
 			clPkgs, err = lister.GetClusterPackagesWithStatus(ctx, listCmdOptions.toListOptions())
 			handleListErr(len(clPkgs), err, "clusterpackages")
 		}
@@ -67,7 +81,8 @@ var listCmd = &cobra.Command{
 			handleListErr(len(pkgs), err, "packages")
 		}
 		noPkgs := len(pkgs) == 0 && listCmdOptions.Kind != KindClusterPackage
-		noClPkgs := len(clPkgs) == 0 && listCmdOptions.Kind != KindPackage
+		noClPkgs := len(clPkgs) == 0 && listCmdOptions.Kind != KindPackage &&
+			listCmdOptions.packageName == "" && listCmdOptions.Namespace == ""
 		if listCmdOptions.Output == OutputFormatJSON {
 			printPackageJSON(allPkgs(clPkgs, pkgs))
 		} else if listCmdOptions.Output == OutputFormatYAML {
@@ -77,13 +92,13 @@ var listCmd = &cobra.Command{
 				handleEmptyList("packages")
 			} else if len(pkgs) > 0 {
 				printPackageTable(pkgs)
-				if listCmdOptions.Kind != KindPackage {
-					fmt.Fprintln(os.Stderr, "")
-				}
 			}
 			if noClPkgs {
 				handleEmptyList("clusterpackages")
 			} else if len(clPkgs) > 0 {
+				if len(pkgs) > 0 {
+					fmt.Fprintln(os.Stderr, "")
+				}
 				printClusterPackageTable(clPkgs)
 			}
 		}
@@ -107,6 +122,7 @@ func init() {
 		"Filter based on the repository provided")
 	listCmdOptions.OutputOptions.AddFlagsToCommand(listCmd)
 	listCmdOptions.KindOptions.AddFlagsToCommand(listCmd)
+	listCmdOptions.NamespaceOptions.AddFlagsToCommand(listCmd)
 
 	listCmd.MarkFlagsMutuallyExclusive("show-description", "more")
 	listCmd.MarkFlagsMutuallyExclusive("show-latest", "more")
@@ -127,14 +143,7 @@ func handleListErr(listLen int, err error, resource string) {
 }
 
 func handleEmptyList(resource string) {
-	if listCmdOptions.ListOutdatedOnly {
-		fmt.Fprintf(os.Stderr, "All installed %s are up-to-date.\n", resource)
-	} else if listCmdOptions.ListInstalledOnly {
-		fmt.Fprintf(os.Stderr, "There are currently no %s installed in your cluster.\n"+
-			"Run \"glasskube help install\" to get started.\n", resource)
-	} else {
-		fmt.Fprintf(os.Stderr, "No %s found in the available repositories.\n", resource)
-	}
+	fmt.Fprintf(os.Stderr, "No %s found.\n", resource)
 }
 
 func allPkgs(clpkgs []*list.PackageWithStatus, pkgs []*list.PackagesWithStatus) []*list.PackageWithStatus {

@@ -34,6 +34,8 @@ type ListOptions struct {
 	OnlyInstalled       bool
 	OnlyOutdated        bool
 	Repository          string
+	PackageName         string
+	Namespace           string
 }
 
 type lister struct {
@@ -102,7 +104,9 @@ func (l *lister) GetPackagesWithStatus(
 			}
 		}
 		hasIncludedItems := len(ls) > 0
-		if hasIncludedItems || (!options.OnlyInstalled && !options.OnlyOutdated) {
+		if hasIncludedItems ||
+			(!options.OnlyInstalled && !options.OnlyOutdated && options.Namespace == "" &&
+				(item.IndexItem.Name == options.PackageName || options.PackageName == "")) {
 			result = append(result, &PackagesWithStatus{
 				MetaIndexItem: *item.IndexItem,
 				Packages:      ls,
@@ -119,10 +123,13 @@ func clusterPackageShouldBeIncluded(item *result, options ListOptions) bool {
 
 func packageShouldBeIncluded(item *result, pkg *v1alpha1.Package, options ListOptions) bool {
 	if pkg != nil {
-		if !options.OnlyOutdated {
-			return true
+		if options.PackageName != "" && pkg.Spec.PackageInfo.Name != options.PackageName {
+			return false
 		}
-		return item.IndexItem != nil && pkg.Spec.PackageInfo.Version != item.IndexItem.LatestVersion
+		if options.OnlyOutdated && (item.IndexItem != nil && pkg.Spec.PackageInfo.Version == item.IndexItem.LatestVersion) {
+			return false
+		}
+		return true
 	}
 	return false
 }
@@ -180,7 +187,7 @@ func (l *lister) fetchRepoAndInstalled(ctx context.Context, options ListOptions,
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if err := l.pkgClient.Packages("").GetAll(ctx, &packages); err != nil {
+			if err := l.pkgClient.Packages(options.Namespace).GetAll(ctx, &packages); err != nil {
 				pkgErr = fmt.Errorf("could not fetch installed packages: %w", err)
 			}
 		}()
