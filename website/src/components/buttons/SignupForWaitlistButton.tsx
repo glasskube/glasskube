@@ -10,6 +10,7 @@ function posthogId() {
   if (ExecutionEnvironment.canUseDOM && window['posthog']) {
     try {
       return '/signup.html?id=' + window.posthog.get_distinct_id();
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
       // no id
     }

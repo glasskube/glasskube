@@ -282,7 +282,7 @@ export type Tag = {
   color: string;
 };
 
-export const Tags: { [type in TagType]: Tag } = {
+export const Tags: {[type in TagType]: Tag} = {
   ai: {
     label: 'ai',
     color: '#39ca30',
@@ -354,9 +354,9 @@ export const TagList = Object.keys(Tags) as TagType[];
 function sortUsers() {
   let result = Users;
   // Sort by site name
-  result = sortBy(result, (user) => user.name.toLowerCase());
+  result = sortBy(result, user => user.name.toLowerCase());
   // Sort by favorite tag, favorites first
-  result = sortBy(result, (user) => user.tags.includes('planned'));
+  result = sortBy(result, user => user.tags.includes('planned'));
   return result;
 }
 

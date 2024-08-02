@@ -1,4 +1,3 @@
-
 import React, {useState, useEffect, useCallback} from 'react';
 import clsx from 'clsx';
 import {useHistory, useLocation} from '@docusaurus/router';
@@ -25,7 +24,7 @@ export default function PackageFilterToggle(): JSX.Element {
     setOperator(readOperator(location.search) === 'AND');
   }, [location]);
   const toggleOperator = useCallback(() => {
-    setOperator((o) => !o);
+    setOperator(o => !o);
     const searchParams = new URLSearchParams(location.search);
     searchParams.delete(OperatorQueryKey);
     if (!operator) {
@@ -54,7 +53,7 @@ export default function PackageFilterToggle(): JSX.Element {
         className="screen-reader-only"
         aria-label="Toggle between or and and for the tags you selected"
         onChange={toggleOperator}
-        onKeyDown={(e) => {
+        onKeyDown={e => {
           if (e.key === 'Enter') {
             toggleOperator();
           }
