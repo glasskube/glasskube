@@ -1,4 +1,3 @@
-
 import React, {
   useCallback,
   useState,
@@ -29,7 +28,7 @@ export function readSearchTags(search: string): TagType[] {
 function replaceSearchTags(search: string, newTags: TagType[]) {
   const searchParams = new URLSearchParams(search);
   searchParams.delete(TagQueryStringKey);
-  newTags.forEach((tag) => searchParams.append(TagQueryStringKey, tag));
+  newTags.forEach(tag => searchParams.append(TagQueryStringKey, tag));
   return searchParams.toString();
 }
 
@@ -60,19 +59,19 @@ function PackageTagSelect(
         type="checkbox"
         id={id}
         className="screen-reader-only"
-        onKeyDown={(e) => {
+        onKeyDown={e => {
           if (e.key === 'Enter') {
             toggleTag();
           }
         }}
-        onFocus={(e) => {
+        onFocus={e => {
           if (e.relatedTarget) {
             e.target.nextElementSibling?.dispatchEvent(
               new KeyboardEvent('focus'),
             );
           }
         }}
-        onBlur={(e) => {
+        onBlur={e => {
           e.target.nextElementSibling?.dispatchEvent(new KeyboardEvent('blur'));
         }}
         onChange={toggleTag}

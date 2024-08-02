@@ -1,4 +1,4 @@
-const blogPluginExports = require('@docusaurus/plugin-content-blog');
+import * as blogPluginExports from '@docusaurus/plugin-content-blog';
 
 const defaultBlogPlugin = blogPluginExports.default;
 
@@ -10,7 +10,7 @@ async function blogPluginExtended(...pluginArgs) {
   return {
     ...blogPluginInstance,
     contentLoaded: async function (params) {
-      const { content, actions } = params;
+      const {content, actions} = params;
 
       const recentPostsLimit = 3;
       const recentPosts = [...content.blogPosts].splice(0, recentPostsLimit);
@@ -23,7 +23,7 @@ async function blogPluginExtended(...pluginArgs) {
               title: blogPost.metadata.title,
               description: blogPost.metadata.description,
               frontMatter: blogPost.metadata.frontMatter,
-            })
+            }),
           ),
 
           Preview: {
@@ -50,10 +50,10 @@ async function blogPluginExtended(...pluginArgs) {
               blogDescription: pluginOptions.blogDescription,
               totalPosts: content.blogPosts.length,
               totalRecentPosts: recentPosts.length,
-            })
+            }),
           ),
           recentPosts: await Promise.all(
-            recentPosts.map(createRecentPostModule)
+            recentPosts.map(createRecentPostModule),
           ),
         },
       });

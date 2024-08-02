@@ -6,17 +6,27 @@ import {useHistory, useLocation} from '@docusaurus/router';
 
 import Link from '@docusaurus/Link';
 import Layout from '@theme/Layout';
-import {type Package, sortedUsers, TagList, Tags, type TagType} from '@site/src/data/packages';
+import {
+  type Package,
+  sortedUsers,
+  TagList,
+  Tags,
+  type TagType,
+} from '@site/src/data/packages';
 import Heading from '@theme/Heading';
-import PackageTagSelect, {readSearchTags,} from './_components/PackageTagSelect';
-import PackageFilterToggle, {type Operator, readOperator} from './_components/PackageFilterToggle';
+import PackageTagSelect, {readSearchTags} from './_components/PackageTagSelect';
+import PackageFilterToggle, {
+  type Operator,
+  readOperator,
+} from './_components/PackageFilterToggle';
 import PackageCard from './_components/PackageCard';
 
 import styles from './styles.module.css';
 
 const TITLE = translate({message: 'Glasskube package repository'});
 const DESCRIPTION = translate({
-  message: 'List of packages that are or will be installable via the glasskube package manager',
+  message:
+    'List of packages that are or will be installable via the glasskube package manager',
 });
 const SUBMIT_URL = 'https://github.com/glasskube/glasskube/discussions/90';
 
@@ -59,21 +69,21 @@ function filterUsers(
 ) {
   if (searchName) {
     // eslint-disable-next-line no-param-reassign
-    users = users.filter((user) =>
+    users = users.filter(user =>
       user.name.toLowerCase().includes(searchName.toLowerCase()),
     );
   }
   if (selectedTags.length === 0) {
     return users;
   }
-  return users.filter((user) => {
+  return users.filter(user => {
     if (user.tags.length === 0) {
       return false;
     }
     if (operator === 'AND') {
-      return selectedTags.every((tag) => user.tags.includes(tag));
+      return selectedTags.every(tag => user.tags.includes(tag));
     }
-    return selectedTags.some((tag) => user.tags.includes(tag));
+    return selectedTags.some(tag => user.tags.includes(tag));
   });
 }
 
@@ -116,12 +126,10 @@ function PackagesFilters() {
     <section className="container margin-top--l margin-bottom--lg">
       <div className={clsx('margin-bottom--sm', styles.filterCheckbox)}>
         <div>
-          <Heading as="h2">
-            Filters
-          </Heading>
+          <Heading as="h2">Filters</Heading>
           <span>{filteredUsers.length} packages</span>
         </div>
-        <PackageFilterToggle/>
+        <PackageFilterToggle />
       </div>
       <ul className={clsx('clean-list', styles.checkboxList)}>
         {TagList.map((tag, i) => {
@@ -130,7 +138,6 @@ function PackagesFilters() {
 
           return (
             <li key={i} className={styles.checkboxListItem}>
-
               <PackageTagSelect
                 tag={tag}
                 id={id}
@@ -168,7 +175,7 @@ function SearchBar() {
         id="searchbar"
         placeholder="Search for packages ..."
         value={value ?? undefined}
-        onInput={(e) => {
+        onInput={e => {
           setValue(e.currentTarget.value);
           const newSearch = new URLSearchParams(location.search);
           newSearch.delete(SearchNameQueryKey);
@@ -196,9 +203,7 @@ function Packages() {
     return (
       <section className="margin-top--lg margin-bottom--xl">
         <div className="container padding-vert--md text--center">
-          <Heading as="h2">
-            No result
-          </Heading>
+          <Heading as="h2">No result</Heading>
         </div>
       </section>
     );
@@ -215,25 +220,20 @@ function Packages() {
                   'margin-bottom--md',
                   styles.supportedPackagesHeader,
                 )}>
-                <Heading as="h2">
-                  Already supported
-                </Heading>
+                <Heading as="h2">Already supported</Heading>
               </div>
-              <ul
-                className={clsx('clean-list', styles.packageList,)}>
-                {favoriteUsers.map((user) => (
-                  <PackageCard key={user.name} user={user}/>
+              <ul className={clsx('clean-list', styles.packageList)}>
+                {favoriteUsers.map(user => (
+                  <PackageCard key={user.name} user={user} />
                 ))}
               </ul>
             </div>
           </div>
           <div className="container margin-top--lg">
-            <Heading as="h2">
-              Planned
-            </Heading>
+            <Heading as="h2">Planned</Heading>
             <ul className={clsx('clean-list', styles.packageList)}>
-              {otherUsers.map((user) => (
-                <PackageCard key={user.name} user={user}/>
+              {otherUsers.map(user => (
+                <PackageCard key={user.name} user={user} />
               ))}
             </ul>
           </div>
@@ -241,11 +241,14 @@ function Packages() {
       ) : (
         <div className="container">
           <div
-            className={clsx('margin-bottom--md', styles.supportedPackagesHeader)}
+            className={clsx(
+              'margin-bottom--md',
+              styles.supportedPackagesHeader,
+            )}
           />
           <ul className={clsx('clean-list', styles.packageList)}>
-            {filteredUsers.map((user) => (
-              <PackageCard key={user.name} user={user}/>
+            {filteredUsers.map(user => (
+              <PackageCard key={user.name} user={user} />
             ))}
           </ul>
         </div>
@@ -254,26 +257,27 @@ function Packages() {
   );
 }
 
-const favoriteUsers = sortedUsers.filter((user) =>
-  !user.tags.includes('planned'),
+const favoriteUsers = sortedUsers.filter(
+  user => !user.tags.includes('planned'),
 );
-const otherUsers = sortedUsers.filter(
-  (user) => user.tags.includes('planned'),
-);
-
+const otherUsers = sortedUsers.filter(user => user.tags.includes('planned'));
 
 export default function PackagePage(): JSX.Element {
   return (
     <Layout title={TITLE} description={DESCRIPTION}>
       <main className="margin-vert--lg">
-        <PackagesHeader/>
-        <PackagesFilters/>
+        <PackagesHeader />
+        <PackagesFilters />
         <div
-          style={{display: 'flex', marginLeft: 'auto', justifyContent: 'center'}}
+          style={{
+            display: 'flex',
+            marginLeft: 'auto',
+            justifyContent: 'center',
+          }}
           className="container">
-          <SearchBar/>
+          <SearchBar />
         </div>
-        <Packages/>
+        <Packages />
       </main>
     </Layout>
   );

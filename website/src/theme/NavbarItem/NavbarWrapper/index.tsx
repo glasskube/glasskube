@@ -3,13 +3,12 @@ import CustomGitHubButton from '@site/src/components/buttons/CustomGitHubButton'
 import SignupForWaitlistButton from '@site/src/components/buttons/SignupForWaitlistButton';
 import DemoButton from '@site/src/components/buttons/DemoButton';
 
-
 function Index() {
   return (
     <>
       <div className={styles.wrapper}>
         <div className={styles.center}>
-          <CustomGitHubButton href='https://github.com/glasskube/glasskube' />
+          <CustomGitHubButton href="https://github.com/glasskube/glasskube" />
         </div>
       </div>
       <div className={styles.ctaWrapper}>
@@ -19,7 +18,6 @@ function Index() {
           <DemoButton additionalClassNames={''} />
         </div>
       </div>
-
     </>
   );
 }
