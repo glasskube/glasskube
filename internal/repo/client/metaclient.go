@@ -66,27 +66,6 @@ func (d metaclient) FetchMetaIndex(target *types.MetaIndex) error {
 	}
 }
 
-func (d metaclient) FetchMetaIndexForRepo(repo string, target *types.MetaIndex) error {
-	var index types.PackageRepoIndex
-	if err := d.clientset.ForRepoWithName(repo).FetchPackageRepoIndex(&index); err != nil {
-		return err
-	}
-	indexMap := make(map[string]types.MetaIndexItem)
-	for _, item := range index.Packages {
-		indexMap[item.Name] = types.MetaIndexItem{
-			PackageRepoIndexItem: item,
-			Repos:                []string{repo},
-		}
-	}
-	*target = types.MetaIndex{
-		Packages: make([]types.MetaIndexItem, len(indexMap)),
-	}
-	for i, name := range maputils.KeysSorted(indexMap) {
-		target.Packages[i] = indexMap[name]
-	}
-	return nil
-}
-
 // GetLatestVersion implements RepoMetaclient.
 func (d metaclient) GetLatestVersion(pkgName string) (string, error) {
 	if repoList, err := d.clientset.client.ListPackageRepositories(context.TODO()); err != nil {

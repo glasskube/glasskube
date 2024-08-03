@@ -10,6 +10,7 @@ import (
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
+	"github.com/glasskube/glasskube/internal/maputils"
 	"github.com/glasskube/glasskube/internal/names"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	repotypes "github.com/glasskube/glasskube/internal/repo/types"
@@ -157,16 +158,9 @@ func (l *lister) fetchRepoAndInstalled(ctx context.Context, options ListOptions,
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if options.Repository != "" {
-				if err := l.repoClient.Meta().FetchMetaIndexForRepo(options.Repository, &index); err != nil {
-					repoErr = fmt.Errorf("could not fetch package repository index for repo %s : %w",
-						options.Repository,
-						err)
-				}
-			} else if err := l.repoClient.Meta().FetchMetaIndex(&index); err != nil {
-				repoErr = fmt.Errorf("could not fetch package repository index: %w", err)
+			if err := l.fetchMetaIndex(options, &index); err != nil {
+				repoErr = err
 			}
-
 			l.cachedIndex = &index
 		}()
 	} else {
@@ -249,4 +243,41 @@ func setPackageInfo(packageInfos v1alpha1.PackageInfoList, res *result, pkg ctrl
 			break
 		}
 	}
+}
+
+func (l *lister) fetchMetaIndex(options ListOptions, index *repotypes.MetaIndex) error {
+	if options.Repository == "" {
+		if err := l.repoClient.Meta().FetchMetaIndex(index); err != nil {
+			return fmt.Errorf("could not fetch package repository index: %w", err)
+		}
+		return nil
+	}
+	// fetch index for given repo
+	var repoIndex repotypes.PackageRepoIndex
+	err := l.repoClient.ForRepoWithName(options.Repository).FetchPackageRepoIndex(&repoIndex)
+	if err != nil {
+		return fmt.Errorf("could not fetch package repository index for repo %s : %w",
+			options.Repository,
+			err)
+	}
+	*index = repoIndexToMetaIndex(options.Repository, repoIndex)
+	return nil
+}
+
+func repoIndexToMetaIndex(repo string, index repotypes.PackageRepoIndex) repotypes.MetaIndex {
+	indexMap := make(map[string]repotypes.MetaIndexItem)
+	for _, item := range index.Packages {
+		indexMap[item.Name] = repotypes.MetaIndexItem{
+			PackageRepoIndexItem: item,
+			Repos:                []string{repo},
+		}
+	}
+
+	metaIndex := repotypes.MetaIndex{
+		Packages: make([]repotypes.MetaIndexItem, len(indexMap)),
+	}
+	for i, name := range maputils.KeysSorted(indexMap) {
+		metaIndex.Packages[i] = indexMap[name]
+	}
+	return metaIndex
 }

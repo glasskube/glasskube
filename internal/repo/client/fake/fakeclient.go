@@ -56,10 +56,6 @@ func (f *FakeClient) GetReposForPackage(name string) ([]v1alpha1.PackageReposito
 	return f.PackageRepositories, nil
 }
 
-func (f *FakeClient) FetchMetaIndexForRepo(repo string, target *types.MetaIndex) error {
-	panic("unimplemented")
-}
-
 func (f *FakeClient) AddPackage(name, version string, manifest *v1alpha1.PackageManifest) {
 	if f.Packages == nil {
 		f.Clear()
