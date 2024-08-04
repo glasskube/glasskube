@@ -2,9 +2,12 @@ import clsx from 'clsx';
 import Heading from '@theme/Heading';
 import styles from './styles.module.css';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faGitAlt} from '@fortawesome/free-brands-svg-icons';
+import {
+  faGitAlt,
+  faGithub,
+  faSkyatlas,
+} from '@fortawesome/free-brands-svg-icons';
 import {IconDefinition} from '@fortawesome/free-regular-svg-icons';
-import {faBoxes, faCodeBranch, faDisplay, faMagnifyingGlass, faSync} from '@fortawesome/free-solid-svg-icons';
 
 type FeatureItem = {
   title: string;
@@ -14,61 +17,35 @@ type FeatureItem = {
 
 const FeatureList: FeatureItem[] = [
   {
-    title: 'CLI and GUI available',
-    Icon: faDisplay,
+    title: 'Enterprise ready',
+    Icon: faSkyatlas,
     description: (
       <>
-        CLI und UI as first class components. It doesn't matter if you prefer managing your
-        packages via a CLI or UI - Glasskube supports both.
+        Manage the Kubernetes packages your core application depends on or
+        distribute internal services charts to your developers with the
+        Glasskube package manager.
       </>
     ),
   },
   {
-    title: 'Dependency aware',
-    Icon: faCodeBranch,
-    description: (
-      <>
-        Glasskube packages are dependency aware. If two packages require the same dependency,
-        Glasskube makes sure it only gets installed once.
-      </>
-    ),
-  },
-  {
-    title: 'GitOps ready',
+    title: 'Advanced GitOps Integration',
     Icon: faGitAlt,
     description: (
       <>
-        All packages are stored in custom resources, which can easily be managed with your favorite
-        GitOps tool like ArgoCD or Flux.
+        Glasskube integrates into your GitOps workflow you already have in
+        place. It integrates with Renovate and will provide resource level diffs
+        right into your pull request.
       </>
     ),
   },
   {
-    title: 'Automated updates',
-    Icon: faSync,
+    title: 'Open Source',
+    Icon: faGithub,
     description: (
       <>
-        Glasskube ensures your Kubernetes packages and apps are always up-to-date, minimizing the
-        manual effort required for maintenance.
-      </>
-    ),
-  },
-  {
-    title: 'Central package repository',
-    Icon: faBoxes,
-    description: (
-      <>
-        Keep track of all your packages in one central repository, with a planned feature for custom repositories.
-      </>
-    ),
-  },
-  {
-    title: 'Cluster Scan',
-    Icon: faMagnifyingGlass,
-    description: (
-      <>
-        Introducing the Cluster Scan feature in a future version, which allows you to detect packages in your cluster,
-        providing valuable insights for better management and upgrade paths.
+        Glasskube is fully Open-Source, part of the CNCF landscape and is
+        Apache-2.0 licensed. Developed by dozens of contributors from all over
+        the world.
       </>
     ),
   },
@@ -77,11 +54,13 @@ const FeatureList: FeatureItem[] = [
 function Feature({title, Icon, description}: FeatureItem) {
   return (
     <div className={clsx('col col--4', 'margin-top--lg')}>
-      <div className="text--center">
-        <FontAwesomeIcon icon={Icon} size="4x" className={styles.h64}/>
+      <div className={clsx('text--center', styles.iconBorder)}>
+        <FontAwesomeIcon icon={Icon} size="8x" className={styles.iconHeight} />
       </div>
       <div className="text--center padding-horiz--md margin-top--lg">
-        <Heading as="h3" className="">{title}</Heading>
+        <Heading as="h3" className="">
+          {title}
+        </Heading>
         <p>{description}</p>
       </div>
     </div>
@@ -91,10 +70,18 @@ function Feature({title, Icon, description}: FeatureItem) {
 export default function HomepageFeatures(): JSX.Element {
   return (
     <section className={styles.features}>
-      <div className="container">
+      <div className="container margin-top--lg">
         <div className="row">
-          {FeatureList.map((props, idx) => (
-            <Feature key={idx} {...props} />
+          <div className="col text--center">
+            <Heading as="h2">
+              Deploy, Configure and Update Kubernetes packages 20x faster than
+              with Helm
+            </Heading>
+          </div>
+        </div>
+        <div className="row">
+          {FeatureList.map((item, idx) => (
+            <Feature key={idx} {...item} />
           ))}
         </div>
       </div>

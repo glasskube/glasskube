@@ -9,6 +9,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/glasskube/glasskube/internal/web/components/toast"
+	"github.com/glasskube/glasskube/internal/web/util"
+
 	"github.com/glasskube/glasskube/pkg/manifest"
 
 	"github.com/glasskube/glasskube/internal/maputils"
@@ -100,39 +103,70 @@ func extractPackageValueSource(r *http.Request, valueName string) *v1alpha1.Pack
 	}
 }
 
-// packageConfigurationInput is a GET endpoint, which returns an html snippet containing an input container.
+// packageConfigurationInput is like clusterPackageConfigurationInput but for packages
+func (s *server) packageConfigurationInput(w http.ResponseWriter, r *http.Request) {
+	manifestName := mux.Vars(r)["manifestName"]
+	namespace := mux.Vars(r)["namespace"]
+	name := mux.Vars(r)["name"]
+	selectedVersion := r.FormValue("selectedVersion")
+	repositoryName := r.FormValue("repositoryName")
+	pkg, manifest, err := describe.DescribeInstalledPackage(r.Context(), namespace, name)
+	if err != nil && !errors.IsNotFound(err) {
+		err = fmt.Errorf("an error occurred fetching package details of %v: %w", manifestName, err)
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		return
+	}
+
+	s.handleConfigurationInput(w, r, &packageDetailPageContext{
+		repositoryName:  repositoryName,
+		selectedVersion: selectedVersion,
+		manifestName:    manifestName,
+		pkg:             pkg,
+		manifest:        manifest,
+	})
+}
+
+// clusterPackageConfigurationInput is a GET endpoint, which returns an html snippet containing an input container.
 // The endpoint requires the pkgName query parameter to be set, as well as the valueName query parameter (which holds
 // the name of the desired value according to the package value definitions).
 // An optional query parameter refKind can be passed to request the snippet in a certain variant, where the accepted
 // refKind values are: ConfigMap, Secret, Package. If no refKind is given, the "regular" input is returned.
 // In any case, the input container consists of a button where the user can change the type of reference or remove the
 // reference, and the actual input field(s).
-func (s *server) packageConfigurationInput(w http.ResponseWriter, r *http.Request) {
+func (s *server) clusterPackageConfigurationInput(w http.ResponseWriter, r *http.Request) {
 	pkgName := mux.Vars(r)["pkgName"]
 	selectedVersion := r.FormValue("selectedVersion")
 	repositoryName := r.FormValue("repositoryName")
-	pkg, manifest, err := describe.DescribeInstalledPackage(r.Context(), pkgName)
+	pkg, manifest, err := describe.DescribeInstalledClusterPackage(r.Context(), pkgName)
 	if err != nil && !errors.IsNotFound(err) {
 		err = fmt.Errorf("an error occurred fetching package details of %v: %w", pkgName, err)
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		return
 	}
 
-	if manifest == nil {
-		manifest = &v1alpha1.PackageManifest{}
-		if err := s.repoClientset.ForRepoWithName(repositoryName).
-			FetchPackageManifest(pkgName, selectedVersion, manifest); err != nil {
-			// TODO check error handling again?
-			s.respondAlertAndLog(w, err,
-				fmt.Sprintf("An error occurred fetching manifest of %v in version %v", pkgName, selectedVersion),
-				"danger")
+	s.handleConfigurationInput(w, r, &packageDetailPageContext{
+		repositoryName:  repositoryName,
+		selectedVersion: selectedVersion,
+		manifestName:    pkgName,
+		pkg:             pkg,
+		manifest:        manifest,
+	})
+}
+
+func (s *server) handleConfigurationInput(w http.ResponseWriter, r *http.Request, d *packageDetailPageContext) {
+	if d.manifest == nil {
+		d.manifest = &v1alpha1.PackageManifest{}
+		if err := s.repoClientset.ForRepoWithName(d.repositoryName).
+			FetchPackageManifest(d.manifestName, d.selectedVersion, d.manifest); err != nil {
+			s.sendToast(w,
+				toast.WithErr(fmt.Errorf("failed to fetch manifest of %v in version %v: %w", d.manifestName, d.selectedVersion, err)))
 			return
 		}
 	}
 
 	valueName := mux.Vars(r)["valueName"]
 	refKind := r.URL.Query().Get("refKind")
-	if valueDefinition, ok := manifest.ValueDefinitions[valueName]; ok {
+	if valueDefinition, ok := d.manifest.ValueDefinitions[valueName]; ok {
 		options := pkg_config_input.PkgConfigInputDatalistOptions{}
 		if refKind == refKindConfigMap || refKind == refKindSecret {
 			if opts, err := s.getNamespaceOptions(); err != nil {
@@ -148,13 +182,13 @@ func (s *server) packageConfigurationInput(w http.ResponseWriter, r *http.Reques
 			}
 		}
 		input := pkg_config_input.ForPkgConfigInput(
-			pkg, repositoryName, selectedVersion, pkgName, valueName, valueDefinition, nil, &options,
+			d.pkg, d.repositoryName, d.selectedVersion, d.manifest, valueName, valueDefinition, nil, &options,
 			&pkg_config_input.PkgConfigInputRenderOptions{
 				Autofocus:      true,
 				DesiredRefKind: &refKind,
 			})
-		err = s.templates.pkgConfigInput.Execute(w, input)
-		checkTmplError(err, fmt.Sprintf("package config input (%s, %s)", pkgName, valueName))
+		err := s.templates.pkgConfigInput.Execute(w, input)
+		util.CheckTmplError(err, fmt.Sprintf("package config input (%s, %s)", d.manifestName, valueName))
 	}
 }
 
@@ -187,7 +221,7 @@ func (s *server) namesDatalist(w http.ResponseWriter, r *http.Request) {
 		"Options": options,
 		"Id":      id,
 	})
-	checkTmplError(tmplErr, "names-datalist")
+	util.CheckTmplError(tmplErr, "names-datalist")
 }
 
 func (s *server) keysDatalist(w http.ResponseWriter, r *http.Request) {
@@ -218,7 +252,7 @@ func (s *server) keysDatalist(w http.ResponseWriter, r *http.Request) {
 		"Options": options,
 		"Id":      r.FormValue("id"),
 	})
-	checkTmplError(tmplErr, "keys-datalist")
+	util.CheckTmplError(tmplErr, "keys-datalist")
 }
 
 func (s *server) getDatalistOptions(ctx context.Context, ref *v1alpha1.ValueReference, namespaceOptions []string, pkgsOptions []string) (*pkg_config_input.PkgConfigInputDatalistOptions, error) {
@@ -267,8 +301,8 @@ func (s *server) getNamespaceOptions() ([]string, error) {
 }
 
 func (s *server) getPackagesOptions(ctx context.Context) ([]string, error) {
-	var packages v1alpha1.PackageList
-	if err := s.pkgClient.Packages().GetAll(ctx, &packages); err != nil {
+	var packages v1alpha1.ClusterPackageList
+	if err := s.pkgClient.ClusterPackages().GetAll(ctx, &packages); err != nil {
 		return nil, err
 	} else {
 		options := make([]string, 0)

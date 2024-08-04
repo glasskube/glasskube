@@ -37,16 +37,16 @@ func (opts *ValuesOptions) IsValuesSet() bool {
 func (opts *ValuesOptions) AddFlagsToCommand(cmd *cobra.Command) {
 	flags := cmd.Flags()
 	flags.StringArrayVar(&opts.Values, "value", opts.Values,
-		"set a value via flag (can be used multiple times).\n"+
+		"Set a value via flag (can be used multiple times).\n"+
 			"You can create values referencing data in other resources using the following syntax: "+
-			"$<ReferenceKind>$[specifier...].\n"+
+			"$<ReferenceKind>$[<specifier>[,<specifier>...]].\n"+
 			"For example:\n"+
 			" * Reference a ConfigMap key: --value \"name=$ConfigMapRef$namespace,name,key\"\n"+
 			" * Reference a Secret key: --value \"name=$SecretRef$namespace,name,key\"\n"+
 			" * Reference another Package value: --value \"name=$PackageRef$name,value\"\n")
 	if opts.KeepOldValuesDefault != nil {
 		flags.BoolVar(&opts.KeepOldValues, "keep-old-values", *opts.KeepOldValuesDefault,
-			"set this to false in order to erase any values not specified via --value")
+			"Set this to false in order to erase any values not specified via --value")
 	}
 }
 

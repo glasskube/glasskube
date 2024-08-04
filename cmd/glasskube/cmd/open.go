@@ -11,25 +11,42 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
+type OpenCmdOptions struct {
+	NamespaceOptions
+	KindOptions
+	host string
 	port int32
+}
+
+var (
+	openCmdOptions = OpenCmdOptions{
+		KindOptions: DefaultKindOptions(),
+		host:        "localhost",
+	}
 )
 
 var openCmd = &cobra.Command{
-	Use:   "open [package-name] [entrypoint]",
+	Use:   "open <package-name> [<entrypoint>]",
 	Short: "Open the Web UI of a package",
 	Long: `Open the Web UI of a package.
 If the package manifest has more than one entrypoint, specify the name of the entrypoint to open.`,
 	Args:   cobra.RangeArgs(1, 2),
 	PreRun: cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
 	Run: func(cmd *cobra.Command, args []string) {
+		ctx := cmd.Context()
 		pkgName := args[0]
-		var entrypointName string
+		entrypointName := ""
 		if len(args) == 2 {
 			entrypointName = args[1]
 		}
 
-		result, err := open.NewOpener().Open(cmd.Context(), pkgName, entrypointName, port)
+		pkg, err := getPackageOrClusterPackage(ctx, pkgName, openCmdOptions.KindOptions, openCmdOptions.NamespaceOptions)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "❌ Could not get resource %v: %v\n", pkgName, err)
+			cliutils.ExitWithError()
+		}
+
+		result, err := open.NewOpener().Open(ctx, pkg, entrypointName, openCmdOptions.host, openCmdOptions.port)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "❌ Could not open package %v: %v\n", pkgName, err)
 			cliutils.ExitWithError()
@@ -74,6 +91,10 @@ If the package manifest has more than one entrypoint, specify the name of the en
 }
 
 func init() {
-	openCmd.Flags().Int32Var(&port, "port", 0, "Custom port for opening the package")
+	openCmdOptions.KindOptions.AddFlagsToCommand(openCmd)
+	openCmdOptions.NamespaceOptions.AddFlagsToCommand(openCmd)
+	openCmd.Flags().StringVar(&openCmdOptions.host, "host", openCmdOptions.host,
+		"Custom hostname to open the local port on")
+	openCmd.Flags().Int32Var(&openCmdOptions.port, "port", openCmdOptions.port, "Custom port for opening the package")
 	RootCmd.AddCommand(openCmd)
 }

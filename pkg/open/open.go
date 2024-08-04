@@ -7,13 +7,18 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/cliutils"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
+	"github.com/glasskube/glasskube/internal/names"
 	"github.com/glasskube/glasskube/pkg/future"
 	"github.com/glasskube/glasskube/pkg/manifest"
+	"go.uber.org/multierr"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -36,14 +41,16 @@ func NewOpener() *opener {
 	return &opener{}
 }
 
-func (o *opener) Open(ctx context.Context, packageName string, entrypointName string, port int32) (*OpenResult, error) {
+func (o *opener) Open(
+	ctx context.Context, pkg ctrlpkg.Package, entrypointName string, host string, port int32) (*OpenResult, error) {
+
 	if err := o.initFromContext(ctx); err != nil {
 		return nil, err
 	}
 
-	manifest, err := manifest.GetInstalledManifest(ctx, packageName)
+	manifest, err := manifest.GetInstalledManifestForPackage(ctx, pkg)
 	if err != nil {
-		return nil, fmt.Errorf("could not get PackageInfo for package %v: %w", packageName, err)
+		return nil, fmt.Errorf("could not get PackageInfo for %v %v: %w", pkg.GetSpec().PackageInfo.Name, pkg.GetName(), err)
 	}
 
 	if len(manifest.Entrypoints) < 1 {
@@ -67,6 +74,11 @@ func (o *opener) Open(ctx context.Context, packageName string, entrypointName st
 		}
 	}
 
+	namespace := pkg.GetNamespace()
+	if namespace == "" {
+		namespace = manifest.DefaultNamespace
+	}
+
 	result := OpenResult{opener: o}
 	var futures []future.Future
 	for _, entrypoint := range manifest.Entrypoints {
@@ -79,7 +91,7 @@ func (o *opener) Open(ctx context.Context, packageName string, entrypointName st
 			stopCh := make(chan struct{})
 			o.readyCh = append(o.readyCh, readyCh)
 			o.stopCh = append(o.stopCh, stopCh)
-			entrypointFuture, err := o.open(ctx, manifest, e, readyCh, stopCh)
+			entrypointFuture, err := o.open(ctx, pkg, manifest, namespace, host, e, readyCh, stopCh)
 			if err != nil {
 				o.stop()
 				epName := e.Name
@@ -92,7 +104,7 @@ func (o *opener) Open(ctx context.Context, packageName string, entrypointName st
 			// attach the first url to the result
 			// TODO: Maybe there is a more elegant way to do this.
 			if result.Url == "" {
-				result.Url = getBrowserUrl(e)
+				result.Url = getBrowserUrl(host, e)
 			}
 		}
 	}
@@ -131,7 +143,10 @@ func (o *opener) stop() {
 
 func (o *opener) open(
 	ctx context.Context,
+	pkg ctrlpkg.Package,
 	manifest *v1alpha1.PackageManifest,
+	namespace string,
+	listenAddress string,
 	entrypoint v1alpha1.PackageEntrypoint,
 	readyChannel chan struct{},
 	stopChannel chan struct{},
@@ -140,7 +155,13 @@ func (o *opener) open(
 		return nil, err
 	}
 
-	svc, err := o.service(ctx, manifest, entrypoint)
+	var listenAddresses []string
+	var err error
+	if listenAddresses, err = resolveListenAddress(listenAddress); err != nil {
+		return nil, err
+	}
+
+	svc, err := o.service(ctx, pkg, manifest, namespace, entrypoint)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +184,8 @@ func (o *opener) open(
 	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: roundTripper}, "POST", url)
 	stdout := prefixWriter{prefix: fmt.Sprintf("%v\t |I| ", entrypoint.Name), writer: os.Stderr}
 	stderr := prefixWriter{prefix: fmt.Sprintf("%v\t |E| ", entrypoint.Name), writer: os.Stderr}
-	forwarder, err := portforward.New(dialer, []string{port}, stopChannel, readyChannel, stdout, stderr)
+	forwarder, err := portforward.NewOnAddresses(
+		dialer, listenAddresses, []string{port}, stopChannel, readyChannel, stdout, stderr)
 	if err != nil {
 		return nil, fmt.Errorf("could not create PortForwarder: %w", err)
 	}
@@ -179,17 +201,41 @@ func (o *opener) open(
 
 func (o *opener) service(
 	ctx context.Context,
+	pkg ctrlpkg.Package,
 	manifest *v1alpha1.PackageManifest,
+	namespace string,
 	entrypoint v1alpha1.PackageEntrypoint,
 ) (*corev1.Service, error) {
-	svc, err := o.ksClient.CoreV1().
-		Services(manifest.DefaultNamespace).
-		Get(ctx, entrypoint.ServiceName, metav1.GetOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("could not get service %v: %w", entrypoint.ServiceName, err)
-	} else {
-		return svc, nil
+	svcNameCandidates := []string{
+		entrypoint.ServiceName,
 	}
+
+	if manifest.Helm != nil {
+		svcNameCandidates = append(svcNameCandidates,
+			strings.Join([]string{pkg.GetName(), entrypoint.ServiceName}, "-"),
+			strings.Join([]string{names.HelmResourceName(pkg, manifest), entrypoint.ServiceName}, "-"),
+			names.HelmResourceName(pkg, manifest),
+		)
+	}
+
+	var errs error
+
+	for _, name := range svcNameCandidates {
+		svc, err := o.ksClient.CoreV1().
+			Services(namespace).
+			Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			if !apierrors.IsNotFound(err) {
+				return nil, fmt.Errorf("could not get service %v: %w", entrypoint.ServiceName, err)
+			} else {
+				multierr.AppendInto(&errs, err)
+			}
+		} else {
+			return svc, nil
+		}
+	}
+
+	return nil, fmt.Errorf("could not find service: %w", errs)
 }
 
 func (o *opener) pod(ctx context.Context, service *corev1.Service) (*corev1.Pod, error) {
@@ -208,7 +254,7 @@ func (o *opener) pod(ctx context.Context, service *corev1.Service) (*corev1.Pod,
 			return &pod, nil
 		}
 	}
-	return nil, fmt.Errorf("no ready pod found for service %v", service.Name)
+	return nil, fmt.Errorf("no pod found for service %v has status ready", service.Name)
 }
 
 func portMapping(service *corev1.Service, pod *corev1.Pod, entrypoint v1alpha1.PackageEntrypoint) (string, error) {
@@ -266,10 +312,24 @@ func getLocalPort(entrypoint v1alpha1.PackageEntrypoint) int32 {
 	}
 }
 
-func getBrowserUrl(entrypoint v1alpha1.PackageEntrypoint) string {
+func resolveListenAddress(listenAddress string) ([]string, error) {
+	if listenAddress != "" {
+		if listenAddresses, err := net.LookupHost(listenAddress); err != nil {
+			return nil, err
+		} else {
+			return listenAddresses, nil
+		}
+	}
+	return []string{"0.0.0.0"}, nil
+}
+
+func getBrowserUrl(host string, entrypoint v1alpha1.PackageEntrypoint) string {
+	if host == "" {
+		host = "localhost"
+	}
 	url := url.URL{
 		Scheme: "http",
-		Host:   fmt.Sprintf("localhost:%v", getLocalPort(entrypoint)),
+		Host:   net.JoinHostPort(host, fmt.Sprint(getLocalPort(entrypoint))),
 	}
 	if entrypoint.Scheme != "" {
 		url.Scheme = entrypoint.Scheme

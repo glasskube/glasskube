@@ -2,11 +2,12 @@
 slug: future-of-devops
 title: Why nobody grows up wanting to be a DevOps engineer
 description: "How did DevOps start, what were it's initial promises and where are we going?"
+image: https://github.com/glasskube/glasskube/assets/38757612/54324401-9b0f-4faf-a7c1-beea346057de
 authors: [ jpage ]
 tags: [ glasskube ]
 ---
 
-import CustomGitHubButton from '../../src/components/CustomGitHubButton.tsx';
+import CustomGitHubButton from '@site/src/components/buttons/CustomGitHubButton.tsx';
 import Install from '../../src/partials/_install.mdx';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
@@ -16,21 +17,21 @@ import TabItem from '@theme/TabItem';
 
 When I look at younger generations that didn’t grow up largely offline like I did, I feel slightly sorry for them. I’m in my mid-thirties, so I know what it was like to grow up tapping into [dial-up](https://en.wikipedia.org/wiki/Dial-up_Internet_access) internet as quickly as possible (to avoid blocking the phone line for too long) to access a couple of Wikipedia pages to do my homework and not feel like anything was missing. By personally living through the ascendence of the personal computer we all have in our pockets I feel, not immune, but better equipped to use it to my advantage and not fall victim to its false promises of limitless bliss and fulfillment simply for being more “[connected](https://www.newyorker.com/news/the-new-yorker-interview/jonathan-haidt-wants-you-to-take-away-your-kids-phone)”.
 
-On the other hand, there is another revolution that **I was not directly a part of**, the revolution that happened in the IT departments worldwide across the 00s in the aftermath of the now-legendary [Flickr](https://www.youtube.com/watch?v=LdOe18KhtT4) talk at the O’Reilly Velocity conference in 2009. An event that put `DevOps` on the map and showed a future that could pivot from the siloed, slow-moving [ITIL](https://en.wikipedia.org/wiki/ITIL)-based organization to something better. 
+On the other hand, there is another revolution that **I was not directly a part of**, the revolution that happened in the IT departments worldwide across the 00s in the aftermath of the now-legendary [Flickr](https://www.youtube.com/watch?v=LdOe18KhtT4) talk at the O’Reilly Velocity conference in 2009. An event that put `DevOps` on the map and showed a future that could pivot from the siloed, slow-moving [ITIL](https://en.wikipedia.org/wiki/ITIL)-based organization to something better.
 
-Since I recently switched careers from teaching to tech less than 5 years ago. I don’t know what it’s like to work in any other professional environment that doesn’t live and breathe the practices imparted in that seminal Flickr talk. Agile methodologies and the still [difficult-to-pin-down](https://www.reddit.com/r/devops/comments/812527/can_someone_explain_what_devops_is/) definition of “DevOps“ is a status quo I’ve never had to question. 
+Since I recently switched careers from teaching to tech less than 5 years ago. I don’t know what it’s like to work in any other professional environment that doesn’t live and breathe the practices imparted in that seminal Flickr talk. Agile methodologies and the still [difficult-to-pin-down](https://www.reddit.com/r/devops/comments/812527/can_someone_explain_what_devops_is/) definition of “DevOps“ is a status quo I’ve never had to question.
 
-**But I question it now**. If I argue that up-and-coming generations are missing fundamental perspective and have a lot to gain from knowing what it was like to live without smartphones. **I have to apply the same logic to myself and make a concerted effort to understand what DevOps really is? What did it emerge as a response to? What were its initial promises and have those promises been delivered? How and why do people end up being DevOps engineers? And what will it mean to be a DevOps engineer in the future?** 
+**But I question it now**. If I argue that up-and-coming generations are missing fundamental perspective and have a lot to gain from knowing what it was like to live without smartphones. **I have to apply the same logic to myself and make a concerted effort to understand what DevOps really is? What did it emerge as a response to? What were its initial promises and have those promises been delivered? How and why do people end up being DevOps engineers? And what will it mean to be a DevOps engineer in the future?**
 
 ## How DevOps Started and it’s original Promise
 
-I sometimes wonder what it must have been like back in the days when devs had to put in infrastructure provisioning request forms and wait days or weeks to be served. I’ve heard the stories of what stereotypical Ops people of that culture were like, finger-pointing grumps whose favorite words were `“NO“` and `“Where’s my pager?“` . 
+I sometimes wonder what it must have been like back in the days when devs had to put in infrastructure provisioning request forms and wait days or weeks to be served. I’ve heard the stories of what stereotypical Ops people of that culture were like, finger-pointing grumps whose favorite words were `“NO“` and `“Where’s my pager?“` .
 
-John Allspaw and Paul Hammond, as well as many attendees of their famous velocity talk, [“10+ Deploys Per Day: Dev and Ops Cooperation at Flickr,"](https://www.youtube.com/watch?v=LdOe18KhtT4) didn’t have to wonder, the common friction between devs and ops teams must have been all too vivid to them. 
+John Allspaw and Paul Hammond, as well as many attendees of their famous velocity talk, [“10+ Deploys Per Day: Dev and Ops Cooperation at Flickr,"](https://www.youtube.com/watch?v=LdOe18KhtT4) didn’t have to wonder, the common friction between devs and ops teams must have been all too vivid to them.
 
-After watching the talk a handful of times over the years, a few things stand out to me. The first, is that I was unaware that talks back then contained **so much swearing** or maybe it’s just Mr. Allspaw. Another was the key message the speakers put forth, that both Dev and Ops teams effectively shared the same objective. **To enable the business.** 
+After watching the talk a handful of times over the years, a few things stand out to me. The first, is that I was unaware that talks back then contained **so much swearing** or maybe it’s just Mr. Allspaw. Another was the key message the speakers put forth, that both Dev and Ops teams effectively shared the same objective. **To enable the business.**
 
-They go on to talk about the tools and cultural traits organizations might want to adopt to achieve multiple deployments to production a day. They spoke of automated infrastructure, feature flagging, shared alerting and monitoring, all coalescing around a renewed collaborative culture that valued trust and a healthier attitude towards system failures and blame avoidance above all else. 
+They go on to talk about the tools and cultural traits organizations might want to adopt to achieve multiple deployments to production a day. They spoke of automated infrastructure, feature flagging, shared alerting and monitoring, all coalescing around a renewed collaborative culture that valued trust and a healthier attitude towards system failures and blame avoidance above all else.
 
 The shape of what DevOps would come to mean in the following years was further crystalized in large part by the hugely influential [DevOps Handbook](https://itrevolution.com/product/the-devops-handbook-second-edition/) and [Site Reliebility Engineering](https://sre.google/sre-book/table-of-contents/) books.
 
@@ -42,21 +43,21 @@ The opening chapter of the former describes in few words what a DevOps way of do
 
 ## Have we delivered on the promise?
 
-The feeling of walking on the shoulders of giants comes to mind when I think of the ideas presented in that Flickr talk. Those ideas that must have been so revolutionary to many are the only professional reality I've ever known. So regardless if improvements could be made to current DevOps methodologies, best practices and tooling, I for one am grateful for all the progress that has been achieved so far. Anyone I ask who was configuring servers or hacking before 2009 corroborates that **things are better now than they were back then.** 
+The feeling of walking on the shoulders of giants comes to mind when I think of the ideas presented in that Flickr talk. Those ideas that must have been so revolutionary to many are the only professional reality I've ever known. So regardless if improvements could be made to current DevOps methodologies, best practices and tooling, I for one am grateful for all the progress that has been achieved so far. Anyone I ask who was configuring servers or hacking before 2009 corroborates that **things are better now than they were back then.**
 
-Having said that, are most companies shipping like crazy, while achieving world-class stability, availability, and security? **Largely no.** 
-The DevOps world even with a massive [toolbox full of modern tooling](https://landscape.cncf.io/) available, still runs off of the exact same framework that was proposed in that talk. 
+Having said that, are most companies shipping like crazy, while achieving world-class stability, availability, and security? **Largely no.**
+The DevOps world even with a massive [toolbox full of modern tooling](https://landscape.cncf.io/) available, still runs off of the exact same framework that was proposed in that talk.
 
 In the words of [Adam Jacob](https://twitter.com/adamhjk)
 
-> “The problem isn’t that we haven’t optimized each individual part of the system enough. We’ve built more efficient tooling at every step. But the way the whole system is put together? The experience of using it? That’s basically identical to how it was in 2009, and it’s the reason we’re stuck.“. 
- 
-**Siloes still exist, handoffs are error-prone and collaboration on many occasions is quite forced and rigid.** Anybody who has worked as a DevOps engineer for any length of time will have a long list of things they think their organization gets wrong and will often have equally low amount of faith in their organization’s capacity to do anything about it. 
-Adam, a veteran DevOps practitioner, has even called for [a second wave DevOps](https://www.systeminit.com/blog-second-wave-devops) which goes further than trivially improving tools and invites us to think outside of the box, challenge the established rules, and see what’s on the other side. 
+> “The problem isn’t that we haven’t optimized each individual part of the system enough. We’ve built more efficient tooling at every step. But the way the whole system is put together? The experience of using it? That’s basically identical to how it was in 2009, and it’s the reason we’re stuck.“.
 
-Speaking of DevOps practitioners, who are these people? How and why does one become one? 
+**Siloes still exist, handoffs are error-prone and collaboration on many occasions is quite forced and rigid.** Anybody who has worked as a DevOps engineer for any length of time will have a long list of things they think their organization gets wrong and will often have equally low amount of faith in their organization’s capacity to do anything about it.
+Adam, a veteran DevOps practitioner, has even called for [a second wave DevOps](https://www.systeminit.com/blog-second-wave-devops) which goes further than trivially improving tools and invites us to think outside of the box, challenge the established rules, and see what’s on the other side.
 
-## How do people end up in DevOps in the first place? 
+Speaking of DevOps practitioners, who are these people? How and why does one become one?
+
+## How do people end up in DevOps in the first place?
 
 In just 15 years, the technology industry has evolved significantly. Job titles like **DevOps engineers, SREs, and Platform engineers** are now common on job boards and are hot items for tech recruiters. However, outside the IT world, these terms are still largely unknown. Despite its rapid growth, DevOps isn’t yet a profession people aspire to join; instead, it’s something many simply **"fall into"**.
 
@@ -90,11 +91,11 @@ It’s impossible to attempt to form a non-subjective profile of what traits a D
 
 ### Generalists
 
-Have you ever read a “[How to land a job in DevOps](https://www.simplilearn.com/tutorials/devops-tutorial/how-to-become-devops-engineer)“ guide? Remember the knowledge requirements section? Linux, Docker, CI/CD, Git, Hypersclaer of choice, Networking etc. The list goes on usually in the desired experience section of DevOps job requirements. 
+Have you ever read a “[How to land a job in DevOps](https://www.simplilearn.com/tutorials/devops-tutorial/how-to-become-devops-engineer)“ guide? Remember the knowledge requirements section? Linux, Docker, CI/CD, Git, Hypersclaer of choice, Networking etc. The list goes on usually in the desired experience section of DevOps job requirements.
 
-If you’ve interviewed for roles such as developer or product design roles you will more than likely have to show a portfolio at some stage of the process. This is rarely the case in DevOps interviews. I can’t think of one person who has assembled and updated a DevOps portfolio on a regular basis? The modular and distributed systems-building nature of DevOps roles just doesn’t lend itself well well-curated displays in a portfolio. 
+If you’ve interviewed for roles such as developer or product design roles you will more than likely have to show a portfolio at some stage of the process. This is rarely the case in DevOps interviews. I can’t think of one person who has assembled and updated a DevOps portfolio on a regular basis? The modular and distributed systems-building nature of DevOps roles just doesn’t lend itself well well-curated displays in a portfolio.
 
-As someone who was bored out of his brain teaching high school-level English for seven years, I naturally gravitated towards DevOps, a field requiring me to learn many tools and concepts and piece them together collaboratively. Not specializing deeply in any one concept but refining the skill of quickly learning new things is the callus I developed. Generalists who thrive in such environments fit right in. 
+As someone who was bored out of his brain teaching high school-level English for seven years, I naturally gravitated towards DevOps, a field requiring me to learn many tools and concepts and piece them together collaboratively. Not specializing deeply in any one concept but refining the skill of quickly learning new things is the callus I developed. Generalists who thrive in such environments fit right in.
 
 ### Tinkerers
 
@@ -102,7 +103,7 @@ People who do well in DevOps might think of themselves as [tinkerers](https://ww
 
 ![tinkerer](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/odqy1j4yuwc1anaioe69.png)
 
-I love this idea, and it fits many DevOps engineers I've met. Being interested in learning how things work simply for the knowledge of it is a common trait among the DevOps mentors I’ve had. Sure, spending the weekend installing a beefier switch in your home lab or rendering new mini figurines on your 3D printer doesn't directly show DevOps skills, but this background knowledge can indicate potential success in DevOps more than certificates can. 
+I love this idea, and it fits many DevOps engineers I've met. Being interested in learning how things work simply for the knowledge of it is a common trait among the DevOps mentors I’ve had. Sure, spending the weekend installing a beefier switch in your home lab or rendering new mini figurines on your 3D printer doesn't directly show DevOps skills, but this background knowledge can indicate potential success in DevOps more than certificates can.
 
 ### Glue
 
@@ -123,26 +124,26 @@ Teams are rightly cautious when adding new tools to their stack because new tool
 ## Future predictions
 ### A certain type of platform will win out
 
-The systems, platforms or methods of working that **will win out will not have to “teach“ its users how to work and collaborate together.** A future system that delivers the incredible possibilities of endless software shipping without compromising security and stability will only be possible if it makes team collaboration and cooperation the easiest, most intuitive, and most natural way of working while abstracting the work that neither devs nor ops are excited to do. 
+The systems, platforms or methods of working that **will win out will not have to “teach“ its users how to work and collaborate together.** A future system that delivers the incredible possibilities of endless software shipping without compromising security and stability will only be possible if it makes team collaboration and cooperation the easiest, most intuitive, and most natural way of working while abstracting the work that neither devs nor ops are excited to do.
 
 To create it though we are going to have to think outside of the box.
 
 ### A second wave of DevOps might be one the way
 
-Thankfully there are many restless and nonconforming people who contribute to the constant improvement of methodologies, processes, and tooling in the DevOps space. 
-Some might say that a formal [movement](https://www.systeminit.com/blog-second-wave-devops) of rethinking what DevOps could be is already emerging and that’s pretty exciting. 
+Thankfully there are many restless and nonconforming people who contribute to the constant improvement of methodologies, processes, and tooling in the DevOps space.
+Some might say that a formal [movement](https://www.systeminit.com/blog-second-wave-devops) of rethinking what DevOps could be is already emerging and that’s pretty exciting.
 
 ### The more generalists and tinkerers, the better
 
-The best-equipped individuals to keep connecting the puzzle pieces, close feedback loops, and rethink lousy ideas are those who are not afraid to trade deep specialization for professional genaralization. Those who dare to venture out and learn on the fly by tinkering, testing, and asking questions along the way are the ones who will keep the figurative ship afloat as it moves faster and faster towards engineering excellence. 
+The best-equipped individuals to keep connecting the puzzle pieces, close feedback loops, and rethink lousy ideas are those who are not afraid to trade deep specialization for professional genaralization. Those who dare to venture out and learn on the fly by tinkering, testing, and asking questions along the way are the ones who will keep the figurative ship afloat as it moves faster and faster towards engineering excellence.
 
-How to find enough of these people is another question. 
+How to find enough of these people is another question.
 
 ## Conclusion
 
-It looks like I'm no closer to knowing why people don't grow up wanting to be DevOps engineers, perhaps it's a blend of still being a relatively new field coupled with the fact that generalists aren't usually know as the coolest kids on the block. 
+It looks like I'm no closer to knowing why people don't grow up wanting to be DevOps engineers, perhaps it's a blend of still being a relatively new field coupled with the fact that generalists aren't usually know as the coolest kids on the block.
 
-Looking ahead to the next wave of talent, whether they consciously choose or stumble into DevOps roles, one thing is certain: understanding the field's history is key. It's the only way future engineers can develop the ability to identity the gulf between the current state and the aspirational future of what could be. By neglecting this gap, the status quo will prevail and we will be destined to stagnant mediocrity. 
+Looking ahead to the next wave of talent, whether they consciously choose or stumble into DevOps roles, one thing is certain: understanding the field's history is key. It's the only way future engineers can develop the ability to identity the gulf between the current state and the aspirational future of what could be. By neglecting this gap, the status quo will prevail and we will be destined to stagnant mediocrity.
 
 While it's undeniable that the tech landscape has vastly improved since the pre-DevOps era, it's equally evident that **DevOps is still finding its footing 15 years in.**
 

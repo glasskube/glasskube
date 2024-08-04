@@ -5,35 +5,55 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
+
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/pkg/manifest"
 )
 
-func DescribeInstalledPackage(ctx context.Context, pkgName string) (
-	*v1alpha1.Package, *v1alpha1.PackageManifest, error) {
-
+func DescribeInstalledClusterPackage(ctx context.Context, pkgName string) (
+	*v1alpha1.ClusterPackage, *v1alpha1.PackageManifest, error) {
 	pkgClient := cliutils.PackageClient(ctx)
-	repoClient := cliutils.RepositoryClientset(ctx)
-	var pkg v1alpha1.Package
-	err := pkgClient.Packages().Get(ctx, pkgName, &pkg)
+	var pkg v1alpha1.ClusterPackage
+	err := pkgClient.ClusterPackages().Get(ctx, pkgName, &pkg)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	if installedManifest, err := manifest.GetInstalledManifestForPackage(ctx, pkg); err == nil {
-		return &pkg, installedManifest, nil
-	} else if !errors.Is(err, manifest.ErrPackageNoManifest) {
+	mf, err := GetManifestForPkg(ctx, &pkg)
+	return &pkg, mf, err
+}
+
+func DescribeInstalledPackage(ctx context.Context, namespace string, name string) (
+	*v1alpha1.Package, *v1alpha1.PackageManifest, error) {
+	pkgClient := cliutils.PackageClient(ctx)
+	var pkg v1alpha1.Package
+	err := pkgClient.Packages(namespace).Get(ctx, name, &pkg)
+	if err != nil {
 		return nil, nil, err
 	}
 
+	mf, err := GetManifestForPkg(ctx, &pkg)
+	return &pkg, mf, err
+}
+
+func GetManifestForPkg(ctx context.Context, pkg ctrlpkg.Package) (*v1alpha1.PackageManifest, error) {
+	if installedManifest, err := manifest.GetInstalledManifestForPackage(ctx, pkg); err == nil {
+		return installedManifest, nil
+	} else if !errors.Is(err, manifest.ErrPackageNoManifest) {
+		return nil, err
+	}
+
+	repoClient := cliutils.RepositoryClientset(ctx)
 	// pkg is installed, but has either no manifest or owned package info (yet): use manifest in this version from repo
 	var packageManifest v1alpha1.PackageManifest
-	err = repoClient.ForPackage(pkg).FetchPackageManifest(pkgName, pkg.Spec.PackageInfo.Version, &packageManifest)
+	err := repoClient.ForPackage(pkg).FetchPackageManifest(
+		pkg.GetSpec().PackageInfo.Name, pkg.GetSpec().PackageInfo.Version, &packageManifest)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	} else {
-		return &pkg, &packageManifest, nil
+		return &packageManifest, nil
 	}
 }
 

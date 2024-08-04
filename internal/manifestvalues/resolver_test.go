@@ -75,7 +75,7 @@ var _ = Describe("resolver", func() {
 
 	It("should resolve Package reference value", func(ctx context.Context) {
 		resolver := newTestResolver(
-			&v1alpha1.Package{
+			&v1alpha1.ClusterPackage{
 				ObjectMeta: metav1.ObjectMeta{Name: "test"},
 				Spec: v1alpha1.PackageSpec{
 					Values: map[string]v1alpha1.ValueConfiguration{

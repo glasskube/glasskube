@@ -7,12 +7,7 @@
       data loss and a broken cluster! <b>Use at your own risk!</b>
     </div>
 
-    <form
-      hx-post="/packages/{{ .Manifest.Name }}/configure/advanced"
-      hx-target="#error-container"
-      hx-target-error="#error-container"
-      hx-select="div.alert"
-      hx-swap="innerHTML">
+    <form hx-post="{{ .SelfHref }}" hx-swap="none">
       {{ if gt (len .Repositories) 1 }}
         <label class="form-label" for="advanced-pkg-install-repository">Repository</label>
         <div class="input-group mb-2">
@@ -24,7 +19,7 @@
             hx-select="#advanced-options"
             hx-swap="outerHTML"
             hx-target="#advanced-options"
-            hx-get="/packages/{{ .Manifest.Name }}/configure/advanced"
+            hx-get="{{ .SelfHref }}"
             hx-include="#advanced-pkg-install-version">
             {{ range .Repositories }}
               <option value="{{ .Name }}" {{ if eq .Name $.RepositoryName }}selected{{ end }}>
@@ -44,7 +39,7 @@
           hx-select="#advanced-options"
           hx-swap="outerHTML"
           hx-target="#advanced-options"
-          hx-get="/packages/{{ .Manifest.Name }}/configure/advanced"
+          hx-get="{{ .SelfHref }}"
           hx-include="#advanced-pkg-install-repository">
           {{ with $idx := .PackageIndex }}
             {{ range $idx.Versions | Reversed }}

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/contenttype"
 	"github.com/glasskube/glasskube/internal/httperror"
 	"github.com/glasskube/glasskube/internal/repo/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -124,6 +125,8 @@ func (c *defaultClient) fetchYAMLOrJSON(url string, target any) error {
 	}
 
 	request, err := http.NewRequest(http.MethodGet, url, nil)
+	request.Header.Add("Accept", contenttype.MediaTypeJSON)
+	request.Header.Add("Accept", contenttype.MediaTypeYAML)
 	if err != nil {
 		return err
 	}
@@ -137,6 +140,11 @@ func (c *defaultClient) fetchYAMLOrJSON(url string, target any) error {
 		return fmt.Errorf("failed to fetch %v: %w", url, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
+
+	if err := contenttype.IsJsonOrYaml(resp); err != nil {
+		return fmt.Errorf("could not decode %v: %w", url, err)
+	}
+
 	if bytes, err := io.ReadAll(resp.Body); err != nil {
 		return err
 	} else if err := yaml.Unmarshal(bytes, target); err != nil {

@@ -11,6 +11,7 @@ import (
 	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/config"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/dependency"
 	"github.com/glasskube/glasskube/internal/manifestvalues/cli"
 	"github.com/glasskube/glasskube/internal/manifestvalues/flags"
@@ -36,18 +37,19 @@ var installCmdOptions = struct {
 	EnableAutoUpdates bool
 	NoWait            bool
 	Yes               bool
-	DryRun            bool
+	ShowAllMetadata   bool
 	OutputOptions
+	NamespaceOptions
+	DryRunOptions
 }{
 	ValuesOptions: flags.NewOptions(),
-	OutputOptions: OutputOptions{},
 }
 
 var installCmd = &cobra.Command{
-	Use:               "install [package-name]",
+	Use:               "install <package-name> [<name>]",
 	Short:             "Install a package",
 	Long:              `Install a package.`,
-	Args:              cobra.ExactArgs(1),
+	Args:              cobra.RangeArgs(1, 2),
 	PreRun:            cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
 	ValidArgsFunction: completeAvailablePackageNames,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -118,15 +120,48 @@ var installCmd = &cobra.Command{
 
 		pkgBuilder.WithVersion(installCmdOptions.Version)
 
-		installationPlan := []dependency.Requirement{
-			{PackageWithVersion: dependency.PackageWithVersion{Name: packageName, Version: installCmdOptions.Version}},
-		}
-
 		var manifest v1alpha1.PackageManifest
 		if err := repoClient.FetchPackageManifest(packageName, installCmdOptions.Version, &manifest); err != nil {
 			fmt.Fprintf(os.Stderr, "❗ Error: Could not fetch package manifest: %v\n", err)
 			cliutils.ExitWithError()
-		} else if validationResult, err :=
+		}
+
+		installationPlan := []dependency.Requirement{}
+		if manifest.Scope.IsCluster() {
+			if len(args) != 1 {
+				fmt.Fprintf(os.Stderr,
+					"❌ %v has scope Cluster. Specifying an instance name for a ClusterPackage is not possible\n",
+					packageName)
+				cliutils.ExitWithError()
+			}
+			installationPlan = append(installationPlan,
+				dependency.Requirement{PackageWithVersion: dependency.PackageWithVersion{
+					Name:    packageName,
+					Version: installCmdOptions.Version,
+				}},
+			)
+		} else {
+			var name string
+			if len(args) != 2 {
+				fmt.Fprintf(os.Stderr, "%v has scope Namespaced. Please enter a name (default %v):\n", packageName, packageName)
+				name = cliutils.GetInputStr("name")
+				if name == "" {
+					name = packageName
+				}
+			} else {
+				name = args[1]
+			}
+			ns := installCmdOptions.GetActualNamespace(ctx)
+			pkgBuilder.WithName(name).WithNamespace(ns)
+			installationPlan = append(installationPlan,
+				dependency.Requirement{PackageWithVersion: dependency.PackageWithVersion{
+					Name:    fmt.Sprintf("%v of type %v in namespace %v", name, packageName, ns),
+					Version: installCmdOptions.Version,
+				}},
+			)
+		}
+
+		if validationResult, err :=
 			dm.Validate(ctx, &manifest, installCmdOptions.Version); err != nil {
 			fmt.Fprintf(os.Stderr, "❗ Error: Could not validate dependencies: %v\n", err)
 			cliutils.ExitWithError()
@@ -159,7 +194,7 @@ var installCmd = &cobra.Command{
 
 		pkgBuilder.WithAutoUpdates(installCmdOptions.EnableAutoUpdates)
 
-		pkg := pkgBuilder.Build()
+		pkg := pkgBuilder.Build(manifest.Scope)
 
 		fmt.Fprintln(os.Stderr, bold("Summary:"))
 		fmt.Fprintf(os.Stderr, " * The following packages will be installed in your cluster (%v):\n", config.CurrentContext)
@@ -172,10 +207,10 @@ var installCmd = &cobra.Command{
 			fmt.Fprintln(os.Stderr, " * Automatic updates will be", bold("not enabled"))
 		}
 
-		if len(pkg.Spec.Values) > 0 {
+		if len(pkg.GetSpec().Values) > 0 {
 			fmt.Fprintln(os.Stderr, bold("Configuration:"))
-			printValueConfigurations(os.Stderr, pkg.Spec.Values)
-			if _, err := valueResolver.Resolve(ctx, pkg.Spec.Values); err != nil {
+			printValueConfigurations(os.Stderr, pkg.GetSpec().Values)
+			if _, err := valueResolver.Resolve(ctx, pkg.GetSpec().Values); err != nil {
 				fmt.Fprintf(os.Stderr, "⚠️  Some values can not be resolved: %v\n", err)
 			}
 		}
@@ -196,7 +231,7 @@ var installCmd = &cobra.Command{
 			}
 			fmt.Fprintf(os.Stderr,
 				"☑️  %v is being installed in the background.\n"+
-					"💡 Run \"glasskube describe %v\" to get the current status",
+					"💡 Run \"glasskube describe %v\" to get the current status\n",
 				packageName, packageName)
 		} else {
 			status, err := installer.InstallBlocking(ctx, pkg, opts)
@@ -217,6 +252,18 @@ var installCmd = &cobra.Command{
 				cliutils.ExitWithError()
 			}
 		}
+		if !installCmdOptions.ShowAllMetadata {
+			switch p := pkg.(type) {
+			case *v1alpha1.ClusterPackage:
+				p.ObjectMeta = pruneExtraFields(p.ObjectMeta)
+				pkg = p
+			case *v1alpha1.Package:
+				p.ObjectMeta = pruneExtraFields(p.ObjectMeta)
+				pkg = p
+			default:
+				panic("unexpected package type")
+			}
+		}
 		if installCmdOptions.OutputOptions.Output != "" {
 			output, err := formatOutput(pkg, installCmdOptions.OutputOptions.Output)
 			if err != nil {
@@ -228,7 +275,16 @@ var installCmd = &cobra.Command{
 	},
 }
 
-func formatOutput(pkg *v1alpha1.Package, format OutputFormat) (string, error) {
+func pruneExtraFields(original metav1.ObjectMeta) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Name:        original.Name,
+		Namespace:   original.Namespace,
+		Labels:      original.Labels,
+		Annotations: original.Annotations,
+	}
+}
+
+func formatOutput(pkg ctrlpkg.Package, format OutputFormat) (string, error) {
 	if gvks, _, err := scheme.Scheme.ObjectKinds(pkg); err == nil && len(gvks) == 1 {
 		pkg.SetGroupVersionKind(gvks[0])
 	}
@@ -314,19 +370,21 @@ func completeAvailablePackageVersions(
 
 func init() {
 	installCmd.PersistentFlags().StringVarP(&installCmdOptions.Version, "version", "v", "",
-		"install a specific version")
+		"Install a specific version")
 	_ = installCmd.RegisterFlagCompletionFunc("version", completeAvailablePackageVersions)
 	installCmd.PersistentFlags().BoolVar(&installCmdOptions.EnableAutoUpdates, "enable-auto-updates", false,
-		"enable automatic updates for this package")
+		"Enable automatic updates for this package")
 	installCmd.PersistentFlags().StringVar(&installCmdOptions.Repository, "repository", installCmdOptions.Repository,
-		"specify the name of the package repository to install this package from")
-	installCmd.PersistentFlags().BoolVar(&installCmdOptions.NoWait, "no-wait", false, "perform non-blocking install")
-	installCmd.PersistentFlags().BoolVar(&installCmdOptions.DryRun, "dry-run", false,
-		"simulate the installation of package without actually installing it")
-	installCmd.PersistentFlags().BoolVarP(&installCmdOptions.Yes, "yes", "y", false, "do not ask for any confirmation")
-	installCmd.MarkFlagsMutuallyExclusive("no-wait", "dry-run")
-	installCmd.MarkFlagsMutuallyExclusive("version", "enable-auto-updates")
+		"Specify the name of the package repository to install this package from")
+	installCmd.PersistentFlags().BoolVar(&installCmdOptions.NoWait, "no-wait", false, "Perform non-blocking install")
+	installCmd.PersistentFlags().BoolVarP(&installCmdOptions.Yes, "yes", "y", false, "Do not ask for any confirmation")
+	installCmd.PersistentFlags().BoolVar(&installCmdOptions.ShowAllMetadata, "show-all-metadata", false,
+		"Additionally print metadata fields other than name, namespace, annotations and labels")
 	installCmdOptions.ValuesOptions.AddFlagsToCommand(installCmd)
 	installCmdOptions.OutputOptions.AddFlagsToCommand(installCmd)
+	installCmdOptions.NamespaceOptions.AddFlagsToCommand(installCmd)
+	installCmdOptions.DryRunOptions.AddFlagsToCommand(installCmd)
+	installCmd.MarkFlagsMutuallyExclusive("version", "enable-auto-updates")
+	installCmd.MarkFlagsMutuallyExclusive("no-wait", "dry-run")
 	RootCmd.AddCommand(installCmd)
 }

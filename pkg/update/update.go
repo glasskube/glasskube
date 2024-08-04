@@ -7,6 +7,7 @@ import (
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/dependency"
 	"github.com/glasskube/glasskube/internal/repo"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
@@ -14,8 +15,11 @@ import (
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/condition"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/util/retry"
 )
 
 type UpdateTransaction struct {
@@ -34,7 +38,7 @@ func (tx UpdateTransaction) IsEmpty() bool {
 }
 
 type updateTransactionItem struct {
-	Package v1alpha1.Package
+	Package ctrlpkg.Package
 	Version string
 }
 
@@ -69,19 +73,13 @@ func (c *updater) WithStatusWriter(writer statuswriter.StatusWriter) *updater {
 }
 
 func (c *updater) PrepareForVersion(
-	ctx context.Context,
-	pkgName string,
-	pkgVersion string) (*UpdateTransaction, error) {
+	ctx context.Context, pkg ctrlpkg.Package, pkgVersion string,
+) (*UpdateTransaction, error) {
 	c.status.Start()
 	defer c.status.Stop()
 	c.status.SetStatus("Collecting installed package")
 
-	var pkg v1alpha1.Package
-	if err := c.client.Packages().Get(ctx, pkgName, &pkg); err != nil {
-		return nil, fmt.Errorf("failed to get package %v: %v", pkgName, err)
-	}
-
-	if !semver.IsUpgradable(pkg.Spec.PackageInfo.Version, pkgVersion) {
+	if !semver.IsUpgradable(pkg.GetSpec().PackageInfo.Version, pkgVersion) {
 		return nil, fmt.Errorf("can't update to downgraded version or equal version")
 	}
 
@@ -90,7 +88,8 @@ func (c *updater) PrepareForVersion(
 	var tx UpdateTransaction
 	item := updateTransactionItem{Package: pkg, Version: pkgVersion}
 	var manifest v1alpha1.PackageManifest
-	if err := c.repoClient.ForPackage(pkg).FetchPackageManifest(pkg.Name, pkgVersion, &manifest); err != nil {
+	if err := c.repoClient.ForPackage(pkg).
+		FetchPackageManifest(pkg.GetSpec().PackageInfo.Name, pkgVersion, &manifest); err != nil {
 		return nil, err
 	} else if result, err := c.dm.Validate(ctx, &manifest, pkgVersion); err != nil {
 		return nil, err
@@ -103,33 +102,31 @@ func (c *updater) PrepareForVersion(
 	return &tx, nil
 }
 
-func (c *updater) Prepare(ctx context.Context, packageNames []string) (*UpdateTransaction, error) {
+func (c *updater) Prepare(ctx context.Context, getters ...PackagesGetter) (*UpdateTransaction, error) {
 	c.status.Start()
 	defer c.status.Stop()
 	c.status.SetStatus("Collecting installed packages")
-	var packagesToUpdate []v1alpha1.Package
-	if len(packageNames) > 0 {
-		// Fetch all requested packages individually.
-		// This way, we can fail early if a requested package is not installed.
-		for _, name := range packageNames {
-			var pkg v1alpha1.Package
-			if err := c.client.Packages().Get(ctx, name, &pkg); err != nil {
-				return nil, fmt.Errorf("failed to get package %v: %v", name, err)
-			}
-			packagesToUpdate = append(packagesToUpdate, pkg)
+	var pkgs []ctrlpkg.Package
+	var explicit bool
+	for _, getter := range getters {
+		explicit = explicit || getter.Explicit()
+		if p, err := getter.Get(ctx); err != nil {
+			return nil, err
+		} else {
+			pkgs = append(pkgs, p...)
 		}
-	} else {
-		var packageList v1alpha1.PackageList
-		if err := c.client.Packages().GetAll(ctx, &packageList); err != nil {
-			return nil, fmt.Errorf("failed to get list of installed packages: %v", err)
-		}
-		packagesToUpdate = packageList.Items
 	}
+	return c.prepare(ctx, pkgs, explicit)
+}
 
+func (c *updater) prepare(
+	ctx context.Context, packagesToUpdate []ctrlpkg.Package, explicitRequest bool,
+) (*UpdateTransaction, error) {
 	c.status.SetStatus("Updating package index")
 
 	requirementsSet := make(map[dependency.Requirement]struct{})
 	var tx UpdateTransaction
+
 outer:
 	for _, pkg := range packagesToUpdate {
 		repoClient := c.repoClient.ForPackage(pkg)
@@ -139,18 +136,21 @@ outer:
 		}
 
 		for _, indexItem := range index.Packages {
-			if indexItem.Name == pkg.Name {
-				if semver.IsUpgradable(pkg.Spec.PackageInfo.Version, indexItem.LatestVersion) {
+			if indexItem.Name == pkg.GetSpec().PackageInfo.Name {
+				if semver.IsUpgradable(pkg.GetSpec().PackageInfo.Version, indexItem.LatestVersion) {
 					item := updateTransactionItem{Package: pkg, Version: indexItem.LatestVersion}
 					var manifest v1alpha1.PackageManifest
-					if err := repoClient.FetchPackageManifest(pkg.Name, indexItem.LatestVersion, &manifest); err != nil {
+					if err := repoClient.FetchPackageManifest(
+						pkg.GetSpec().PackageInfo.Name, indexItem.LatestVersion, &manifest); err != nil {
 						return nil, err
 					}
 					if result, err := c.dm.Validate(ctx, &manifest, indexItem.LatestVersion); err != nil {
 						return nil, err
 					} else if len(result.Conflicts) > 0 {
 						// This package can't be updated due to conflicts
-						tx.ConflictItems = append(tx.ConflictItems, updateTransactionItemConflict{item, result.Conflicts})
+						tx.ConflictItems = append(tx.ConflictItems,
+							updateTransactionItemConflict{item, result.Conflicts},
+						)
 					} else {
 						for _, req := range result.Requirements {
 							requirementsSet[req] = struct{}{}
@@ -158,7 +158,7 @@ outer:
 						// this package should be updated
 						tx.Items = append(tx.Items, item)
 					}
-				} else if len(packageNames) > 0 {
+				} else if explicitRequest {
 					// this package is already up-to-date but an update was requested via argument
 					tx.Items = append(tx.Items, updateTransactionItem{Package: pkg})
 				}
@@ -166,7 +166,7 @@ outer:
 			}
 		}
 		// This can happen if a package was removed from the index for some reason.
-		return nil, fmt.Errorf("package %v not found in index", pkg.Name)
+		return nil, fmt.Errorf("package %v not found in index", pkg.GetSpec().PackageInfo.Name)
 	}
 
 	for req := range requirementsSet {
@@ -176,19 +176,34 @@ outer:
 	return &tx, nil
 }
 
-func (c *updater) Apply(ctx context.Context, tx *UpdateTransaction) ([]v1alpha1.Package, error) {
+type ApplyUpdateOptions struct {
+	Blocking bool
+	DryRun   bool
+}
+
+func (c *updater) Apply(
+	ctx context.Context,
+	tx *UpdateTransaction,
+	opts ApplyUpdateOptions,
+) ([]ctrlpkg.Package, error) {
 	c.status.Start()
 	defer c.status.Stop()
-	var updatedPackages []v1alpha1.Package
+	var updatedPackages []ctrlpkg.Package
 	for _, item := range tx.Items {
 		if item.UpdateRequired() {
-			c.status.SetStatus(fmt.Sprintf("Updating %v", item.Package.Name))
-			if err := c.UpdatePackage(ctx, &item.Package, item.Version); err != nil {
-				return nil, fmt.Errorf("could not update package %v: %w", item.Package.Name, err)
+			c.status.SetStatus(fmt.Sprintf("Updating %v", item.Package.GetName()))
+			err := retry.OnError(retry.DefaultRetry,
+				apierrors.IsNotFound,
+				func() error { return c.UpdatePackage(ctx, item.Package, item.Version, opts.DryRun) },
+			)
+			if err != nil {
+				return nil, fmt.Errorf("could not update package %v: %w", item.Package.GetName(), err)
 			}
-			c.status.SetStatus(fmt.Sprintf("Checking %v", item.Package.Name))
-			if err := c.awaitUpdate(ctx, &item.Package); err != nil {
-				return nil, fmt.Errorf("package update for %v failed: %w", item.Package.Name, err)
+			if opts.Blocking {
+				c.status.SetStatus(fmt.Sprintf("Checking %v", item.Package.GetName()))
+				if err := c.awaitUpdate(ctx, item.Package); err != nil {
+					return nil, fmt.Errorf("package update for %v failed: %w", item.Package.GetName(), err)
+				}
 			}
 			updatedPackages = append(updatedPackages, item.Package)
 		}
@@ -196,23 +211,50 @@ func (c *updater) Apply(ctx context.Context, tx *UpdateTransaction) ([]v1alpha1.
 	return updatedPackages, nil
 }
 
-func (c *updater) UpdatePackage(ctx context.Context, pkg *v1alpha1.Package, version string) error {
-	pkg.Spec.PackageInfo.Version = version
-	return c.client.Packages().Update(ctx, pkg)
+func (c *updater) UpdatePackage(ctx context.Context, pkg ctrlpkg.Package, version string, DryRun bool) error {
+	opts := metav1.UpdateOptions{}
+	if DryRun {
+		opts.DryRun = []string{metav1.DryRunAll}
+	}
+	pkg.GetSpec().PackageInfo.Version = version
+	switch pkg := pkg.(type) {
+	case *v1alpha1.ClusterPackage:
+		return c.client.ClusterPackages().Update(ctx, pkg, opts)
+	case *v1alpha1.Package:
+		return c.client.Packages(pkg.GetNamespace()).Update(ctx, pkg, opts)
+	default:
+		return fmt.Errorf("unexpected object kind: %v", pkg.GroupVersionKind().Kind)
+	}
 }
 
-func (c *updater) awaitUpdate(ctx context.Context, pkg *v1alpha1.Package) error {
-	watcher, err := c.client.Packages().Watch(ctx)
-	if err != nil {
-		return err
+func (c *updater) awaitUpdate(ctx context.Context, pkg ctrlpkg.Package) error {
+	switch pkg := pkg.(type) {
+	case *v1alpha1.ClusterPackage:
+		watcher, err := c.client.ClusterPackages().Watch(ctx, metav1.ListOptions{})
+		if err != nil {
+			return err
+		}
+		return c.await(watcher, pkg)
+	case *v1alpha1.Package:
+		watcher, err := c.client.Packages(pkg.Namespace).Watch(ctx, metav1.ListOptions{})
+		if err != nil {
+			return err
+		}
+		return c.await(watcher, pkg)
+	default:
+		return fmt.Errorf("unexpected object kind: %v", pkg.GroupVersionKind().Kind)
 	}
+}
+
+func (c *updater) await(watcher watch.Interface, pkg ctrlpkg.Package) error {
 	defer watcher.Stop()
 	for event := range watcher.ResultChan() {
-		if eventPkg, ok := event.Object.(*v1alpha1.Package); ok && eventPkg.GetUID() == pkg.GetUID() {
-			if eventPkg.Status.Version == eventPkg.Spec.PackageInfo.Version {
+		if eventPkg, ok := event.Object.(ctrlpkg.Package); ok && eventPkg.GetUID() == pkg.GetUID() {
+			if eventPkg.GetStatus().Version == eventPkg.GetSpec().PackageInfo.Version {
 				return nil
 			}
-			if condition := meta.FindStatusCondition(eventPkg.Status.Conditions, string(condition.Ready)); condition != nil {
+			if condition := meta.FindStatusCondition(
+				eventPkg.GetStatus().Conditions, string(condition.Ready)); condition != nil {
 				if condition.Status == metav1.ConditionFalse {
 					return fmt.Errorf("Package is not ready (reason %v): %v", condition.Reason, condition.Message)
 				}

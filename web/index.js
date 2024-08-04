@@ -1,6 +1,6 @@
-import 'htmx.org';
+import 'htmx.org/dist/htmx.esm';
 import './windowHtmx';
-import 'htmx.org/dist/ext/sse';
-import 'htmx.org/dist/ext/response-targets';
+import 'htmx-ext-sse';
+import 'htmx-ext-response-targets';
 import 'bootstrap';
 import 'giscus';

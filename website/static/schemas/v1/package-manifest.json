@@ -90,6 +90,12 @@
         "url"
       ]
     },
+    "PackageScope": {
+      "enum": [
+        "Cluster",
+        "Namespaced"
+      ]
+    },
     "PartialJsonPatch": {
       "properties": {
         "op": {
@@ -266,6 +272,9 @@
     }
   },
   "properties": {
+    "scope": {
+      "$ref": "#/$defs/PackageScope"
+    },
     "name": {
       "type": "string"
     },

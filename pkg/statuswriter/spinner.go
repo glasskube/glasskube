@@ -38,6 +38,7 @@ func (obj *spinnerStatusWriter) Start() {
 	obj.onStop.Add(
 		func() {
 			ticker.Stop()
+			_ = obj.bar.Clear()
 			_ = obj.bar.Finish()
 			_ = obj.bar.Exit()
 		})

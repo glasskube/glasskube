@@ -7,7 +7,7 @@ import (
 	"text/template"
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
-	"github.com/fluxcd/helm-controller/api/v2beta2"
+	helmv2 "github.com/fluxcd/helm-controller/api/v2"
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/maputils"
 	corev1 "k8s.io/api/core/v1"
@@ -126,7 +126,7 @@ func (p *TargetPatch) MatchResource(obj object) bool {
 	return p.resource.Match(obj)
 }
 
-func (p *TargetPatch) MatchHelmRelease(obj *v2beta2.HelmRelease) bool {
+func (p *TargetPatch) MatchHelmRelease(obj *helmv2.HelmRelease) bool {
 	return p.helmChart != nil && *p.helmChart == obj.Spec.Chart.Spec.Chart
 }
 
@@ -138,7 +138,7 @@ func (p *TargetPatch) ApplyToResource(obj object) error {
 	}
 }
 
-func (p *TargetPatch) ApplyToHelmRelease(obj *v2beta2.HelmRelease) error {
+func (p *TargetPatch) ApplyToHelmRelease(obj *helmv2.HelmRelease) error {
 	if p.MatchHelmRelease(obj) {
 		if obj.Spec.Values == nil || len(obj.Spec.Values.Raw) == 0 {
 			obj.Spec.Values = &extv1.JSON{Raw: []byte("{}")}
@@ -172,7 +172,7 @@ func (patches *TargetPatches) ApplyToResource(obj object) error {
 	return nil
 }
 
-func (patches *TargetPatches) ApplyToHelmRelease(obj *v2beta2.HelmRelease) error {
+func (patches *TargetPatches) ApplyToHelmRelease(obj *helmv2.HelmRelease) error {
 	for _, patch := range *patches {
 		if err := patch.ApplyToHelmRelease(obj); err != nil {
 			return err

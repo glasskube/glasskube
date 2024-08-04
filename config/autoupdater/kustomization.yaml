@@ -1,0 +1,10 @@
+resources:
+  - serviceaccount.yaml
+  - cronjob.yaml
+  - rbac.yaml
+namespace: glasskube-system
+commonLabels:
+  app.kubernetes.io/name: glasskube-autoupdate
+images:
+  - name: ghcr.io/glasskube/glasskube
+    newTag: v0.15.0 # x-release-please-version

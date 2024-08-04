@@ -3,9 +3,11 @@ package dependency
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 	"strings"
 
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/names"
 	"go.uber.org/multierr"
 
@@ -87,15 +89,28 @@ func (dm *DependendcyManager) Validate(
 
 // NewGraph constructs a DependencyGraph from all packages returned by clientAdapter.ListPackages
 func (dm *DependendcyManager) NewGraph(ctx context.Context) (*graph.DependencyGraph, error) {
-	pkgs, err := dm.pkgClient.ListPackages(ctx)
-	if err != nil {
+	var allPkgs []ctrlpkg.Package
+	if pkgs, err := dm.pkgClient.ListClusterPackages(ctx); err != nil {
 		return nil, err
+	} else {
+		for i := range pkgs.Items {
+			allPkgs = append(allPkgs, &pkgs.Items[i])
+		}
 	}
+
+	if pkgs, err := dm.pkgClient.ListPackages(ctx, ""); err != nil {
+		return nil, err
+	} else {
+		for i := range pkgs.Items {
+			allPkgs = append(allPkgs, &pkgs.Items[i])
+		}
+	}
+
 	g := graph.NewGraph()
-	for _, pkg := range pkgs.Items {
+	for _, pkg := range allPkgs {
 		var deps []v1alpha1.Dependency
-		installedVersion := pkg.Spec.PackageInfo.Version
-		if !pkg.DeletionTimestamp.IsZero() {
+		installedVersion := pkg.GetSpec().PackageInfo.Version
+		if !pkg.GetDeletionTimestamp().IsZero() {
 			// A package that is currently being deleted is added to the graph, but in a state representing
 			// "not installed"
 			installedVersion = ""
@@ -104,8 +119,24 @@ func (dm *DependendcyManager) NewGraph(ctx context.Context) (*graph.DependencyGr
 		} else if pi.Status.Manifest != nil {
 			deps = pi.Status.Manifest.Dependencies
 		}
-		if err := g.Add(pkg.Name, installedVersion, deps, len(pkg.OwnerReferences) == 0); err != nil {
-			return nil, err
+		if pkg.IsNamespaceScoped() {
+			if err := g.AddNamespaced(
+				fmt.Sprintf("%v.%v", pkg.GetName(), pkg.GetNamespace()),
+				pkg.GetSpec().PackageInfo.Name,
+				installedVersion,
+				deps,
+			); err != nil {
+				return nil, err
+			}
+		} else {
+			if err := g.AddCluster(
+				pkg.GetSpec().PackageInfo.Name,
+				installedVersion,
+				deps,
+				len(pkg.GetOwnerReferences()) == 0,
+			); err != nil {
+				return nil, err
+			}
 		}
 	}
 	return g, nil
@@ -116,7 +147,7 @@ func (dm *DependendcyManager) add(
 	manifest v1alpha1.PackageManifest,
 	version string,
 ) error {
-	return g.Add(manifest.Name, version, manifest.Dependencies, g.Manual(manifest.Name))
+	return g.AddCluster(manifest.Name, version, manifest.Dependencies, g.Manual(manifest.Name))
 }
 
 // addDependencies adds the highest possible version of every uninstalled dependency and installs all transitive

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
@@ -13,15 +14,19 @@ import (
 var repoAddCmdOptions = repoOptions{}
 
 var repoAddCmd = &cobra.Command{
-	Use:    "add [name] [url]",
+	Use:    "add <name> <url>",
 	Short:  "Add a package repository to the current cluster",
 	Args:   cobra.ExactArgs(2),
 	PreRun: cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
 	Run: func(cmd *cobra.Command, args []string) {
+		var err error
+		var defaultRepo *v1alpha1.PackageRepository
+		opts := metav1.UpdateOptions{}
+
 		ctx := cmd.Context()
 		client := cliutils.PackageClient(ctx)
 		repoName := args[0]
-		repoUrl := args[1]
+		repoAddCmdOptions.Url = args[1]
 
 		if err := repoAddCmdOptions.Normalize(); err != nil {
 			fmt.Fprintf(os.Stderr, "❌ %v\n", err)
@@ -33,61 +38,39 @@ var repoAddCmd = &cobra.Command{
 				Name: repoName,
 			},
 			Spec: v1alpha1.PackageRepositorySpec{
-				Url: repoUrl,
+				Url: repoAddCmdOptions.Url,
 			},
 		}
 
-		switch repoAddCmdOptions.Auth {
-		case repoAddBasicAuth:
-			if len(repoAddCmdOptions.Username) == 0 {
-				fmt.Fprintln(os.Stderr, "Basic authentication was requested. Please enter a username:")
-				for {
-					username := cliutils.GetInputStr("username")
-					if len(username) > 0 {
-						repoAddCmdOptions.Username = username
-						break
-					}
-				}
-			}
-			if len(repoAddCmdOptions.Password) == 0 {
-				fmt.Fprintln(os.Stderr, "Basic authentication was requested. Please enter a password:")
-				for {
-					password := cliutils.GetInputStr("password")
-					if len(password) > 0 {
-						repoAddCmdOptions.Password = password
-						break
-					}
-				}
-			}
-			repo.Spec.Auth = &v1alpha1.PackageRepositoryAuthSpec{
-				Basic: &v1alpha1.PackageRepositoryBasicAuthSpec{
-					Username: &repoAddCmdOptions.Username,
-					Password: &repoAddCmdOptions.Password,
-				},
-			}
-		case repoAddBearerAuth:
-			if len(repoAddCmdOptions.Token) == 0 {
-				fmt.Fprintln(os.Stderr, "Bearer authentication was requested. Please enter a token:")
-				for {
-					token := cliutils.GetInputStr("token")
-					if len(token) > 0 {
-						repoAddCmdOptions.Token = token
-						break
-					}
-				}
-			}
-			repo.Spec.Auth = &v1alpha1.PackageRepositoryAuthSpec{
-				Bearer: &v1alpha1.PackageRepositoryBearerAuthSpec{
-					Token: &repoAddCmdOptions.Token,
-				},
-			}
-		}
+		repo.Spec.Auth = repoAddCmdOptions.SetAuth()
 
 		if repoAddCmdOptions.Default {
-			repo.SetDefaultRepository()
+			defaultRepo, err = cliutils.GetDefaultRepo(ctx)
+
+			if errors.Is(err, cliutils.NoDefaultRepo) {
+				repo.SetDefaultRepository()
+			} else if err != nil {
+				fmt.Fprintf(os.Stderr, "❌ error getting the default package repository: %v\n", err)
+				cliutils.ExitWithError()
+			} else if defaultRepo.Name != repoName {
+				defaultRepo.SetDefaultRepositoryBool(false)
+				if err := client.PackageRepositories().Update(ctx, defaultRepo, opts); err != nil {
+					fmt.Fprintf(os.Stderr, "❌ error updating current default package repository: %v\n", err)
+					cliutils.ExitWithError()
+				}
+				repo.SetDefaultRepository()
+			}
 		}
-		if err := client.PackageRepositories().Create(ctx, &repo); err != nil {
+		if err := client.PackageRepositories().Create(ctx, &repo, metav1.CreateOptions{}); err != nil {
 			fmt.Fprintf(os.Stderr, "❌ error creating package repository: %v\n", err)
+
+			if repoAddCmdOptions.Default && defaultRepo != nil && defaultRepo.Name != repoName {
+				defaultRepo.SetDefaultRepositoryBool(true)
+				if err := client.PackageRepositories().Update(ctx, defaultRepo, opts); err != nil {
+					fmt.Fprintf(os.Stderr, "❌ error rolling back to default package repository: %v\n", err)
+				}
+			}
+
 			cliutils.ExitWithError()
 		}
 
@@ -97,5 +80,5 @@ var repoAddCmd = &cobra.Command{
 }
 
 func init() {
-	repoAddCmdOptions.BindToCmdFlags(repoAddCmd)
+	repoAddCmdOptions.BindToCmdFlags(repoAddCmd, false)
 }

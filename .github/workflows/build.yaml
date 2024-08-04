@@ -1,4 +1,4 @@
-name: Build
+name: Build Go Project
 
 on:
   push:
@@ -7,20 +7,24 @@ on:
   pull_request:
     paths-ignore:
       - website/**
+  merge_group:
+    types:
+      - checks_requested
+    paths-ignore:
+      - website/**
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: make all
     steps:
       - name: Checkout
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
       - name: Setup Go
-        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5
+        uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5
         with:
           go-version: 1.22.x
       - name: Set up node
-        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.0.3
         with:
           node-version: "20.9"
           cache: npm
@@ -31,7 +35,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - run: make all
-      - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+      - uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.3.5
         with:
           name: artifacts-${{ runner.os }}-${{ runner.arch }}
           path: dist/

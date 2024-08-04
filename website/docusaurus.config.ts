@@ -5,8 +5,8 @@ import type * as Preset from '@docusaurus/preset-classic';
 import {EnumChangefreq} from 'sitemap';
 
 const config: Config = {
-  title: 'Glasskube.dev',
-  tagline: '🧊 The next generation Package Manager for Kubernetes 📦',
+  title: 'Glasskube',
+  tagline: 'The next generation Package Manager for Kubernetes',
   favicon: 'img/favicon.png',
   trailingSlash: true,
 
@@ -35,6 +35,14 @@ const config: Config = {
     'docusaurus-plugin-matomo',
     '@docusaurus/theme-mermaid',
     [
+      './custom-blog-plugin',
+      {
+        id: 'blog',
+        routeBasePath: 'blog',
+        path: './blog',
+      },
+    ],
+    [
       '@docusaurus/plugin-ideal-image',
       /** @type {import("@docusaurus/plugin-ideal-image").PluginOptions} */
       {
@@ -61,14 +69,15 @@ const config: Config = {
       'posthog-docusaurus',
       {
         apiKey: 'phc_EloQUW6cgfbTc0pI9c5CXElhQ4gVGRoBsrUAoakJVoQ',
-        appUrl: 'https://eu.posthog.com',
+        appUrl: 'https://p.glasskube.eu',
+        ui_host: 'https://eu.posthog.com',
         enableInDevelopment: false,
       },
     ],
   ],
   presets: [
     [
-      'classic',
+      '@docusaurus/preset-classic',
       {
         docs: {
           sidebarPath: './sidebars.ts',
@@ -76,12 +85,7 @@ const config: Config = {
           // Remove this to remove the "edit this page" links.
           editUrl: 'https://github.com/glasskube/glasskube/tree/main/website/',
         },
-        blog: {
-          showReadingTime: true,
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
-          editUrl: 'https://github.com/glasskube/glasskube/tree/main/website/',
-        },
+        blog: false,
         theme: {
           customCss: ['./src/css/custom.css'],
         },
@@ -110,7 +114,7 @@ const config: Config = {
   },
   themeConfig: {
     colorMode: {
-      respectPrefersColorScheme: true,
+      defaultMode: 'dark',
     },
     docs: {
       sidebar: {
@@ -120,7 +124,7 @@ const config: Config = {
     },
     announcementBar: {
       id: 'announcementBar-1', // Increment on change
-      content: `🎉️ Glasskube Cloud is launching soon! 😎 <a target="_blank" href="https://glasskube.cloud/signup.html?id=" id="banner-cloud-link">Join the wait list to request early access.</a> 🥳️`,
+      content: `🧊 Glasskube Native Packages are on the horizon! 😎 <a target="_blank" href="https://github.com/glasskube/glasskube/discussions/1018">Help us make architecture decisions</a> 💡`,
       isCloseable: false,
     },
     image:
@@ -145,8 +149,12 @@ const config: Config = {
           activeBaseRegex: `/guides/`,
         },
         {to: '/blog', label: 'Blog', position: 'left'},
-        {to: '/roadmap', label: 'Roadmap', position: 'left'},
         {to: '/packages', label: 'Packages', position: 'left'},
+        {to: '/pricing', label: 'Pricing', position: 'left'},
+        {
+          type: 'search',
+          position: 'left',
+        },
         {
           type: 'custom-wrapper',
           position: 'right',
@@ -215,8 +223,16 @@ const config: Config = {
               to: '/blog',
             },
             {
-              label: 'Contact / Book appointment',
+              label: 'Roadmap',
+              to: '/roadmap',
+            },
+            {
+              label: 'Talk to founders',
               href: 'https://cal.glasskube.eu/team/founder/30min',
+            },
+            {
+              label: 'Signup for the wait list',
+              href: 'https://glasskube.cloud/',
             },
           ],
         },
@@ -234,7 +250,6 @@ const config: Config = {
       jsLoader: 'matomo.js',
     },
   } satisfies Preset.ThemeConfig,
-  clientModules: ['src/theme/cloud-banner.js'],
 };
 
 export default config;

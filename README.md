@@ -1,6 +1,7 @@
 [![GitHub Repo stars](https://img.shields.io/github/stars/glasskube/glasskube?style=flat)](https://github.com/glasskube/glasskube)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Docs](https://img.shields.io/badge/docs-glasskube.dev%2Fdocs-blue)](https://glasskube.dev/docs/?utm_source=github)
+[![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![](https://dcbadge.vercel.app/api/server/SxH6KUCGH7?style=flat)](https://discord.gg/SxH6KUCGH7)
 [![Downloads](https://img.shields.io/github/downloads/glasskube/glasskube/total)](https://github.com/glasskube/glasskube/releases)
 [![CNCF Landscape](https://img.shields.io/badge/CNCF%20Landscape-5699C6)](https://landscape.cncf.io/?item=app-definition-and-development--application-definition-image-build--glasskube)
@@ -14,7 +15,7 @@
   </a>
   <img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=899d5aee-625c-4345-bad0-713d29caf929" />
 
-<h3 align="center">🧊 The next generation Package Manager for Kubernetes 📦 (Beta Version)</h3>
+<h3 align="center">🧊 The next generation Package Manager for Kubernetes 📦</h3>
 
   <p align="center">
     <a href="https://glasskube.dev/docs/getting-started/install?utm_source=github"><strong>Getting started »</strong></a>
@@ -33,60 +34,53 @@
      <a href="https://x.com/intent/follow?screen_name=glasskube" target="_blank">Twitter / X</a>
   </p>
 </div>
-<br>
-<br>
-<div align="center">
-<a href="https://www.producthunt.com/posts/glasskube" target="_blank">
-  <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=452879&theme=light"
-    alt="Glasskube - &#0032;🧊&#0032;The&#0032;next&#0032;generation&#0032;Package&#0032;Manager&#0032;for&#0032;Kubernetes&#0032;📦 | Product Hunt"
-    style="width: 250px; height: 54px;" width="250" height="54" />
-</a>
-</div>
-<br>
+
 <hr>
 
-![Glasskube GUI Mockup](https://github.com/glasskube/operator/assets/3041752/71d0da0c-34ac-40b7-8740-bd2a81ca9f07)
+![Glasskube GUI](https://github.com/glasskube/glasskube/assets/3041752/54b20ffe-1daf-4905-abc5-37e99e056b02)
 
 
 ## 📦 What is Glasskube?
 
-Glasskube is the **next generation Kubernetes package manager**, now available in its `beta version`. Glasskube empowers you to effortlessly **install, upgrade, configure, and manage** your Kubernetes cluster packages, all while streamlining repetitive and cumbersome maintenance tasks. We're excited to roll out the beta release and invite all users to test it out! **Your feedback is incredibly valuable to us** as we aim to shape Glasskube into `the best Kubernetes package manager out there`. So go ahead, dive in, play around, and shoot us your thoughts!
-
+Glasskube is an **Open Source package manager for Kubernetes**.
+It makes deploying, updating, and configuring packages on Kubernetes **20 times faster** than tools like **Helm or Kustomize**.
+Inspired by the simplicity of Homebrew and npm. You can decide if you want to use the Glasskube UI, CLI, or directly deploy packages via GitOps.
 
 ## ⭐️ Why Glasskube?
 
-Using **traditional package managers** or applying manifests directly can be **super confusing** and doesn't scale.
-Therefore, Glasskube will help you to **install your favorite Kubernetes packages** using the **Glasskube UI** for reduced complexity and increased transparency.
-We are also providing a **brew inspired CLI** for advanced users. Our **packages are dependency aware**, as you would expect from a package manager.
-Designed as a cloud native application, so you can follow your **GitOps approach**.
+We have been working in the Kubernetes ecosystem for over five years.
+During this time, we have consistently struggled with package management, configuration, and distribution.
+We've spent countless hours templating and writing documentation for commands and concepts that were difficult to grasp.
 
-## ✨ Features
-
-- 💡 **Streamlined UI and CLI Experience**:
-  <br> We've stripped away unnecessary complexities, providing a simple yet powerful user interface and command-line interface for easy package management.
-- 🔄 **Automated Updates**:
-  <br> Glasskube ensures your Kubernetes packages and apps are always up-to-date, minimizing the manual effort required for maintenance.
-- 🤝 **Dependency Awareness**:
-  <br> We understand the interconnected nature of Kubernetes packages. Glasskube intelligently manages dependencies.
-- 🛠️ **GitOps Ready** with ArgoCD or Flux:
-  <br> Seamlessly integrate Glasskube into your GitOps workflow with support for popular tools like ArgoCD or Flux.
-- 📦 **Central Package Repository**:
-  <br> Keep track of all your packages in one central repository, with a [planned](https://glasskube.dev/roadmap/?utm_source=github) feature for custom repositories.
-- 🔍 **Cluster Scan** ([planned](https://glasskube.dev/roadmap/?utm_source=github)):
-  <br> Introducing the Cluster Scan feature in a future version, which allows you to detect packages in your cluster, providing valuable insights for better management and upgrade paths.
-- 🔐 **Version Pinning**:
-  <br> With a future version, Glasskube will introduce Version Pinning, giving you control over your package versions.
+In contrast, tools like Homebrew, apt, and dnf felt easy to use and rarely caused problems.
+While we worked on other cloud-native projects, our users consistently highlighted several common pain points.
+This realization prompted us to tackle the larger issue of package management in Kubernetes, leading to the development of Glasskube.
 
 ## 🗄️ Table Of Contents
 
+- [Features](https://github.com/glasskube/#-features)
 - [Quick Start](https://github.com/glasskube/#-quick-start)
-- [Supported Tools](https://github.com/glasskube/glasskube#-supported-tools)
 - [How to install your first package](https://github.com/glasskube/glasskube#-how-to-install-you-first-package)
+- [Supported Packages](https://github.com/glasskube/glasskube#-supported-packages)
 - [Architecture Diagram](https://github.com/glasskube/glasskube#architecture-diagram)
 - [Need help?](https://github.com/glasskube/glasskube#-need-help)
 - [Related projects](https://github.com/glasskube/glasskube#-related-projects)
 - [How to Contribute](https://github.com/glasskube/glasskube#-how-to-contribute)
-- [Supported by](https://github.com/glasskube/glasskube#-supported-by)
+- [Supported by](https://github.com/glasskube/glasskube#-thanks-to-all-our-contributors)
+- [Activity](https://github.com/glasskube/glasskube#-activity)
+- [License](https://github.com/glasskube/glasskube#-license)
+
+## ✨ Features
+|                                                                                                                                                                                                                                                                  |                                                                                                              |
+|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
+| **Focusing on simplicity and reliability with our CLI and UI** <br> Easily install packages in your cluster via the Glasskube UI, where all packages are conveniently located, eliminating the need to search for a Helm repository.                             | ![Glasskube GUI](https://github.com/glasskube/glasskube/assets/3041752/323994d6-6b08-4dca-ac59-d29ae6b37f94) |
+| **Package configurations** <br> Configure packages with typesafe input values via the UI or interactive CLI questionnaire. Inject values from other packages, ConfigMaps, and Secrets easily. No more untyped and undocumented `values.yaml` files.              | ![Configuration](https://github.com/glasskube/glasskube/assets/3041752/df6bd7d4-7cac-435b-b3a0-31c3cab6069b) |
+| **Dependency Management** <br> Glasskube packages are dependency aware, so they can be used and referenced by multiple other packages. They will also get installed in the correct namespace. This is how umbrella charts should have worked from the beginning. | ![Dependency](https://github.com/glasskube/glasskube/assets/3041752/9588b3fc-2a87-454e-97ff-b0f7558717bc)    |
+| **Safe Package Updates** <br> Preview and perform pending updates to your desired version with a single click (or CLI command). All updates are pre-tested by the Glasskube test suite.                                                                          | ![Updates](https://github.com/glasskube/glasskube/assets/3041752/a6e6dc72-9919-4d15-addf-bc709ec76d9d)       |
+| **Reactions and comments** <br> Discuss and upvote your favorit Kubernetes package on [GitHub](https://github.com/glasskube/glasskube/discussions/categories/packages) or right inside the Glasskube UI.                                                         | ![Reactions](https://github.com/glasskube/glasskube/assets/3041752/56f08373-fbbe-46fd-820e-fb637114336b)     |
+| **GitOps Integration** <br> All Glasskube packages are custom resources, manageable via GitOps. We're also integrating with [renovate](https://github.com/renovatebot/renovate/issues/29322)                                                                     | ![GitOps](https://github.com/glasskube/glasskube/assets/3041752/8c359e61-9eec-4413-9c13-bca5cd8710d1)        |
+| **Multiple Repositories and private packages** <br> Use multiple repositories and publish your own private packages. This could be your companies internal services packages, so all developers will have up-to-date and easily configured internal services.    | ![Repo](https://github.com/glasskube/glasskube/assets/130456438/e2f4472b-5b80-4043-9c78-9ccabd8f3337)        |
+
 
 ## 🚀 Quick Start - Install the Beta Version.
 
@@ -109,8 +103,13 @@ After successfully bootstrapping your cluster, you are ready to start the packag
 glasskube serve
 ```
 
-This command will open [`http://localhost:8580`](http://localhost:8580) in your default browser. 
+This command will open [`http://localhost:8580`](http://localhost:8580) in your default browser.
 Congratulations, you can now explore and install all our available packages! 🎉
+
+## 🎬 Glasskube Demo Video
+
+
+[![Glasskube Demo Video](https://i.ytimg.com/vi/aIeTHGWsG2c/hq720.jpg)](https://www.youtube.com/watch?v=aIeTHGWsG2c)
 
 ## 📦 Supported Packages
 
@@ -123,18 +122,6 @@ Glasskube already supports a wide range of packages, including, but not limited 
 - Cloud Native PG [`cloudnative-pg/cloudnative-pg`](https://github.com/cloudnative-pg/cloudnative-pg)
 
 You can find all supported and planned packages on [glasskube.dev/packages](https://glasskube.dev/packages/).
-
-### Coming Soon
-
-With v1.0.0 you will also be able to install apps like [GitLab](https://gitlab.com/gitlab-org/gitlab), [Keycloak](https://github.com/keycloak/keycloak) or [Hashicorp Vault](https://github.com/hashicorp/vault) with the [Glasskube Apps Operator](https://github.com/glasskube/operator/).
-You can find the full list and release schedule in our [roadmap](https://glasskube.dev/roadmap/#packages-and-apps-schedule?utm_source=github)
-
-> Can't find a package or want your app included in the list? We are always adding new supported packages & apps,
-> so just join us on [Discord](https://discord.gg/SxH6KUCGH7) or open up a new issue and let us know what is missing!
-
-## 🎬 How to install you first package
-
-![cast](https://github.com/glasskube/glasskube/assets/16959694/f8b936ca-7b58-4e2b-8845-17da089f2384)
 
 ## Architecture Diagram
 
@@ -172,7 +159,7 @@ We are happy to assist you with anything related to the project.
 
 - Glasskube Apps Operator [`glasskube/operator`](https://github.com/glasskube/operator/)
 
-## 🤝 How to Contribute to Glasskube Beta
+## 🤝 How to Contribute to Glasskube
 
 Your feedback is invaluable to us as we continue to improve Glasskube. If you'd like to contribute, consider trying out the beta version, reporting any issues, and sharing your suggestions. See [the contributing guide](CONTRIBUTING.md) for detailed instructions on how you can contribute.
 

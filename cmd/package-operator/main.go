@@ -21,19 +21,15 @@ import (
 	"flag"
 	"os"
 
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+
 	ctrladapter "github.com/glasskube/glasskube/internal/adapter/controllerruntime"
 	"github.com/glasskube/glasskube/internal/dependency"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	"github.com/glasskube/glasskube/internal/telemetry"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
-	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
-	"github.com/glasskube/glasskube/internal/controller"
-	"github.com/glasskube/glasskube/internal/manifest/helm/flux"
-	"github.com/glasskube/glasskube/internal/manifest/plain"
-	"github.com/glasskube/glasskube/internal/webhook"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -42,6 +38,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
+	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/controller"
+	"github.com/glasskube/glasskube/internal/manifest/helm/flux"
+	"github.com/glasskube/glasskube/internal/manifest/plain"
+	"github.com/glasskube/glasskube/internal/webhook"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -107,7 +109,7 @@ func main() {
 	)
 
 	telemetry.InitWithManager(mgr)
-	if err = (&controller.PackageReconciler{
+	commonReconciler := controller.PackageReconcilerCommon{
 		Client:            mgr.GetClient(),
 		EventRecorder:     mgr.GetEventRecorderFor("package-controller"),
 		Scheme:            mgr.GetScheme(),
@@ -115,8 +117,17 @@ func main() {
 		ManifestAdapter:   plain.NewAdapter(),
 		RepoClientset:     repoClient,
 		DependencyManager: dependencyManager,
+	}
+	if err = (&controller.PackageReconciler{
+		PackageReconcilerCommon: commonReconciler,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Package")
+		os.Exit(1)
+	}
+	if err = (&controller.ClusterPackageReconciler{
+		PackageReconcilerCommon: commonReconciler,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ClusterPackage")
 		os.Exit(1)
 	}
 	if err = (&controller.PackageInfoReconciler{

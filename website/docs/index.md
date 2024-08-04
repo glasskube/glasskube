@@ -90,8 +90,8 @@ The package operator has two controllers:
 #### Package Repository
 
 A place where `PackageManifest`s are stored, searched and maintained.
-There is a central package repository managed by Glasskube: [`glasskube/packages`](https://github.com/glasskube/packages), 
-however using custom package repositories is supported too, see [Glasskube Repositories](design/repositories).  
+There is a central package repository managed by Glasskube: [`glasskube/packages`](https://github.com/glasskube/packages),
+however using custom package repositories is supported too, see [Glasskube Repositories](design/repositories).
 
 ## Commands
 
@@ -153,8 +153,15 @@ Use `glasskube open <package> <entrypoint>` to open a specific entrypoint.
 
 ### `glasskube repo`
 
-Manages the package repositories of the cluster. `glasskube repo list` lists the currently configured repositories, 
+Manages the package repositories of the cluster. `glasskube repo list` lists the currently configured repositories,
 while `glasskube repo add` allows you to add new repositories to your cluster.
+
+### `glasskube purge`
+
+Uninstalls the Glassube package-operator from the current cluster and deletes all Glasskube Custom Resource Definitions.
+**Warning:** This will delete all installed packages.
+
+If you are unhappy with Glasskube we would love to hear your feedback, so please get in touch!
 
 ### `glasskube version`
 

@@ -2,50 +2,54 @@ package web
 
 import (
 	"bytes"
-	"fmt"
 	"html/template"
-	"os"
 	"path"
 	"reflect"
 
-	"github.com/glasskube/glasskube/internal/web/components/datalist"
-
-	"github.com/glasskube/glasskube/pkg/condition"
-	"k8s.io/apimachinery/pkg/api/meta"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/yuin/goldmark"
+	webutil "github.com/glasskube/glasskube/internal/web/sse/refresh"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	"github.com/glasskube/glasskube/internal/semver"
-	"github.com/glasskube/glasskube/internal/web/components/alert"
+	"github.com/glasskube/glasskube/internal/web/components/datalist"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_detail_btns"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_overview_btn"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_update_alert"
+	"github.com/glasskube/glasskube/internal/web/components/toast"
+	"github.com/glasskube/glasskube/pkg/condition"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/text"
+	"github.com/yuin/goldmark/util"
 	"go.uber.org/multierr"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type templates struct {
-	templateFuncs          template.FuncMap
-	baseTemplate           *template.Template
-	pkgsPageTmpl           *template.Template
-	pkgPageTmpl            *template.Template
-	pkgDiscussionPageTmpl  *template.Template
-	supportPageTmpl        *template.Template
-	bootstrapPageTmpl      *template.Template
-	kubeconfigPageTmpl     *template.Template
-	settingsPageTmpl       *template.Template
-	pkgUpdateModalTmpl     *template.Template
-	pkgConfigInput         *template.Template
-	pkgConfigAdvancedTmpl  *template.Template
-	pkgUninstallModalTmpl  *template.Template
-	alertTmpl              *template.Template
-	datalistTmpl           *template.Template
-	pkgDiscussionBadgeTmpl *template.Template
-	repoClientset          repoclient.RepoClientset
+	templateFuncs           template.FuncMap
+	baseTemplate            *template.Template
+	clusterPkgsPageTemplate *template.Template
+	pkgsPageTmpl            *template.Template
+	pkgPageTmpl             *template.Template
+	pkgDiscussionPageTmpl   *template.Template
+	supportPageTmpl         *template.Template
+	bootstrapPageTmpl       *template.Template
+	kubeconfigPageTmpl      *template.Template
+	settingsPageTmpl        *template.Template
+	pkgDetailHeaderTmpl     *template.Template
+	pkgUpdateModalTmpl      *template.Template
+	pkgConfigInput          *template.Template
+	pkgConfigAdvancedTmpl   *template.Template
+	pkgUninstallModalTmpl   *template.Template
+	toastTmpl               *template.Template
+	datalistTmpl            *template.Template
+	pkgDiscussionBadgeTmpl  *template.Template
+	repoClientset           repoclient.RepoClientset
 }
 
 var (
@@ -75,28 +79,38 @@ func (t *templates) watchTemplates() error {
 
 func (t *templates) parseTemplates() {
 	t.templateFuncs = template.FuncMap{
-		"ForPkgOverviewBtn": pkg_overview_btn.ForPkgOverviewBtn,
-		"ForPkgDetailBtns":  pkg_detail_btns.ForPkgDetailBtns,
-		"ForPkgUpdateAlert": pkg_update_alert.ForPkgUpdateAlert,
-		"PackageManifestUrl": func(pkg *v1alpha1.Package) string {
-			if pkg != nil {
-				url, err := t.repoClientset.ForPackage(*pkg).
-					GetPackageManifestURL(pkg.Name, pkg.Spec.PackageInfo.Version)
+		"ForClPkgOverviewBtn": pkg_overview_btn.ForClPkgOverviewBtn,
+		"ForPkgDetailBtns":    pkg_detail_btns.ForPkgDetailBtns,
+		"ForPkgUpdateAlert":   pkg_update_alert.ForPkgUpdateAlert,
+		"PackageManifestUrl": func(pkg ctrlpkg.Package) string {
+			if !pkg.IsNil() {
+				url, err := t.repoClientset.ForPackage(pkg).
+					GetPackageManifestURL(pkg.GetSpec().PackageInfo.Name, pkg.GetSpec().PackageInfo.Version)
 				if err == nil {
 					return url
 				}
 			}
 			return ""
 		},
-		"ForAlert":          alert.ForAlert,
+		"ForToast":          toast.ForToast,
 		"ForPkgConfigInput": pkg_config_input.ForPkgConfigInput,
 		"ForDatalist":       datalist.ForDatalist,
 		"IsUpgradable":      semver.IsUpgradable,
 		"Markdown": func(source string) template.HTML {
 			var buf bytes.Buffer
-			if err := goldmark.Convert([]byte(source), &buf); err != nil {
+
+			converter := goldmark.New(
+				goldmark.WithParserOptions(
+					parser.WithASTTransformers(
+						util.Prioritized(&ASTTransformer{}, 1000),
+					),
+				),
+			)
+
+			if err := converter.Convert([]byte(source), &buf); err != nil {
 				return template.HTML("<p>" + source + "</p>")
 			}
+
 			return template.HTML(buf.String())
 		},
 		"Reversed": func(param any) any {
@@ -121,13 +135,18 @@ func (t *templates) parseTemplates() {
 		},
 		"IsRepoStatusReady": func(repo v1alpha1.PackageRepository) bool {
 			cond := meta.FindStatusCondition(repo.Status.Conditions, string(condition.Ready))
-			return cond != nil && cond.Status == v1.ConditionTrue
+			return cond != nil && cond.Status == metav1.ConditionTrue
 		},
+		"PackageDetailRefreshId":          webutil.PackageRefreshDetailId,
+		"PackageDetailHeaderRefreshId":    webutil.PackageRefreshDetailHeaderId,
+		"PackageOverviewRefreshId":        webutil.PackageOverviewRefreshId,
+		"ClusterPackageOverviewRefreshId": webutil.ClusterPackageOverviewRefreshId,
 	}
 
 	t.baseTemplate = template.Must(template.New("base.html").
 		Funcs(t.templateFuncs).
 		ParseFS(webFs, path.Join(templatesDir, "layout", "base.html")))
+	t.clusterPkgsPageTemplate = t.pageTmpl("clusterpackages.html")
 	t.pkgsPageTmpl = t.pageTmpl("packages.html")
 	t.pkgPageTmpl = t.pageTmpl("package.html")
 	t.pkgDiscussionPageTmpl = t.pageTmpl("discussion.html")
@@ -135,11 +154,12 @@ func (t *templates) parseTemplates() {
 	t.bootstrapPageTmpl = t.pageTmpl("bootstrap.html")
 	t.kubeconfigPageTmpl = t.pageTmpl("kubeconfig.html")
 	t.settingsPageTmpl = t.pageTmpl("settings.html")
+	t.pkgDetailHeaderTmpl = t.componentTmpl("pkg-detail-header", "pkg-detail-btns")
 	t.pkgUpdateModalTmpl = t.componentTmpl("pkg-update-modal")
 	t.pkgConfigInput = t.componentTmpl("pkg-config-input", "datalist")
 	t.pkgConfigAdvancedTmpl = t.componentTmpl("pkg-config-advanced")
 	t.pkgUninstallModalTmpl = t.componentTmpl("pkg-uninstall-modal")
-	t.alertTmpl = t.componentTmpl("alert")
+	t.toastTmpl = t.componentTmpl("toast")
 	t.datalistTmpl = t.componentTmpl("datalist")
 	t.pkgDiscussionBadgeTmpl = t.componentTmpl("discussion-badge")
 }
@@ -164,9 +184,22 @@ func (t *templates) componentTmpl(id string, requiredTemplates ...string) *templ
 			tpls...))
 }
 
-func checkTmplError(e error, tmplName string) {
-	if e != nil {
-		fmt.Fprintf(os.Stderr, "\nUnexpected error rendering %v: %v\n – This is most likely a BUG – "+
-			"Please report it here: https://github.com/glasskube/glasskube\n\n", tmplName, e)
-	}
+type ASTTransformer struct{}
+
+func (g *ASTTransformer) Transform(node *ast.Document, reader text.Reader, pc parser.Context) {
+	_ = ast.Walk(node, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		if !entering {
+			return ast.WalkContinue, nil
+		}
+
+		switch v := n.(type) {
+		case *ast.Link:
+			v.SetAttributeString("target", "_blank")
+			v.SetAttributeString("rel", "noopener noreferrer")
+		case *ast.Blockquote:
+			v.SetAttributeString("class", "border-start border-primary border-3 ps-2")
+		}
+
+		return ast.WalkContinue, nil
+	})
 }
