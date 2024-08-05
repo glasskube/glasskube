@@ -102,4 +102,5 @@ func init() {
 	uninstallCmd.PersistentFlags().BoolVarP(&uninstallCmdOptions.Yes, "yes", "y", false,
 		"Do not ask for any confirmation")
 	RootCmd.AddCommand(uninstallCmd)
+	uninstallCmdOptions.DryRunOptions.AddFlagsToCommand(uninstallCmd)
 }
