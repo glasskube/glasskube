@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.16.0](https://github.com/glasskube/glasskube/compare/v0.15.0...v0.16.0) (2024-08-05)
+
+
+### Features
+
+* **cli:** add support for filtering package list by name and namespace ([#1036](https://github.com/glasskube/glasskube/issues/1036)) ([7822100](https://github.com/glasskube/glasskube/commit/7822100a6c4b9d2dc8ac50725728bd60f4ed67cf))
+* improve gitops support ([#1050](https://github.com/glasskube/glasskube/issues/1050)) ([8e740f1](https://github.com/glasskube/glasskube/commit/8e740f11b8945ab42931881654fe9994a5e1ba5a))
+
+
+### Bug Fixes
+
+* **deps:** update dependency @fontsource/inter to v5.0.20 ([#1057](https://github.com/glasskube/glasskube/issues/1057)) ([36e02d9](https://github.com/glasskube/glasskube/commit/36e02d90445d2c9bae74f960130426d5e1c1c87e))
+* **deps:** update module github.com/schollz/progressbar/v3 to v3.14.6 ([#1065](https://github.com/glasskube/glasskube/issues/1065)) ([db14373](https://github.com/glasskube/glasskube/commit/db14373152a474e1dfe0f76883917e45f6e21942))
+* **package-operator:** add retry-on-conflict for reconciling helm resources ([#1062](https://github.com/glasskube/glasskube/issues/1062)) ([c42e6e8](https://github.com/glasskube/glasskube/commit/c42e6e86070e9928e8ae9905060fba01df92df4f))
+* **ui:** removed the labels from the footer which were misleading ([#1066](https://github.com/glasskube/glasskube/issues/1066)) ([fb28a79](https://github.com/glasskube/glasskube/commit/fb28a79d0cde1c2bfa8c79e04b0c705be6a8b7d8))
+
+
+### Other
+
+* **deps:** update actions/upload-artifact action to v4.3.5 ([#1064](https://github.com/glasskube/glasskube/issues/1064)) ([6758e1a](https://github.com/glasskube/glasskube/commit/6758e1aa3f4dee92ec754847796b45e1c7e6de66))
+* **deps:** update dependency globals to v15.9.0 ([#1060](https://github.com/glasskube/glasskube/issues/1060)) ([c65bbf2](https://github.com/glasskube/glasskube/commit/c65bbf27503b9f7fcc947b6705d82b6e131caecb))
+* **deps:** update dependency typescript-eslint to v8 ([#1058](https://github.com/glasskube/glasskube/issues/1058)) ([5c29a33](https://github.com/glasskube/glasskube/commit/5c29a33ee4d7c174ea50228c448e283621c37c3c))
+* **website:** fix eslint errors and warnings ([#1063](https://github.com/glasskube/glasskube/issues/1063)) ([57d01e1](https://github.com/glasskube/glasskube/commit/57d01e1190c404627454cb1497b06ce92c208588))
+
+
+### Docs
+
+* **website:** updated packages page ([#1056](https://github.com/glasskube/glasskube/issues/1056)) ([da9fa77](https://github.com/glasskube/glasskube/commit/da9fa7736c802397433f258a464ad9191ac143dc))
+
 ## [0.15.0](https://github.com/glasskube/glasskube/compare/v0.14.0...v0.15.0) (2024-07-31)
 
 
