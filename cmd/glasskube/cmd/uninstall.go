@@ -17,6 +17,7 @@ var uninstallCmdOptions = struct {
 	Yes    bool
 	KindOptions
 	NamespaceOptions
+	DryRunOptions
 }{
 	KindOptions: DefaultKindOptions(),
 }
@@ -67,13 +68,13 @@ var uninstallCmd = &cobra.Command{
 		}
 
 		if uninstallCmdOptions.NoWait {
-			if err := uninstaller.Uninstall(ctx, pkg); err != nil {
+			if err := uninstaller.Uninstall(ctx, pkg, uninstallCmdOptions.DryRun); err != nil {
 				fmt.Fprintf(os.Stderr, "\n❌ An error occurred during uninstallation:\n\n%v\n", err)
 				cliutils.ExitWithError()
 			}
 			fmt.Fprintln(os.Stderr, "Uninstallation started in background")
 		} else {
-			if err := uninstaller.UninstallBlocking(ctx, pkg); err != nil {
+			if err := uninstaller.UninstallBlocking(ctx, pkg, uninstallCmdOptions.DryRun); err != nil {
 				fmt.Fprintf(os.Stderr, "\n❌ An error occurred during uninstallation:\n\n%v\n", err)
 				cliutils.ExitWithError()
 			}
