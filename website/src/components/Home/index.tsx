@@ -7,7 +7,6 @@ import {Content} from '@theme/BlogPostPage';
 import styles from './index.module.css';
 import React, {ChangeEvent} from 'react';
 import Typewriter from 'typewriter-effect';
-import HomepageScreenshots from '@site/src/components/HomepageScreenshots';
 import SignupForWaitlistButton from '@site/src/components/buttons/SignupForWaitlistButton';
 import useBaseUrl from '@docusaurus/core/lib/client/exports/useBaseUrl';
 import Image from '@theme/IdealImage';
@@ -15,6 +14,7 @@ import HomepageBlogs from '@site/src/components/HomepageBlogs';
 import DemoButton from '@site/src/components/buttons/DemoButton';
 import Link from '@docusaurus/Link';
 import BrowserOnly from '@docusaurus/BrowserOnly';
+import HomepageProducts from '@site/src/components/HomepageProducts';
 
 function HomepageHeader() {
   const {siteConfig} = useDocusaurusContext();
@@ -269,7 +269,7 @@ export default function Home({
       <HomepageHeader />
       <main>
         <HomepageFeatures />
-        <HomepageScreenshots />
+        <HomepageProducts />
         <HomepageVideo />
         <HomepageBlogs
           homePageBlogMetadata={homePageBlogMetadata}
