@@ -15,19 +15,32 @@
         </div>
         {{ if eq .Err nil }}
           <div class="modal-body" id="pkg-update-modal-body">
-            <div class="alert alert-warning m-0" role="alert">
-              <div>The following packages will be <strong>removed</strong> from your cluster:</div>
-              <ul class="m-0 mt-1">
-                <li>{{ template "pkg-uninstall-pkg-name" . }} (requested by user)</li>
-                {{ range .Pruned }}
-                  <li>{{ . }} (dependency)</li>
-                {{ end }}
-              </ul>
-            </div>
+            {{ if .GitopsMode }}
+              <div class="alert alert-info m-0" role="alert">
+                <div>
+                  Your are using Glasskube in GitopsMode. To uninstall this (cluster-)package, remove the corresponding
+                  custom resource.
+                </div>
+              </div>
+            {{ else }}
+              <div class="alert alert-warning m-0" role="alert">
+                <div>The following packages will be <strong>removed</strong> from your cluster:</div>
+                <ul class="m-0 mt-1">
+                  <li>{{ template "pkg-uninstall-pkg-name" . }} (requested by user)</li>
+                  {{ range .Pruned }}
+                    <li>{{ . }} (dependency)</li>
+                  {{ end }}
+                </ul>
+              </div>
+            {{ end }}
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-outline-primary btn-sm" data-bs-dismiss="modal">Cancel</button>
-            <button type="submit" data-bs-dismiss="modal" class="btn btn-danger btn-sm">Confirm</button>
+            {{ if not .GitopsMode }}
+              <button type="button" class="btn btn-outline-primary btn-sm" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" data-bs-dismiss="modal" class="btn btn-danger btn-sm">Confirm</button>
+            {{ else }}
+              <button type="button" class="btn btn-primary btn-sm" data-bs-dismiss="modal">OK</button>
+            {{ end }}
           </div>
         {{ else }}
           <div class="modal-body" id="pkg-update-modal-body">
