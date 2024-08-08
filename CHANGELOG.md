@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.16.1](https://github.com/glasskube/glasskube/compare/v0.16.0...v0.16.1) (2024-08-08)
+
+
+### Other
+
+* **deps:** update actions/upload-artifact action to v4.3.6 ([#1076](https://github.com/glasskube/glasskube/issues/1076)) ([1380168](https://github.com/glasskube/glasskube/commit/1380168f9ae8d5e7f89a76df1cfe4f22b1cd8f1b))
+* **deps:** update dependency @commitlint/cli to v19.4.0 ([#1082](https://github.com/glasskube/glasskube/issues/1082)) ([3b570ed](https://github.com/glasskube/glasskube/commit/3b570ed1dd3d847bdf99101ff3bad261a70cc8f4))
+* **deps:** update dependency typescript-eslint to v8.0.1 ([#1072](https://github.com/glasskube/glasskube/issues/1072)) ([3bb625f](https://github.com/glasskube/glasskube/commit/3bb625f714bbae777dd12ad65f100587bd513ce8))
+* **website:** add product pages ([#1074](https://github.com/glasskube/glasskube/issues/1074)) ([6c3e38e](https://github.com/glasskube/glasskube/commit/6c3e38ea7964b17efc7f5e09766067bec09cab34))
+
+
+### Docs
+
+* gitops integration ([#1089](https://github.com/glasskube/glasskube/issues/1089)) ([58bb9c1](https://github.com/glasskube/glasskube/commit/58bb9c1173194ef78dc4717ed828ce8643529332))
+* **website:** added initial gitops template blog ([#1083](https://github.com/glasskube/glasskube/issues/1083)) ([c389e2b](https://github.com/glasskube/glasskube/commit/c389e2bcfaee08fb3e91c36bf195d78d146de05c))
+
 ## [0.16.0](https://github.com/glasskube/glasskube/compare/v0.15.0...v0.16.0) (2024-08-05)
 
 
