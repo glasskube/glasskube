@@ -24,6 +24,14 @@ To ensure compatibility, please verify that the following flux components are in
 
 For more information and command-line options check out `glasskube help bootstrap`.
 
+## Bootstrapping in GitOps environments
+
+In our [GitOps template](https://github.com/glasskube/gitops-template) we explain how Glasskube can be set up together with ArgoCD,
+using the `glasskube bootstrap git` command.
+
+If you prefer a different GitOps tool or need a more customized solution, you can use `glasskube bootstrap --dry-run -o yaml`
+in order to generate the Glasskube manifests that you can put into your GitOps repository.
+
 ## Common Issues
 
 ### Deployments do not become ready
