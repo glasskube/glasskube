@@ -1,16 +1,11 @@
 ---
 slug: gitops-template
-title: The GitOps Kubernetes starter template that gets you set-up in minutes instead of hours
-description: "A GitOps starter template to get started with ArgoCD & Glasskube in seconds instead of hours"
-authors: [ christophenne, jpage ]
-tags: [ glasskube ]
+title: Glasskube GitOps template
+description: A GitOps starter template to get started with ArgoCD & Glasskube in seconds instead of hours
+authors: [ christophenne, jpage, pmig ]
+tags: [ glasskube, argocd, gitops, template ]
 image: https://github.com/user-attachments/assets/7ad482a7-c0a2-4081-8654-670f3cccb7cd
 ---
-
-import CustomGitHubButton from '@site/src/components/buttons/CustomGitHubButton.tsx';
-import Install from '../../src/partials/_install.mdx';
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
 ![thumbnail](https://github.com/user-attachments/assets/7ad482a7-c0a2-4081-8654-670f3cccb7cd)
 
@@ -141,10 +136,10 @@ There are two options handling package version updates:
 
 #### Manually
 
-Using the `glasskube update --dry-run -o yaml` command, or the corresponding button on the Glasskube UI. And then pushing to your repo as seen before.   
+Using the `glasskube update --dry-run -o yaml` command, or the corresponding button on the Glasskube UI. And then pushing to your repo as seen before. 
 The downside of doing it that way, is that someone has to manually execute the command, even though checking for updates and preparing the updates to the git repository as an automatable task.
 
-#### Automatically with Renovate
+#### Automatically with Renovate
 
 Once Renovate is [integrated](https://github.com/renovatebot/renovate) to track your GitOps repo, it will look for Glasskube packages and compare their versions to the official package repositories. When new versions are available, it will automatically open a PR. Once merged, you’ll be running the latest versions of your packages.
 
@@ -167,16 +162,16 @@ After reviewing and merging those changes the update will be picked up by ArgoCD
 This template also contains a demo application: a bookmark manager called [shiori](https://github.com/go-shiori/shiori).
 Its manifests are defined in `apps/shiori`, which is a pattern you can follow for your own custom applications.
 
-In a minikube environment, two manual steps are required to access the application (for more information consult the 
+In a minikube environment, two manual steps are required to access the application (for more information consult the
 [minikube docs](https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/)):
 * Run `minikube addons enable ingress -p gitops`.
-* Run `minikube ip -p gitops` and add the line `<your-IP> my-shiori.example` to your `/etc/hosts` file. 
+* Run `minikube ip -p gitops` and add the line `<your-IP> my-shiori.example` to your `/etc/hosts` file.
 
-After that you will be able to access the application via [http://my-shiori.example](http://my-shiori.example) in your browser. 
+After that you will be able to access the application via [http://my-shiori.example](http://my-shiori.example) in your browser.
 The default login credentials are `shiori` / `gopher` – for more information check the [shiori docs](https://github.com/go-shiori/shiori/tree/master/docs).
 
 In general, you can use the `apps` directory to deploy such custom applications into your cluster. Any subdirectory will be
-picked up by ArgoCD and grouped as an `Application`. 
+picked up by ArgoCD and grouped as an `Application`.
 
 ### Monitoring with `kube-prometheus-stack`
 
@@ -191,21 +186,14 @@ into the first textfield, and pressing "Load". Use the "Prometheus" data source 
 
 ![CloudNativePG dashboard](https://github.com/user-attachments/assets/d54dcefe-535c-4812-bd80-486558f6caa4)
 
-Of course monitoring your experimental minikube cluster is a bit of an overkill, but this is simply to demonstrate how these kind of cluster administration tasks can be integrated into this gitops stack. 
+Of course monitoring your experimental minikube cluster is a bit of an overkill, but this is simply to demonstrate how these kind of cluster administration tasks can be integrated into this gitops stack.
 
 ### Template setup walkthrough
 
-<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-    <iframe 
-        width="800" 
-        height="450" 
-        src="https://www.youtube.com/embed/Xbs2Tq-dgbI?si=PfrhS5g0ZVq-YDCi" 
-        title="YouTube video player" 
-        frameBorder="0" 
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-        referrerPolicy="strict-origin-when-cross-origin" 
-        allowFullScreen
-    />
+<div style={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+  <iframe width="100%" height="460" src="https://www.youtube-nocookie.com/embed/Xbs2Tq-dgbI?si=PfrhS5g0ZVq-YDCi"
+          title="YouTube video player" frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 </div>
 
 ### Upcoming Features
@@ -226,11 +214,11 @@ A temporary workaround would be to have a closer look at the output of the insta
 
 ## Summary
 
-With this template repository and guide we show how Glasskube can easily be set up in a ArgoCD powered Gitops environment, 
+With this template repository and guide we show how Glasskube can easily be set up in a ArgoCD powered Gitops environment,
 and how efficient package management is possible with this stack. Additionally we install a web application to show how
 custom applications can make use of the Gitops setup and Glasskube packages.
 
-This is a first concept with some minor shortcomings, but we will continue to improve GitOps support. 
+This is a first concept with some minor shortcomings, but we will continue to improve GitOps support.
 
 ### Feedback
 
