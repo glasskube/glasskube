@@ -27,19 +27,36 @@ window.advancedOptions = function (currentContext) {
   return localStorage.getItem('advancedOptions_' + currentContext) === 'true';
 };
 
-function setSSEDisconnected() {
+window.sseConnected = false;
+function showDisconnectedToast(show) {
   const elem = document.getElementById('disconnected-toast');
-  if (elem && !elem.classList.contains('show')) {
+  if (!elem) {
+    return;
+  }
+  if (!show && elem.classList.contains('show')) {
+    document.getElementById('disconnected-toast').classList.remove('show');
+  } else if (show && !elem.classList.contains('show')) {
     document.getElementById('disconnected-toast').classList.add('show');
   }
 }
 document.addEventListener('htmx:sseError', function (evt) {
   console.log('htmx:sseError', evt);
-  setSSEDisconnected();
+  window.sseConnected = false;
+  showDisconnectedToast(true);
 });
 document.addEventListener('htmx:sseClose', function (evt) {
   console.log('htmx:sseClose', evt);
-  setSSEDisconnected();
+  window.sseConnected = false;
+  setTimeout(() => {
+    if (!window.sseConnected) {
+      showDisconnectedToast(true);
+    }
+  }, 1000);
+});
+document.addEventListener('htmx:sseOpen', function (evt) {
+  console.log('htmx:sseOpen', evt);
+  window.sseConnected = true;
+  showDisconnectedToast(false);
 });
 
 window.giscusReported = false;

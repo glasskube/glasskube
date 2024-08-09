@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 )
 
 // sseHub maintains the set of active clients and broadcasts messages to the clients.
@@ -50,8 +51,20 @@ func newHub() *sseHub {
 
 // run handles communication operations with sseHub
 func (h *sseHub) run(stopCh chan struct{}) {
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
 	for {
 		select {
+		case <-ticker.C:
+			fmt.Fprintf(os.Stderr, "\n\n")
+			h.clients.Range(func(key, value any) bool {
+				fmt.Fprintf(os.Stderr, "sending ping")
+				if client, ok := key.(*sseClient); ok {
+					client.send <- &sse{event: "ping"}
+				}
+				return true
+			})
+			fmt.Fprintf(os.Stderr, "\n\n")
 		case <-stopCh:
 			h.stopped = true
 			h.clients.Range(func(key, value any) bool {
