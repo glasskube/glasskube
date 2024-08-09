@@ -133,7 +133,10 @@
       <div class="container">
         <div class="row">
           <div class="col-4 ">
-            <div class="text-muted text-wrap text-break">Context: {{ .CurrentContext }}</div>
+            {{ if .CurrentContext }}
+              <div class="text-muted text-wrap text-break">Context: {{ .CurrentContext }}</div>
+            {{ end }}
+
 
             <span class="text-muted text-wrap text-break"
               >GitopsMode: {{ if .GitopsMode }}Enabled{{ else }}Disabled{{ end }}</span
