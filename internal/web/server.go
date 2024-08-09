@@ -418,7 +418,7 @@ func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
 				s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch clusterpackage %v: %w", pkgName, err)))
 				return
 			}
-			if err := uninstaller.Uninstall(ctx, &pkg); err != nil {
+			if err := uninstaller.Uninstall(ctx, &pkg, false); err != nil {
 				s.sendToast(w, toast.WithErr(fmt.Errorf("failed to uninstall clusterpackage %v: %w", pkgName, err)))
 				return
 			}
@@ -428,7 +428,7 @@ func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
 				s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch package %v/%v: %w", namespace, name, err)))
 				return
 			}
-			if err := uninstaller.Uninstall(ctx, &pkg); err != nil {
+			if err := uninstaller.Uninstall(ctx, &pkg, false); err != nil {
 				s.sendToast(w, toast.WithErr(fmt.Errorf("failed to uninstall package %v/%v: %w", namespace, name, err)))
 				return
 			}
