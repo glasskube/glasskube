@@ -1063,6 +1063,7 @@ func (s *server) enrichPage(r *http.Request, data map[string]any, err error) map
 			"OperatorVersion":     operatorVersion.String(),
 			"ClientVersion":       clientVersion.String(),
 			"NeedsOperatorUpdate": operatorVersion.LessThan(clientVersion),
+			"GitopsMode":          s.isGitopsModeEnabled(),
 		}
 	}
 	if config.IsDevBuild() {
