@@ -37,7 +37,8 @@ func (obj *uninstaller) UninstallBlocking(ctx context.Context, pkg ctrlpkg.Packa
 	if err != nil {
 		return err
 	}
-	return obj.awaitDeletion(ctx, pkg)
+
+	return obj.awaitDeletion(ctx, pkg, isDryRun)
 }
 
 // Uninstall deletes the v1alpha1.Package custom resource from the cluster.
@@ -66,7 +67,11 @@ func (uninstaller *uninstaller) delete(ctx context.Context, pkg ctrlpkg.Package,
 	}
 }
 
-func (obj *uninstaller) awaitDeletion(ctx context.Context, pkg ctrlpkg.Package) error {
+func (obj *uninstaller) awaitDeletion(ctx context.Context, pkg ctrlpkg.Package, isDryrun bool) error {
+	if isDryrun {
+		return nil
+	}
+
 	watcher, err := obj.createWatcher(ctx, pkg)
 	if err != nil {
 		return err
