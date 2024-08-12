@@ -18,7 +18,7 @@ require (
 	github.com/invopop/jsonschema v0.12.0
 	github.com/onsi/ginkgo/v2 v2.19.1
 	github.com/onsi/gomega v1.34.1
-	github.com/posthog/posthog-go v0.0.0-20240327112532-87b23fe11103
+	github.com/posthog/posthog-go v1.2.14
 	github.com/schollz/progressbar/v3 v3.14.6
 	github.com/spf13/cobra v1.8.1
 	github.com/yuin/goldmark v1.7.4
