@@ -6,7 +6,7 @@ import {EnumChangefreq} from 'sitemap';
 
 const config: Config = {
   title: 'Glasskube',
-  tagline: 'The next generation Package Manager for Kubernetes',
+  tagline: 'Open Source packaging ecosystem for Kubernetes',
   favicon: 'img/favicon.png',
   trailingSlash: true,
 
@@ -137,18 +137,26 @@ const config: Config = {
       },
       items: [
         {
-          type: 'docSidebar',
-          sidebarId: 'docs',
+          sidebarId: 'products',
+          label: 'Products',
           position: 'left',
-          label: 'Docs',
+          items: [
+            {to: '/products/package-manager', label: 'Glasskube Package Manager'},
+            // {to: '/products/kcl', label: 'Glasskube Native Packages (coming soon)'},
+            {to: '/products/hub', label: 'Glasskube Hub (new)'},
+            // {to: '/products/cloud', label: 'Glasskube Cloud (coming soon)'},
+          ],
         },
         {
-          to: '/guides/cert-manager',
+          sidebarId: 'resources',
+          label: 'Resources',
           position: 'left',
-          label: 'Guides',
-          activeBaseRegex: `/guides/`,
+          items: [
+            {type: 'docSidebar', sidebarId: 'docs', label: 'Docs'},
+            {to: '/guides/cert-manager', label: 'Guides'},
+            {to: '/blog', label: 'Blog'},
+          ]
         },
-        {to: '/blog', label: 'Blog', position: 'left'},
         {to: '/packages', label: 'Packages', position: 'left'},
         {to: '/pricing', label: 'Pricing', position: 'left'},
         {

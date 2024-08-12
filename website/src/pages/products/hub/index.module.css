@@ -1,0 +1,8 @@
+/**
+ * CSS files with the .module.css suffix will be treated as CSS modules
+ * and scoped locally.
+ */
+
+.heroHeading {
+  font-size: 3rem;
+}

@@ -1,14 +1,14 @@
 package cmd
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"slices"
 	"strings"
 	"text/tabwriter"
+
+	"github.com/glasskube/glasskube/internal/clientutils"
 
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/manifestvalues/cli"
@@ -25,9 +25,7 @@ import (
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/glasskube/glasskube/pkg/update"
 	"github.com/spf13/cobra"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/cache"
-	"sigs.k8s.io/yaml"
 )
 
 var updateCmdOptions struct {
@@ -137,7 +135,15 @@ var updateCmd = &cobra.Command{
 				fmt.Fprintf(os.Stderr, "❌ update failed: %v\n", err)
 				cliutils.ExitWithError()
 			}
-			handleOutput(updatedPackages)
+			if updateCmdOptions.Output != "" {
+				if out, err := clientutils.Format(updateCmdOptions.Output.OutputFormat(),
+					updateCmdOptions.ShowAll, updatedPackages...); err != nil {
+					fmt.Fprintf(os.Stderr, "❌ failed to marshal output: %v\n", err)
+					cliutils.ExitWithError()
+				} else {
+					fmt.Print(out)
+				}
+			}
 		}
 
 		fmt.Fprintf(os.Stderr, "✅ all packages up-to-date\n")
@@ -166,52 +172,6 @@ func printTransaction(tx update.UpdateTransaction) {
 		fmt.Fprintf(w, "%v:\t-\t-> %v\n", req.Name, req.Version)
 	}
 	_ = w.Flush()
-}
-
-func handleOutput(pkgs []ctrlpkg.Package) {
-	if updateCmdOptions.Output == "" {
-		return
-	}
-
-	var outputData []byte
-	var err error
-	for i := range pkgs {
-		if gvks, _, err := scheme.Scheme.ObjectKinds(pkgs[i]); err == nil && len(gvks) == 1 {
-			pkgs[i].SetGroupVersionKind(gvks[0])
-		} else {
-			fmt.Fprintf(os.Stderr, "❌ failed to set GVK for package: %v\n", err)
-			cliutils.ExitWithError()
-		}
-	}
-	switch updateCmdOptions.Output {
-	case OutputFormatJSON:
-		outputData, err = json.MarshalIndent(pkgs, "", "  ")
-	case OutputFormatYAML:
-		var buffer bytes.Buffer
-		l := len(pkgs)
-		for _, pkg := range pkgs {
-			data, err := yaml.Marshal(pkg)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "❌ failed to marshal output: %v\n", err)
-				cliutils.ExitWithError()
-			}
-			if l > 1 {
-				buffer.WriteString("---\n")
-			}
-			buffer.Write(data)
-		}
-		outputData = buffer.Bytes()
-	default:
-		fmt.Fprintf(os.Stderr, "❌ unsupported output format: %v\n", updateCmdOptions.Output)
-		cliutils.ExitWithError()
-	}
-
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "❌ failed to marshal output: %v\n", err)
-		cliutils.ExitWithError()
-	}
-
-	fmt.Fprintln(os.Stdout, string(outputData))
 }
 
 func completeInstalledPackageNames(

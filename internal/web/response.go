@@ -46,3 +46,18 @@ func (s *server) swappingRedirect(w http.ResponseWriter, path string, target str
 	locationJson, _ := json.Marshal(locationData)
 	w.Header().Add("Hx-Location", string(locationJson))
 }
+
+func (s *server) sendYamlModal(w http.ResponseWriter, obj string, alertContent any) {
+	// htmx headers to overwrite any existing/inherited hx-select, hx-swap, hx-target on the client
+	w.Header().Add("Hx-Reselect", "#yaml-modal")
+	w.Header().Add("Hx-Reswap", "innerHTML")
+	w.Header().Add("Hx-Retarget", "#modal-container")
+
+	w.WriteHeader(http.StatusOK)
+
+	e := s.templates.yamlModalTmpl.Execute(w, map[string]any{
+		"AlertContent": alertContent,
+		"Object":       obj,
+	})
+	util.CheckTmplError(e, "yaml-modal")
+}

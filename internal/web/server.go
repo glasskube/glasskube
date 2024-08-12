@@ -20,6 +20,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/glasskube/glasskube/internal/telemetry/annotations"
+
 	"github.com/glasskube/glasskube/internal/web/components/toast"
 
 	"github.com/glasskube/glasskube/internal/web/sse"
@@ -299,6 +301,7 @@ func (s *server) update(w http.ResponseWriter, r *http.Request) {
 	manifestName := mux.Vars(r)["manifestName"]
 	namespace := mux.Vars(r)["namespace"]
 	name := mux.Vars(r)["name"]
+	dryRun, _ := strconv.ParseBool(r.FormValue("dryRun"))
 
 	if r.Method == http.MethodPost {
 		updater := update.NewUpdater(ctx)
@@ -315,18 +318,25 @@ func (s *server) update(w http.ResponseWriter, r *http.Request) {
 				toast.WithErr(fmt.Errorf("failed to find updateTransactionId %v", utId)),
 				toast.WithStatusCode(http.StatusNotFound))
 			return
-		} else if _, err := updater.Apply(
+		} else if pkgs, err := updater.Apply(
 			ctx,
 			&ut,
 			update.ApplyUpdateOptions{
-				Blocking: false,
-				DryRun:   false,
+				Blocking: dryRun,
+				DryRun:   dryRun,
 			}); err != nil {
 			delete(s.updateTransactions, utId)
 			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to apply update: %w", err)))
 			return
 		} else {
 			delete(s.updateTransactions, utId)
+			if dryRun {
+				if yamlOutput, err := clientutils.Format(clientutils.OutputFormatYAML, false, pkgs...); err != nil {
+					s.sendToast(w, toast.WithErr(fmt.Errorf("failed to render yaml: %w", err)))
+				} else {
+					s.sendYamlModal(w, yamlOutput, nil)
+				}
+			}
 		}
 	} else {
 		packageHref := ""
@@ -383,6 +393,7 @@ func (s *server) update(w http.ResponseWriter, r *http.Request) {
 		}
 
 		err = s.templates.pkgUpdateModalTmpl.Execute(w, map[string]any{
+			"GitopsMode":          s.isGitopsModeEnabled(),
 			"UpdateTransactionId": utId,
 			"Updates":             updates,
 			"PackageHref":         packageHref,
@@ -441,6 +452,7 @@ func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
 				"Pruned":      pruned,
 				"Err":         err,
 				"PackageHref": util.GetClusterPkgHref(pkgName),
+				"GitopsMode":  s.isGitopsModeEnabled(),
 			})
 			util.CheckTmplError(err, "pkgUninstallModalTmpl")
 		} else {
@@ -448,6 +460,7 @@ func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
 				"Namespace":   namespace,
 				"Name":        name,
 				"PackageHref": util.GetNamespacedPkgHref(manifestName, namespace, name),
+				"GitopsMode":  s.isGitopsModeEnabled(),
 			})
 			util.CheckTmplError(err, "pkgUninstallModalTmpl")
 		}
@@ -586,6 +599,7 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 	repositoryName := r.FormValue("repositoryName")
 	selectedVersion := r.FormValue("selectedVersion")
 	enableAutoUpdate := r.FormValue("enableAutoUpdate")
+	dryRun, _ := strconv.ParseBool(r.FormValue("dryRun"))
 
 	var err error
 	pkg := &v1alpha1.Package{}
@@ -616,9 +630,18 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 			WithName(requestedName).
 			BuildPackage()
 		opts := metav1.CreateOptions{}
+		if dryRun {
+			opts.DryRun = []string{metav1.DryRunAll}
+		}
 		err := install.NewInstaller(s.pkgClient).Install(ctx, pkg, opts)
 		if err != nil {
 			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to install %v: %w", manifestName, err)))
+		} else if dryRun {
+			if yamlOutput, err := clientutils.Format(clientutils.OutputFormatYAML, false, pkg); err != nil {
+				s.sendToast(w, toast.WithErr(fmt.Errorf("failed to render yaml: %w", err)))
+			} else {
+				s.sendYamlModal(w, yamlOutput, nil)
+			}
 		} else {
 			s.swappingRedirect(w, "/packages", "main", "main")
 			w.WriteHeader(http.StatusAccepted)
@@ -626,11 +649,21 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 	} else {
 		pkg.Spec.Values = values
 		opts := metav1.UpdateOptions{}
+		if dryRun {
+			opts.DryRun = []string{metav1.DryRunAll}
+		}
 		if err := s.pkgClient.Packages(pkg.GetNamespace()).Update(ctx, pkg, opts); err != nil {
 			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to configure %v: %w", manifestName, err)))
 			return
 		}
-		if _, err := s.valueResolver.Resolve(ctx, values); err != nil {
+		_, resolveErr := s.valueResolver.Resolve(ctx, values)
+		if dryRun {
+			if yamlOutput, err := clientutils.Format(clientutils.OutputFormatYAML, false, pkg); err != nil {
+				s.sendToast(w, toast.WithErr(fmt.Errorf("failed to render yaml: %w", err)))
+			} else {
+				s.sendYamlModal(w, yamlOutput, resolveErr)
+			}
+		} else if resolveErr != nil {
 			s.sendToast(w,
 				toast.WithErr(fmt.Errorf("some values could not be resolved: %w", err)),
 				toast.WithCssClass("warning"),
@@ -654,6 +687,7 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 	repositoryName := r.FormValue("repositoryName")
 	selectedVersion := r.FormValue("selectedVersion")
 	enableAutoUpdate := r.FormValue("enableAutoUpdate")
+	dryRun, _ := strconv.ParseBool(r.FormValue("dryRun"))
 	var err error
 	pkg := &v1alpha1.ClusterPackage{}
 	var mf *v1alpha1.PackageManifest
@@ -681,19 +715,38 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 			WithValues(values).
 			BuildClusterPackage()
 		opts := metav1.CreateOptions{}
+		if dryRun {
+			opts.DryRun = []string{metav1.DryRunAll}
+		}
 		err := install.NewInstaller(s.pkgClient).Install(ctx, pkg, opts)
 		if err != nil {
 			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to install %v: %w", pkgName, err)))
 			return
+		} else if dryRun {
+			if yamlOutput, err := clientutils.Format(clientutils.OutputFormatYAML, false, pkg); err != nil {
+				s.sendToast(w, toast.WithErr(fmt.Errorf("failed to render yaml: %w", err)))
+			} else {
+				s.sendYamlModal(w, yamlOutput, nil)
+			}
 		}
 	} else {
 		pkg.Spec.Values = values
 		opts := metav1.UpdateOptions{}
+		if dryRun {
+			opts.DryRun = []string{metav1.DryRunAll}
+		}
 		if err := s.pkgClient.ClusterPackages().Update(ctx, pkg, opts); err != nil {
 			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to configure %v: %w", pkgName, err)))
 			return
 		}
-		if _, err := s.valueResolver.Resolve(ctx, values); err != nil {
+		_, resolveErr := s.valueResolver.Resolve(ctx, values)
+		if dryRun {
+			if yamlOutput, err := clientutils.Format(clientutils.OutputFormatYAML, false, pkg); err != nil {
+				s.sendToast(w, toast.WithErr(fmt.Errorf("failed to render yaml: %w", err)))
+			} else {
+				s.sendYamlModal(w, yamlOutput, resolveErr)
+			}
+		} else if resolveErr != nil {
 			s.sendToast(w,
 				toast.WithErr(fmt.Errorf("some values could not be resolved: %w", err)),
 				toast.WithCssClass("warning"),
@@ -701,6 +754,15 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 		} else {
 			s.sendToast(w, toast.WithMessage("Configuration updated successfully"))
 		}
+	}
+}
+
+func (s *server) isGitopsModeEnabled() bool {
+	if ns, err := (*s.namespaceLister).Get("glasskube-system"); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to fetch glasskube-system namespace: %v\n", err)
+		return true
+	} else {
+		return annotations.IsGitopsModeEnabled(ns.Annotations)
 	}
 }
 
@@ -989,6 +1051,7 @@ func (s *server) enrichPage(r *http.Request, data map[string]any, err error) map
 	}
 	data["Error"] = err
 	data["CurrentContext"] = s.rawConfig.CurrentContext
+	data["GitopsMode"] = s.isGitopsModeEnabled()
 	operatorVersion, clientVersion, err := s.getGlasskubeVersions(r.Context())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to check for version mismatch: %v\n", err)
@@ -1000,6 +1063,7 @@ func (s *server) enrichPage(r *http.Request, data map[string]any, err error) map
 			"OperatorVersion":     operatorVersion.String(),
 			"ClientVersion":       clientVersion.String(),
 			"NeedsOperatorUpdate": operatorVersion.LessThan(clientVersion),
+			"GitopsMode":          s.isGitopsModeEnabled(),
 		}
 	}
 	if config.IsDevBuild() {

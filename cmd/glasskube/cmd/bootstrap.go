@@ -113,7 +113,7 @@ func (o bootstrapOptions) asBootstrapOptions() bootstrap.BootstrapOptions {
 	}
 }
 
-func printBootstrap(manifests []unstructured.Unstructured, output OutputFormat) error {
+func printBootstrap(manifests []unstructured.Unstructured, output outputFormat) error {
 	if output != "" {
 		if err := convertAndPrintManifests(manifests, output); err != nil {
 			return err
@@ -186,10 +186,10 @@ func verifyLegalUpdate(ctx context.Context, installedVersion, targetVersion *sem
 
 func convertAndPrintManifests(
 	objs []unstructured.Unstructured,
-	output OutputFormat,
+	output outputFormat,
 ) error {
 	switch output {
-	case OutputFormatJSON:
+	case outputFormatJSON:
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "    ")
 		err := enc.Encode(objs)
@@ -197,7 +197,7 @@ func convertAndPrintManifests(
 			fmt.Fprintf(os.Stderr, "error marshaling data to JSON: %v\n", err)
 			cliutils.ExitWithError()
 		}
-	case OutputFormatYAML:
+	case outputFormatYAML:
 		for i, obj := range objs {
 			yamlData, err := yaml.Marshal(&obj)
 			if err != nil {
@@ -236,4 +236,6 @@ func init() {
 
 	bootstrapCmd.MarkFlagsMutuallyExclusive("url", "type")
 	bootstrapCmd.MarkFlagsMutuallyExclusive("url", "latest")
+
+	bootstrapCmd.AddCommand(bootstrapGitCmd)
 }

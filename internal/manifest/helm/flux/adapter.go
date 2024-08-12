@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -102,7 +103,7 @@ func (a *FluxHelmAdapter) ensureNamespace(
 		},
 	}
 	log := ctrl.LoggerFrom(ctx).WithValues("Namespace", namespace.Name)
-	result, err := controllerutil.CreateOrUpdate(ctx, a.Client, &namespace, func() error {
+	result, err := createOrUpdateWithRetry(ctx, a.Client, &namespace, func() error {
 		if namespace.Status.Phase == corev1.NamespaceTerminating {
 			return nil
 		} else {
@@ -135,7 +136,7 @@ func (a *FluxHelmAdapter) ensureHelmRepository(
 		},
 	}
 	log := ctrl.LoggerFrom(ctx).WithValues("HelmRepository", helmRepository.Name)
-	result, err := controllerutil.CreateOrUpdate(ctx, a.Client, &helmRepository, func() error {
+	result, err := createOrUpdateWithRetry(ctx, a.Client, &helmRepository, func() error {
 		helmRepository.Spec.URL = manifest.Helm.RepositoryUrl
 		helmRepository.Spec.Interval = metav1.Duration{Duration: 1 * time.Hour}
 		labels.SetManaged(&helmRepository)
@@ -168,7 +169,7 @@ func (a *FluxHelmAdapter) ensureHelmRelease(
 		},
 	}
 	log := ctrl.LoggerFrom(ctx).WithValues("HelmRelease", helmRelease.Name)
-	result, err := controllerutil.CreateOrUpdate(ctx, a.Client, &helmRelease, func() error {
+	result, err := createOrUpdateWithRetry(ctx, a.Client, &helmRelease, func() error {
 		if helmRelease.Spec.Chart == nil {
 			helmRelease.Spec.Chart = &helmv2.HelmChartTemplate{}
 		}
@@ -194,6 +195,16 @@ func (a *FluxHelmAdapter) ensureHelmRelease(
 		log.V(1).Info("ensured HelmRelease", "result", result)
 		return &helmRelease, nil
 	}
+}
+
+func createOrUpdateWithRetry(ctx context.Context, c client.Client,
+	obj client.Object, f controllerutil.MutateFn) (controllerutil.OperationResult, error) {
+	var result controllerutil.OperationResult
+	return result, retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		var err1 error
+		result, err1 = controllerutil.CreateOrUpdate(ctx, c, obj, f)
+		return err1
+	})
 }
 
 func extractResult(

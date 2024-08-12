@@ -8,28 +8,29 @@ import {
   faSkyatlas,
 } from '@fortawesome/free-brands-svg-icons';
 import {IconDefinition} from '@fortawesome/free-regular-svg-icons';
+import React from 'react';
 
 type FeatureItem = {
   title: string;
-  Icon: IconDefinition;
+  icon: IconDefinition;
   description: JSX.Element;
 };
 
 const FeatureList: FeatureItem[] = [
   {
     title: 'Enterprise ready',
-    Icon: faSkyatlas,
+    icon: faSkyatlas,
     description: (
       <>
         Manage the Kubernetes packages your core application depends on or
-        distribute internal services charts to your developers with the
-        Glasskube package manager.
+        distribute your Cloud Native application to your developers or customers
+        with Glasskube.
       </>
     ),
   },
   {
     title: 'Advanced GitOps Integration',
-    Icon: faGitAlt,
+    icon: faGitAlt,
     description: (
       <>
         Glasskube integrates into your GitOps workflow you already have in
@@ -40,7 +41,7 @@ const FeatureList: FeatureItem[] = [
   },
   {
     title: 'Open Source',
-    Icon: faGithub,
+    icon: faGithub,
     description: (
       <>
         Glasskube is fully Open-Source, part of the CNCF landscape and is
@@ -51,11 +52,11 @@ const FeatureList: FeatureItem[] = [
   },
 ];
 
-function Feature({title, Icon, description}: FeatureItem) {
+function Feature({title, icon, description}: FeatureItem) {
   return (
     <div className={clsx('col col--4', 'margin-top--lg')}>
       <div className={clsx('text--center', styles.iconBorder)}>
-        <FontAwesomeIcon icon={Icon} size="8x" className={styles.iconHeight} />
+        <FontAwesomeIcon icon={icon} size="8x" className={styles.iconHeight} />
       </div>
       <div className="text--center padding-horiz--md margin-top--lg">
         <Heading as="h3" className="">

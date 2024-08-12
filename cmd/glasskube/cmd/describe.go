@@ -126,9 +126,9 @@ var describeCmd = &cobra.Command{
 
 		bold := color.New(color.Bold).SprintFunc()
 
-		if describeCmdOptions.Output == OutputFormatJSON {
+		if describeCmdOptions.Output == outputFormatJSON {
 			printJSON(ctx, pkg, pkgs, manifest, latestVersion, repos)
-		} else if describeCmdOptions.Output == OutputFormatYAML {
+		} else if describeCmdOptions.Output == outputFormatYAML {
 			printYAML(ctx, pkg, pkgs, manifest, latestVersion, repos)
 		} else {
 			fmt.Println(bold("Package:"), nameAndDescription(manifest))

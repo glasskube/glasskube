@@ -68,7 +68,6 @@ function filterUsers(
   searchName: string | null,
 ) {
   if (searchName) {
-    // eslint-disable-next-line no-param-reassign
     users = users.filter(user =>
       user.name.toLowerCase().includes(searchName.toLowerCase()),
     );
