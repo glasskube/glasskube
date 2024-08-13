@@ -137,6 +137,11 @@ func (a *FluxHelmAdapter) ensureHelmRepository(
 	}
 	log := ctrl.LoggerFrom(ctx).WithValues("HelmRepository", helmRepository.Name)
 	result, err := createOrUpdateWithRetry(ctx, a.Client, &helmRepository, func() error {
+		if manifest.Helm.IsOCIRepository() {
+			helmRepository.Spec.Type = sourcev1.HelmRepositoryTypeOCI
+		} else {
+			helmRepository.Spec.Type = sourcev1.HelmRepositoryTypeDefault
+		}
 		helmRepository.Spec.URL = manifest.Helm.RepositoryUrl
 		helmRepository.Spec.Interval = metav1.Duration{Duration: 1 * time.Hour}
 		labels.SetManaged(&helmRepository)
