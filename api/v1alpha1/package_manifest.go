@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"strings"
+
 	"github.com/invopop/jsonschema"
 	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
@@ -31,6 +33,10 @@ type HelmManifest struct {
 	ChartVersion string `json:"chartVersion" jsonschema:"required"`
 	// Values that should be used for the helm release
 	Values *JSON `json:"values,omitempty"`
+}
+
+func (obj HelmManifest) IsOCIRepository() bool {
+	return strings.HasPrefix(obj.RepositoryUrl, "oci://")
 }
 
 type KustomizeManifest struct {
