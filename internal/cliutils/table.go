@@ -16,7 +16,9 @@ func PrintTable[T any](
 	getColsOfRow func(item T) []string,
 ) error {
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(tw, strings.Join(columns, tabSep))
+	if _, err := fmt.Fprintln(tw, strings.Join(columns, tabSep)); err != nil {
+		return err
+	}
 	var sb strings.Builder
 	for _, pkg := range rowItems {
 		colsOfRow := getColsOfRow(pkg)
@@ -27,7 +29,9 @@ func PrintTable[T any](
 			sb.WriteString(col)
 			sb.WriteString(tabSep)
 		}
-		fmt.Fprintln(tw, sb.String())
+		if _, err := fmt.Fprintln(tw, sb.String()); err != nil {
+			return err
+		}
 		sb.Reset()
 	}
 	return tw.Flush()

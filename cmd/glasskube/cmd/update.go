@@ -9,6 +9,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/glasskube/glasskube/internal/clientutils"
+	"github.com/glasskube/glasskube/internal/util"
 
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/manifestvalues/cli"
@@ -154,22 +155,22 @@ func printTransaction(tx update.UpdateTransaction) {
 	w := tabwriter.NewWriter(os.Stderr, 0, 0, 1, ' ', 0)
 	for _, item := range tx.Items {
 		if item.UpdateRequired() {
-			fmt.Fprintf(w, "%v\t%v:\t%v\t-> %v\n",
+			util.Must(fmt.Fprintf(w, "%v\t%v:\t%v\t-> %v\n",
 				item.Package.GetSpec().PackageInfo.Name,
 				cache.MetaObjectToName(item.Package),
 				item.Package.GetSpec().PackageInfo.Version,
 				item.Version,
-			)
+			))
 		} else {
-			fmt.Fprintf(w, "%v\t%v:\t%v\t(up-to-date)\n",
+			util.Must(fmt.Fprintf(w, "%v\t%v:\t%v\t(up-to-date)\n",
 				item.Package.GetSpec().PackageInfo.Name,
 				cache.MetaObjectToName(item.Package),
 				item.Package.GetSpec().PackageInfo.Version,
-			)
+			))
 		}
 	}
 	for _, req := range tx.Requirements {
-		fmt.Fprintf(w, "%v:\t-\t-> %v\n", req.Name, req.Version)
+		util.Must(fmt.Fprintf(w, "%v:\t-\t-> %v\n", req.Name, req.Version))
 	}
 	_ = w.Flush()
 }

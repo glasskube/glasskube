@@ -13,7 +13,8 @@ type writerStatusWriter struct {
 
 // SetStatus implements StatusWriter.
 func (obj *writerStatusWriter) SetStatus(desc string) {
-	fmt.Fprintln(obj.writer, desc)
+	// TODO: Handle error returned by fmt.Fprintln
+	_, _ = fmt.Fprintln(obj.writer, desc)
 }
 
 // Start implements StatusWriter.
