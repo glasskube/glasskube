@@ -222,6 +222,11 @@ spec:
                             If at least one such a resource exists, the namespace is created implicitly.
                           type: string
                         url:
+                          description: |-
+                            Url is the location of the manifest.
+                            Typically, this should be a full https URL, but local paths are also supporeted.
+                            If this field is set to a local path (e.g. a relative path like "./manifest.yaml" or just "manifest.yaml") it
+                            will be resolved relative to the packages "package.yaml" file.
                           type: string
                       required:
                       - url
@@ -350,6 +355,8 @@ spec:
                 required:
                 - name
                 type: object
+              resolvedUrl:
+                type: string
               version:
                 type: string
             type: object
