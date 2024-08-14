@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
@@ -39,6 +40,7 @@ func (obj *uninstaller) UninstallBlocking(ctx context.Context, pkg ctrlpkg.Packa
 	}
 
 	if isDryRun {
+		fmt.Fprintln(os.Stderr, "🔎 Dry-run mode is enabled. Nothing will be changed.")
 		return nil
 	} else {
 		return obj.awaitDeletion(ctx, pkg)
