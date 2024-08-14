@@ -67,6 +67,10 @@ var uninstallCmd = &cobra.Command{
 			}
 		}
 
+		if uninstallCmdOptions.DryRun {
+			fmt.Fprintln(os.Stderr, "🔎 Dry-run mode is enabled. Nothing will be changed.")
+		}
+
 		if uninstallCmdOptions.NoWait {
 			if err := uninstaller.Uninstall(ctx, pkg, uninstallCmdOptions.DryRun); err != nil {
 				fmt.Fprintf(os.Stderr, "\n❌ An error occurred during uninstallation:\n\n%v\n", err)

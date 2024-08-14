@@ -40,7 +40,6 @@ func (obj *uninstaller) UninstallBlocking(ctx context.Context, pkg ctrlpkg.Packa
 	}
 
 	if isDryRun {
-		fmt.Fprintln(os.Stderr, "🔎 Dry-run mode is enabled. Nothing will be changed.")
 		return nil
 	} else {
 		return obj.awaitDeletion(ctx, pkg)
