@@ -58,9 +58,10 @@ func (a *FluxHelmAdapter) ControllerInit(buildr *builder.Builder, client client.
 func (a *FluxHelmAdapter) Reconcile(
 	ctx context.Context,
 	pkg ctrlpkg.Package,
-	manifest *packagesv1alpha1.PackageManifest,
+	pi *packagesv1alpha1.PackageInfo,
 	patches manifestvalues.TargetPatches,
 ) (*result.ReconcileResult, error) {
+	manifest := pi.Status.Manifest
 	log := ctrl.LoggerFrom(ctx)
 	var ownedResources []packagesv1alpha1.OwnedResourceRef
 	if !pkg.IsNamespaceScoped() {

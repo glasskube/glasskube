@@ -207,7 +207,7 @@ func (r *PackageReconcilationContext) reconcilePackageInfoReady(ctx context.Cont
 	results := make([]result.ReconcileResult, 0, len(adaptersToRun))
 	var errs error
 	for _, adapter := range adaptersToRun {
-		if result, err := adapter.Reconcile(ctx, r.pkg, piManifest, patches); err != nil {
+		if result, err := adapter.Reconcile(ctx, r.pkg, r.pi, patches); err != nil {
 			errs = multierr.Append(errs, err)
 		} else {
 			results = append(results, *result)

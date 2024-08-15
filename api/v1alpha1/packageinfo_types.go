@@ -34,6 +34,7 @@ type PackageInfoSpec struct {
 // PackageInfoStatus defines the observed state of PackageInfo
 type PackageInfoStatus struct {
 	Manifest            *PackageManifest   `json:"manifest,omitempty"`
+	ResolvedUrl         string             `json:"resolvedUrl,omitempty"`
 	Conditions          []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 	LastUpdateTimestamp *metav1.Time       `json:"lastUpdateTimestamp,omitempty"`
 	Version             string             `json:"version,omitempty"`
