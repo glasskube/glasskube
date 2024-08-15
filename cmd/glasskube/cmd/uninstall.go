@@ -7,14 +7,16 @@ import (
 	"github.com/fatih/color"
 	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/cliutils"
+	"github.com/glasskube/glasskube/pkg/list"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/glasskube/glasskube/pkg/uninstall"
 	"github.com/spf13/cobra"
 )
 
 var uninstallCmdOptions = struct {
-	NoWait bool
-	Yes    bool
+	NoWait          bool
+	Yes             bool
+	DeleteNamespace bool
 	KindOptions
 	NamespaceOptions
 }{
@@ -46,6 +48,7 @@ var uninstallCmd = &cobra.Command{
 			cliutils.ExitWithError()
 		}
 
+		var deleteNamespace bool
 		if !pkg.IsNamespaceScoped() {
 			if g, err := dm.NewGraph(ctx); err != nil {
 				fmt.Fprintf(os.Stderr, "❌ Error validating uninstall: %v\n", err)
@@ -64,16 +67,39 @@ var uninstallCmd = &cobra.Command{
 					}
 				}
 			}
+		} else if uninstallCmdOptions.DeleteNamespace {
+			// list all packages in the namespace
+			lister := list.NewListerWithRepoCache(ctx)
+			namespace := pkg.GetNamespace()
+			pkgsInNamespace, err := lister.GetPackagesWithStatus(ctx, list.ListOptions{
+				Namespace: namespace,
+			})
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "❌ Could not list packages: %v\n", err)
+				cliutils.ExitWithError()
+			}
+			pkgCount := 0
+			for _, p := range pkgsInNamespace {
+				pkgCount += len(p.Packages)
+			}
+			if pkgCount > 1 {
+				fmt.Fprintf(os.Stderr, "❌ Namespace %v contains more than one package. "+
+					"Current count of packages present in the namespace: %v\n", namespace, pkgCount)
+				cliutils.ExitWithError()
+			}
+			deleteNamespace = true
 		}
 
+		// delete the namespace only if it is namespace scoped and there are no other packages in the namespace since
+		// cluster packages delete the namespace once they are deleted
 		if uninstallCmdOptions.NoWait {
-			if err := uninstaller.Uninstall(ctx, pkg); err != nil {
+			if err := uninstaller.UninstallAndDeleteNamespace(ctx, pkg, deleteNamespace); err != nil {
 				fmt.Fprintf(os.Stderr, "\n❌ An error occurred during uninstallation:\n\n%v\n", err)
 				cliutils.ExitWithError()
 			}
 			fmt.Fprintln(os.Stderr, "Uninstallation started in background")
 		} else {
-			if err := uninstaller.UninstallBlocking(ctx, pkg); err != nil {
+			if err := uninstaller.UninstallAndDeleteNamespaceBlocking(ctx, pkg, deleteNamespace); err != nil {
 				fmt.Fprintf(os.Stderr, "\n❌ An error occurred during uninstallation:\n\n%v\n", err)
 				cliutils.ExitWithError()
 			}
@@ -96,6 +122,8 @@ func showUninstallDetails(context, name string, pruned []string) {
 func init() {
 	uninstallCmdOptions.KindOptions.AddFlagsToCommand(uninstallCmd)
 	uninstallCmdOptions.NamespaceOptions.AddFlagsToCommand(uninstallCmd)
+	uninstallCmd.PersistentFlags().BoolVarP(&uninstallCmdOptions.DeleteNamespace, "delete-namespace", "d", false,
+		"Delete the namespace if it is empty after deleting the resources")
 	uninstallCmd.PersistentFlags().BoolVar(&uninstallCmdOptions.NoWait, "no-wait", false,
 		"Perform non-blocking uninstall")
 	uninstallCmd.PersistentFlags().BoolVarP(&uninstallCmdOptions.Yes, "yes", "y", false,

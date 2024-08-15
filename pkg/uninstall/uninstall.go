@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/util"
 	"github.com/glasskube/glasskube/pkg/client"
@@ -31,23 +32,43 @@ func (obj *uninstaller) WithStatusWriter(sw statuswriter.StatusWriter) *uninstal
 // UninstallBlocking deletes the v1alpha1.Package custom resource from the
 // cluster and waits until the package is fully deleted.
 func (obj *uninstaller) UninstallBlocking(ctx context.Context, pkg ctrlpkg.Package) error {
-	obj.status.Start()
-	defer obj.status.Stop()
-	err := obj.delete(ctx, pkg)
-	if err != nil {
-		return err
-	}
-	return obj.awaitDeletion(ctx, pkg)
+	return obj.UninstallAndDeleteNamespaceBlocking(ctx, pkg, false)
 }
 
 // Uninstall deletes the v1alpha1.Package custom resource from the cluster.
 func (obj *uninstaller) Uninstall(ctx context.Context, pkg ctrlpkg.Package) error {
 	obj.status.Start()
 	defer obj.status.Stop()
-	return obj.delete(ctx, pkg)
+	return obj.delete(ctx, pkg, false)
 }
 
-func (uninstaller *uninstaller) delete(ctx context.Context, pkg ctrlpkg.Package) error {
+// UninstallBlocking deletes the v1alpha1.Package custom resource from the
+// cluster and namespace (if empty) and waits until the operation is complete.
+func (obj *uninstaller) UninstallAndDeleteNamespaceBlocking(
+	ctx context.Context,
+	pkg ctrlpkg.Package,
+	deleteNamespace bool,
+) error {
+	obj.status.Start()
+	defer obj.status.Stop()
+	err := obj.delete(ctx, pkg, deleteNamespace)
+	if err != nil {
+		return err
+	}
+	return obj.awaitDeletion(ctx, pkg)
+}
+
+// Uninstall deletes the v1alpha1.Package custom resource from the cluster
+// and namespace (if empty).
+func (obj *uninstaller) UninstallAndDeleteNamespace(
+	ctx context.Context,
+	pkg ctrlpkg.Package,
+	deleteNamespace bool,
+) error {
+	return obj.Uninstall(ctx, pkg)
+}
+
+func (uninstaller *uninstaller) delete(ctx context.Context, pkg ctrlpkg.Package, deleteNamespace bool) error {
 	deleteOptions := metav1.DeleteOptions{
 		PropagationPolicy: util.Pointer(metav1.DeletePropagationForeground),
 	}
@@ -58,7 +79,14 @@ func (uninstaller *uninstaller) delete(ctx context.Context, pkg ctrlpkg.Package)
 	case *v1alpha1.ClusterPackage:
 		return uninstaller.client.ClusterPackages().Delete(ctx, pkg, deleteOptions)
 	case *v1alpha1.Package:
-		return uninstaller.client.Packages(pkg.Namespace).Delete(ctx, pkg, deleteOptions)
+		if err := uninstaller.client.Packages(pkg.Namespace).Delete(ctx, pkg, deleteOptions); err != nil {
+			return err
+		}
+		if deleteNamespace {
+			clientset := clicontext.KubernetesClientFromContext(ctx)
+			return clientset.CoreV1().Namespaces().Delete(ctx, pkg.Namespace, deleteOptions)
+		}
+		return nil
 	default:
 		return fmt.Errorf("unexpected object kind: %v", pkg.GroupVersionKind().Kind)
 	}
