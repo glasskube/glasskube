@@ -1,5 +1,43 @@
 # Changelog
 
+## [0.17.0](https://github.com/glasskube/glasskube/compare/v0.16.0...v0.17.0) (2024-08-15)
+
+
+### Features
+
+* **package-operator:** add handling of local path manifest url ([#1109](https://github.com/glasskube/glasskube/issues/1109)) ([debc5b1](https://github.com/glasskube/glasskube/commit/debc5b1e8e117991354fc4b37c42a0e8f8325731))
+
+
+### Bug Fixes
+
+* **deps:** update dependency @easyops-cn/docusaurus-search-local to v0.44.5 ([#1096](https://github.com/glasskube/glasskube/issues/1096)) ([b1995f7](https://github.com/glasskube/glasskube/commit/b1995f74fa2e75b0ec15ce266817a6e9154bc1c1))
+* **deps:** update dependency htmx.org to v2.0.2 ([#1100](https://github.com/glasskube/glasskube/issues/1100)) ([5bbffea](https://github.com/glasskube/glasskube/commit/5bbffeacb52f408cbac0a3f78f5903b94a4cce8e))
+* **deps:** update module github.com/google/go-containerregistry to v0.20.2 ([#1077](https://github.com/glasskube/glasskube/issues/1077)) ([f13cab6](https://github.com/glasskube/glasskube/commit/f13cab68a8bcec271f0975976f8c8a60611d0685))
+* **deps:** update module github.com/onsi/ginkgo/v2 to v2.20.0 ([#1086](https://github.com/glasskube/glasskube/issues/1086)) ([95b03c7](https://github.com/glasskube/glasskube/commit/95b03c7b41d2e08c1569083f8f8abd41dcdd5f73))
+* **deps:** update module github.com/posthog/posthog-go to v1 ([#1088](https://github.com/glasskube/glasskube/issues/1088)) ([4700c54](https://github.com/glasskube/glasskube/commit/4700c5445b0c1f7db6f629bb2b61a3896b2becca))
+* **deps:** update module github.com/posthog/posthog-go to v1.2.16 ([#1107](https://github.com/glasskube/glasskube/issues/1107)) ([921cb98](https://github.com/glasskube/glasskube/commit/921cb987e8814bcee36fdef26655a982b5443fa3))
+* **deps:** update module golang.org/x/term to v0.23.0 ([#1079](https://github.com/glasskube/glasskube/issues/1079)) ([8ec5ff7](https://github.com/glasskube/glasskube/commit/8ec5ff7f211f725881199188d685b7d0145cbff7))
+* **deps:** update module sigs.k8s.io/controller-runtime to v0.18.5 ([#1098](https://github.com/glasskube/glasskube/issues/1098)) ([0d41552](https://github.com/glasskube/glasskube/commit/0d4155289caf8fc5e5f9ef91a67ed5df881cf1ba))
+* **package-operator:** always set the correct type for HelmRepositories ([#1103](https://github.com/glasskube/glasskube/issues/1103)) ([28e3238](https://github.com/glasskube/glasskube/commit/28e323831244fe6f7d41405f18d5ee880f590bb4))
+
+
+### Other
+
+* **deps:** update actions/upload-artifact action to v4.3.6 ([#1076](https://github.com/glasskube/glasskube/issues/1076)) ([1380168](https://github.com/glasskube/glasskube/commit/1380168f9ae8d5e7f89a76df1cfe4f22b1cd8f1b))
+* **deps:** update dependency @commitlint/cli to v19.4.0 ([#1082](https://github.com/glasskube/glasskube/issues/1082)) ([3b570ed](https://github.com/glasskube/glasskube/commit/3b570ed1dd3d847bdf99101ff3bad261a70cc8f4))
+* **deps:** update dependency @eslint/js to v9.9.0 ([#1093](https://github.com/glasskube/glasskube/issues/1093)) ([3ef139f](https://github.com/glasskube/glasskube/commit/3ef139feb5ff2efcca4d668052458592d0c071c4))
+* **deps:** update dependency go to v1.22.6 ([#1078](https://github.com/glasskube/glasskube/issues/1078)) ([e2c6d84](https://github.com/glasskube/glasskube/commit/e2c6d84181fafbedd33b1d89fed7e2ca1f1fec79))
+* **deps:** update dependency typescript-eslint to v8.0.1 ([#1072](https://github.com/glasskube/glasskube/issues/1072)) ([3bb625f](https://github.com/glasskube/glasskube/commit/3bb625f714bbae777dd12ad65f100587bd513ce8))
+* **deps:** update dependency typescript-eslint to v8.1.0 ([#1099](https://github.com/glasskube/glasskube/issues/1099)) ([8bc75d9](https://github.com/glasskube/glasskube/commit/8bc75d9bea2bb2d07c9bf27aa74f522b7435688a))
+* **ui:** improve update instructions in GitOps mode ([#1095](https://github.com/glasskube/glasskube/issues/1095)) ([fb6ae46](https://github.com/glasskube/glasskube/commit/fb6ae46a31676cdf14ecd419548d42655edf3f6f))
+* **website:** add product pages ([#1074](https://github.com/glasskube/glasskube/issues/1074)) ([6c3e38e](https://github.com/glasskube/glasskube/commit/6c3e38ea7964b17efc7f5e09766067bec09cab34))
+
+
+### Docs
+
+* gitops integration ([#1089](https://github.com/glasskube/glasskube/issues/1089)) ([58bb9c1](https://github.com/glasskube/glasskube/commit/58bb9c1173194ef78dc4717ed828ce8643529332))
+* **website:** added initial gitops template blog ([#1083](https://github.com/glasskube/glasskube/issues/1083)) ([c389e2b](https://github.com/glasskube/glasskube/commit/c389e2bcfaee08fb3e91c36bf195d78d146de05c))
+
 ## [0.16.0](https://github.com/glasskube/glasskube/compare/v0.15.0...v0.16.0) (2024-08-05)
 
 
