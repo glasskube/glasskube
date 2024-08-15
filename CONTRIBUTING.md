@@ -250,6 +250,31 @@ Please make sure to have consistent and valid state in your local repo.
 Also please be aware of the package repo cache: When changing something in the repo, you might want to restart the applications again (otherwise you might have to wait up to 5 minutes).
 There is no option yet to override the cache time, but you could locally change it in `internal/repo/client/clientset.go:NewClientset`.
 
+### Adding a new validating webhook to the package-operator
+
+Prerequisites:
+* [kubebuilder](https://github.com/kubernetes-sigs/kubebuilder)
+
+The following steps will create a validating webhook for the resource `packages.PackageRepository` but can be easily adapted for other resources:
+
+1. Move `cmd/package-operator/main.go` to `cmd/main.go`
+2. Run kubebuilder create webhook `kubebuilder create webhook --group packages --version v1alpha1 --kind PackageRepository --programmatic-validation`
+    * This will generate several changes and new files. In the following steps, the generated content will be refactored to fit the project structure of the operator
+3. Move `cmd/main.go` back to `cmd/package-operator/main.go`
+4. Move `packagerepository_webhook.go` and `packagerepository_webhook_test.go` to folder `internal/webhook`
+5. Delete `webhook_suite_test.go` (it's already present in `internal/webhook`)
+6. Refactor `internal/webhook/packagerepository_webhook.go`
+    1. Create struct `PackageRepositoryValidatingWebhook`
+    2. Change the receiver argument of method `SetupWithManager` to the new struct `PackageRepositoryValidatingWebhook`
+    3. Change `var _ webhook.Validator` to `var _ webhook.CustomValidator = &PackageRepositoryValidatingWebhook{}`
+    4. Update `ValidateCreate`, `ValidateUpdate`, `ValidateDelete` method signatures to implement the `CustomValidator`
+    4. Remove `var packagerepositorylog = logf.Log.WithName("packagerepository-resource")` and replace it with `log := ctrl.LoggerFrom(ctx)` in the respective methods
+7. Change `SetupWithManager` method call in `cmd/package-operator/main.go` to the struct `PackageRepositoryValidatingWebhook`
+8. Change the port of the generated `clientConfig` in `webhook_manifest_patch.yaml` to 9443
+9. Extend the webhook names array in `cert-manager/main.go` with `vpackagerepository.kb.io`
+
+Now the webhook is ready and validation logic and tests can be implemented.
+
 ## Testing
 
 > It's crucial to acknowledge the significance of various types of testing. Alongside conducting unit tests for your contributed code, it's imperative to locally build Glasskube and `test it within a Kubernetes cluster`. ☸️
