@@ -13,7 +13,7 @@
     "giscus": "^1.5.0",
     "htmx.org": "2.0.2",
     "htmx-ext-sse": "2.2.2",
-    "htmx-ext-response-targets": "2.0.0"
+    "htmx-ext-response-targets": "2.0.1"
   },
   "devDependencies": {
     "@commitlint/cli": "19.4.0",
