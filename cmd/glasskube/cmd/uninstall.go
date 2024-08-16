@@ -40,6 +40,10 @@ var uninstallCmd = &cobra.Command{
 			uninstaller.WithStatusWriter(statuswriter.Spinner())
 		}
 
+		if uninstallCmdOptions.DryRun {
+			fmt.Fprintln(os.Stderr, "🔎 Dry-run mode is enabled. Nothing will be changed.")
+		}
+
 		pkg, err := getPackageOrClusterPackage(
 			ctx, pkgName, uninstallCmdOptions.KindOptions, uninstallCmdOptions.NamespaceOptions)
 		if err != nil {
@@ -65,10 +69,6 @@ var uninstallCmd = &cobra.Command{
 					}
 				}
 			}
-		}
-
-		if uninstallCmdOptions.DryRun {
-			fmt.Fprintln(os.Stderr, "🔎 Dry-run mode is enabled. Nothing will be changed.")
 		}
 
 		if uninstallCmdOptions.NoWait {
