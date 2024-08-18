@@ -21,7 +21,7 @@ var (
 	webhookConfigName = "glasskube-validating-webhook-configuration"
 	namespace         = "glasskube-system"
 	certDir           = ""
-	webhookNames      = []string{"vpackage.kb.io", "vclusterpackage.kb.io"}
+	webhookNames      = []string{"vpackage.kb.io", "vclusterpackage.kb.io", "vpackagerepository.kb.io"}
 
 	log logr.Logger
 
