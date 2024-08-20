@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"sync"
 
-	"go.uber.org/multierr"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
-	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/maputils"
 	"github.com/glasskube/glasskube/internal/names"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	repotypes "github.com/glasskube/glasskube/internal/repo/types"
 	"github.com/glasskube/glasskube/pkg/client"
+	"go.uber.org/multierr"
 )
 
 type PackageWithStatus struct {
@@ -208,9 +208,9 @@ func (l *lister) fetchRepoAndInstalled(ctx context.Context, options ListOptions,
 	// TODO what if a package is namespaced in one repository, and with the same name cluster scoped in another??
 
 	resultLs := make([]result, 0)
-	for _, indexPackage := range index.Packages {
+	for i, indexPackage := range index.Packages {
 		res := result{
-			IndexItem: &indexPackage,
+			IndexItem: &index.Packages[i],
 		}
 		if indexPackage.Scope.IsCluster() && typeOpts&includeClusterPackages != 0 {
 			for j, pkg := range clusterPackages.Items {
@@ -256,7 +256,7 @@ func (l *lister) fetchMetaIndex(options ListOptions, index *repotypes.MetaIndex)
 	var repoIndex repotypes.PackageRepoIndex
 	err := l.repoClient.ForRepoWithName(options.Repository).FetchPackageRepoIndex(&repoIndex)
 	if err != nil {
-		return fmt.Errorf("could not fetch package repository index for repo %s : %w",
+		return fmt.Errorf("could not fetch package repository index for repo %s: %w",
 			options.Repository,
 			err)
 	}
