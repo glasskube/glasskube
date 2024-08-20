@@ -6,14 +6,14 @@ import (
 	"os"
 	"strings"
 
-	"github.com/spf13/cobra"
-	"sigs.k8s.io/yaml"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 
 	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/cliutils"
-	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/semver"
 	"github.com/glasskube/glasskube/pkg/list"
+	"github.com/spf13/cobra"
+	"sigs.k8s.io/yaml"
 )
 
 type ListCmdOptions struct {

@@ -4,13 +4,12 @@ import (
 	"context"
 	"slices"
 
-	"go.uber.org/multierr"
-
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/maputils"
 	"github.com/glasskube/glasskube/internal/repo/types"
 	"github.com/glasskube/glasskube/internal/semver"
 	"github.com/glasskube/glasskube/internal/util"
+	"go.uber.org/multierr"
 )
 
 type metaclient struct {
