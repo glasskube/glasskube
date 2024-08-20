@@ -3,6 +3,7 @@ package plain
 import (
 	"context"
 	"fmt"
+	"net/url"
 
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clientutils"
@@ -51,12 +52,12 @@ func (a *Adapter) ControllerInit(builder *builder.Builder, client client.Client,
 func (a *Adapter) Reconcile(
 	ctx context.Context,
 	pkg ctrlpkg.Package,
-	manifest *packagesv1alpha1.PackageManifest,
+	pi *packagesv1alpha1.PackageInfo,
 	patches manifestvalues.TargetPatches,
 ) (*result.ReconcileResult, error) {
 	var allOwned []packagesv1alpha1.OwnedResourceRef
-	for _, m := range manifest.Manifests {
-		if owned, err := a.reconcilePlainManifest(ctx, pkg, *manifest, m, patches); err != nil {
+	for _, manifest := range pi.Status.Manifest.Manifests {
+		if owned, err := a.reconcilePlainManifest(ctx, pkg, pi, manifest, patches); err != nil {
 			return nil, err
 		} else {
 			allOwned = append(allOwned, owned...)
@@ -68,13 +69,15 @@ func (a *Adapter) Reconcile(
 func (r *Adapter) reconcilePlainManifest(
 	ctx context.Context,
 	pkg ctrlpkg.Package,
-	pkgManifest packagesv1alpha1.PackageManifest,
+	pi *packagesv1alpha1.PackageInfo,
 	manifest packagesv1alpha1.PlainManifest,
 	patches manifestvalues.TargetPatches,
 ) ([]packagesv1alpha1.OwnedResourceRef, error) {
 	log := ctrl.LoggerFrom(ctx)
 	var objectsToApply []client.Object
-	if unstructured, err := clientutils.FetchResources(manifest.Url); err != nil {
+	if url, err := getActualManifestUrl(pi, manifest.Url); err != nil {
+		return nil, err
+	} else if unstructured, err := clientutils.FetchResources(url); err != nil {
 		return nil, err
 	} else {
 		// Unstructured implements client.Object but we need it as a reference so the interface is fulfilled.
@@ -82,9 +85,8 @@ func (r *Adapter) reconcilePlainManifest(
 		for i := range unstructured {
 			objectsToApply[i] = &unstructured[i]
 		}
+		log.V(1).Info("fetched "+url, "objectCount", len(objectsToApply))
 	}
-
-	log.V(1).Info("fetched "+manifest.Url, "objectCount", len(objectsToApply))
 
 	if pkg.IsNamespaceScoped() {
 		for _, obj := range objectsToApply {
@@ -96,7 +98,7 @@ func (r *Adapter) reconcilePlainManifest(
 		}
 	} else {
 		// Determine the name of the default namespace. The more specific name takes precedence
-		defaultNamespaceName := pkgManifest.DefaultNamespace
+		defaultNamespaceName := pi.Status.Manifest.DefaultNamespace
 		if len(manifest.DefaultNamespace) > 0 {
 			defaultNamespaceName = manifest.DefaultNamespace
 		}
@@ -165,4 +167,20 @@ func (r *Adapter) reconcilePlainManifest(
 		}
 	}
 	return ownedResources, nil
+}
+
+func getActualManifestUrl(pi *packagesv1alpha1.PackageInfo, urlOrPath string) (string, error) {
+	if parsedUrl, err := url.Parse(urlOrPath); err != nil {
+		return "", err
+	} else if parsedUrl.Scheme == "" && parsedUrl.Host == "" {
+		if parsedBase, err := url.Parse(pi.Status.ResolvedUrl); err != nil {
+			return "", err
+		} else if ref, err := parsedBase.Parse(urlOrPath); err != nil {
+			return "", err
+		} else {
+			return ref.String(), nil
+		}
+	} else {
+		return urlOrPath, nil
+	}
 }

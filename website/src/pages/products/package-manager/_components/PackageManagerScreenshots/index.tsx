@@ -141,14 +141,14 @@ function Screenshot(item: ScreenshotItem) {
   );
 }
 
-export default function HomepageScreenshots(): JSX.Element {
+export default function PackageManagerScreenshots(): JSX.Element {
   return (
     <section className={styles.screenshots}>
       <div className="container margin-top--lg">
         <div className="row">
           <div className="col text--center">
             <Heading as="h2">
-              Let Glasskube take care about your Kubernetes infrastructure
+              A Package Manager built with Developer Experience in mind.
             </Heading>
           </div>
         </div>

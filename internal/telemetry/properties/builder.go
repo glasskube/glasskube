@@ -28,7 +28,8 @@ func ForClientUser(pg PropertyGetter, includeCluster bool) PropertiesBuilderFn {
 			p.Set("cluster_id", pg.ClusterId()).
 				Set("cluster_k8s_version", cp.kubernetesVersion).
 				Set("cluster_provider", cp.provider).
-				Set("cluster_nnodes", cp.nnodes)
+				Set("cluster_nnodes", cp.nnodes).
+				Set("cluster_gitops_mode", cp.gitopsMode)
 		}
 		p.Set("$set", map[string]any{
 			"version": config.Version,
@@ -52,6 +53,7 @@ func ForOperatorUser(pg PropertyGetter) PropertiesBuilderFn {
 				"k8s_version":         cp.kubernetesVersion,
 				"provider":            cp.provider,
 				"nnodes":              cp.nnodes,
+				"gitops_mode":         cp.gitopsMode,
 				"nrepositories":       rp.nrepositories,
 				"nrepositories_auth":  rp.nrepositoriesAuth,
 				"custom_default_repo": rp.customRepoAsDefault,

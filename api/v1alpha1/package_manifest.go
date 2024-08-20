@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"strings"
+
 	"github.com/invopop/jsonschema"
 	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
@@ -31,6 +33,10 @@ type HelmManifest struct {
 	ChartVersion string `json:"chartVersion" jsonschema:"required"`
 	// Values that should be used for the helm release
 	Values *JSON `json:"values,omitempty"`
+}
+
+func (obj HelmManifest) IsOCIRepository() bool {
+	return strings.HasPrefix(obj.RepositoryUrl, "oci://")
 }
 
 type KustomizeManifest struct {
@@ -51,6 +57,10 @@ type PackageEntrypoint struct {
 }
 
 type PlainManifest struct {
+	// Url is the location of the manifest.
+	// Typically, this should be a full https URL, but local paths are also supporeted.
+	// If this field is set to a local path (e.g. a relative path like "./manifest.yaml" or just "manifest.yaml") it
+	// will be resolved relative to the packages "package.yaml" file.
 	Url string `json:"url" jsonschema:"required"`
 	// DefaultNamespace, if set to a non-empty string, is used for resources that are of a namespaced
 	// kind and do not have a namespace set.

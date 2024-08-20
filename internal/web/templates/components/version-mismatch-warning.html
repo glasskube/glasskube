@@ -3,9 +3,16 @@
     <div>
       {{ if .NeedsOperatorUpdate }}
         <i class="bi bi-exclamation-triangle-fill"></i> Glasskube cluster version ({{ .OperatorVersion }}) does not
-        match your client version ({{ .ClientVersion }}). Please update the cluster components to
-        {{ .ClientVersion }}
-        by running <code>glasskube bootstrap</code>.
+        match your client version ({{ .ClientVersion }}).
+        {{ if .GitopsMode }}
+          Please update the cluster components to {{ .ClientVersion }} by using
+          <code>glasskube bootstrap --dry-run -o yaml</code> and pushing the generated manifests into your GitOps
+          repository.
+        {{ else }}
+          Please update the cluster components to
+          {{ .ClientVersion }}
+          by running <code>glasskube bootstrap</code>.
+        {{ end }}
       {{ else }}
         <i class="bi bi-exclamation-triangle-fill"></i> Glasskube client version ({{ .ClientVersion }}) does not match
         your cluster components' version ({{ .OperatorVersion }}). Please update your client.
