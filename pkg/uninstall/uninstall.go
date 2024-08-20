@@ -32,21 +32,26 @@ func (obj *uninstaller) WithStatusWriter(sw statuswriter.StatusWriter) *uninstal
 
 // UninstallBlocking deletes the v1alpha1.Package custom resource from the
 // cluster and waits until the package is fully deleted.
-func (obj *uninstaller) UninstallBlocking(ctx context.Context, pkg ctrlpkg.Package) error {
+func (obj *uninstaller) UninstallBlocking(ctx context.Context, pkg ctrlpkg.Package, isDryRun bool) error {
 	obj.status.Start()
 	defer obj.status.Stop()
-	err := obj.delete(ctx, pkg)
+	err := obj.delete(ctx, pkg, isDryRun)
 	if err != nil {
 		return err
 	}
-	return obj.awaitDeletion(ctx, pkg)
+
+	if isDryRun {
+		return nil
+	} else {
+		return obj.awaitDeletion(ctx, pkg)
+	}
 }
 
 // Uninstall deletes the v1alpha1.Package custom resource from the cluster.
-func (obj *uninstaller) Uninstall(ctx context.Context, pkg ctrlpkg.Package) error {
+func (obj *uninstaller) Uninstall(ctx context.Context, pkg ctrlpkg.Package, isDryRun bool) error {
 	obj.status.Start()
 	defer obj.status.Stop()
-	return obj.delete(ctx, pkg)
+	return obj.delete(ctx, pkg, isDryRun)
 }
 
 func (obj *uninstaller) IsNamespaceSafeToDelete(ctx context.Context, pkg ctrlpkg.Package) error {
@@ -61,9 +66,13 @@ func (obj *uninstaller) IsNamespaceSafeToDelete(ctx context.Context, pkg ctrlpkg
 	return nil
 }
 
-func (obj *uninstaller) UninstallAndDeleteNamespaceBlocking(ctx context.Context, pkg ctrlpkg.Package) error {
+func (obj *uninstaller) UninstallAndDeleteNamespaceBlocking(
+	ctx context.Context,
+	pkg ctrlpkg.Package,
+	isDryRun bool,
+) error {
 	namespace := pkg.GetNamespace()
-	if err := obj.UninstallBlocking(ctx, pkg); err != nil {
+	if err := obj.UninstallBlocking(ctx, pkg, isDryRun); err != nil {
 		return err
 	}
 	clientset := clicontext.KubernetesClientFromContext(ctx)
@@ -71,11 +80,13 @@ func (obj *uninstaller) UninstallAndDeleteNamespaceBlocking(ctx context.Context,
 	return obj.deleteNamespaceBlocking(ctx, clientset, namespace)
 }
 
-func (uninstaller *uninstaller) delete(ctx context.Context, pkg ctrlpkg.Package) error {
+func (uninstaller *uninstaller) delete(ctx context.Context, pkg ctrlpkg.Package, isDryRun bool) error {
 	deleteOptions := metav1.DeleteOptions{
 		PropagationPolicy: util.Pointer(metav1.DeletePropagationForeground),
 	}
-
+	if isDryRun {
+		deleteOptions.DryRun = []string{metav1.DryRunAll}
+	}
 	uninstaller.status.SetStatus(fmt.Sprintf("Uninstalling %v...", pkg.GetName()))
 
 	switch pkg := pkg.(type) {

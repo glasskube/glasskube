@@ -57,6 +57,10 @@ type PackageEntrypoint struct {
 }
 
 type PlainManifest struct {
+	// Url is the location of the manifest.
+	// Typically, this should be a full https URL, but local paths are also supporeted.
+	// If this field is set to a local path (e.g. a relative path like "./manifest.yaml" or just "manifest.yaml") it
+	// will be resolved relative to the packages "package.yaml" file.
 	Url string `json:"url" jsonschema:"required"`
 	// DefaultNamespace, if set to a non-empty string, is used for resources that are of a namespaced
 	// kind and do not have a namespace set.

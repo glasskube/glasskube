@@ -13,7 +13,7 @@ var _ = Describe("ValidateConstraint", func() {
 				Expect(err).NotTo(HaveOccurred())
 			} else {
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(MatchError((*ConstraintValidationError)(nil)))
+				Expect(err).To(MatchError((error)(&ConstraintValidationError{})))
 			}
 		},
 		Entry("When minor version is pinned", ">=1.2.0 <1.3.0", "1.2.0", true),

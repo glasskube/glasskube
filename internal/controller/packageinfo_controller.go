@@ -116,11 +116,16 @@ func shouldSyncFromRepo(pi packagesv1alpha1.PackageInfo) bool {
 		time.Since(pi.Status.LastUpdateTimestamp.Time) > repositorySyncInterval
 }
 
-func (r *PackageInfoReconciler) updatePackageManifest(pi *packagesv1alpha1.PackageInfo) (err error) {
+func (r *PackageInfoReconciler) updatePackageManifest(pi *packagesv1alpha1.PackageInfo) error {
 	var manifest packagesv1alpha1.PackageManifest
-	if err = r.RepoClient.ForRepoWithName(pi.Spec.RepositoryName).
-		FetchPackageManifest(pi.Spec.Name, pi.Spec.Version, &manifest); err != nil {
-		return
+	repo := r.RepoClient.ForRepoWithName(pi.Spec.RepositoryName)
+	if err := repo.FetchPackageManifest(pi.Spec.Name, pi.Spec.Version, &manifest); err != nil {
+		return err
+	}
+	if url, err := repo.GetPackageManifestURL(pi.Spec.Name, pi.Spec.Version); err != nil {
+		return err
+	} else {
+		pi.Status.ResolvedUrl = url
 	}
 	pi.Status.Manifest = &manifest
 	pi.Status.Version = pi.Spec.Version

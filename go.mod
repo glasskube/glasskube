@@ -1,8 +1,6 @@
 module github.com/glasskube/glasskube
 
-go 1.22.0
-
-toolchain go1.22.6
+go 1.23.0
 
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
@@ -18,7 +16,7 @@ require (
 	github.com/invopop/jsonschema v0.12.0
 	github.com/onsi/ginkgo/v2 v2.20.0
 	github.com/onsi/gomega v1.34.1
-	github.com/posthog/posthog-go v1.2.16
+	github.com/posthog/posthog-go v1.2.18
 	github.com/schollz/progressbar/v3 v3.14.6
 	github.com/spf13/cobra v1.8.1
 	github.com/yuin/goldmark v1.7.4

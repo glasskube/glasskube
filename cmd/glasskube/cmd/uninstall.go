@@ -18,6 +18,7 @@ var uninstallCmdOptions = struct {
 	DeleteNamespace bool
 	KindOptions
 	NamespaceOptions
+	DryRunOptions
 }{
 	KindOptions: DefaultKindOptions(),
 }
@@ -38,6 +39,10 @@ var uninstallCmd = &cobra.Command{
 		uninstaller := uninstall.NewUninstaller(client)
 		if !rootCmdOptions.NoProgress {
 			uninstaller.WithStatusWriter(statuswriter.Spinner())
+		}
+
+		if uninstallCmdOptions.DryRun {
+			fmt.Fprintln(os.Stderr, "🔎 Dry-run mode is enabled. Nothing will be changed.")
 		}
 
 		pkg, err := getPackageOrClusterPackage(
@@ -68,7 +73,7 @@ var uninstallCmd = &cobra.Command{
 		}
 
 		if uninstallCmdOptions.NoWait {
-			if err := uninstaller.Uninstall(ctx, pkg); err != nil {
+			if err := uninstaller.Uninstall(ctx, pkg, uninstallCmdOptions.DryRun); err != nil {
 				fmt.Fprintf(os.Stderr, "\n❌ An error occurred during uninstallation:\n\n%v\n", err)
 				cliutils.ExitWithError()
 			}
@@ -82,13 +87,13 @@ var uninstallCmd = &cobra.Command{
 					fmt.Fprintf(os.Stderr, "❌ Error validating namespace deletion: %v\n", err)
 					cliutils.ExitWithError()
 				}
-				if err := uninstaller.UninstallAndDeleteNamespaceBlocking(ctx, pkg); err != nil {
+				if err := uninstaller.UninstallAndDeleteNamespaceBlocking(ctx, pkg, uninstallCmdOptions.DryRun); err != nil {
 					fmt.Fprintf(os.Stderr, "\n❌ An error occurred during uninstallation:\n\n%v\n", err)
 					cliutils.ExitWithError()
 				}
 				fmt.Fprintf(os.Stderr, "🗑️  %v uninstalled successfully and namespace %v deleted.\n", pkgName, pkg.GetNamespace())
 			} else {
-				if err := uninstaller.UninstallBlocking(ctx, pkg); err != nil {
+				if err := uninstaller.UninstallBlocking(ctx, pkg, uninstallCmdOptions.DryRun); err != nil {
 					fmt.Fprintf(os.Stderr, "\n❌ An error occurred during uninstallation:\n\n%v\n", err)
 					cliutils.ExitWithError()
 				}
@@ -119,4 +124,5 @@ func init() {
 	uninstallCmd.PersistentFlags().BoolVarP(&uninstallCmdOptions.Yes, "yes", "y", false,
 		"Do not ask for any confirmation")
 	RootCmd.AddCommand(uninstallCmd)
+	uninstallCmdOptions.DryRunOptions.AddFlagsToCommand(uninstallCmd)
 }
