@@ -18,9 +18,9 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@docusaurus/core": "3.4.0",
+    "@docusaurus/core": "3.5.2",
     "@docusaurus/plugin-ideal-image": "^3.1.0",
-    "@docusaurus/preset-classic": "3.4.0",
+    "@docusaurus/preset-classic": "3.5.2",
     "@docusaurus/theme-mermaid": "^3.1.0",
     "@easyops-cn/docusaurus-search-local": "^0.44.0",
     "@fontsource/inter": "^5.0.18",
@@ -44,9 +44,9 @@
   },
   "devDependencies": {
     "@docusaurus/eslint-plugin": "^3.4.0",
-    "@docusaurus/module-type-aliases": "3.4.0",
-    "@docusaurus/tsconfig": "3.4.0",
-    "@docusaurus/types": "3.4.0",
+    "@docusaurus/module-type-aliases": "3.5.2",
+    "@docusaurus/tsconfig": "3.5.2",
+    "@docusaurus/types": "3.5.2",
     "@eslint/js": "^9.5.0",
     "@types/eslint": "^8.56.10",
     "eslint": "^8.57.0",
