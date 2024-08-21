@@ -35,83 +35,8 @@ rules:
   - packages.glasskube.dev
   resources:
   - clusterpackages
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - packages.glasskube.dev
-  resources:
-  - clusterpackages/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - packages.glasskube.dev
-  resources:
-  - clusterpackages/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - packages.glasskube.dev
-  resources:
   - packageinfos
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - packages.glasskube.dev
-  resources:
-  - packageinfos/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - packages.glasskube.dev
-  resources:
-  - packageinfos/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - packages.glasskube.dev
-  resources:
   - packagerepositories
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - packages.glasskube.dev
-  resources:
-  - packagerepositories/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - packages.glasskube.dev
-  resources:
-  - packagerepositories/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - packages.glasskube.dev
-  resources:
   - packages
   verbs:
   - create
@@ -124,12 +49,18 @@ rules:
 - apiGroups:
   - packages.glasskube.dev
   resources:
+  - clusterpackages/finalizers
+  - packageinfos/finalizers
+  - packagerepositories/finalizers
   - packages/finalizers
   verbs:
   - update
 - apiGroups:
   - packages.glasskube.dev
   resources:
+  - clusterpackages/status
+  - packageinfos/status
+  - packagerepositories/status
   - packages/status
   verbs:
   - get

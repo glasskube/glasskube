@@ -1341,8 +1341,8 @@ func defaultKubeconfigExists() bool {
 
 func (s *server) initClusterPackageStoreAndController(ctx context.Context) (cache.Store, cache.Controller) {
 	pkgClient := s.nonCachedClient
-	return cache.NewInformer(
-		&cache.ListWatch{
+	return cache.NewInformerWithOptions(cache.InformerOptions{
+		ListerWatcher: &cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				var pkgList v1alpha1.ClusterPackageList
 				err := pkgClient.ClusterPackages().GetAll(ctx, &pkgList)
@@ -1352,9 +1352,8 @@ func (s *server) initClusterPackageStoreAndController(ctx context.Context) (cach
 				return pkgClient.ClusterPackages().Watch(ctx, options)
 			},
 		},
-		&v1alpha1.ClusterPackage{},
-		0,
-		cache.ResourceEventHandlerFuncs{
+		ObjectType: &v1alpha1.ClusterPackage{},
+		Handler: cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj any) {
 				if pkg, ok := obj.(*v1alpha1.ClusterPackage); ok {
 					s.broadcaster.UpdatesAvailableForPackage(nil, pkg)
@@ -1378,13 +1377,13 @@ func (s *server) initClusterPackageStoreAndController(ctx context.Context) (cach
 				}
 			},
 		},
-	)
+	})
 }
 
 func (s *server) initPackageStoreAndController(ctx context.Context) (cache.Store, cache.Controller) {
 	pkgClient := s.nonCachedClient
-	return cache.NewInformer(
-		&cache.ListWatch{
+	return cache.NewInformerWithOptions(cache.InformerOptions{
+		ListerWatcher: &cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				var pkgList v1alpha1.PackageList
 				err := pkgClient.Packages("").GetAll(ctx, &pkgList)
@@ -1394,9 +1393,8 @@ func (s *server) initPackageStoreAndController(ctx context.Context) (cache.Store
 				return pkgClient.Packages("").Watch(ctx, options)
 			},
 		},
-		&v1alpha1.Package{},
-		0,
-		cache.ResourceEventHandlerFuncs{
+		ObjectType: &v1alpha1.Package{},
+		Handler: cache.ResourceEventHandlerFuncs{
 			AddFunc: func(obj any) {
 				if pkg, ok := obj.(*v1alpha1.Package); ok {
 					s.broadcaster.UpdatesAvailableForPackage(nil, pkg)
@@ -1420,13 +1418,13 @@ func (s *server) initPackageStoreAndController(ctx context.Context) (cache.Store
 				}
 			},
 		},
-	)
+	})
 }
 
 func (s *server) initPackageInfoStoreAndController(ctx context.Context) (cache.Store, cache.Controller) {
 	pkgClient := s.nonCachedClient
-	return cache.NewInformer(
-		&cache.ListWatch{
+	return cache.NewInformerWithOptions(cache.InformerOptions{
+		ListerWatcher: &cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				var packageInfoList v1alpha1.PackageInfoList
 				err := pkgClient.PackageInfos().GetAll(ctx, &packageInfoList)
@@ -1436,16 +1434,15 @@ func (s *server) initPackageInfoStoreAndController(ctx context.Context) (cache.S
 				return pkgClient.PackageInfos().Watch(ctx, options)
 			},
 		},
-		&v1alpha1.PackageInfo{},
-		0,
-		cache.ResourceEventHandlerFuncs{},
-	)
+		ObjectType: &v1alpha1.PackageInfo{},
+		Handler:    cache.ResourceEventHandlerFuncs{},
+	})
 }
 
 func (s *server) initPackageRepoStoreAndController(ctx context.Context) (cache.Store, cache.Controller) {
 	pkgClient := s.nonCachedClient
-	return cache.NewInformer(
-		&cache.ListWatch{
+	return cache.NewInformerWithOptions(cache.InformerOptions{
+		ListerWatcher: &cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				var repositoryList v1alpha1.PackageRepositoryList
 				err := pkgClient.PackageRepositories().GetAll(ctx, &repositoryList)
@@ -1455,10 +1452,9 @@ func (s *server) initPackageRepoStoreAndController(ctx context.Context) (cache.S
 				return pkgClient.PackageRepositories().Watch(ctx, options)
 			},
 		},
-		&v1alpha1.PackageRepository{},
-		0,
-		cache.ResourceEventHandlerFuncs{}, // TODO we might also want to update here?
-	)
+		ObjectType: &v1alpha1.PackageRepository{},
+		Handler:    cache.ResourceEventHandlerFuncs{}, // TODO we might also want to update here?
+	})
 }
 
 func (s *server) isUpdateAvailableForPkg(ctx context.Context, pkg ctrlpkg.Package) bool {
