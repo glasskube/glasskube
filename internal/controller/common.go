@@ -27,6 +27,7 @@ import (
 	"github.com/glasskube/glasskube/internal/util"
 	"github.com/glasskube/glasskube/pkg/condition"
 	"go.uber.org/multierr"
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -267,9 +268,38 @@ func (r *PackageReconcilationContext) ensureFinalizer() {
 	}
 }
 
+func (r *PackageReconcilationContext) ensureNamespaceForComponents(ctx context.Context) error {
+	if !r.pkg.IsNamespaceScoped() && len(r.pi.Status.Manifest.Components) > 0 {
+		namespace := v1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: r.pi.Status.Manifest.DefaultNamespace,
+			},
+		}
+		if _, err := controllerutil.CreateOrUpdate(ctx, r.Client, &namespace, func() error {
+			return r.SetOwnerIfManagedOrNotExists(r.Client, ctx, r.pkg, &namespace)
+		}); err != nil {
+			return err
+		}
+		if changed, err := ownerutils.AddOwnedResourceRef(r.Scheme, &r.currentOwnedResources, &namespace); err != nil {
+			return err
+		} else {
+			r.setShouldUpdate(changed)
+		}
+	}
+	return nil
+}
+
 func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bool {
 	log := ctrl.LoggerFrom(ctx)
 	log.V(1).Info("ensuring dependencies", "dependencies", r.pi.Status.Manifest.Dependencies)
+
+	if err := r.ensureNamespaceForComponents(ctx); err != nil {
+		r.setShouldUpdate(
+			conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.GetStatus().Conditions,
+				condition.InstallationFailed,
+				fmt.Sprintf("error creating namespace for ClusterPackage components: %v", err)))
+		return false
+	}
 
 	var failed []string
 	if result, err := r.DependencyManager.Validate(ctx, r.pkg.GetName(), r.pkg.GetNamespace(), r.pi.Status.Manifest,
