@@ -60,7 +60,7 @@ func (pkg *Package) InstalledAsDependency() bool {
 }
 
 func (pkg *Package) SetInstalledAsDependency(value bool) {
-	panic("illegal operation: package can not be installed as dependency")
+	setInstalledAsDependency(&pkg.ObjectMeta, value)
 }
 
 func (pkg *Package) IsNamespaceScoped() bool {
