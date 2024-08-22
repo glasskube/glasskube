@@ -15,7 +15,7 @@ func ErrNotInstalled(ref PackageRef) error {
 type NotInstalledError PackageRef
 
 func (err *NotInstalledError) Error() string {
-	return fmt.Sprintf("%v not installed", err.Name)
+	return fmt.Sprintf("%v not installed", err.PackageName)
 }
 
 func ErrConstraint(pkgRef PackageRef, version *semver.Version, constraint *semver.Constraints, cause error) error {
@@ -45,7 +45,7 @@ type DependencyError struct {
 }
 
 func (err *DependencyError) Error() string {
-	return fmt.Sprintf("unmet dependency %v -> %v: %v", err.Package.Name, err.Dependency, err.cause)
+	return fmt.Sprintf("unmet dependency %v -> %v: %v", err.Package.PackageName, err.Dependency.PackageName, err.cause)
 }
 
 func (err *DependencyError) Is(other error) bool {
