@@ -52,22 +52,20 @@ var uninstallCmd = &cobra.Command{
 			cliutils.ExitWithError()
 		}
 
-		if !pkg.IsNamespaceScoped() {
-			if g, err := dm.NewGraph(ctx); err != nil {
-				fmt.Fprintf(os.Stderr, "❌ Error validating uninstall: %v\n", err)
+		if g, err := dm.NewGraph(ctx); err != nil {
+			fmt.Fprintf(os.Stderr, "❌ Error validating uninstall: %v\n", err)
+			cliutils.ExitWithError()
+		} else {
+			g.Delete(pkg.GetName(), pkg.GetNamespace())
+			pruned := g.Prune()
+			if err := g.Validate(); err != nil {
+				fmt.Fprintf(os.Stderr, "❌ %v can not be uninstalled for the following reason: %v\n", pkgName, err)
 				cliutils.ExitWithError()
 			} else {
-				g.Delete(pkg.GetName(), pkg.GetNamespace())
-				pruned := g.Prune()
-				if err := g.Validate(); err != nil {
-					fmt.Fprintf(os.Stderr, "❌ %v can not be uninstalled for the following reason: %v\n", pkgName, err)
-					cliutils.ExitWithError()
-				} else {
-					showUninstallDetails(currentContext, pkgName, pruned)
-					if !uninstallCmdOptions.Yes && !cliutils.YesNoPrompt("Do you want to continue?", false) {
-						fmt.Println("❌ Uninstallation cancelled.")
-						cliutils.ExitSuccess()
-					}
+				showUninstallDetails(currentContext, pkgName, pruned)
+				if !uninstallCmdOptions.Yes && !cliutils.YesNoPrompt("Do you want to continue?", false) {
+					fmt.Println("❌ Uninstallation cancelled.")
+					cliutils.ExitSuccess()
 				}
 			}
 		}
