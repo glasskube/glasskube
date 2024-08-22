@@ -78,6 +78,12 @@ type Dependency struct {
 	Version string `json:"version,omitempty"`
 }
 
+type Component struct {
+	Name          string `json:"name" jsonschema:"required"`
+	InstalledName string `json:"installedName,omitempty"`
+	Version       string `json:"version,omitempty"`
+}
+
 // +kubebuilder:validation:Enum=Cluster;Namespaced
 type PackageScope string
 
@@ -121,4 +127,5 @@ type PackageManifest struct {
 	DefaultNamespace string              `json:"defaultNamespace,omitempty" jsonschema:"required"`
 	Entrypoints      []PackageEntrypoint `json:"entrypoints,omitempty"`
 	Dependencies     []Dependency        `json:"dependencies,omitempty"`
+	Components       []Component         `json:"components,omitempty"`
 }

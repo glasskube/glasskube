@@ -2,6 +2,24 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://glasskube.dev/schemas/v1/package-manifest.json",
   "$defs": {
+    "Component": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "installedName": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name"
+      ]
+    },
     "Dependency": {
       "properties": {
         "name": {
@@ -324,6 +342,12 @@
     "dependencies": {
       "items": {
         "$ref": "#/$defs/Dependency"
+      },
+      "type": "array"
+    },
+    "components": {
+      "items": {
+        "$ref": "#/$defs/Component"
       },
       "type": "array"
     }

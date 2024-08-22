@@ -20,6 +20,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/glasskube/glasskube/internal/dependency/graph"
 	"github.com/glasskube/glasskube/internal/telemetry/annotations"
 
 	"github.com/glasskube/glasskube/internal/web/components/toast"
@@ -435,13 +436,12 @@ func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		if pkgName != "" {
-			var pruned []string
+			var pruned []graph.PackageRef
 			var err error
-			// dependency checks are only necessary for clusterpackages, as there are no dependencies on namespaced packages
 			if g, err1 := s.dependencyMgr.NewGraph(r.Context()); err1 != nil {
 				err = fmt.Errorf("error validating uninstall: %w", err1)
 			} else {
-				g.Delete(pkgName)
+				g.Delete(pkgName, "")
 				pruned = g.Prune()
 				if err1 := g.Validate(); err1 != nil {
 					err = fmt.Errorf("%v cannot be uninstalled: %w", pkgName, err1)
@@ -456,9 +456,23 @@ func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
 			})
 			util.CheckTmplError(err, "pkgUninstallModalTmpl")
 		} else {
-			err := s.templates.pkgUninstallModalTmpl.Execute(w, map[string]any{
+			var pruned []graph.PackageRef
+			var err error
+			// TODO: refactor this duplicate code segment
+			if g, err1 := s.dependencyMgr.NewGraph(r.Context()); err1 != nil {
+				err = fmt.Errorf("error validating uninstall: %w", err1)
+			} else {
+				g.Delete(name, namespace)
+				pruned = g.Prune()
+				if err1 := g.Validate(); err1 != nil {
+					err = fmt.Errorf("%v cannot be uninstalled: %w", pkgName, err1)
+				}
+			}
+			err = s.templates.pkgUninstallModalTmpl.Execute(w, map[string]any{
 				"Namespace":   namespace,
 				"Name":        name,
+				"Pruned":      pruned,
+				"Err":         err,
 				"PackageHref": util.GetNamespacedPkgHref(manifestName, namespace, name),
 				"GitopsMode":  s.isGitopsModeEnabled(),
 			})
@@ -899,8 +913,23 @@ func (s *server) handleAdvancedConfig(ctx context.Context, d *packageDetailPageC
 			d.selectedVersion = latestVersion
 		}
 
-		res, err := s.dependencyMgr.Validate(r.Context(), d.manifest, d.selectedVersion)
-		if err != nil {
+		var validatinoResult *dependency.ValidationResult
+		var validationErr error
+		if d.pkg.IsNil() {
+			if d.manifest.Scope.IsCluster() {
+				validatinoResult, validationErr =
+					s.dependencyMgr.Validate(r.Context(), d.manifestName, "", d.manifest, d.selectedVersion)
+			} else {
+				// In this case we don't know the actual namespace, but we can assume the default
+				// TODO: make name and namespace depend on user input
+				validatinoResult, validationErr =
+					s.dependencyMgr.Validate(r.Context(), d.manifestName, d.manifest.DefaultNamespace, d.manifest, d.selectedVersion)
+			}
+		} else {
+			validatinoResult, validationErr =
+				s.dependencyMgr.Validate(r.Context(), d.pkg.GetName(), d.pkg.GetNamespace(), d.manifest, d.selectedVersion)
+		}
+		if validationErr != nil {
 			s.sendToast(w,
 				toast.WithErr(fmt.Errorf("failed to validate dependencies of %v in version %v: %w", d.manifestName, d.selectedVersion, err)))
 			return
@@ -910,8 +939,8 @@ func (s *server) handleAdvancedConfig(ctx context.Context, d *packageDetailPageC
 			"Status":           client.GetStatusOrPending(d.pkg),
 			"Manifest":         d.manifest,
 			"LatestVersion":    latestVersion,
-			"ValidationResult": res,
-			"ShowConflicts":    res.Status == dependency.ValidationResultStatusConflict,
+			"ValidationResult": validatinoResult,
+			"ShowConflicts":    validatinoResult.Status == dependency.ValidationResultStatusConflict,
 			"SelectedVersion":  d.selectedVersion,
 			"PackageIndex":     &idx,
 			"Repositories":     repos,

@@ -165,17 +165,7 @@ var installCmd = &cobra.Command{
 			)
 		}
 
-		if validationResult, err :=
-			dm.Validate(ctx, &manifest, installCmdOptions.Version); err != nil {
-			fmt.Fprintf(os.Stderr, "❗ Error: Could not validate dependencies: %v\n", err)
-			cliutils.ExitWithError()
-		} else if len(validationResult.Conflicts) > 0 {
-			fmt.Fprintf(os.Stderr, "❗ Error: %v cannot be installed due to conflicts: %v\n",
-				packageName, validationResult.Conflicts)
-			cliutils.ExitWithError()
-		} else if len(validationResult.Requirements) > 0 {
-			installationPlan = append(installationPlan, validationResult.Requirements...)
-		} else if installCmdOptions.IsValuesSet() {
+		if installCmdOptions.IsValuesSet() {
 			if values, err := installCmdOptions.ParseValues(nil); err != nil {
 				fmt.Fprintf(os.Stderr, "❌ invalid values in command line flags: %v\n", err)
 				cliutils.ExitWithError()
@@ -199,6 +189,18 @@ var installCmd = &cobra.Command{
 		pkgBuilder.WithAutoUpdates(installCmdOptions.EnableAutoUpdates)
 
 		pkg := pkgBuilder.Build(manifest.Scope)
+
+		if validationResult, err :=
+			dm.Validate(ctx, pkg.GetName(), pkg.GetNamespace(), &manifest, installCmdOptions.Version); err != nil {
+			fmt.Fprintf(os.Stderr, "❗ Error: Could not validate dependencies: %v\n", err)
+			cliutils.ExitWithError()
+		} else if len(validationResult.Conflicts) > 0 {
+			fmt.Fprintf(os.Stderr, "❗ Error: %v cannot be installed due to conflicts: %v\n",
+				packageName, validationResult.Conflicts)
+			cliutils.ExitWithError()
+		} else if len(validationResult.Requirements) > 0 {
+			installationPlan = append(installationPlan, validationResult.Requirements...)
+		}
 
 		fmt.Fprintln(os.Stderr, bold("Summary:"))
 		fmt.Fprintf(os.Stderr, " * The following packages will be installed in your cluster (%v):\n", config.CurrentContext)
