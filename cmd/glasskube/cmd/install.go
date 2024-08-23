@@ -25,6 +25,7 @@ import (
 	"github.com/glasskube/glasskube/pkg/install"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -51,6 +52,7 @@ var installCmd = &cobra.Command{
 	ValidArgsFunction: completeAvailablePackageNames,
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
+		cfg := clicontext.ConfigFromContext(ctx)
 		config := clicontext.RawConfigFromContext(ctx)
 		pkgClient := clicontext.PackageClientFromContext(ctx)
 		dm := cliutils.DependencyManager(ctx)
@@ -218,6 +220,19 @@ var installCmd = &cobra.Command{
 			fmt.Fprintln(os.Stderr, " * Automatic updates will be", bold("not enabled"))
 		}
 
+		if installCmdOptions.NamespaceOptions.Namespace != "" {
+			_, err := install.IsNamespaceInstalled(
+				ctx,
+				cfg,
+				installCmdOptions.NamespaceOptions.Namespace,
+			)
+			if errors.IsNotFound(err) {
+				fmt.Fprintln(os.Stderr, " * Namespace %v does not exist and will be created",
+					installCmdOptions.NamespaceOptions.Namespace,
+				)
+			}
+		}
+
 		if len(pkg.GetSpec().Values) > 0 {
 			fmt.Fprintln(os.Stderr, bold("Configuration:"))
 			printValueConfigurations(os.Stderr, pkg.GetSpec().Values)
@@ -228,6 +243,12 @@ var installCmd = &cobra.Command{
 
 		if !installCmdOptions.Yes && !cliutils.YesNoPrompt("Continue?", true) {
 			cancel()
+		}
+
+		err := install.InstallNamespace(ctx, cfg, installCmdOptions.NamespaceOptions.Namespace)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "An error occured in creating the Namespace:\n\n%v\n", err)
+			cliutils.ExitWithError()
 		}
 
 		if installCmdOptions.NoWait {

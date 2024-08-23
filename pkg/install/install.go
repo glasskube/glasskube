@@ -10,8 +10,11 @@ import (
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/condition"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 type installer struct {
@@ -113,4 +116,38 @@ func (i *installer) watch(ctx context.Context, pkg ctrlpkg.Package) (watch.Inter
 	default:
 		return nil, fmt.Errorf("unexpected package type: %T", pkg)
 	}
+}
+
+func IsNamespaceInstalled(ctx context.Context, cfg *rest.Config, namespace string) (bool, error) {
+	cs, err := kubernetes.NewForConfig(cfg)
+	if err != nil {
+		return false, err
+	}
+
+	_, err = cs.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func InstallNamespace(ctx context.Context, cfg *rest.Config, namespace string) error {
+	cs, err := kubernetes.NewForConfig(cfg)
+	if err != nil {
+		return err
+	}
+
+	ns := &v1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: namespace,
+		},
+	}
+
+	_, err = cs.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
