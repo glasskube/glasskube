@@ -227,7 +227,7 @@ var installCmd = &cobra.Command{
 				installCmdOptions.NamespaceOptions.Namespace,
 			)
 			if errors.IsNotFound(err) {
-				fmt.Fprintln(os.Stderr, " * Namespace %v does not exist and will be created",
+				fmt.Println(" * Namespace %v does not exist and will be created",
 					installCmdOptions.NamespaceOptions.Namespace,
 				)
 			}
@@ -247,7 +247,7 @@ var installCmd = &cobra.Command{
 
 		err := install.InstallNamespace(ctx, cfg, installCmdOptions.NamespaceOptions.Namespace)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "An error occured in creating the Namespace:\n\n%v\n", err)
+			fmt.Fprintf(os.Stderr, "An error occurred in creating the Namespace:\n\n%v\n", err)
 			cliutils.ExitWithError()
 		}
 
