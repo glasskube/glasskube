@@ -56,7 +56,7 @@ func (pkg *Package) SetAutoUpdatesEnabled(enabled bool) {
 }
 
 func (pkg *Package) InstalledAsDependency() bool {
-	return false
+	return installedAsDependency(pkg.ObjectMeta)
 }
 
 func (pkg *Package) SetInstalledAsDependency(value bool) {
