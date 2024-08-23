@@ -931,7 +931,7 @@ func (s *server) handleAdvancedConfig(ctx context.Context, d *packageDetailPageC
 		}
 		if validationErr != nil {
 			s.sendToast(w,
-				toast.WithErr(fmt.Errorf("failed to validate dependencies of %v in version %v: %w", d.manifestName, d.selectedVersion, err)))
+				toast.WithErr(fmt.Errorf("failed to validate dependencies of %v in version %v: %w", d.manifestName, d.selectedVersion, validationErr)))
 			return
 		}
 

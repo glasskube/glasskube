@@ -147,7 +147,7 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 
 	if validationErr != nil {
 		s.sendToast(w,
-			toast.WithErr(fmt.Errorf("failed to validate dependencies of %v (%v): %w", d.manifestName, d.selectedVersion, err)))
+			toast.WithErr(fmt.Errorf("failed to validate dependencies of %v (%v): %w", d.manifestName, d.selectedVersion, validationErr)))
 		return
 	}
 
