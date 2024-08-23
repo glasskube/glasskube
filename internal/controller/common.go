@@ -76,6 +76,8 @@ func (r *PackageReconcilerCommon) baseSetup(
 		Watches(&v1alpha1.PackageInfo{},
 			watch.EnqueueRequestsFromOwnedResource(r.Scheme, lister, watch.OwnedPackageInfos)).
 		Watches(&v1alpha1.ClusterPackage{},
+			watch.EnqueueRequestsFromOwnedResource(r.Scheme, lister, watch.OwnedPackages)).
+		Watches(&v1alpha1.Package{},
 			watch.EnqueueRequestsFromOwnedResource(r.Scheme, lister, watch.OwnedPackages))
 
 	if err := r.InitAdapters(controllerBuilder); err != nil {
