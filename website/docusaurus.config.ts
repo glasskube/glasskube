@@ -100,12 +100,20 @@ const config: Config = {
   ],
   themes: [
     [
-      require.resolve('@easyops-cn/docusaurus-search-local'),
-      /** @type {import("@easyops-cn/docusaurus-search-local").PluginOptions} */
+      require.resolve('@getcanary/docusaurus-theme-search-pagefind'),
       {
-        hashed: true,
-        indexBlog: false,
-        docsRouteBasePath: '/',
+        styles: { 
+          "--canary-color-primary-c": 0.08, 
+          "--canary-color-primary-h": 250, 
+        }, 
+        includeRoutes: ["**/*"], 
+        excludeRoutes: ['/blog/**'],
+        group: true,
+        tabs: [
+          { name: "All", pattern: "**/*" },
+          { name: "Docs", pattern: "/docs/**" },
+          { name: "Guides", pattern: "/guides/**" },
+        ],
       },
     ],
   ],
