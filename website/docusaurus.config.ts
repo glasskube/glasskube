@@ -101,20 +101,16 @@ const config: Config = {
   themes: [
     [
       require.resolve('@getcanary/docusaurus-theme-search-pagefind'),
-      {
-        styles: { 
-          "--canary-color-primary-c": 0.08, 
-          "--canary-color-primary-h": 250, 
-        }, 
-        includeRoutes: ["**/*"], 
-        excludeRoutes: ['/blog/**'],
+      { 
+        includeRoutes: ["**/*"],
         group: true,
         tabs: [
           { name: "All", pattern: "**/*" },
           { name: "Docs", pattern: "/docs/**" },
           { name: "Guides", pattern: "/guides/**" },
+          { name: "Blog", pattern: "/blog/**" },
         ],
-      },
+       },
     ],
   ],
   markdown: {
