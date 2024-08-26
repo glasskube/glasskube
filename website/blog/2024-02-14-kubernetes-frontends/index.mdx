@@ -8,6 +8,8 @@ tags: [ glasskube, kubernetes, frontends ]
 
 *In this blogpost we are reviewing Kubernetes Management Frontends and discuss how these tools are being built.*
 
+<!-- truncate -->
+
 # The Inner Workings of Kubernetes Management Frontends — A Software Engineer’s Perspective
 
 The rise of Kubernetes in recent years has led to an astonishing number of open-source Kubernetes management tools seemingly appearing out of nowhere.
@@ -32,7 +34,7 @@ Whenever and wherever you interact with your cluster, you do it via the Kubernet
 though there might be other use cases.
 
 As a consumer of this API, one needs to know where it is hosted and how to authenticate against it.
-The Kubernetes API can be accessed both from inside a cluster (i.e., from an application running on a pod) and outside a cluster (e.g., from your command line). In some cases however, the API is only available from within a VPN. 
+The Kubernetes API can be accessed both from inside a cluster (i.e., from an application running on a pod) and outside a cluster (e.g., from your command line). In some cases however, the API is only available from within a VPN.
 
 Since we are looking at tools with a web UI, this UI and its backend need to be exposed such that a user can access it. The options are:
 
