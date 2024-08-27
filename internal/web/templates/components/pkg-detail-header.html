@@ -127,6 +127,26 @@
         {{ end }}
       {{ end }}
     </div>
+    {{ if ne .Status nil }}
+      <form hx-post="{{ .PackageHref }}/configure" hx-swap="none">
+        <div class="form-check mt-1 mb-3">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            name="enableAutoUpdate"
+            id="enable-auto-update"
+            {{ if eq .AutoUpdate "Enabled" }}checked{{ end }} />
+          <label class="form-check-label ms-1" for="enable-auto-update">Auto Updates</label>
+        </div>
+        <button
+          type="submit"
+          class="btn btn-primary d-flex ms-auto {{ if .ShowConflicts }}disabled{{ end }}"
+          name="dryRun"
+          {{ if .ShowConflicts }}disabled{{ end }}>
+          Save Configuration
+        </button>
+      </form>
+    {{ end }}
   </div>
 {{ end }}
 {{ define "failed-badge" }}

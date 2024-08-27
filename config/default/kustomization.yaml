@@ -17,11 +17,11 @@ namePrefix: glasskube-
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
 # crd/kustomization.yaml
 resources:
-  - ../crd
-  - ../rbac
-  - ../manager
-  - ../webhook
-  - ../webhook-cert
+- ../crd
+- ../rbac
+- ../manager
+- ../webhook
+- ../webhook-cert
 # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'. 'WEBHOOK' components are required.
 #- ../certmanager
 # [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.
@@ -32,14 +32,14 @@ resources:
 # endpoint w/o any authn/z, please comment the following line.
 
 images:
-  - name: controller
-    newName: ghcr.io/glasskube/package-operator
-    newTag: v0.18.0 # x-release-please-version
+- name: controller
+  newName: ghcr.io/glasskube/package-operator
+  newTag: snapshot
 
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
 # crd/kustomization.yaml
 patches:
-  - path: manager_auth_proxy_patch.yaml
-  - path: manager_webhook_patch.yaml
+- path: manager_auth_proxy_patch.yaml
+- path: manager_webhook_patch.yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
