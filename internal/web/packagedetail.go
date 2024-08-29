@@ -128,10 +128,26 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 		}
 	}
 
-	res, err := s.dependencyMgr.Validate(r.Context(), d.manifest, d.selectedVersion)
-	if err != nil {
+	var validatinoResult *dependency.ValidationResult
+	var validationErr error
+	if d.pkg.IsNil() {
+		if d.manifest.Scope.IsCluster() {
+			validatinoResult, validationErr =
+				s.dependencyMgr.Validate(r.Context(), d.manifestName, "", d.manifest, d.selectedVersion)
+		} else {
+			// In this case we don't know the actual namespace, but we can assume the default
+			// TODO: make name and namespace depend on user input
+			validatinoResult, validationErr =
+				s.dependencyMgr.Validate(r.Context(), d.manifestName, d.manifest.DefaultNamespace, d.manifest, d.selectedVersion)
+		}
+	} else {
+		validatinoResult, validationErr =
+			s.dependencyMgr.Validate(r.Context(), d.pkg.GetName(), d.pkg.GetNamespace(), d.manifest, d.selectedVersion)
+	}
+
+	if validationErr != nil {
 		s.sendToast(w,
-			toast.WithErr(fmt.Errorf("failed to validate dependencies of %v (%v): %w", d.manifestName, d.selectedVersion, err)))
+			toast.WithErr(fmt.Errorf("failed to validate dependencies of %v (%v): %w", d.manifestName, d.selectedVersion, validationErr)))
 		return
 	}
 
@@ -163,8 +179,8 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 		"LatestVersion":      latestVersion,
 		"UpdateAvailable":    s.isUpdateAvailableForPkg(r.Context(), d.pkg),
 		"AutoUpdate":         clientutils.AutoUpdateString(d.pkg, "Disabled"),
-		"ValidationResult":   res,
-		"ShowConflicts":      res.Status == dependency.ValidationResultStatusConflict,
+		"ValidationResult":   validatinoResult,
+		"ShowConflicts":      validatinoResult.Status == dependency.ValidationResultStatusConflict,
 		"SelectedVersion":    d.selectedVersion,
 		"PackageIndex":       &idx,
 		"Repositories":       repos,

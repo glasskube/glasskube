@@ -17,6 +17,7 @@ import (
 	"github.com/glasskube/glasskube/internal/controller/requeue"
 	"github.com/glasskube/glasskube/internal/controller/watch"
 	"github.com/glasskube/glasskube/internal/dependency"
+	deputil "github.com/glasskube/glasskube/internal/dependency/util"
 	"github.com/glasskube/glasskube/internal/manifest"
 	"github.com/glasskube/glasskube/internal/manifest/result"
 	"github.com/glasskube/glasskube/internal/manifestvalues"
@@ -26,6 +27,7 @@ import (
 	"github.com/glasskube/glasskube/internal/util"
 	"github.com/glasskube/glasskube/pkg/condition"
 	"go.uber.org/multierr"
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -74,6 +76,8 @@ func (r *PackageReconcilerCommon) baseSetup(
 		Watches(&v1alpha1.PackageInfo{},
 			watch.EnqueueRequestsFromOwnedResource(r.Scheme, lister, watch.OwnedPackageInfos)).
 		Watches(&v1alpha1.ClusterPackage{},
+			watch.EnqueueRequestsFromOwnedResource(r.Scheme, lister, watch.OwnedPackages)).
+		Watches(&v1alpha1.Package{},
 			watch.EnqueueRequestsFromOwnedResource(r.Scheme, lister, watch.OwnedPackages))
 
 	if err := r.InitAdapters(controllerBuilder); err != nil {
@@ -266,12 +270,41 @@ func (r *PackageReconcilationContext) ensureFinalizer() {
 	}
 }
 
+func (r *PackageReconcilationContext) ensureNamespaceForComponents(ctx context.Context) error {
+	if !r.pkg.IsNamespaceScoped() && len(r.pi.Status.Manifest.Components) > 0 {
+		namespace := v1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: r.pi.Status.Manifest.DefaultNamespace,
+			},
+		}
+		if _, err := controllerutil.CreateOrUpdate(ctx, r.Client, &namespace, func() error {
+			return r.SetOwnerIfManagedOrNotExists(r.Client, ctx, r.pkg, &namespace)
+		}); err != nil {
+			return err
+		}
+		if changed, err := ownerutils.AddOwnedResourceRef(r.Scheme, &r.currentOwnedResources, &namespace); err != nil {
+			return err
+		} else {
+			r.setShouldUpdate(changed)
+		}
+	}
+	return nil
+}
+
 func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bool {
 	log := ctrl.LoggerFrom(ctx)
 	log.V(1).Info("ensuring dependencies", "dependencies", r.pi.Status.Manifest.Dependencies)
 
+	if err := r.ensureNamespaceForComponents(ctx); err != nil {
+		r.setShouldUpdate(
+			conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.GetStatus().Conditions,
+				condition.InstallationFailed,
+				fmt.Sprintf("error creating namespace for ClusterPackage components: %v", err)))
+		return false
+	}
+
 	var failed []string
-	if result, err := r.DependencyManager.Validate(ctx, r.pi.Status.Manifest,
+	if result, err := r.DependencyManager.Validate(ctx, r.pkg.GetName(), r.pkg.GetNamespace(), r.pi.Status.Manifest,
 		r.pkg.GetSpec().PackageInfo.Version); err != nil {
 		r.setShouldUpdate(
 			conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.GetStatus().Conditions,
@@ -283,11 +316,22 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 				// Only direct dependencies should be touched in the context of the reconciliation of a package.
 				continue
 			}
-			newPkg := &packagesv1alpha1.ClusterPackage{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      requirement.Name,
-					Namespace: r.pkg.GetNamespace(),
-				},
+
+			var newPkg ctrlpkg.Package
+
+			if requirement.ComponentMetadata != nil {
+				newPkg = &packagesv1alpha1.Package{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      requirement.ComponentMetadata.Name,
+						Namespace: requirement.ComponentMetadata.Namespace,
+					},
+				}
+			} else {
+				newPkg = &packagesv1alpha1.ClusterPackage{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: requirement.Name,
+					},
+				}
 			}
 
 			newPkg.SetInstalledAsDependency(true)
@@ -314,12 +358,10 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 			}
 
 			if _, err := controllerutil.CreateOrUpdate(ctx, r.Client, newPkg, func() error {
-				newPkg.Spec = packagesv1alpha1.PackageSpec{
-					PackageInfo: packagesv1alpha1.PackageInfoTemplate{
-						Name:           requirement.Name,
-						Version:        requirement.Version,
-						RepositoryName: repositoryName,
-					},
+				newPkg.GetSpec().PackageInfo = packagesv1alpha1.PackageInfoTemplate{
+					Name:           requirement.Name,
+					Version:        requirement.Version,
+					RepositoryName: repositoryName,
 				}
 				return nil
 			}); err != nil {
@@ -347,31 +389,57 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 
 	var ownedPackages []packagesv1alpha1.OwnedResourceRef
 	var waitingFor []string
-	// if all requirements fulfilled, status can be checked
-	for _, dep := range r.pi.Status.Manifest.Dependencies {
-		var requiredPkg packagesv1alpha1.ClusterPackage
-		if err := r.Get(ctx, types.NamespacedName{Name: dep.Name}, &requiredPkg); err != nil {
+
+	var handleRequiredPackage = func(requiredPkg ctrlpkg.Package) error {
+		if err := r.Get(ctx, client.ObjectKeyFromObject(requiredPkg), requiredPkg); err != nil {
 			if apierrors.IsNotFound(err) {
-				waitingFor = append(waitingFor, dep.Name)
+				waitingFor = append(waitingFor, requiredPkg.GetName())
 			} else {
-				message := fmt.Sprintf("failed to get required package %v: %v", dep.Name, err)
-				r.setShouldUpdate(
-					conditions.SetFailed(ctx, r.EventRecorder, r.pkg,
-						&r.pkg.GetStatus().Conditions, condition.InstallationFailed, message))
-				return false
+				return fmt.Errorf("failed to get required %v %v: %w",
+					requiredPkg.GroupVersionKind().Kind, requiredPkg.GetName(), err)
 			}
 		} else {
-			if owned, err := ownerutils.ToOwnedResourceRef(r.Scheme, &requiredPkg); err != nil {
+			if owned, err := ownerutils.ToOwnedResourceRef(r.Scheme, requiredPkg); err != nil {
 				log.Error(err, "Failed to create OwnedResourceRef", "package", requiredPkg)
-				failed = append(failed, dep.Name)
+				failed = append(failed, requiredPkg.GetName())
 			} else {
 				ownedPackages = append(ownedPackages, owned)
 			}
-			if meta.IsStatusConditionTrue(requiredPkg.Status.Conditions, string(condition.Failed)) {
-				failed = append(failed, requiredPkg.Name)
-			} else if !meta.IsStatusConditionTrue(requiredPkg.Status.Conditions, string(condition.Ready)) {
-				waitingFor = append(waitingFor, requiredPkg.Name)
+			if meta.IsStatusConditionTrue(requiredPkg.GetStatus().Conditions, string(condition.Failed)) {
+				failed = append(failed, requiredPkg.GetName())
+			} else if !meta.IsStatusConditionTrue(requiredPkg.GetStatus().Conditions, string(condition.Ready)) {
+				waitingFor = append(waitingFor, requiredPkg.GetName())
 			}
+		}
+		return nil
+	}
+
+	// if all requirements fulfilled, status can be checked
+	for _, dep := range r.pi.Status.Manifest.Dependencies {
+		requiredPkg := packagesv1alpha1.ClusterPackage{
+			ObjectMeta: metav1.ObjectMeta{Name: dep.Name},
+		}
+		if err := handleRequiredPackage(&requiredPkg); err != nil {
+			r.setShouldUpdate(conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.GetStatus().Conditions,
+				condition.InstallationFailed, err.Error()))
+			return false
+		}
+	}
+
+	for _, cmp := range r.pi.Status.Manifest.Components {
+		requiredPkg := packagesv1alpha1.Package{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      deputil.ComponentName(r.pkg.GetName(), cmp),
+				Namespace: r.pkg.GetNamespace(),
+			},
+		}
+		if requiredPkg.Namespace == "" {
+			requiredPkg.Namespace = r.pi.Status.Manifest.DefaultNamespace
+		}
+		if err := handleRequiredPackage(&requiredPkg); err != nil {
+			r.setShouldUpdate(conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.GetStatus().Conditions,
+				condition.InstallationFailed, err.Error()))
+			return false
 		}
 	}
 
@@ -646,7 +714,7 @@ OuterLoop:
 				continue
 			}
 			for _, otherRef := range otherPkg.GetStatus().OwnedPackages {
-				if otherRef.Name == ref.Name {
+				if ownerutils.RefersToSameResource(otherRef, ref) {
 					stillUsed = true
 					break AllPackagesLoop
 				}
@@ -654,9 +722,16 @@ OuterLoop:
 		}
 
 		if !stillUsed {
-			var oldReqPkg v1alpha1.ClusterPackage
-			if err := r.Get(ctx,
-				types.NamespacedName{Name: ref.Name, Namespace: ref.Namespace}, &oldReqPkg); err != nil {
+			var oldReqPkg ctrlpkg.Package
+			switch ref.Kind {
+			case "ClusterPackage":
+				oldReqPkg = &packagesv1alpha1.ClusterPackage{}
+			case "Package":
+				oldReqPkg = &packagesv1alpha1.Package{}
+			default:
+				return fmt.Errorf("owned package ref has invalid kind: %v", ref.Kind)
+			}
+			if err := r.Get(ctx, types.NamespacedName{Name: ref.Name, Namespace: ref.Namespace}, oldReqPkg); err != nil {
 				if apierrors.IsNotFound(err) {
 					r.setShouldUpdate(ownerutils.Remove(&ownedPackagesCopy, ref))
 				} else {

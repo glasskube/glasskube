@@ -6,25 +6,25 @@ import (
 	"github.com/Masterminds/semver/v3"
 )
 
-func ErrNotInstalled(name string) error {
-	err := NotInstalledError(name)
+func ErrNotInstalled(ref PackageRef) error {
+	err := NotInstalledError(ref)
 	return &err
 }
 
 // NotInstalledError indicates that a package is missing
-type NotInstalledError string
+type NotInstalledError PackageRef
 
 func (err *NotInstalledError) Error() string {
-	return fmt.Sprintf("%v not installed", string(*err))
+	return fmt.Sprintf("%v not installed", err.PackageName)
 }
 
-func ErrConstraint(name string, version *semver.Version, constraint *semver.Constraints, cause error) error {
-	return &ConstraintError{Name: name, Version: version, Constraint: constraint, cause: cause}
+func ErrConstraint(pkgRef PackageRef, version *semver.Version, constraint *semver.Constraints, cause error) error {
+	return &ConstraintError{Package: pkgRef, Version: version, Constraint: constraint, cause: cause}
 }
 
 // ConstraintError indicates that a constraint has been violated
 type ConstraintError struct {
-	Name       string
+	Package    PackageRef
 	Version    *semver.Version
 	Constraint *semver.Constraints
 	cause      error
@@ -34,18 +34,18 @@ func (err *ConstraintError) Error() string {
 	return fmt.Sprintf("constraint %v violated: %v", err.Constraint, err.cause)
 }
 
-func ErrDependency(name, dep string, cause error) error {
-	return &DependencyError{Name: name, Dependency: dep, cause: cause}
+func ErrDependency(ref, dep PackageRef, cause error) error {
+	return &DependencyError{Package: ref, Dependency: dep, cause: cause}
 }
 
 // DependencyError idicates that a dependency is not met
 type DependencyError struct {
-	Name, Dependency string
-	cause            error
+	Package, Dependency PackageRef
+	cause               error
 }
 
 func (err *DependencyError) Error() string {
-	return fmt.Sprintf("unmet dependency %v -> %v: %v", err.Name, err.Dependency, err.cause)
+	return fmt.Sprintf("unmet dependency %v -> %v: %v", err.Package.PackageName, err.Dependency.PackageName, err.cause)
 }
 
 func (err *DependencyError) Is(other error) bool {

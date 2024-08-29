@@ -20,7 +20,12 @@ type PackageWithVersion struct {
 
 type Requirement struct {
 	PackageWithVersion
-	Transitive bool
+	ComponentMetadata *ComponentMetadata
+	Transitive        bool
+}
+
+type ComponentMetadata struct {
+	Name, Namespace string
 }
 
 type Conflict struct {

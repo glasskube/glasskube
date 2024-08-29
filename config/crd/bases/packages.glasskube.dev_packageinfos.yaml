@@ -124,6 +124,19 @@ spec:
                 type: string
               manifest:
                 properties:
+                  components:
+                    items:
+                      properties:
+                        installedName:
+                          type: string
+                        name:
+                          type: string
+                        version:
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    type: array
                   defaultNamespace:
                     description: DefaultNamespace to install the package. May be overridden.
                     type: string
