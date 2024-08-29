@@ -100,13 +100,17 @@ const config: Config = {
   ],
   themes: [
     [
-      require.resolve('@easyops-cn/docusaurus-search-local'),
-      /** @type {import("@easyops-cn/docusaurus-search-local").PluginOptions} */
-      {
-        hashed: true,
-        indexBlog: false,
-        docsRouteBasePath: '/',
-      },
+      require.resolve('@getcanary/docusaurus-theme-search-pagefind'),
+      { 
+        includeRoutes: ["**/*"],
+        group: true,
+        tabs: [
+          { name: "All", pattern: "**/*" },
+          { name: "Docs", pattern: "/docs/**" },
+          { name: "Guides", pattern: "/guides/**" },
+          { name: "Blog", pattern: "/blog/**" },
+        ],
+       },
     ],
   ],
   markdown: {
