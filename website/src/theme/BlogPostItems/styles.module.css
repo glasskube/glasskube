@@ -1,0 +1,24 @@
+:root {
+    --blog-latest-background: #f8f8f8;
+  }
+  
+  html[data-theme="dark"] {
+    --blog-latest-background: #292827;
+  }
+  
+  .latestContainer {
+    padding: 5rem 0 6rem 0;
+    background: radial-gradient(circle at 10% 10%, #fff2001c, transparent 20%),
+      radial-gradient(circle at 90% 400px, #fff2001c, transparent 30%);
+    background-color: var(--blog-latest-background);
+  }
+  
+  .itemGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+  }
+  
+  .title {
+    font-size: 40px;
+  }

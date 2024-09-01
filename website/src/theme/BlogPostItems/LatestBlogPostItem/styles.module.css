@@ -1,0 +1,41 @@
+.container {
+    display: flex;
+    gap: 3rem;
+  }
+  
+  .metaContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 0rem;
+  }
+  
+  .info {
+    display: flex;
+    gap: 2rem;
+  }
+  
+  .image {
+    width: 50%;
+    object-fit:cover;
+    border-radius: var(--ifm-card-border-radius);
+    flex-shrink: 0;
+  }
+  
+  .title {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .content {
+    margin-top: 2rem;
+  }
+  
+  @media (max-width: 1000px) {
+    .container {
+      flex-direction: column;
+    }
+    .image {
+      height: 250px;
+      width: 100%;
+    }
+  }
