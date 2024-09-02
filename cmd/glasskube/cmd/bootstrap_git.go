@@ -1,11 +1,11 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
-
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"time"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/fatih/color"
@@ -17,25 +17,35 @@ import (
 	"github.com/glasskube/glasskube/pkg/bootstrap"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/install"
+	"github.com/glasskube/glasskube/pkg/open"
 	"github.com/spf13/cobra"
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/client-go/kubernetes"
 )
 
 type bootstrapGitOptions struct {
-	url string
+	url      string
+	branch   string
+	username string
+	token    string
 }
 
 var bootstrapGitCmdOptions = bootstrapGitOptions{}
 
 const doneMessage = `
-glasskube argo-cd application applied successfully!
 
 You have successfully installed Glasskube and ArgoCD in this cluster.
-Right now, ArgoCD is starting up and will soon sync with your GitOps repo – this might take a couple of minutes!
-Run "glasskube serve" to open the Glasskube UI and either open the ArgoCD UI there, or with "glasskube open argo-cd".
-Follow the ArgoCD docs to get and reset the password to log in:
-https://argo-cd.readthedocs.io/en/stable/getting_started/#4-login-using-the-cli
+You can now open the ArgoCD UI with
+
+glasskube open argo-cd
+
+username: admin
+password: %v
+
+Please reset the ArgoCD admin password! https://argo-cd.readthedocs.io/en/stable/getting_started/#4-login-using-the-cli
 `
 
 var bootstrapGitCmd = &cobra.Command{
@@ -43,6 +53,11 @@ var bootstrapGitCmd = &cobra.Command{
 	Short:  "Bootstrap Glasskube with a GitOps tool",
 	PreRun: cliutils.SetupClientContext(false, util.Pointer(true)),
 	Run: func(cmd *cobra.Command, args []string) {
+		if (bootstrapGitCmdOptions.username == "" && bootstrapGitCmdOptions.token != "") ||
+			(bootstrapGitCmdOptions.username != "" && bootstrapGitCmdOptions.token == "") {
+			fmt.Fprintf(os.Stderr, "For private repos please provide both username and token!\n")
+			cliutils.ExitWithError()
+		}
 		cfg, _ := cliutils.RequireConfig(config.Kubeconfig)
 		bootstrapClient := bootstrap.NewBootstrapClient(cfg)
 		ctx := cmd.Context()
@@ -69,8 +84,18 @@ var bootstrapGitCmd = &cobra.Command{
 
 		// regularly bootstrap in the cluster
 		// without a git client, this means it only supports GitHub for now
-		basePath := strings.ReplaceAll(bootstrapGitCmdOptions.url, "github.com", "raw.githubusercontent.com")
-		basePath = basePath + "/main"
+		host := "raw.githubusercontent.com"
+		if bootstrapGitCmdOptions.token != "" {
+			// might also be GitHub specific? a more proper way for the future could be to send it via the
+			// Authorization header instead, but that would also have to be supported by the BootstrapClient
+			host = bootstrapGitCmdOptions.token + "@" + host
+		}
+		basePath := strings.ReplaceAll(bootstrapGitCmdOptions.url, "github.com", host)
+		branchPath := "/main"
+		if bootstrapGitCmdOptions.branch != "" {
+			branchPath = "/" + bootstrapGitCmdOptions.branch
+		}
+		basePath = basePath + branchPath
 		manifestsPath := fmt.Sprintf("%v/bootstrap/glasskube/glasskube.yaml", basePath)
 		_, err := bootstrapClient.Bootstrap(ctx, bootstrap.BootstrapOptions{
 			Url:        manifestsPath,
@@ -127,6 +152,31 @@ var bootstrapGitCmd = &cobra.Command{
 
 		fmt.Fprintf(os.Stderr, "\nargo-cd package has been installed!\n\nApplying the glasskube argo-cd application...")
 
+		// apply the repository secret if the repo is not public
+		argocdNamespace := "argocd"
+		clientset := kubernetes.NewForConfigOrDie(cfg)
+		if bootstrapGitCmdOptions.token != "" {
+			repoSecret := &v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "gitops-repository",
+					Labels: map[string]string{
+						"argocd.argoproj.io/secret-type": "repository",
+					},
+				},
+				StringData: map[string]string{
+					"type":     "git",
+					"url":      bootstrapGitCmdOptions.url,
+					"username": bootstrapGitCmdOptions.username,
+					"password": bootstrapGitCmdOptions.token,
+				},
+			}
+			if _, err := clientset.CoreV1().Secrets(argocdNamespace).
+				Create(ctx, repoSecret, metav1.CreateOptions{}); err != nil {
+				fmt.Fprintf(os.Stderr, "\nAn error occurred setting up the repository secret:\n%v\n", err)
+				cliutils.ExitWithError()
+			}
+		}
+
 		// apply bootstrap/glasskube-application.yaml into the cluster
 		appPath := fmt.Sprintf("%v/bootstrap/glasskube-application.yaml", basePath)
 		if objs, err := clientutils.FetchResources(appPath); err != nil {
@@ -155,10 +205,48 @@ var bootstrapGitCmd = &cobra.Command{
 			}
 		}
 
-		fmt.Fprint(os.Stderr, doneMessage)
+		// try to open argo-cd every 5 seconds until it succeeds in order to check whether it is ready
+		fmt.Fprintf(os.Stderr, "\nglasskube argo-cd application applied successfully!\n\nWaiting for argo-cd to be ready...")
+		argoCheckCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+		defer cancel()
+
+		tick := time.NewTicker(5 * time.Second)
+		tickC := tick.C
+		defer tick.Stop()
+	WaitLoop:
+		for {
+			select {
+			case <-argoCheckCtx.Done():
+				fmt.Fprintf(os.Stderr, "\nargo-cd has not become ready in the specified timeout: %v\n", ctx.Err())
+				break WaitLoop
+			case <-tickC:
+				if ready, _ := open.NewOpener().HasReadyPod(argoCheckCtx, argoCdPkg, "", 0); ready {
+					break WaitLoop
+				}
+				// else: generally assume an error means not ready yet
+			}
+		}
+
+		// get initial admin password to print it
+		var adminPwStr string
+		if adminPw, err := clientset.CoreV1().Secrets(argocdNamespace).
+			Get(ctx, "argocd-initial-admin-secret", metav1.GetOptions{}); err != nil {
+			fmt.Fprintf(os.Stderr, "\nCould not obtain initial ArgoCD password: %v\n\n", err)
+		} else {
+			adminPwStr = string(adminPw.Data["password"])
+		}
+
+		fmt.Fprintf(os.Stderr, doneMessage, adminPwStr)
 	},
 }
 
 func init() {
-	bootstrapGitCmd.Flags().StringVar(&bootstrapGitCmdOptions.url, "url", "", "URL of the GitOps Repository")
+	bootstrapGitCmd.Flags().StringVar(&bootstrapGitCmdOptions.url, "url", "",
+		"URL of the GitOps Repository")
+	bootstrapGitCmd.Flags().StringVar(&bootstrapGitCmdOptions.branch, "branch", "",
+		"Branch of the GitOps Repository to use (default is main)")
+	bootstrapGitCmd.Flags().StringVar(&bootstrapGitCmdOptions.username, "username", "",
+		"Username to use for authentication")
+	bootstrapGitCmd.Flags().StringVar(&bootstrapGitCmdOptions.token, "token", os.Getenv("GITHUB_TOKEN"),
+		"Token to use for authentication. If not set, it will use the GITHUB_TOKEN environment variable")
 }
