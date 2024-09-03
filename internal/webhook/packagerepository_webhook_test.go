@@ -102,5 +102,12 @@ var _ = Describe("PackageRepositoryValidatingWebhook", Ordered, func() {
 				Expect(err).To(MatchError(ErrPackagesInstalled))
 			})
 		})
+		When("url not changed", func() {
+			It("should not return an error", func(ctx context.Context) {
+				webhook := newPackageRepositoryValidatingWebhook(&glasskubev1Repo, &hinterseerv1Package, &hinterseerv1PackageInfo)
+				_, err := webhook.ValidateUpdate(ctx, &glasskubev1Repo, &glasskubev1Repo)
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
 	})
 })
