@@ -26,7 +26,7 @@ export default function BlogPostItem({
   if (!isPage) {
     return (
       <Link to={post.metadata.permalink} className={styles.postLink}>
-        <article className={clsx('card', className, styles.postCard)}>
+        <article className={clsx('card', 'shadow--tl', className, styles.postCard)}>
           <img
             src={useBaseUrl(post.frontMatter.image)}
             style={{
