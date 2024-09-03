@@ -8,7 +8,6 @@ import Link from "@docusaurus/Link";
 
 export function LatestBlogPostItem({ children }) {
   const post = useBlogPost();
-  console.log(post)
   return (
     <div className={styles.container}>
       <img

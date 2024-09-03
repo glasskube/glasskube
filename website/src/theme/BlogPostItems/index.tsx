@@ -12,7 +12,6 @@ export default function BlogPostItems({
   component: BlogPostItemComponent = BlogPostItem,
 }: Props & { metadata: any }): JSX.Element {
   const [latestBlog, ...rest] = items;
-  console.log(items);
   const showLatest = metadata?.page === 1;
 
   return (
