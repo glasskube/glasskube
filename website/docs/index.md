@@ -151,6 +151,17 @@ Shows additional information about the given package.
 Opens the default entrypoint of the given package.
 Use `glasskube open <package> <entrypoint>` to open a specific entrypoint.
 
+### `glasskube auto-update`
+
+Update autopilot for packages where automatic updates are enabled.
+Use the `enable` and `disable` subcommands to enable/disable automatic updates for some or all packages.
+Examples:
+
+- `glasskube auto-update enable` (Enable automatic updates for all packages)
+- `glasskube auto-update disable foo bar` (Disable automatic updates for packages "foo" and "bar")
+
+For more information check out `glasskube help auto-update` and `glasskube help auto-update enable`.
+
 ### `glasskube repo`
 
 Manages the package repositories of the cluster. `glasskube repo list` lists the currently configured repositories,
