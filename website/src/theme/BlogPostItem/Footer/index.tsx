@@ -1,13 +1,13 @@
-import React from "react";
-import clsx from "clsx";
-import { useBlogPost } from "@docusaurus/plugin-content-blog/client";
-import { ThemeClassNames } from "@docusaurus/theme-common";
-import EditMetaRow from "@theme/EditMetaRow";
-import TagsListInline from "@theme/TagsListInline";
-import ReadMoreLink from "@theme/BlogPostItem/Footer/ReadMoreLink";
+import React from 'react';
+import clsx from 'clsx';
+import {useBlogPost} from '@docusaurus/plugin-content-blog/client';
+import {ThemeClassNames} from '@docusaurus/theme-common';
+import EditMetaRow from '@theme/EditMetaRow';
+import TagsListInline from '@theme/TagsListInline';
+import ReadMoreLink from '@theme/BlogPostItem/Footer/ReadMoreLink';
 
 export default function BlogPostItemFooter(): JSX.Element | null {
-  const { metadata, isBlogPostPage } = useBlogPost();
+  const {metadata, isBlogPostPage} = useBlogPost();
   const {
     tags,
     title,
@@ -37,11 +37,10 @@ export default function BlogPostItemFooter(): JSX.Element | null {
         {tagsExists && (
           <div
             className={clsx(
-              "row",
-              "margin-top--sm",
-              ThemeClassNames.blog.blogFooterEditMetaRow
-            )}
-          >
+              'row',
+              'margin-top--sm',
+              ThemeClassNames.blog.blogFooterEditMetaRow,
+            )}>
             <div className="col">
               <TagsListInline tags={tags} />
             </div>
@@ -50,8 +49,8 @@ export default function BlogPostItemFooter(): JSX.Element | null {
         {canDisplayEditMetaRow && (
           <EditMetaRow
             className={clsx(
-              "margin-top--sm",
-              ThemeClassNames.blog.blogFooterEditMetaRow
+              'margin-top--sm',
+              ThemeClassNames.blog.blogFooterEditMetaRow,
             )}
             editUrl={editUrl}
             lastUpdatedAt={lastUpdatedAt}
@@ -66,16 +65,15 @@ export default function BlogPostItemFooter(): JSX.Element | null {
     return (
       <footer className="row card__footer">
         {tagsExists && (
-          <div className={clsx("col", { "col--9": truncatedPost })}>
+          <div className={clsx('col', {'col--9': truncatedPost})}>
             <TagsListInline tags={tags} />
           </div>
         )}
         {truncatedPost && (
           <div
-            className={clsx("col text--right", {
-              "col--3": tagsExists,
-            })}
-          >
+            className={clsx('col text--right', {
+              'col--3': tagsExists,
+            })}>
             <ReadMoreLink blogPostTitle={title} to={metadata.permalink} />
           </div>
         )}

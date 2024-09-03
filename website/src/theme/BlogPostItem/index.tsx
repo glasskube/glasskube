@@ -1,18 +1,17 @@
-import React from "react";
-import clsx from "clsx";
+import React from 'react';
+import clsx from 'clsx';
 import {useBlogPost} from '@docusaurus/plugin-content-blog/client';
-import BlogPostItemContainer from "@theme/BlogPostItem/Container";
-import BlogPostItemHeader from "@theme/BlogPostItem/Header";
-import BlogPostItemContent from "@theme/BlogPostItem/Content";
-import BlogPostItemFooter from "@theme/BlogPostItem/Footer";
-import TOC from "@theme/TOC";
-import type { Props } from "@theme/BlogPostItem";
-import useBaseUrl from "@docusaurus/useBaseUrl";
-import styles from "./styles.module.css";
-import Link from "@docusaurus/Link";
-import BlogPostItemHeaderTitle from "./Header/Title";
-import BlogPostItemHeaderAuthors from "./Header/Authors";
-import BlogPostItemHeaderInfo from "./Header/Info";
+import BlogPostItemHeader from '@theme/BlogPostItem/Header';
+import BlogPostItemContent from '@theme/BlogPostItem/Content';
+import BlogPostItemFooter from '@theme/BlogPostItem/Footer';
+import TOC from '@theme/TOC';
+import type {Props} from '@theme/BlogPostItem';
+import useBaseUrl from '@docusaurus/useBaseUrl';
+import styles from './styles.module.css';
+import Link from '@docusaurus/Link';
+import BlogPostItemHeaderTitle from './Header/Title';
+import BlogPostItemHeaderAuthors from './Header/Authors';
+import BlogPostItemHeaderInfo from './Header/Info';
 
 export default function BlogPostItem({
   children,
@@ -27,12 +26,12 @@ export default function BlogPostItem({
   if (!isPage) {
     return (
       <Link to={post.metadata.permalink} className={styles.postLink}>
-        <article className={clsx("card", className, styles.postCard)}>
+        <article className={clsx('card', className, styles.postCard)}>
           <img
             src={useBaseUrl(post.frontMatter.image)}
             style={{
-              objectFit: "cover",
-              height: "200px",
+              objectFit: 'cover',
+              height: '200px',
             }}
             alt="article image"
           />
@@ -54,9 +53,9 @@ export default function BlogPostItem({
   // Full post page
   return (
     <main>
-      <article className={clsx("container margin-vert--lg", className)}>
+      <article className={clsx('container margin-vert--lg', className)}>
         <div className="row">
-          <div className={"col col--8 col--offset-2"}>
+          <div className={'col col--8 col--offset-2'}>
             <BlogPostItemHeader />
             <BlogPostItemContent>{children}</BlogPostItemContent>
             <BlogPostItemFooter />
