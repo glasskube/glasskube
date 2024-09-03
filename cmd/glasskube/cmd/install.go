@@ -147,10 +147,14 @@ var installCmd = &cobra.Command{
 		} else {
 			var name string
 			if len(args) != 2 {
-				fmt.Fprintf(os.Stderr, "%v has scope Namespaced. Please enter a name (default %v):\n", packageName, packageName)
-				name = cliutils.GetInputStr("name")
-				if name == "" {
+				if installCmdOptions.Yes {
 					name = packageName
+				} else {
+					fmt.Fprintf(os.Stderr, "%v has scope Namespaced. Please enter a name (default %v):\n", packageName, packageName)
+					name = cliutils.GetInputStr("name")
+					if name == "" {
+						name = packageName
+					}
 				}
 			} else {
 				name = args[1]
