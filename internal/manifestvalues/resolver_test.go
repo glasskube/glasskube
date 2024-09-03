@@ -2,7 +2,6 @@ package manifestvalues
 
 import (
 	"context"
-	"encoding/base64"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/adapter/controllerruntime"
@@ -60,7 +59,7 @@ var _ = Describe("resolver", func() {
 	It("should resolve Secret reference value", func(ctx context.Context) {
 		resolver := newTestResolver(&corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "test"},
-			Data:       map[string][]byte{"test": []byte(base64.StdEncoding.EncodeToString([]byte("test")))},
+			Data:       map[string][]byte{"test": []byte("test")},
 		})
 		result, err := resolver.Resolve(ctx, map[string]v1alpha1.ValueConfiguration{
 			"test": {
@@ -89,7 +88,7 @@ var _ = Describe("resolver", func() {
 			},
 			&corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "test"},
-				Data:       map[string][]byte{"test": []byte(base64.StdEncoding.EncodeToString([]byte("test")))},
+				Data:       map[string][]byte{"test": []byte("test")},
 			},
 		)
 		result, err := resolver.Resolve(ctx, map[string]v1alpha1.ValueConfiguration{
