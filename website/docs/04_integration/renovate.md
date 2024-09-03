@@ -16,8 +16,8 @@ To enable Renovate support for Glasskube in your GitOps repository, add the foll
 ```
 
 Since there is no canonical naming scheme for files containing Glasskube packages in GitOps repositories,
-the manager does not have a default "fileMatch" value so you have to provider your own.
-For example, if you used our GitOps template to set-up your repository, you can use `"^packages/.*\\.yaml$"` as a matcher.
+the manager does not have a default "fileMatch" value, so you have to provider your own.
+For example, if you used our GitOps template to set up your repository, you can use `"^packages/.*\\.yaml$"` as a matcher.
 This will tell Renovate that all files in the `packages` directory (and its subdirectories) that end with `.yaml` may contain glasskube resources.
 The full configuration section should look something like this:
 
@@ -29,8 +29,10 @@ The full configuration section should look something like this:
 }
 ```
 
-The Renovate ingetration for Glasskube supports scenarios with multiple repositories, but all repositories must be present in the repository.
+Check out our GitOps template to see the Renovate integration in action: [`glasskube/gitops-template`](https://github.com/glasskube/gitops-template).
+
+The Renovate integration for Glasskube supports scenarios with multiple repositories, but all repositories must be present in the repository.
 Furthermore, authenticated repositories are not yet supported.
 
-At Glasskube we use Renovate in almost all of our repositories and we highly recommend that you install it in your GitOps repository.
+At Glasskube we use Renovate in almost all of our repositories, and we highly recommend that you install it in your GitOps repository.
 Check out the [Renovate documentation](https://docs.renovatebot.com/getting-started/installing-onboarding/) for instructions.
