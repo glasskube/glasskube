@@ -749,7 +749,7 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 		if pkg.Annotations == nil {
 			pkg.Annotations = make(map[string]string)
 		}
-		pkg.ObjectMeta.Annotations["packages.glasskube.dev/auto-update"] = strconv.FormatBool(strings.ToLower(enableAutoUpdate) == "on")
+		pkg.SetAutoUpdatesEnabled(strings.ToLower(enableAutoUpdate) == "on")
 
 		opts := metav1.UpdateOptions{}
 		if dryRun {
