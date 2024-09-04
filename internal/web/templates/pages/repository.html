@@ -1,43 +1,29 @@
-{{define "content"}}
-<div class="container mx-auto p-4 shadow-md rounded-lg mt-8" id="repository">
+{{ define "content" }}
+<div class="container mx-auto p-4 shadow-md rounded-lg mt-8">
     <h1 class="text-2xl font-bold mb-4">Repository Configuration</h1>
-    <!-- <span class="fw-semibold">
-       {{ .Repository.IsDefaultRepository}}
-      </span> -->
-    <form
-    class="space-y-4">
-        <!-- Name Field -->
+    <form class="space-y-4">
         <div>
             <label for="name" class="form-label">Name</label>
             <div class="input-group mb-2">
                 <input type="text" id="name" name="name" value="{{ .Repository.Name }}" disabled class="form-control" />
             </div>
         </div>
-
-        <!-- URL Field -->
         <div>
             <label for="url" class="form-label">URL</label>
             <div class="input-group mb-2">
                 <input type="text" id="url" name="url" value="{{ .Repository.Spec.Url }}" required class="form-control" />
             </div>
-            
         </div>
-
-        <!-- Default Checkbox -->
         <div>
             <label for="default" class="form-check mt-1 mb-3">
                 <input type="checkbox" id="default" name="default" {{ if .Repository.IsDefaultRepository }}checked{{ end }} class="form-check-input" />
                 <span class="form-check-label ms-1">Default</span>
             </label>
         </div>
-
-        <!-- Buttons -->
         <div class="flex space-x-4">
             <button type="submit" hx-post="/settings/repository/{{ .Repository.Name }}" class="btn btn-primary {{ if .ShowConflicts }}disabled{{ end }}">Submit</button>
             <a href="/settings" class="flex-grow-1 align-items-center gap-1 btn">Cancel</a>
         </div>
-        </div>
     </form>
 </div>
-
-{{end}}
+{{ end }}
