@@ -6,6 +6,8 @@ import (
 	"slices"
 	"strings"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/names"
 	"go.uber.org/multierr"
@@ -114,13 +116,10 @@ func (dm *DependendcyManager) NewGraph(ctx context.Context) (*graph.DependencyGr
 			// A package that is currently being deleted is added to the graph, but in a state representing
 			// "not installed"
 			installedVersion = ""
-		} else if pi, err := dm.pkgClient.GetPackageInfo(ctx, names.PackageInfoName(pkg)); err != nil {
+		} else if mf, err := dm.getManifest(ctx, pkg); err != nil {
 			return nil, err
-		} else if pi.Status.Manifest != nil {
-			manifest = *pi.Status.Manifest
 		} else {
-			// if there is no PI manfest, we create a "fake" manifest that has only the name
-			manifest = v1alpha1.PackageManifest{Name: pkg.GetSpec().PackageInfo.Name}
+			manifest = *mf
 		}
 		if pkg.IsNamespaceScoped() {
 			if err := g.AddNamespaced(
@@ -241,5 +240,16 @@ func (dm *DependendcyManager) getVersions(name string) ([]*semver.Version, error
 			}
 		}
 		return parsedVersions, nil
+	}
+}
+
+func (dm *DependendcyManager) getManifest(ctx context.Context, pkg ctrlpkg.Package) (*v1alpha1.PackageManifest, error) {
+	if pi, err :=
+		dm.pkgClient.GetPackageInfo(ctx, names.PackageInfoName(pkg)); err != nil && !apierrors.IsNotFound(err) {
+		return nil, err
+	} else if apierrors.IsNotFound(err) || (err == nil && pi.Status.Manifest == nil) {
+		return dm.repoAdapter.GetManifest(pkg.GetSpec().PackageInfo.Name, pkg.GetSpec().PackageInfo.Version)
+	} else {
+		return pi.Status.Manifest, nil
 	}
 }
