@@ -10,33 +10,31 @@
           {{ range .Repositories }}
             <div class="col">
               <div class="card bg-body-secondary h-100 border-primary border-1">
-                <a 
-                class="flex-grow-1 d-flex align-items-center gap-1 text-reset text-decoration-none p-1"
-                href="/settings/repository/{{ .Name }}"
-                hx-select="main"
-                hx-target="main"
-                hx-swap="outerHTML"
-                hx-boost="true"
-                >
-                <div class="card-body d-flex flex-row p-2">
-                  
-                  <div class="mx-1 align-self-center">
-                    {{ if IsRepoStatusReady . }}
-                      <i class="bi bi-circle-fill text-success" title="Ready"></i>
-                    {{ else }}
-                      <i class="bi bi-circle-fill text-danger" title="Not Ready"></i>
-                    {{ end }}
-                  </div>
-                  <div class="ms-2 d-flex flex-column">
-                    <span class="fw-semibold">
-                      {{ .Name }}
-                      {{ if .IsDefaultRepository }}
-                        <span class="badge bg-primary">Default</span>
+                <a
+                  class="flex-grow-1 d-flex align-items-center gap-1 text-reset text-decoration-none p-1"
+                  href="/settings/repository/{{ .Name }}"
+                  hx-select="main"
+                  hx-target="main"
+                  hx-swap="outerHTML"
+                  hx-boost="true">
+                  <div class="card-body d-flex flex-row p-2">
+                    <div class="mx-1 align-self-center">
+                      {{ if IsRepoStatusReady . }}
+                        <i class="bi bi-circle-fill text-success" title="Ready"></i>
+                      {{ else }}
+                        <i class="bi bi-circle-fill text-danger" title="Not Ready"></i>
                       {{ end }}
-                    </span>
-                    <span class="small lh-sm fw-normal" id="url">{{ .Spec.Url }}</span>
+                    </div>
+                    <div class="ms-2 d-flex flex-column">
+                      <span class="fw-semibold">
+                        {{ .Name }}
+                        {{ if .IsDefaultRepository }}
+                          <span class="badge bg-primary">Default</span>
+                        {{ end }}
+                      </span>
+                      <span class="small lh-sm fw-normal" id="url">{{ .Spec.Url }}</span>
+                    </div>
                   </div>
-                </div>
                 </a>
               </div>
             </div>
