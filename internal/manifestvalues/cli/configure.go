@@ -1,7 +1,9 @@
 package cli
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -10,6 +12,10 @@ import (
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/manifestvalues"
 	"github.com/glasskube/glasskube/internal/maputils"
+	"github.com/glasskube/glasskube/internal/util"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/renderer"
+	goldmarkutil "github.com/yuin/goldmark/util"
 )
 
 var (
@@ -129,7 +135,23 @@ func printHeader(name string, def v1alpha1.ValueDefinition) {
 	}
 	fmt.Fprintln(os.Stderr, bold(title))
 	if len(def.Metadata.Description) > 0 {
-		fmt.Fprintln(os.Stderr, def.Metadata.Description)
+		printMarkdown(os.Stderr, def.Metadata.Description)
+	}
+}
+
+func printMarkdown(w io.Writer, text string) {
+	md := goldmark.New(
+		goldmark.WithRenderer(renderer.NewRenderer(
+			renderer.WithNodeRenderers(
+				goldmarkutil.Prioritized(cliutils.MarkdownRenderer(), 1000),
+			),
+		)),
+	)
+	var buf bytes.Buffer
+	if err := md.Convert([]byte(text), &buf); err != nil {
+		util.Must(fmt.Fprintln(w, text))
+	} else {
+		util.Must(fmt.Fprintln(w, strings.TrimSpace(buf.String())))
 	}
 }
 
