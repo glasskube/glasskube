@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -82,26 +83,29 @@ var bootstrapGitCmd = &cobra.Command{
 			cancel()
 		}
 
-		// regularly bootstrap in the cluster
-		// without a git client, this means it only supports GitHub for now
-		host := "raw.githubusercontent.com"
+		// build url to fetch glasskube manifests from
+		bootstrapGitCmdOptions.url, _ = strings.CutSuffix(bootstrapGitCmdOptions.url, ".git")
+		baseURL, err := url.Parse(bootstrapGitCmdOptions.url)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "could not parse URL: %v\n", err)
+			cliutils.ExitWithError()
+		}
+		baseURL.Host = "raw.githubusercontent.com" // without a git client, this means it only supports GitHub for now
 		if bootstrapGitCmdOptions.token != "" {
-			// might also be GitHub specific? a more proper way for the future could be to send it via the
-			// Authorization header instead, but that would also have to be supported by the BootstrapClient
-			host = bootstrapGitCmdOptions.token + "@" + host
+			baseURL.User = url.UserPassword(bootstrapGitCmdOptions.username, bootstrapGitCmdOptions.token)
 		}
-		basePath := strings.ReplaceAll(bootstrapGitCmdOptions.url, "github.com", host)
-		branchPath := "/main"
+		branchPath := "main"
 		if bootstrapGitCmdOptions.branch != "" {
-			branchPath = "/" + bootstrapGitCmdOptions.branch
+			branchPath = bootstrapGitCmdOptions.branch
 		}
-		basePath = basePath + branchPath
-		manifestsPath := fmt.Sprintf("%v/bootstrap/glasskube/glasskube.yaml", basePath)
-		_, err := bootstrapClient.Bootstrap(ctx, bootstrap.BootstrapOptions{
-			Url:        manifestsPath,
+		baseURL = baseURL.JoinPath(branchPath)
+
+		manifestsURL := baseURL.JoinPath("bootstrap", "glasskube", "glasskube.yaml")
+		// regularly bootstrap in the cluster
+		_, err = bootstrapClient.Bootstrap(ctx, bootstrap.BootstrapOptions{
+			Url:        manifestsURL.String(),
 			Type:       bootstrap.BootstrapTypeAio,
 			GitopsMode: true,
-			Force:      true,
 		})
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "\nAn error occurred during bootstrap:\n%v\n", err)
@@ -112,7 +116,7 @@ var bootstrapGitCmd = &cobra.Command{
 		cliutils.SetupClientContext(true, util.Pointer(true))(cmd, make([]string, 0))
 
 		// get defined argo-cd version and repo from repo:
-		argocdPath := fmt.Sprintf("%v/packages/argo-cd/clusterpackage.yaml", basePath)
+		argocdPath := baseURL.JoinPath("packages", "argo-cd", "clusterpackage.yaml").String()
 		argocdVersion := "v2.11.7+1"
 		argocdRepo := "glasskube"
 		if objs, err := clientutils.FetchResources(argocdPath); err != nil {
@@ -178,7 +182,8 @@ var bootstrapGitCmd = &cobra.Command{
 		}
 
 		// apply bootstrap/glasskube-application.yaml into the cluster
-		appPath := fmt.Sprintf("%v/bootstrap/glasskube-application.yaml", basePath)
+		// appPath := fmt.Sprintf("%v/bootstrap/glasskube-application.yaml", baseURL.String())
+		appPath := baseURL.JoinPath("bootstrap", "glasskube-application.yaml").String()
 		if objs, err := clientutils.FetchResources(appPath); err != nil {
 			fmt.Fprintf(os.Stderr, "\nAn error occurred fetching the bootstrap application:\n%v\n", err)
 			cliutils.ExitWithError()

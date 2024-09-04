@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"time"
@@ -121,7 +122,14 @@ func (c *BootstrapClient) Bootstrap(
 		fmt.Fprintln(os.Stderr, installMessage)
 	}
 
-	statusMessage("Fetching Glasskube manifest from "+options.Url, true, options.NoProgress)
+	parsedUrl, err := url.Parse(options.Url)
+	if err != nil {
+		statusMessage("Couldn't parse Glasskube manifest url", false, false)
+		telemetry.BootstrapFailure(time.Since(start))
+		return nil, err
+	}
+
+	statusMessage("Fetching Glasskube manifest from "+parsedUrl.Redacted(), true, options.NoProgress)
 	manifests, err := clientutils.FetchResources(options.Url)
 	if err != nil {
 		statusMessage("Couldn't fetch Glasskube manifests", false, false)
@@ -172,6 +180,11 @@ func (c *BootstrapClient) preprocessManifests(
 		gvk := obj.GroupVersionKind()
 		mapping, err := c.Mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 		if err != nil {
+			var noKindMatchErr *meta.NoKindMatchError
+			if errors.Is(err, noKindMatchErr) {
+				// if the kind doesn't exist yet, there is nothing of that kind that can exist -> ignorable here
+				continue
+			}
 			return err
 		}
 		existing, err := c.Client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).
