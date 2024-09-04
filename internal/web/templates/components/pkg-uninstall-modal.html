@@ -26,9 +26,9 @@
               <div class="alert alert-warning m-0" role="alert">
                 <div>The following packages will be <strong>removed</strong> from your cluster:</div>
                 <ul class="m-0 mt-1">
-                  <li>{{ template "pkg-uninstall-pkg-name" . }} (requested by user)</li>
+                  <li><strong>{{ template "pkg-uninstall-pkg-name" . }}</strong> (requested by user)</li>
                   {{ range .Pruned }}
-                    <li>{{ . }} (dependency)</li>
+                    <li><strong>{{ . }}</strong> (no longer needed)</li>
                   {{ end }}
                 </ul>
               </div>
