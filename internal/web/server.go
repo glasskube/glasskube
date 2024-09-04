@@ -1109,7 +1109,7 @@ func (s *server) getUpdateRepositoryConfig(w http.ResponseWriter, r *http.Reques
 	var err error
 
 	if err := s.pkgClient.PackageRepositories().Get(r.Context(), repoName, &repo); err != nil {
-		toast.WithStatusCode(http.StatusNotFound)
+		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch repositories: %w", err)))
 		return
 	}
 
@@ -1124,12 +1124,12 @@ func (s *server) getUpdateRepositoryConfig(w http.ResponseWriter, r *http.Reques
 		if errors.Is(err, cliutils.NoDefaultRepo) {
 			repo.SetDefaultRepository()
 		} else if err != nil {
-			toast.WithStatusCode(http.StatusNotFound)
+			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch repositories: %w", err)))
 			return
 		} else if defaultRepo.Name != repoName {
 			defaultRepo.SetDefaultRepositoryBool(false)
 			if err := s.pkgClient.PackageRepositories().Update(r.Context(), defaultRepo, opts); err != nil {
-				toast.WithStatusCode(http.StatusBadRequest)
+				s.sendToast(w, toast.WithErr(fmt.Errorf(" error updating current default package repository: %v", err)))
 				return
 			}
 			repo.SetDefaultRepository()
@@ -1137,19 +1137,16 @@ func (s *server) getUpdateRepositoryConfig(w http.ResponseWriter, r *http.Reques
 	}
 
 	if err := s.pkgClient.PackageRepositories().Update(r.Context(), &repo, opts); err != nil {
-		toast.WithStatusCode(http.StatusBadRequest)
-
+		s.sendToast(w, toast.WithErr(fmt.Errorf(" error updating the package repository: %v", err)))
 		if checkDefault == "on" && defaultRepo != nil && defaultRepo.Name != repoName {
 			defaultRepo.SetDefaultRepositoryBool(true)
 			if err := s.pkgClient.PackageRepositories().Update(r.Context(), defaultRepo, opts); err != nil {
-				toast.WithStatusCode(http.StatusBadRequest)
+				s.sendToast(w, toast.WithErr(fmt.Errorf(" error rolling back to default package repository: %v", err)))
 			}
 		}
 		return
 	}
-
-	toast.WithStatusCode(http.StatusOK)
-
+	s.swappingRedirect(w, "/settings", "main", "main")
 }
 
 func (s *server) enrichPage(r *http.Request, data map[string]any, err error) map[string]any {
