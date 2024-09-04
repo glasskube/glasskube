@@ -3,7 +3,6 @@ package plain
 import (
 	"context"
 	"fmt"
-	"net/url"
 
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clientutils"
@@ -155,6 +154,10 @@ func (r *Adapter) reconcilePlainManifest(
 		}
 	}
 
+	if err := newPrefixer(r).prefixAndUpdateReferences(pkg, pi.Status.Manifest, objectsToApply); err != nil {
+		return nil, err
+	}
+
 	ownedResources := make([]packagesv1alpha1.OwnedResourceRef, 0, len(objectsToApply))
 	for _, obj := range objectsToApply {
 		if err := r.Patch(ctx, obj, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
@@ -167,20 +170,4 @@ func (r *Adapter) reconcilePlainManifest(
 		}
 	}
 	return ownedResources, nil
-}
-
-func getActualManifestUrl(pi *packagesv1alpha1.PackageInfo, urlOrPath string) (string, error) {
-	if parsedUrl, err := url.Parse(urlOrPath); err != nil {
-		return "", err
-	} else if parsedUrl.Scheme == "" && parsedUrl.Host == "" {
-		if parsedBase, err := url.Parse(pi.Status.ResolvedUrl); err != nil {
-			return "", err
-		} else if ref, err := parsedBase.Parse(urlOrPath); err != nil {
-			return "", err
-		} else {
-			return ref.String(), nil
-		}
-	} else {
-		return urlOrPath, nil
-	}
 }
