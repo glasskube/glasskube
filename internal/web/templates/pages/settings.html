@@ -1,5 +1,5 @@
 {{ define "content" }}
-  <div class="container-lg mt-2">
+  <div class="container-lg mt-2" id="settings">
     <div class="row p-3 col-lg-10 offset-lg-1">
       <div>
         <h2 class="text-reset">Package Repositories</h2>
@@ -10,7 +10,16 @@
           {{ range .Repositories }}
             <div class="col">
               <div class="card bg-body-secondary h-100 border-primary border-1">
+                <a 
+                class="flex-grow-1 d-flex align-items-center gap-1 text-reset text-decoration-none p-1"
+                href="/settings/repository/{{ .Name }}"
+                hx-select="main"
+                hx-target="main"
+                hx-swap="outerHTML"
+                hx-boost="true"
+                >
                 <div class="card-body d-flex flex-row p-2">
+                  
                   <div class="mx-1 align-self-center">
                     {{ if IsRepoStatusReady . }}
                       <i class="bi bi-circle-fill text-success" title="Ready"></i>
@@ -25,9 +34,10 @@
                         <span class="badge bg-primary">Default</span>
                       {{ end }}
                     </span>
-                    <span class="small lh-sm fw-normal">{{ .Spec.Url }}</span>
+                    <span class="small lh-sm fw-normal" id="url">{{ .Spec.Url }}</span>
                   </div>
                 </div>
+                </a>
               </div>
             </div>
           {{ end }}

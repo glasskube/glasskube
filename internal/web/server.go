@@ -233,6 +233,7 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle("/datalists/{valueName}/keys", s.requireReady(s.keysDatalist))
 	// settings
 	router.Handle("/settings", s.requireReady(s.settingsPage))
+	router.Handle("/settings/repository/{repoName}", s.requireReady(s.repositoryConfig))
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/clusterpackages", http.StatusFound)
 	})
@@ -1071,6 +1072,84 @@ func (s *server) settingsPage(w http.ResponseWriter, r *http.Request) {
 		"Repositories": repos.Items,
 	}, nil))
 	util.CheckTmplError(tmplErr, "settings")
+}
+
+func (s *server) repositoryConfig(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		s.getHandleRepositoryConfig(w, r)
+	case http.MethodPost:
+		s.getUpdateRepositoryConfig(w, r)
+	}
+
+}
+
+func (s *server) getHandleRepositoryConfig(w http.ResponseWriter, r *http.Request) {
+	repoName := mux.Vars(r)["repoName"]
+	var repo v1alpha1.PackageRepository
+	if err := s.pkgClient.PackageRepositories().Get(r.Context(), repoName, &repo); err != nil {
+		// error handling
+		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch repositories: %w", err)))
+		return
+	}
+	tmplErr := s.templates.repositoryPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
+		"Repository": repo,
+	}, nil))
+	util.CheckTmplError(tmplErr, "repository")
+
+}
+
+func (s *server) getUpdateRepositoryConfig(w http.ResponseWriter, r *http.Request) {
+	repoName := mux.Vars(r)["repoName"]
+	url := r.FormValue("url")
+	checkDefault := r.FormValue("default")
+	opts := metav1.UpdateOptions{}
+	var repo v1alpha1.PackageRepository
+	var defaultRepo *v1alpha1.PackageRepository
+	var err error
+
+	if err := s.pkgClient.PackageRepositories().Get(r.Context(), repoName, &repo); err != nil {
+		toast.WithStatusCode(http.StatusNotFound)
+		return
+	}
+
+	if url != "" {
+		repo.Spec.Url = url
+	}
+
+	repo.Spec.Auth = nil
+
+	if checkDefault == "on" {
+		defaultRepo, err = cliutils.GetDefaultRepo(r.Context())
+		if errors.Is(err, cliutils.NoDefaultRepo) {
+			repo.SetDefaultRepository()
+		} else if err != nil {
+			toast.WithStatusCode(http.StatusNotFound)
+			return
+		} else if defaultRepo.Name != repoName {
+			defaultRepo.SetDefaultRepositoryBool(false)
+			if err := s.pkgClient.PackageRepositories().Update(r.Context(), defaultRepo, opts); err != nil {
+				toast.WithStatusCode(http.StatusBadRequest)
+				return
+			}
+			repo.SetDefaultRepository()
+		}
+	}
+
+	if err := s.pkgClient.PackageRepositories().Update(r.Context(), &repo, opts); err != nil {
+		toast.WithStatusCode(http.StatusBadRequest)
+
+		if checkDefault == "on" && defaultRepo != nil && defaultRepo.Name != repoName {
+			defaultRepo.SetDefaultRepositoryBool(true)
+			if err := s.pkgClient.PackageRepositories().Update(r.Context(), defaultRepo, opts); err != nil {
+				toast.WithStatusCode(http.StatusBadRequest)
+			}
+		}
+		return
+	}
+
+	toast.WithStatusCode(http.StatusOK)
+
 }
 
 func (s *server) enrichPage(r *http.Request, data map[string]any, err error) map[string]any {
