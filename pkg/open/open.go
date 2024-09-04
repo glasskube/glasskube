@@ -48,41 +48,15 @@ func (o *opener) Open(
 		return nil, err
 	}
 
-	manifest, err := manifest.GetInstalledManifestForPackage(ctx, pkg)
+	manifest, namespace, err := o.prepareOpen(ctx, pkg, entrypointName, port)
 	if err != nil {
-		return nil, fmt.Errorf("could not get PackageInfo for %v %v: %w", pkg.GetSpec().PackageInfo.Name, pkg.GetName(), err)
-	}
-
-	if len(manifest.Entrypoints) < 1 {
-		return nil, fmt.Errorf("package has no entrypoint")
-	}
-
-	if port != 0 && len(manifest.Entrypoints) > 1 && entrypointName == "" {
-		return nil, fmt.Errorf("package has more than one entrypoint: %w", err)
-	}
-
-	if entrypointName != "" {
-		exists := false
-		for _, entrypoint := range manifest.Entrypoints {
-			if entrypoint.Name == entrypointName {
-				exists = true
-				break
-			}
-		}
-		if !exists {
-			return nil, fmt.Errorf("package has no entrypoint %v", entrypointName)
-		}
-	}
-
-	namespace := pkg.GetNamespace()
-	if namespace == "" {
-		namespace = manifest.DefaultNamespace
+		return nil, err
 	}
 
 	result := OpenResult{opener: o}
 	var futures []future.Future
 	for _, entrypoint := range manifest.Entrypoints {
-		if entrypointName == "" || entrypoint.Name == entrypointName {
+		if entrypointMatches(entrypointName, entrypoint) {
 			e := entrypoint
 			if port != 0 {
 				e.LocalPort = port
@@ -111,6 +85,46 @@ func (o *opener) Open(
 	result.Completion = future.All(futures...)
 
 	return &result, nil
+}
+
+func (o *opener) prepareOpen(
+	ctx context.Context,
+	pkg ctrlpkg.Package,
+	entrypointName string,
+	port int32,
+) (*v1alpha1.PackageManifest, string, error) {
+	manifest, err := manifest.GetInstalledManifestForPackage(ctx, pkg)
+	if err != nil {
+		return nil, "", fmt.Errorf("could not get PackageInfo for %v %v: %w",
+			pkg.GetSpec().PackageInfo.Name, pkg.GetName(), err)
+	}
+
+	if len(manifest.Entrypoints) < 1 {
+		return nil, "", fmt.Errorf("package has no entrypoint")
+	}
+
+	if port != 0 && len(manifest.Entrypoints) > 1 && entrypointName == "" {
+		return nil, "", fmt.Errorf("package has more than one entrypoint: %w", err)
+	}
+
+	if entrypointName != "" {
+		exists := false
+		for _, entrypoint := range manifest.Entrypoints {
+			if entrypoint.Name == entrypointName {
+				exists = true
+				break
+			}
+		}
+		if !exists {
+			return nil, "", fmt.Errorf("package has no entrypoint %v", entrypointName)
+		}
+	}
+
+	namespace := pkg.GetNamespace()
+	if namespace == "" {
+		namespace = manifest.DefaultNamespace
+	}
+	return manifest, namespace, nil
 }
 
 func (o *opener) initFromContext(ctx context.Context) error {
@@ -161,11 +175,7 @@ func (o *opener) open(
 		return nil, err
 	}
 
-	svc, err := o.service(ctx, pkg, manifest, namespace, entrypoint)
-	if err != nil {
-		return nil, err
-	}
-	pod, err := o.pod(ctx, svc)
+	svc, pod, err := o.findServiceAndPod(ctx, pkg, manifest, namespace, entrypoint)
 	if err != nil {
 		return nil, err
 	}
@@ -236,6 +246,48 @@ func (o *opener) service(
 	}
 
 	return nil, fmt.Errorf("could not find service: %w", errs)
+}
+
+func (o *opener) HasReadyPod(
+	ctx context.Context,
+	pkg ctrlpkg.Package,
+	entrypointName string,
+	port int32,
+) (bool, error) {
+	if err := o.initFromContext(ctx); err != nil {
+		return false, err
+	} else if manifest, namespace, err := o.prepareOpen(ctx, pkg, entrypointName, port); err != nil {
+		return false, err
+	} else {
+		for _, entrypoint := range manifest.Entrypoints {
+			if entrypointMatches(entrypointName, entrypoint) {
+				if _, _, err := o.findServiceAndPod(ctx, pkg, manifest, namespace, entrypoint); err != nil {
+					return false, err
+				} else {
+					return true, nil
+				}
+			}
+		}
+		return false, fmt.Errorf("could not find entrypoint %v", entrypointName)
+	}
+}
+
+func (o *opener) findServiceAndPod(
+	ctx context.Context,
+	pkg ctrlpkg.Package,
+	manifest *v1alpha1.PackageManifest,
+	namespace string,
+	entrypoint v1alpha1.PackageEntrypoint,
+) (*corev1.Service, *corev1.Pod, error) {
+	svc, err := o.service(ctx, pkg, manifest, namespace, entrypoint)
+	if err != nil {
+		return nil, nil, err
+	}
+	pod, err := o.pod(ctx, svc)
+	if err != nil {
+		return svc, nil, err
+	}
+	return svc, pod, nil
 }
 
 func (o *opener) pod(ctx context.Context, service *corev1.Service) (*corev1.Pod, error) {
@@ -344,4 +396,8 @@ func isPodReady(pod corev1.Pod) bool {
 		}
 	}
 	return false
+}
+
+func entrypointMatches(entrypointName string, entrypoint v1alpha1.PackageEntrypoint) bool {
+	return entrypointName == "" || entrypoint.Name == entrypointName
 }
