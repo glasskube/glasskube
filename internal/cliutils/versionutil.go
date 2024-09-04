@@ -15,7 +15,9 @@ func CheckPackageOperatorVersion(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if operatorVersion[1:] != config.Version {
+	if config.IsDevBuild() && operatorVersion != "" {
+		fmt.Fprintf(os.Stderr, "❗ Glasskube CLI version is dev but the operator version is %s\n", operatorVersion[1:])
+	} else if operatorVersion[1:] != config.Version {
 		fmt.Fprintf(os.Stderr, "❗ Glasskube PackageOperator needs to be updated: %s -> %s\n", operatorVersion[1:], config.Version)
 		fmt.Fprintf(os.Stderr, "💡 Please run `glasskube bootstrap` again to update Glasskube PackageOperator\n")
 	}
