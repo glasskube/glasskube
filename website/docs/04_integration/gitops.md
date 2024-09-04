@@ -1,7 +1,7 @@
 # GitOps
 
-All Glasskube features can be used in GitOps powered environments, as all of the internal logic is built upon custom resource definitions.
-For example, an installation of a clusterpackage is being represented by a `ClusterPackage` custom resource in your cluster. The same
+All Glasskube features can be used in GitOps powered environments, as all the internal logic is built upon custom resource definitions.
+For example, an installation of a cluster package is being represented by a `ClusterPackage` custom resource in your cluster. The same
 goes for `Package` and `PackageRepository` resources.
 
 In our [GitOps template](https://github.com/glasskube/gitops-template) we explain how Glasskube can be set up together with ArgoCD,
