@@ -11,6 +11,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"slices"
@@ -1101,7 +1102,7 @@ func (s *server) getHandleRepositoryConfig(w http.ResponseWriter, r *http.Reques
 
 func (s *server) getUpdateRepositoryConfig(w http.ResponseWriter, r *http.Request) {
 	repoName := mux.Vars(r)["repoName"]
-	url := r.FormValue("url")
+	repoUrl := r.FormValue("url")
 	checkDefault := r.FormValue("default")
 	opts := metav1.UpdateOptions{}
 	var repo v1alpha1.PackageRepository
@@ -1113,8 +1114,12 @@ func (s *server) getUpdateRepositoryConfig(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if url != "" {
-		repo.Spec.Url = url
+	if repoUrl != "" {
+		if _, err := url.ParseRequestURI(repoUrl); err != nil {
+			s.sendToast(w, toast.WithErr(fmt.Errorf("use a valid URL for the package repository (got %v)", err)))
+			return
+		}
+		repo.Spec.Url = repoUrl
 	}
 
 	repo.Spec.Auth = nil
