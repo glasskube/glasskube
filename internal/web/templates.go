@@ -41,6 +41,7 @@ type templates struct {
 	bootstrapPageTmpl       *template.Template
 	kubeconfigPageTmpl      *template.Template
 	settingsPageTmpl        *template.Template
+	repositoryPageTmpl      *template.Template
 	pkgDetailHeaderTmpl     *template.Template
 	pkgUpdateModalTmpl      *template.Template
 	pkgConfigInput          *template.Template
@@ -155,6 +156,7 @@ func (t *templates) parseTemplates() {
 	t.bootstrapPageTmpl = t.pageTmpl("bootstrap.html")
 	t.kubeconfigPageTmpl = t.pageTmpl("kubeconfig.html")
 	t.settingsPageTmpl = t.pageTmpl("settings.html")
+	t.repositoryPageTmpl = t.pageTmpl("repository.html")
 	t.pkgDetailHeaderTmpl = t.componentTmpl("pkg-detail-header", "pkg-detail-btns")
 	t.pkgUpdateModalTmpl = t.componentTmpl("pkg-update-modal")
 	t.pkgConfigInput = t.componentTmpl("pkg-config-input", "datalist")
