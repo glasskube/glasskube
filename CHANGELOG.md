@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.19.1](https://github.com/glasskube/glasskube/compare/v0.19.0...v0.19.1) (2024-09-05)
+
+
+### Docs
+
+* **website:** added helloGitHub badge to readme ([#1189](https://github.com/glasskube/glasskube/issues/1189)) ([f13571b](https://github.com/glasskube/glasskube/commit/f13571b93797cbe598ff89780632ebfcde8243e5))
+* **website:** added Series A IDP blog post to blog section ([#1080](https://github.com/glasskube/glasskube/issues/1080)) ([5c6892f](https://github.com/glasskube/glasskube/commit/5c6892f77fbd231032f97a1b9988aecd078ca5c3))
+
 ## [0.19.0](https://github.com/glasskube/glasskube/compare/v0.18.1...v0.19.0) (2024-09-05)
 
 
