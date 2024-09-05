@@ -111,8 +111,8 @@ func (s *PackageScope) IsNamespaced() bool {
 }
 
 type TransitiveResource struct {
-	metav1.GroupKind
-	Name string `json:"name" jsonschema:"required"`
+	metav1.GroupVersionKind `json:",inline"`
+	Name                    string `json:"name" jsonschema:"required"`
 }
 
 type PackageManifest struct {

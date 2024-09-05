@@ -254,6 +254,24 @@ spec:
                     type: string
                   shortDescription:
                     type: string
+                  transitiveResources:
+                    items:
+                      properties:
+                        group:
+                          type: string
+                        kind:
+                          type: string
+                        name:
+                          type: string
+                        version:
+                          type: string
+                      required:
+                      - group
+                      - kind
+                      - name
+                      - version
+                      type: object
+                    type: array
                   valueDefinitions:
                     additionalProperties:
                       properties:

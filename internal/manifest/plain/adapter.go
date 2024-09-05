@@ -154,8 +154,10 @@ func (r *Adapter) reconcilePlainManifest(
 		}
 	}
 
-	if err := newPrefixer(r).prefixAndUpdateReferences(pkg, pi.Status.Manifest, objectsToApply); err != nil {
+	if objs, err := prefixAndUpdateReferences(pkg, pi.Status.Manifest, objectsToApply); err != nil {
 		return nil, err
+	} else {
+		objectsToApply = objs
 	}
 
 	ownedResources := make([]packagesv1alpha1.OwnedResourceRef, 0, len(objectsToApply))
