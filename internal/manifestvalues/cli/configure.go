@@ -151,7 +151,7 @@ func printMarkdown(w io.Writer, text string) {
 	if err := md.Convert([]byte(text), &buf); err != nil {
 		util.Must(fmt.Fprintln(w, text))
 	} else {
-		util.Must(fmt.Fprintln(w, strings.TrimSpace(buf.String())))
+		util.Must(fmt.Fprint(w, strings.TrimSpace(buf.String())+"\n\n"))
 	}
 }
 
