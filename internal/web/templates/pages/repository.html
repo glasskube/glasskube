@@ -20,7 +20,7 @@
             type="checkbox"
             id="default"
             name="default"
-            {{ if .Repository.IsDefaultRepository }}checked{{ end }}
+            {{ if .Repository.IsDefaultRepository }}checked disabled{{ end }}
             class="form-check-input" />
           <span class="form-check-label ms-1">Default</span>
         </label>
