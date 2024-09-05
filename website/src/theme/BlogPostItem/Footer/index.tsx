@@ -9,6 +9,7 @@ import { BlogDiscussion } from '@site/src/components/GiscusWrapper';
 
 export default function BlogPostItemFooter(): JSX.Element | null {
   const {metadata, isBlogPostPage} = useBlogPost();
+  const {enableComments = true} = metadata.frontMatter;
   const {
     tags,
     title,
@@ -58,7 +59,7 @@ export default function BlogPostItemFooter(): JSX.Element | null {
             lastUpdatedBy={lastUpdatedBy}
           />
         )}
-        <BlogDiscussion />
+         {enableComments && <BlogDiscussion />}
       </footer>
     );
   }
