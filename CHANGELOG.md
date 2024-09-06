@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.20.1](https://github.com/glasskube/glasskube/compare/v0.20.0...v0.20.1) (2024-09-06)
+
+
+### Bug Fixes
+
+* **cli:** fix typo in homebrew completion command ([#1200](https://github.com/glasskube/glasskube/issues/1200)) ([1a2e841](https://github.com/glasskube/glasskube/commit/1a2e841c8cf37d50f91acfcbec70283e469e7ec1))
+
 ## [0.20.0](https://github.com/glasskube/glasskube/compare/v0.19.2...v0.20.0) (2024-09-06)
 
 
