@@ -14,7 +14,7 @@ import (
 	"github.com/glasskube/glasskube/internal/manifest"
 	"github.com/glasskube/glasskube/internal/manifest/result"
 	"github.com/glasskube/glasskube/internal/manifestvalues"
-	v1 "k8s.io/api/apps/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -74,7 +74,7 @@ func (a *Adapter) Reconcile(
 		namespacedName := types.NamespacedName{Namespace: ownedResourceRef.Namespace, Name: ownedResourceRef.Name}
 		switch ownedResourceRef.Kind {
 		case constants.Deployment:
-			deployment := v1.Deployment{}
+			deployment := appsv1.Deployment{}
 			if err := a.Get(ctx, namespacedName, &deployment); err != nil {
 				return nil, fmt.Errorf("failed to get Deployment %v for status check: %w", namespacedName, err)
 			}
@@ -83,7 +83,7 @@ func (a *Adapter) Reconcile(
 				notReadyNames = append(notReadyNames, namespacedName.String())
 			}
 		case constants.StatefulSet:
-			statefulSet := v1.StatefulSet{}
+			statefulSet := appsv1.StatefulSet{}
 			if err := a.Get(ctx, namespacedName, &statefulSet); err != nil {
 				return nil, fmt.Errorf("failed to get StatefulSet for status check: %w", err)
 			}
