@@ -171,7 +171,7 @@ brews:
     install: |
       bin.install "glasskube"
     post_install: |
-      generate_completions_from_executable(bin/"glasskube", "completions")
+      generate_completions_from_executable(bin/"glasskube", "completion")
     skip_upload: "auto"
 
 release:
