@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.2](https://github.com/glasskube/glasskube/compare/v0.19.1...v0.19.2) (2024-09-06)
+
+
+### Bug Fixes
+
+* **build:** fix completions ([#1193](https://github.com/glasskube/glasskube/issues/1193)) ([54b2d3e](https://github.com/glasskube/glasskube/commit/54b2d3edeb42de25b1846cef688686ba704214cf))
+
 ## [0.19.1](https://github.com/glasskube/glasskube/compare/v0.19.0...v0.19.1) (2024-09-05)
 
 
