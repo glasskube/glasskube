@@ -3,25 +3,23 @@ package plain
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"strings"
-
-	"github.com/glasskube/glasskube/internal/constants"
-	v1 "k8s.io/api/apps/v1"
-	"k8s.io/apimachinery/pkg/types"
 
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clientutils"
+	"github.com/glasskube/glasskube/internal/constants"
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/controller/owners"
 	ownerutils "github.com/glasskube/glasskube/internal/controller/owners/utils"
 	"github.com/glasskube/glasskube/internal/manifest"
 	"github.com/glasskube/glasskube/internal/manifest/result"
 	"github.com/glasskube/glasskube/internal/manifestvalues"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -76,7 +74,7 @@ func (a *Adapter) Reconcile(
 		namespacedName := types.NamespacedName{Namespace: ownedResourceRef.Namespace, Name: ownedResourceRef.Name}
 		switch ownedResourceRef.Kind {
 		case constants.Deployment:
-			deployment := v1.Deployment{}
+			deployment := appsv1.Deployment{}
 			if err := a.Get(ctx, namespacedName, &deployment); err != nil {
 				return nil, fmt.Errorf("failed to get Deployment %v for status check: %w", namespacedName, err)
 			}
@@ -85,7 +83,7 @@ func (a *Adapter) Reconcile(
 				notReadyNames = append(notReadyNames, namespacedName.String())
 			}
 		case constants.StatefulSet:
-			statefulSet := v1.StatefulSet{}
+			statefulSet := appsv1.StatefulSet{}
 			if err := a.Get(ctx, namespacedName, &statefulSet); err != nil {
 				return nil, fmt.Errorf("failed to get StatefulSet for status check: %w", err)
 			}
@@ -197,6 +195,12 @@ func (r *Adapter) reconcilePlainManifest(
 		}
 	}
 
+	if objs, err := prefixAndUpdateReferences(pkg, pi.Status.Manifest, objectsToApply); err != nil {
+		return nil, err
+	} else {
+		objectsToApply = objs
+	}
+
 	ownedResources := make([]packagesv1alpha1.OwnedResourceRef, 0, len(objectsToApply))
 	for _, obj := range objectsToApply {
 		if err := r.Patch(ctx, obj, client.Apply, fieldOwner, client.ForceOwnership); err != nil {
@@ -209,20 +213,4 @@ func (r *Adapter) reconcilePlainManifest(
 		}
 	}
 	return ownedResources, nil
-}
-
-func getActualManifestUrl(pi *packagesv1alpha1.PackageInfo, urlOrPath string) (string, error) {
-	if parsedUrl, err := url.Parse(urlOrPath); err != nil {
-		return "", err
-	} else if parsedUrl.Scheme == "" && parsedUrl.Host == "" {
-		if parsedBase, err := url.Parse(pi.Status.ResolvedUrl); err != nil {
-			return "", err
-		} else if ref, err := parsedBase.Parse(urlOrPath); err != nil {
-			return "", err
-		} else {
-			return ref.String(), nil
-		}
-	} else {
-		return urlOrPath, nil
-	}
 }

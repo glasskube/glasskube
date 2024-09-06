@@ -6,15 +6,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const (
-	autoUpdateAnnotation = "packages.glasskube.dev/auto-update"
-	dependencyAnnotation = "packages.glasskube.dev/installed-as-dependency"
-)
-
 func autoUpdatesEnabled(obj metav1.ObjectMeta) bool {
 	if obj.Annotations == nil {
 		return false
-	} else if enabledStr, ok := obj.Annotations[autoUpdateAnnotation]; !ok {
+	} else if enabledStr, ok := obj.Annotations[AnnotationAutoUpdate]; !ok {
 		return false
 	} else {
 		enabled, _ := strconv.ParseBool(enabledStr)
@@ -27,16 +22,16 @@ func setAutoUpdatesEnabled(obj *metav1.ObjectMeta, enabled bool) {
 		obj.Annotations = make(map[string]string)
 	}
 	if enabled {
-		obj.Annotations[autoUpdateAnnotation] = strconv.FormatBool(true)
+		obj.Annotations[AnnotationAutoUpdate] = strconv.FormatBool(true)
 	} else {
-		delete(obj.Annotations, autoUpdateAnnotation)
+		delete(obj.Annotations, AnnotationAutoUpdate)
 	}
 }
 
 func installedAsDependency(obj metav1.ObjectMeta) bool {
 	if obj.Annotations == nil {
 		return false
-	} else if enabledStr, ok := obj.Annotations[dependencyAnnotation]; !ok {
+	} else if enabledStr, ok := obj.Annotations[AnnotationInstalledAsDep]; !ok {
 		return false
 	} else {
 		enabled, _ := strconv.ParseBool(enabledStr)
@@ -49,9 +44,9 @@ func setInstalledAsDependency(obj *metav1.ObjectMeta, value bool) {
 		obj.Annotations = make(map[string]string)
 	}
 	if value {
-		obj.Annotations[dependencyAnnotation] = strconv.FormatBool(true)
+		obj.Annotations[AnnotationInstalledAsDep] = strconv.FormatBool(true)
 	} else {
-		delete(obj.Annotations, dependencyAnnotation)
+		delete(obj.Annotations, AnnotationInstalledAsDep)
 	}
 }
 

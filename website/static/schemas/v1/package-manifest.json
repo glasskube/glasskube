@@ -145,6 +145,30 @@
         "url"
       ]
     },
+    "TransitiveResource": {
+      "properties": {
+        "group": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "group",
+        "version",
+        "kind",
+        "name"
+      ]
+    },
     "TypedObjectReference": {
       "properties": {
         "apiGroup": {
@@ -329,6 +353,12 @@
         "$ref": "#/$defs/ValueDefinition"
       },
       "type": "object"
+    },
+    "transitiveResources": {
+      "items": {
+        "$ref": "#/$defs/TransitiveResource"
+      },
+      "type": "array"
     },
     "defaultNamespace": {
       "type": "string"
