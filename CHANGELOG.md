@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.20.0](https://github.com/glasskube/glasskube/compare/v0.19.2...v0.20.0) (2024-09-06)
+
+
+### Features
+
+* generate completions after brew install ([#1194](https://github.com/glasskube/glasskube/issues/1194)) ([5968273](https://github.com/glasskube/glasskube/commit/5968273c80cbaabf774166eff8d5fa26c958e739))
+* **package-controller:** add name prefixing of managed resources ([#1186](https://github.com/glasskube/glasskube/issues/1186)) ([5a2a7b7](https://github.com/glasskube/glasskube/commit/5a2a7b7a678d5c732580149e4a9db28b18516959))
+
+
+### Other
+
+* **deps:** update dependency @eslint/js to v9.10.0 ([#1199](https://github.com/glasskube/glasskube/issues/1199)) ([5cb7f5d](https://github.com/glasskube/glasskube/commit/5cb7f5df37a21695fbf13b5ef5adef18b312c0be))
+
+
+### Docs
+
+* **website:** add launch blog post ([#1182](https://github.com/glasskube/glasskube/issues/1182)) ([f8eb907](https://github.com/glasskube/glasskube/commit/f8eb9079d28edac4d58c5ea836c32634d2258b2c))
+* **website:** added truncation marker to template and launch post ([#1197](https://github.com/glasskube/glasskube/issues/1197)) ([9d47700](https://github.com/glasskube/glasskube/commit/9d4770042985cff3a68a6eda0ecdba824d3094bc))
+
 ## [0.19.2](https://github.com/glasskube/glasskube/compare/v0.19.1...v0.19.2) (2024-09-06)
 
 
