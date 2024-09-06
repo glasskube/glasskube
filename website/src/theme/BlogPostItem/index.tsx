@@ -12,6 +12,7 @@ import Link from '@docusaurus/Link';
 import BlogPostItemHeaderTitle from './Header/Title';
 import BlogPostItemHeaderAuthors from './Header/Authors';
 import BlogPostItemHeaderInfo from './Header/Info';
+import BlogSidebar from '@theme/BlogSidebar';
 
 export default function BlogPostItem({
   children,
@@ -55,7 +56,10 @@ export default function BlogPostItem({
     <main>
       <article className={clsx('container margin-vert--lg', className)}>
         <div className="row">
-          <div className={'col col--8 col--offset-2'}>
+          <div className='col col--3 '>
+            <BlogSidebar></BlogSidebar>
+          </div>
+          <div className={'col col--7'}>
             <BlogPostItemHeader />
             <BlogPostItemContent>{children}</BlogPostItemContent>
             <BlogPostItemFooter />
