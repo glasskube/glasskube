@@ -6,7 +6,8 @@
 [![Downloads](https://img.shields.io/github/downloads/glasskube/glasskube/total)](https://github.com/glasskube/glasskube/releases)
 [![CNCF Landscape](https://img.shields.io/badge/CNCF%20Landscape-5699C6)](https://landscape.cncf.io/?item=app-definition-and-development--application-definition-image-build--glasskube)
 [![Go Reference](https://pkg.go.dev/badge/github.com/glasskube/glasskube)](https://pkg.go.dev/github.com/glasskube/glasskube)
-[![Go Report Card](https://goreportcard.com/badge/github.com/glasskube/glasskube)](https://goreportcard.com/report/github.com/glasskube/glasskube)
+[![Go Report Card](https://goreportcard.com/badge/github.com/glasskube/glasskube)](https://goreportcard.com/report/github.com/glasskube/glasskube) 
+[![HelloGitHub](https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=5bcfc97b9ef44c409ae26d7531072f16&claim_uid=jClrT0P8zO5sJID&theme=small)](https://hellogithub.com/repository/5bcfc97b9ef44c409ae26d7531072f16)
 
 <br>
 <div align="center">

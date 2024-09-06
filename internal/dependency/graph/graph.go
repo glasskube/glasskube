@@ -3,6 +3,8 @@ package graph
 import (
 	"fmt"
 
+	"k8s.io/client-go/tools/cache"
+
 	"github.com/Masterminds/semver/v3"
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/dependency/util"
@@ -12,6 +14,10 @@ import (
 
 type PackageRef struct {
 	Name, Namespace, PackageName string
+}
+
+func (ref PackageRef) String() string {
+	return cache.ObjectName{Namespace: ref.Namespace, Name: ref.Name}.String()
 }
 
 type vertexRef struct {

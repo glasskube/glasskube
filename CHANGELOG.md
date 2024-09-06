@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.19.1](https://github.com/glasskube/glasskube/compare/v0.19.0...v0.19.1) (2024-09-05)
+
+
+### Docs
+
+* **website:** added helloGitHub badge to readme ([#1189](https://github.com/glasskube/glasskube/issues/1189)) ([f13571b](https://github.com/glasskube/glasskube/commit/f13571b93797cbe598ff89780632ebfcde8243e5))
+* **website:** added Series A IDP blog post to blog section ([#1080](https://github.com/glasskube/glasskube/issues/1080)) ([5c6892f](https://github.com/glasskube/glasskube/commit/5c6892f77fbd231032f97a1b9988aecd078ca5c3))
+
+## [0.19.0](https://github.com/glasskube/glasskube/compare/v0.18.1...v0.19.0) (2024-09-05)
+
+
+### Features
+
+* **cli:** add markdown support for value descriptions when configuring a package via CLI ([#1174](https://github.com/glasskube/glasskube/issues/1174)) ([51d3bf8](https://github.com/glasskube/glasskube/commit/51d3bf8ab69265bf0776631db0a89b727f90c737))
+* **cli:** improve gitops bootstrap support ([#1154](https://github.com/glasskube/glasskube/issues/1154)) ([3d1e57a](https://github.com/glasskube/glasskube/commit/3d1e57a06ec4f7cb28bae612f416125b4b24834a))
+* **package-operator:** check readiness of deployments and stateful sets ([#1185](https://github.com/glasskube/glasskube/issues/1185)) ([4ec0dbf](https://github.com/glasskube/glasskube/commit/4ec0dbf7dc6f32c2bed7f19e4886cf63a4396e39))
+* **ui:** add editing of package repositories ([#1181](https://github.com/glasskube/glasskube/issues/1181)) ([69eef28](https://github.com/glasskube/glasskube/commit/69eef288faee545f13a15cafed46daf56c849bb3))
+
+
+### Bug Fixes
+
+* **deps:** update module golang.org/x/term to v0.24.0 ([#1180](https://github.com/glasskube/glasskube/issues/1180)) ([83753bf](https://github.com/glasskube/glasskube/commit/83753bf6d253fbf476ff19fc7fc691ea966be1f1))
+* package manifest fallback strategy in dependency manager ([#1177](https://github.com/glasskube/glasskube/issues/1177)) ([98bf4eb](https://github.com/glasskube/glasskube/commit/98bf4eb38fae5faf81bbe793c3e9376e67f112be))
+
+
+### Other
+
+* output of package dependencies and components ([#1179](https://github.com/glasskube/glasskube/issues/1179)) ([e41ff25](https://github.com/glasskube/glasskube/commit/e41ff25e56fde108aaccb20c80a99f453c450b3b))
+
+
+### Docs
+
+* **website:** added image thumbnails to blog which are missing them ([#1183](https://github.com/glasskube/glasskube/issues/1183)) ([ea78d67](https://github.com/glasskube/glasskube/commit/ea78d67375b1e7851c7b7a1d7fd2b2bd6432c3b5))
+
 ## [0.18.1](https://github.com/glasskube/glasskube/compare/v0.18.0...v0.18.1) (2024-09-04)
 
 
