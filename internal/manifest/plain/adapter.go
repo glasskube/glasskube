@@ -4,6 +4,11 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strings"
+
+	"github.com/glasskube/glasskube/internal/constants"
+	v1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clientutils"
@@ -63,7 +68,44 @@ func (a *Adapter) Reconcile(
 			allOwned = append(allOwned, owned...)
 		}
 	}
-	return result.Ready(fmt.Sprintf("%v manifests reconciled", len(allOwned)), allOwned), nil
+
+	var notReady []packagesv1alpha1.OwnedResourceRef
+	var notReadyNames []string
+	// of all owned deployments and stateful sets, check their readiness
+	for _, ownedResourceRef := range allOwned {
+		namespacedName := types.NamespacedName{Namespace: ownedResourceRef.Namespace, Name: ownedResourceRef.Name}
+		switch ownedResourceRef.Kind {
+		case constants.Deployment:
+			deployment := v1.Deployment{}
+			if err := a.Get(ctx, namespacedName, &deployment); err != nil {
+				return nil, fmt.Errorf("failed to get Deployment %v for status check: %w", namespacedName, err)
+			}
+			if !isReady(deployment.Status.ReadyReplicas, deployment.Spec.Replicas) {
+				notReady = append(notReady, ownedResourceRef)
+				notReadyNames = append(notReadyNames, namespacedName.String())
+			}
+		case constants.StatefulSet:
+			statefulSet := v1.StatefulSet{}
+			if err := a.Get(ctx, namespacedName, &statefulSet); err != nil {
+				return nil, fmt.Errorf("failed to get StatefulSet for status check: %w", err)
+			}
+			if !isReady(statefulSet.Status.ReadyReplicas, statefulSet.Spec.Replicas) {
+				notReady = append(notReady, ownedResourceRef)
+				notReadyNames = append(notReadyNames, namespacedName.String())
+			}
+		}
+	}
+
+	if len(notReady) > 0 {
+		return result.Waiting(fmt.Sprintf("%v resources not ready: %v", len(notReady),
+			strings.Join(notReadyNames, ",")), allOwned), nil
+	} else {
+		return result.Ready(fmt.Sprintf("%v manifests reconciled", len(allOwned)), allOwned), nil
+	}
+}
+
+func isReady(readyReplicas int32, specReplicas *int32) bool {
+	return (specReplicas != nil && readyReplicas == *specReplicas) || (specReplicas == nil && readyReplicas > 0)
 }
 
 func (r *Adapter) reconcilePlainManifest(
