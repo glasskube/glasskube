@@ -5,7 +5,7 @@ import {ThemeClassNames} from '@docusaurus/theme-common';
 import EditMetaRow from '@theme/EditMetaRow';
 import TagsListInline from '@theme/TagsListInline';
 import ReadMoreLink from '@theme/BlogPostItem/Footer/ReadMoreLink';
-import { BlogDiscussion } from '@site/src/components/GiscusWrapper';
+import {BlogDiscussion} from '@site/src/components/GiscusWrapper';
 
 export default function BlogPostItemFooter(): JSX.Element | null {
   const {metadata, isBlogPostPage} = useBlogPost();
@@ -59,7 +59,7 @@ export default function BlogPostItemFooter(): JSX.Element | null {
             lastUpdatedBy={lastUpdatedBy}
           />
         )}
-         {enableComments && <BlogDiscussion />}
+        {enableComments && <BlogDiscussion />}
       </footer>
     );
   }

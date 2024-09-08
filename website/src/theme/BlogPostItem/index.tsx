@@ -27,7 +27,8 @@ export default function BlogPostItem({
   if (!isPage) {
     return (
       <Link to={post.metadata.permalink} className={styles.postLink}>
-        <article className={clsx('card', 'shadow--tl', className, styles.postCard)}>
+        <article
+          className={clsx('card', 'shadow--tl', className, styles.postCard)}>
           <img
             src={useBaseUrl(post.frontMatter.image)}
             style={{
@@ -56,7 +57,7 @@ export default function BlogPostItem({
     <main>
       <article className={clsx('container margin-vert--lg', className)}>
         <div className="row">
-          <div className='col col--3 '>
+          <div className="col col--3 ">
             <BlogSidebar></BlogSidebar>
           </div>
           <div className={'col col--7'}>
