@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/glasskube/glasskube/internal/clientutils"
+	"github.com/glasskube/glasskube/internal/namespaces"
 
 	"github.com/fatih/color"
 	"github.com/glasskube/glasskube/api/v1alpha1"
@@ -52,13 +53,13 @@ var installCmd = &cobra.Command{
 	ValidArgsFunction: completeAvailablePackageNames,
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
-		cfg := clicontext.ConfigFromContext(ctx)
 		config := clicontext.RawConfigFromContext(ctx)
 		pkgClient := clicontext.PackageClientFromContext(ctx)
 		dm := cliutils.DependencyManager(ctx)
 		valueResolver := cliutils.ValueResolver(ctx)
 		repoClientset := cliutils.RepositoryClientset(ctx)
 		installer := install.NewInstaller(pkgClient)
+		cs := clicontext.KubernetesClientFromContext(ctx)
 
 		opts := metav1.CreateOptions{}
 		if installCmdOptions.DryRun {
@@ -221,15 +222,27 @@ var installCmd = &cobra.Command{
 		}
 
 		if installCmdOptions.NamespaceOptions.Namespace != "" {
-			_, err := install.IsNamespaceInstalled(
+			exists, err := namespaces.IsNamespaceInstalled(
 				ctx,
-				cfg,
+				cs,
 				installCmdOptions.NamespaceOptions.Namespace,
 			)
-			if errors.IsNotFound(err) {
+			if errors.IsNotFound(err) && !exists {
 				fmt.Printf(" * Namespace %v does not exist and will be created",
 					installCmdOptions.NamespaceOptions.Namespace,
 				)
+				err := namespaces.InstallNamespace(
+					ctx,
+					cs,
+					installCmdOptions.NamespaceOptions.Namespace,
+				)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "An error occurred in creating the Namespace:\n\n%v\n", err)
+					cliutils.ExitWithError()
+				}
+			} else if err != nil {
+				fmt.Fprintf(os.Stderr, "An error occurred in the Namespace check:\n\n%v\n", err)
+				cliutils.ExitWithError()
 			}
 		}
 
@@ -243,12 +256,6 @@ var installCmd = &cobra.Command{
 
 		if !installCmdOptions.Yes && !cliutils.YesNoPrompt("Continue?", true) {
 			cancel()
-		}
-
-		err := install.InstallNamespace(ctx, cfg, installCmdOptions.NamespaceOptions.Namespace)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "An error occurred in creating the Namespace:\n\n%v\n", err)
-			cliutils.ExitWithError()
 		}
 
 		if installCmdOptions.NoWait {
