@@ -128,7 +128,7 @@ const config: Config = {
     },
     announcementBar: {
       id: 'announcementBar-1', // Increment on change
-      content: `Launch Week #2: September 9-13 🧊 <a href="https://glasskube.dev/blog/launch-week-number-2/"> See what's new!</a> 🌵`,
+      content: `Launch Week #2: September 9-13 🧊 <a href="https://glasskube.dev/blog/launch-week-number-2/">See what's new!</a> 🌵`,
       isCloseable: false,
     },
     image:
