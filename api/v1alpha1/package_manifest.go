@@ -122,7 +122,7 @@ type TransformationSource struct {
 }
 
 type TransformationDefinition struct {
-	Source  TransformationSource    `json:"source"`
+	Source  TransformationSource    `json:"source" jsonschema:"required"`
 	Targets []ValueDefinitionTarget `json:"targets" jsonschema:"required"`
 }
 
