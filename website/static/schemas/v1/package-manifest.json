@@ -145,12 +145,9 @@
         "url"
       ]
     },
-    "TransitiveResource": {
+    "TypedLocalObjectReference": {
       "properties": {
-        "group": {
-          "type": "string"
-        },
-        "version": {
+        "apiGroup": {
           "type": "string"
         },
         "kind": {
@@ -163,8 +160,7 @@
       "additionalProperties": false,
       "type": "object",
       "required": [
-        "group",
-        "version",
+        "apiGroup",
         "kind",
         "name"
       ]
@@ -356,7 +352,7 @@
     },
     "transitiveResources": {
       "items": {
-        "$ref": "#/$defs/TransitiveResource"
+        "$ref": "#/$defs/TypedLocalObjectReference"
       },
       "type": "array"
     },
