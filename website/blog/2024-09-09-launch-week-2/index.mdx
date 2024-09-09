@@ -1,7 +1,7 @@
 ---
 slug: launch-week-number-2
 title: Launch week 2 - A new frontier of Kubernetes package management
-description: We have happy to announce the second official Glasskube Launch week, full of updates, fun and a whole lot of Kubernetes package management.
+description: We are happy to announce the second official Glasskube Launch week, full of updates, fun and a whole lot of Kubernetes package management.
 authors: [ jpage, pmig ]
 tags: [ glasskube, gitops, launch-week]
 image: https://github.com/user-attachments/assets/3d4d0bee-fa39-4d52-8873-09d9226c1b18
@@ -30,7 +30,7 @@ So you might be thinking to yourself, what does the Glasskube team have up their
 ## 1\. Glasskube is Gitops Ready with ArgoCD
 
 Day one of launch week will be about celebrating the fact that it’s safe to consider Glasskube “[GitOps ready](https://glasskube.dev/docs/integration/gitops/)“.
-As GitOps became the standard to revision Kubernetes configuration files and use Git as the single source of truth.
+GitOps has became the standard for Kubernetes configuration file revision, utilizing Git as the single source of truth.
 Glasskube can not only directly modify the resources in your cluster, but now also output your Glasskube packages as yaml to put them into Git.
 
 ![GitOps ready](https://github.com/user-attachments/assets/491b146a-63a0-4585-93ee-aac8b7013f53)
@@ -39,7 +39,7 @@ During the rest of the launch week, we will showcase more new features of Glassk
 
 ## 2\. What’s so good about GitOps anyway?
 
-Imagine if I told you, you could bootstrap an ArgoCD setup with just one command and keep it up-to-date.
+Imagine if I told you you could bootstrap an ArgoCD setup with just one command and keep it up-to-date.
 The Glasskube bootstrap command now also supports bootstrapping from git.
 
 ![Glasskube GitOps command](https://github.com/user-attachments/assets/3dab678a-1ff7-4167-82b6-975070c70a0d)
@@ -49,7 +49,7 @@ You can now define every single component of your cluster package stack, [now su
 
 And it’s no exaggeration to say that deploying your packages to Kubernetes now takes seconds instead of hours. Who wouldn’t want that?
 
-![GitOps template diagram](https://github.com/user-attachments/assets/236af5f2-64a9-42f2-92f8-a30438777365)
+![GitOps template diagram](https://github.com/user-attachments/assets/31237e57-c924-42f6-8f9b-ec737226014a)
 
 ## 3\. Hear that? …silence! But your packages are still up-to-date
 
@@ -57,11 +57,11 @@ You might be wondering, "Wait, so I don’t have to update the packages myself?"
 
 That's right! The public Glasskube package repository, the GitHub repo setup similar to Homebrews public tap, is the source for our [Renovate](https://docs.renovatebot.com/) integration.
 So if new versions of supported Glasskube packages are available, we test and add them to the list of versions you can choose from.
-Also the Renovate automation picks the latest version up and creates a pull request in your GitOps repository.
+Also the Renovate automation picks up the latest version and creates a pull request in your GitOps repository.
 
-![Renovate integration](https://github.com/user-attachments/assets/65c07bef-2124-43b8-8d36-133219af40bb)
+![Renovate integration](https://github.com/user-attachments/assets/09c6a01a-1f21-4acd-bedb-33e8390886d4)
 
-Well dive deeper into [how this works](https://glasskube.dev/docs/integration/renovate/) and discuss how you can opt in or out of the auto-updating feature.
+We'll dive deeper into [how this works](https://glasskube.dev/docs/integration/renovate/) and discuss how you can opt in or out of the auto-updating feature.
 
 ## 4\. Everybody needs a home, and so do packages
 
@@ -70,15 +70,15 @@ All available Glasskube packages are conveniently gathered in one place and can 
 
 ![Glasskube hub](https://github.com/user-attachments/assets/74dd15b1-ebdc-4071-b02e-00d802e8a71b)
 
-Apart from storing freely available Open Source Packages, the Glasskube Hub will also host private packages.
+In addition to storing freely available Open Source Packages, the Glasskube Hub will also host private packages.
 
 Wait, what are private packages exactly?
 
 If your organization excels at what you do, so much so that customers are clamoring to self-host your solution, yet you lack the time, resources, or inclination to make it happen - Private Packages are the answer.
-We partner with you to build and host a Glasskube native package around your offering, making it incredibly simple to customize, configure, install, and update your tool within your customers’ infrastructure.
+We partner with you to build and host a Glasskube native package around your offering, making it incredibly simple to customize, configure, install, and update your tool within your customers' infrastructure.
 If you’d like to learn more, [schedule a call today](https://cal.glasskube.eu/team/founder/demo).
 
-Throughout the launch week, well dive into the best ways to use Glasskube Hub, including how to work with private packages stored there.
+Throughout the launch week, we'll dive into the best ways to use Glasskube Hub, including how to work with private packages stored there.
 
 ## 5\. Introducing Package Scopes
 
@@ -88,10 +88,10 @@ Even though the feature was introduced a couple of minor versions ago. We will e
 
 Here is a sneak preview:
 
- - **Cluster-scoped:** these are the ones that provide cluster-wide functionality or manage shared resources, such as networking, monitoring, or security tools.
- - **Namespaced:** these are usually packages that can be specific to a particular application or team, or when you need multiple isolated instances of the same package.
+ - **Cluster-scoped:** These are packages that provide cluster-wide functionality or manage shared resources, such as networking, monitoring, or security tools.
+ - **Namespaced:** These are usually packages that can be specific to a particular application or team, or when you need multiple isolated instances of the same package.
 
-Package scopes give package authors the possibility to control the scope of the installation.
+Package scopes give package authors the ability to control the scope of the installation.
 
 ## Wait there’s more?
 
