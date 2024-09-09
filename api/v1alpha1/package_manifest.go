@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/invopop/jsonschema"
+	corev1 "k8s.io/api/core/v1"
 	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -115,6 +116,16 @@ type TransitiveResource struct {
 	Name                    string `json:"name" jsonschema:"required"`
 }
 
+type TransformationSource struct {
+	Resource *corev1.TypedLocalObjectReference `json:"resource,omitempty"`
+	Path     string                            `json:"path" jsonschema:"required"`
+}
+
+type TransformationDefinition struct {
+	Source  TransformationSource    `json:"source"`
+	Targets []ValueDefinitionTarget `json:"targets" jsonschema:"required"`
+}
+
 type PackageManifest struct {
 	// Scope is optional (default is Cluster)
 	Scope            *PackageScope      `json:"scope,omitempty"`
@@ -129,6 +140,7 @@ type PackageManifest struct {
 	Kustomize           *KustomizeManifest         `json:"kustomize,omitempty"`
 	Manifests           []PlainManifest            `json:"manifests,omitempty"`
 	ValueDefinitions    map[string]ValueDefinition `json:"valueDefinitions,omitempty"`
+	Transformations     []TransformationDefinition `json:"transformations,omitempty"`
 	TransitiveResources []TransitiveResource       `json:"transitiveResources,omitempty"`
 	// DefaultNamespace to install the package. May be overridden.
 	DefaultNamespace string              `json:"defaultNamespace,omitempty" jsonschema:"required"`

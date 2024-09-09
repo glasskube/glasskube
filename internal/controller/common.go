@@ -20,9 +20,11 @@ import (
 	deputil "github.com/glasskube/glasskube/internal/dependency/util"
 	"github.com/glasskube/glasskube/internal/manifest"
 	"github.com/glasskube/glasskube/internal/manifest/result"
+	"github.com/glasskube/glasskube/internal/manifesttransformations"
 	"github.com/glasskube/glasskube/internal/manifestvalues"
 	"github.com/glasskube/glasskube/internal/names"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
+	"github.com/glasskube/glasskube/internal/resourcepatch"
 	"github.com/glasskube/glasskube/internal/telemetry"
 	"github.com/glasskube/glasskube/internal/util"
 	"github.com/glasskube/glasskube/pkg/condition"
@@ -156,7 +158,7 @@ func (r *PackageReconcilationContext) reconcilePackageInfoReady(ctx context.Cont
 		return r.finalize(ctx)
 	}
 
-	var patches []manifestvalues.TargetPatch
+	var patches []resourcepatch.TargetPatch
 	if resolvedValues, err := r.ValueResolver.Resolve(ctx, r.pkg.GetSpec().Values); err != nil {
 		r.setShouldUpdate(
 			conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.GetStatus().Conditions,
@@ -167,13 +169,22 @@ func (r *PackageReconcilationContext) reconcilePackageInfoReady(ctx context.Cont
 			conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.GetStatus().Conditions,
 				condition.ValueConfigurationInvalid, err.Error()))
 		return r.finalizeWithError(ctx, err)
-	} else if p, err := manifestvalues.GeneratePatches(*piManifest, resolvedValues); err != nil {
+	} else if p, err := resourcepatch.GeneratePatches(*piManifest, resolvedValues); err != nil {
 		r.setShouldUpdate(
 			conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.GetStatus().Conditions,
 				condition.InstallationFailed, err.Error()))
 		return r.finalizeWithError(ctx, err)
 	} else {
 		patches = p
+	}
+
+	if p, err := manifesttransformations.ResolveAndGeneratePatches(ctx, r.Client, r.pkg, piManifest); err != nil {
+		r.setShouldUpdate(
+			conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.GetStatus().Conditions,
+				condition.InstallationFailed, err.Error()))
+		return r.finalizeWithError(ctx, err)
+	} else {
+		patches = append(patches, p...)
 	}
 
 	// First, collect the adapters for all included manifests and ensure that they are supported.

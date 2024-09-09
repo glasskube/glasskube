@@ -1,4 +1,4 @@
-package manifestvalues
+package resourcepatch
 
 import (
 	"encoding/json"
@@ -65,11 +65,11 @@ var _ = Describe("GeneratePatches", func() {
 	})
 })
 
-var _ = Describe("generateTargetPatch", func() {
-	DescribeTable("generateTargetPatch",
+var _ = Describe("GenerateTargetPatch", func() {
+	DescribeTable("GenerateTargetPatch",
 		func(target v1alpha1.ValueDefinitionTarget, value string, expectError bool, resource *targetResource,
 			chartName *string, patch string) {
-			result, err := generateTargetPatch(target, value)
+			result, err := GenerateTargetPatch(target, value)
 			if expectError {
 				Expect(err).To(HaveOccurred())
 			} else {
@@ -134,7 +134,7 @@ var _ = Describe("generateTargetPatch", func() {
 
 var _ = Describe("ApplyToResource", func() {
 	It("should patch resource", func() {
-		patch, err := generateTargetPatch(v1alpha1.ValueDefinitionTarget{
+		patch, err := GenerateTargetPatch(v1alpha1.ValueDefinitionTarget{
 			Resource: &corev1.TypedObjectReference{APIGroup: &appsv1group, Kind: "Deployment", Name: "foo", Namespace: &foo},
 			Patch:    v1alpha1.PartialJsonPatch{Op: "add", Path: "/spec/replicas"},
 		}, "2")
@@ -156,7 +156,7 @@ var _ = Describe("ApplyToResource", func() {
 		Expect(obj).To(Equal(expected))
 	})
 	It("should patch helm values", func() {
-		patch, err := generateTargetPatch(v1alpha1.ValueDefinitionTarget{
+		patch, err := GenerateTargetPatch(v1alpha1.ValueDefinitionTarget{
 			ChartName: &foo,
 			Patch:     v1alpha1.PartialJsonPatch{Op: "add", Path: "/spec/replicas"},
 		}, "2")

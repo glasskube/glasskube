@@ -145,6 +145,40 @@
         "url"
       ]
     },
+    "TransformationDefinition": {
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/TransformationSource"
+        },
+        "targets": {
+          "items": {
+            "$ref": "#/$defs/ValueDefinitionTarget"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "source",
+        "targets"
+      ]
+    },
+    "TransformationSource": {
+      "properties": {
+        "resource": {
+          "$ref": "#/$defs/TypedLocalObjectReference"
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "path"
+      ]
+    },
     "TransitiveResource": {
       "properties": {
         "group": {
@@ -165,6 +199,26 @@
       "required": [
         "group",
         "version",
+        "kind",
+        "name"
+      ]
+    },
+    "TypedLocalObjectReference": {
+      "properties": {
+        "apiGroup": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "apiGroup",
         "kind",
         "name"
       ]
@@ -353,6 +407,12 @@
         "$ref": "#/$defs/ValueDefinition"
       },
       "type": "object"
+    },
+    "transformations": {
+      "items": {
+        "$ref": "#/$defs/TransformationDefinition"
+      },
+      "type": "array"
     },
     "transitiveResources": {
       "items": {
