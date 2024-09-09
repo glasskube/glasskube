@@ -5,8 +5,10 @@ import (
 	"io"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/util"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -199,10 +201,11 @@ var _ = Describe("updateReferences", func() {
 		objs := parseObjs(secretAndDeployment)
 		expectedObj := parseObjs(secretAndDeploymentExpectedWithTransitive)
 		newObjs, err := prefixAndUpdateReferences(pkg, &v1alpha1.PackageManifest{
-			TransitiveResources: []v1alpha1.TransitiveResource{
+			TransitiveResources: []corev1.TypedLocalObjectReference{
 				{
-					GroupVersionKind: metav1.GroupVersionKind{Version: "v1", Kind: "Secret"},
-					Name:             "test1",
+					APIGroup: util.Pointer("v1"),
+					Kind:     "Secret",
+					Name:     "test1",
 				},
 			},
 		}, objs)

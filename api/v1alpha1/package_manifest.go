@@ -20,8 +20,8 @@ import (
 	"strings"
 
 	"github.com/invopop/jsonschema"
+	corev1 "k8s.io/api/core/v1"
 	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type HelmManifest struct {
@@ -110,11 +110,6 @@ func (s *PackageScope) IsNamespaced() bool {
 	return s != nil && *s == ScopeNamespaced
 }
 
-type TransitiveResource struct {
-	metav1.GroupVersionKind `json:",inline"`
-	Name                    string `json:"name" jsonschema:"required"`
-}
-
 type PackageManifest struct {
 	// Scope is optional (default is Cluster)
 	Scope            *PackageScope      `json:"scope,omitempty"`
@@ -126,10 +121,10 @@ type PackageManifest struct {
 	// Helm instructs the controller to create a helm release when installing this package.
 	Helm *HelmManifest `json:"helm,omitempty"`
 	// Kustomize instructs the controller to apply a kustomization when installing this package [PLACEHOLDER].
-	Kustomize           *KustomizeManifest         `json:"kustomize,omitempty"`
-	Manifests           []PlainManifest            `json:"manifests,omitempty"`
-	ValueDefinitions    map[string]ValueDefinition `json:"valueDefinitions,omitempty"`
-	TransitiveResources []TransitiveResource       `json:"transitiveResources,omitempty"`
+	Kustomize           *KustomizeManifest                 `json:"kustomize,omitempty"`
+	Manifests           []PlainManifest                    `json:"manifests,omitempty"`
+	ValueDefinitions    map[string]ValueDefinition         `json:"valueDefinitions,omitempty"`
+	TransitiveResources []corev1.TypedLocalObjectReference `json:"transitiveResources,omitempty"`
 	// DefaultNamespace to install the package. May be overridden.
 	DefaultNamespace string              `json:"defaultNamespace,omitempty" jsonschema:"required"`
 	Entrypoints      []PackageEntrypoint `json:"entrypoints,omitempty"`
