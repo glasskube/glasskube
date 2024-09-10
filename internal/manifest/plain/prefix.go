@@ -6,6 +6,7 @@ import (
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/kustomize"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -19,7 +20,10 @@ func prefixAndUpdateReferences(
 ) ([]client.Object, error) {
 	if pkg.IsNamespaceScoped() {
 		kustomization := createKustomization(pkg)
-		transitiveObjects := createTransitiveObjects(manifest.TransitiveResources)
+		transitiveObjects, err := createTransitiveObjects(manifest.TransitiveResources)
+		if err != nil {
+			return nil, err
+		}
 		if result, err := kustomize.KustomizeObjects(kustomization, append(objects, transitiveObjects...)); err != nil {
 			return nil, err
 		} else {
@@ -48,20 +52,30 @@ func createKustomization(pkg ctrlpkg.Package) kstypes.Kustomization {
 	}
 }
 
-func createTransitiveObjects(resList []v1alpha1.TransitiveResource) []client.Object {
+func createTransitiveObjects(resList []v1.TypedLocalObjectReference) ([]client.Object, error) {
 	result := make([]client.Object, len(resList))
 	for i, res := range resList {
-		result[i] = createTransitiveObject(res)
+		if obj, err := createTransitiveObject(res); err != nil {
+			return nil, err
+		} else {
+			result[i] = obj
+		}
 	}
-	return result
+	return result, nil
 }
 
 // createTransitiveObject creates a "stub" [client.Object] for a given [v1alpha1.TransitiveResource].
 // This Object can not be applied in a cluster and serve only as "reference", so the kustomize name reference
 // transformer updates any references to them.
-func createTransitiveObject(res v1alpha1.TransitiveResource) client.Object {
+func createTransitiveObject(res v1.TypedLocalObjectReference) (client.Object, error) {
 	var result unstructured.Unstructured
+	if res.APIGroup == nil {
+		result.SetGroupVersionKind(schema.GroupVersionKind{Kind: res.Kind})
+	} else if gv, err := schema.ParseGroupVersion(*res.APIGroup); err != nil {
+		return nil, err
+	} else {
+		result.SetGroupVersionKind(gv.WithKind(res.Kind))
+	}
 	result.SetName(res.Name)
-	result.SetGroupVersionKind(schema.GroupVersionKind(res.GroupVersionKind))
-	return &result
+	return &result, nil
 }
