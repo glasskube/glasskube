@@ -110,6 +110,16 @@ func (s *PackageScope) IsNamespaced() bool {
 	return s != nil && *s == ScopeNamespaced
 }
 
+type TransformationSource struct {
+	Resource *corev1.TypedLocalObjectReference `json:"resource,omitempty"`
+	Path     string                            `json:"path" jsonschema:"required"`
+}
+
+type TransformationDefinition struct {
+	Source  TransformationSource    `json:"source" jsonschema:"required"`
+	Targets []ValueDefinitionTarget `json:"targets" jsonschema:"required"`
+}
+
 type PackageManifest struct {
 	// Scope is optional (default is Cluster)
 	Scope            *PackageScope      `json:"scope,omitempty"`
@@ -124,6 +134,7 @@ type PackageManifest struct {
 	Kustomize           *KustomizeManifest                 `json:"kustomize,omitempty"`
 	Manifests           []PlainManifest                    `json:"manifests,omitempty"`
 	ValueDefinitions    map[string]ValueDefinition         `json:"valueDefinitions,omitempty"`
+	Transformations     []TransformationDefinition         `json:"transformations,omitempty"`
 	TransitiveResources []corev1.TypedLocalObjectReference `json:"transitiveResources,omitempty"`
 	// DefaultNamespace to install the package. May be overridden.
 	DefaultNamespace string              `json:"defaultNamespace,omitempty" jsonschema:"required"`

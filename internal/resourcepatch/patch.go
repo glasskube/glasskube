@@ -1,4 +1,4 @@
-package manifestvalues
+package resourcepatch
 
 import (
 	"bytes"
@@ -65,11 +65,11 @@ type TargetPatch struct {
 	patch     jsonpatch.Patch
 }
 
-// generateTargetPatch does three things:
+// GenerateTargetPatch does three things:
 //   - execute the targets valueTemplate if it exists
 //   - create an applicable jsonpatch
 //   - resolve the targets resource GVK
-func generateTargetPatch(target v1alpha1.ValueDefinitionTarget, value string) (*TargetPatch, error) {
+func GenerateTargetPatch(target v1alpha1.ValueDefinitionTarget, value any) (*TargetPatch, error) {
 	if actualValue, err := getActualValue(target, value); err != nil {
 		return nil, err
 	} else if jsonPatch, err := generateJsonPatch(target.Patch, actualValue); err != nil {
@@ -89,7 +89,7 @@ func generateTargetPatch(target v1alpha1.ValueDefinitionTarget, value string) (*
 	}
 }
 
-func getActualValue(target v1alpha1.ValueDefinitionTarget, value string) (any, error) {
+func getActualValue(target v1alpha1.ValueDefinitionTarget, value any) (any, error) {
 	if len(target.ValueTemplate) == 0 {
 		return value, nil
 	}
@@ -190,7 +190,7 @@ func GeneratePatches(manifest v1alpha1.PackageManifest, values map[string]string
 		def := manifest.ValueDefinitions[name]
 		if value, ok := values[name]; ok {
 			for _, target := range def.Targets {
-				if patch, err := generateTargetPatch(target, value); err != nil {
+				if patch, err := GenerateTargetPatch(target, value); err != nil {
 					return nil, err
 				} else {
 					result = append(result, *patch)

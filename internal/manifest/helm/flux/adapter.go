@@ -15,8 +15,8 @@ import (
 	"github.com/glasskube/glasskube/internal/controller/owners/utils"
 	"github.com/glasskube/glasskube/internal/manifest"
 	"github.com/glasskube/glasskube/internal/manifest/result"
-	"github.com/glasskube/glasskube/internal/manifestvalues"
 	"github.com/glasskube/glasskube/internal/names"
+	"github.com/glasskube/glasskube/internal/resourcepatch"
 	corev1 "k8s.io/api/core/v1"
 	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -59,7 +59,7 @@ func (a *FluxHelmAdapter) Reconcile(
 	ctx context.Context,
 	pkg ctrlpkg.Package,
 	pi *packagesv1alpha1.PackageInfo,
-	patches manifestvalues.TargetPatches,
+	patches resourcepatch.TargetPatches,
 ) (*result.ReconcileResult, error) {
 	manifest := pi.Status.Manifest
 	log := ctrl.LoggerFrom(ctx)
@@ -160,7 +160,7 @@ func (a *FluxHelmAdapter) ensureHelmRelease(
 	ctx context.Context,
 	pkg ctrlpkg.Package,
 	manifest *packagesv1alpha1.PackageManifest,
-	patches manifestvalues.TargetPatches,
+	patches resourcepatch.TargetPatches,
 ) (*helmv2.HelmRelease, error) {
 	var namespace string
 	if pkg.IsNamespaceScoped() {
