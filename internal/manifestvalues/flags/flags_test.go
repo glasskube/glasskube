@@ -8,7 +8,7 @@ import (
 
 var _ = Describe("ParseValues", func() {
 	foo := "foo"
-	fooMap := map[string]v1alpha1.ValueConfiguration{"foo": {Value: &foo}}
+	fooMap := map[string]v1alpha1.ValueConfiguration{"foo": {InlineValueConfiguration: v1alpha1.InlineValueConfiguration{Value: &foo}}}
 	var opts *ValuesOptions
 	BeforeEach(func() { opts = &ValuesOptions{} })
 	DescribeTable("should parse",

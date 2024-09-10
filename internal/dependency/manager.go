@@ -3,6 +3,7 @@ package dependency
 import (
 	"context"
 	"errors"
+	"maps"
 	"slices"
 	"strings"
 
@@ -63,6 +64,18 @@ func (dm *DependendcyManager) Validate(
 		return nil, err
 	}
 	slices.SortFunc(requirements, func(a, b Requirement) int { return strings.Compare(a.Name, b.Name) })
+
+	// This is a hack.
+	// TODO: Find a better way to add values to the component metadata
+	for _, req := range requirements {
+		if req.ComponentMetadata != nil {
+			for _, cmp := range manifest.Components {
+				if req.Name == cmp.Name {
+					req.ComponentMetadata.Values = maps.Clone(cmp.Values)
+				}
+			}
+		}
+	}
 
 	var conflicts []Conflict
 	for _, err := range multierr.Errors(g.Validate()) {

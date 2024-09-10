@@ -78,11 +78,15 @@ type ValueReference struct {
 	PackageRef   *PackageValueSource   `json:"packageRef,omitempty"`
 }
 
+type InlineValueConfiguration struct {
+	Value *string `json:"value,omitempty"`
+}
+
 // +kubebuilder:validation:MinProperties:=1
 // +kubebuilder:validation:MaxProperties:=1
 type ValueConfiguration struct {
-	Value     *string         `json:"value,omitempty"`
-	ValueFrom *ValueReference `json:"valueFrom,omitempty"`
+	InlineValueConfiguration `json:",inline"`
+	ValueFrom                *ValueReference `json:"valueFrom,omitempty"`
 }
 
 // PackageSpec defines the desired state

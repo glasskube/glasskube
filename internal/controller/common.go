@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"slices"
 	"strings"
 
@@ -374,6 +375,9 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 					Version:        requirement.Version,
 					RepositoryName: repositoryName,
 				}
+				if requirement.ComponentMetadata != nil {
+					newPkg.GetSpec().Values = requirement.ComponentMetadata.Values.AsPackageValues()
+				}
 				return nil
 			}); err != nil {
 				log.Error(err, "Failed to create required package", "required", requirement.Name)
@@ -401,7 +405,7 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 	var ownedPackages []packagesv1alpha1.OwnedResourceRef
 	var waitingFor []string
 
-	var handleRequiredPackage = func(requiredPkg ctrlpkg.Package) error {
+	var handleRequiredPackage = func(requiredPkg ctrlpkg.Package, componentValues map[string]packagesv1alpha1.ValueConfiguration) error {
 		if err := r.Get(ctx, client.ObjectKeyFromObject(requiredPkg), requiredPkg); err != nil {
 			if apierrors.IsNotFound(err) {
 				waitingFor = append(waitingFor, requiredPkg.GetName())
@@ -416,6 +420,15 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 			} else {
 				ownedPackages = append(ownedPackages, owned)
 			}
+
+			if !reflect.DeepEqual(componentValues, requiredPkg.GetSpec().Values) {
+				requiredPkg.GetSpec().Values = componentValues
+				if err := r.Update(ctx, requiredPkg); err != nil {
+					log.Error(err, "Failed to update values of required package", "package", requiredPkg)
+					failed = append(failed, requiredPkg.GetName())
+				}
+			}
+
 			if meta.IsStatusConditionTrue(requiredPkg.GetStatus().Conditions, string(condition.Failed)) {
 				failed = append(failed, requiredPkg.GetName())
 			} else if !meta.IsStatusConditionTrue(requiredPkg.GetStatus().Conditions, string(condition.Ready)) {
@@ -430,7 +443,7 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 		requiredPkg := packagesv1alpha1.ClusterPackage{
 			ObjectMeta: metav1.ObjectMeta{Name: dep.Name},
 		}
-		if err := handleRequiredPackage(&requiredPkg); err != nil {
+		if err := handleRequiredPackage(&requiredPkg, nil); err != nil {
 			r.setShouldUpdate(conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.GetStatus().Conditions,
 				condition.InstallationFailed, err.Error()))
 			return false
@@ -447,7 +460,7 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 		if requiredPkg.Namespace == "" {
 			requiredPkg.Namespace = r.pi.Status.Manifest.DefaultNamespace
 		}
-		if err := handleRequiredPackage(&requiredPkg); err != nil {
+		if err := handleRequiredPackage(&requiredPkg, cmp.Values.AsPackageValues()); err != nil {
 			r.setShouldUpdate(conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.GetStatus().Conditions,
 				condition.InstallationFailed, err.Error()))
 			return false

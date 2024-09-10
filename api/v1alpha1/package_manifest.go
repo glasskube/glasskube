@@ -83,6 +83,18 @@ type Component struct {
 	Name          string `json:"name" jsonschema:"required"`
 	InstalledName string `json:"installedName,omitempty"`
 	Version       string `json:"version,omitempty"`
+	// Specify configuration for this component
+	Values ComponentValues `json:"values,omitempty"`
+}
+
+type ComponentValues map[string]InlineValueConfiguration
+
+func (values ComponentValues) AsPackageValues() map[string]ValueConfiguration {
+	result := make(map[string]ValueConfiguration, len(values))
+	for name, value := range values {
+		result[name] = ValueConfiguration{InlineValueConfiguration: value}
+	}
+	return result
 }
 
 // +kubebuilder:validation:Enum=Cluster;Namespaced
