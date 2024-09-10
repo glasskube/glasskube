@@ -69,8 +69,6 @@ type PartialJsonPatch struct {
 }
 
 // +kubebuilder:validation:XValidation:message="ValueDefinitionTarget must have either resource or chartName but not both",rule="has(self.resource) != has(self.chartName)"
-//
-// nolint:lll
 type ValueDefinitionTarget struct {
 	Resource      *corev1.TypedObjectReference `json:"resource,omitempty" jsonschema:"oneof_required=WithResource"`
 	ChartName     *string                      `json:"chartName,omitempty" jsonschema:"oneof_required=WithChartName"`

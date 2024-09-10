@@ -290,7 +290,6 @@ spec:
                           type: object
                         targets:
                           items:
-                            description: nolint:lll
                             properties:
                               chartName:
                                 type: string
@@ -400,7 +399,6 @@ spec:
                           type: array
                         targets:
                           items:
-                            description: nolint:lll
                             properties:
                               chartName:
                                 type: string
