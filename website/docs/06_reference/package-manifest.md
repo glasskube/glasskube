@@ -100,7 +100,7 @@ Either `resource` or `chartName` must be specified.
 | op   | string | required           |             |
 | path | string | required           |             |
 
-The `value` to create a compete JSON Patch is supplied by the controller.
+The `value` to create a complete JSON Patch is supplied by the controller.
 See https://jsonpatch.com/ for a complete reference.
 
 ### TransformationSource
