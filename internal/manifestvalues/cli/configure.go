@@ -40,9 +40,7 @@ type UseDefaultValuesOption []string
 func (o UseDefaultValuesOption) ShouldUseDefault(name string, def v1alpha1.ValueDefinition) bool {
 	for _, v := range o {
 		switch v {
-		case "all":
-			return true
-		case name:
+		case "all", name:
 			return def.DefaultValue != ""
 		}
 	}
