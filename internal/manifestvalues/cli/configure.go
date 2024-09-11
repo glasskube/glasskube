@@ -91,7 +91,9 @@ func Configure(
 		}
 		if options.ShouldUseDefault(name, def) {
 			fmt.Fprintf(os.Stderr, "Using default value for %v: %v\n", name, def.DefaultValue)
-			newValues[name] = v1alpha1.ValueConfiguration{Value: util.Pointer(def.DefaultValue)}
+			newValues[name] = v1alpha1.ValueConfiguration{
+				InlineValueConfiguration: v1alpha1.InlineValueConfiguration{Value: util.Pointer(def.DefaultValue)},
+			}
 		} else {
 			if newValue, err := ConfigureSingle(name, def, oldValuePtr); err != nil {
 				return nil, err
