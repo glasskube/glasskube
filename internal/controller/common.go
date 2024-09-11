@@ -330,6 +330,7 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 			}
 
 			var newPkg ctrlpkg.Package
+			var pkgValues map[string]packagesv1alpha1.ValueConfiguration
 
 			if requirement.ComponentMetadata != nil {
 				newPkg = &packagesv1alpha1.Package{
@@ -337,6 +338,11 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 						Name:      requirement.ComponentMetadata.Name,
 						Namespace: requirement.ComponentMetadata.Namespace,
 					},
+				}
+				for _, cmp := range r.pi.Status.Manifest.Components {
+					if cmp.Name == requirement.Name {
+						pkgValues = cmp.Values.AsPackageValues()
+					}
 				}
 			} else {
 				newPkg = &packagesv1alpha1.ClusterPackage{
@@ -375,9 +381,7 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 					Version:        requirement.Version,
 					RepositoryName: repositoryName,
 				}
-				if requirement.ComponentMetadata != nil {
-					newPkg.GetSpec().Values = requirement.ComponentMetadata.Values.AsPackageValues()
-				}
+				newPkg.GetSpec().Values = pkgValues
 				return nil
 			}); err != nil {
 				log.Error(err, "Failed to create required package", "required", requirement.Name)
@@ -405,7 +409,10 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 	var ownedPackages []packagesv1alpha1.OwnedResourceRef
 	var waitingFor []string
 
-	var handleRequiredPackage = func(requiredPkg ctrlpkg.Package, componentValues map[string]packagesv1alpha1.ValueConfiguration) error {
+	var handleRequiredPackage = func(
+		requiredPkg ctrlpkg.Package,
+		componentValues map[string]packagesv1alpha1.ValueConfiguration,
+	) error {
 		if err := r.Get(ctx, client.ObjectKeyFromObject(requiredPkg), requiredPkg); err != nil {
 			if apierrors.IsNotFound(err) {
 				waitingFor = append(waitingFor, requiredPkg.GetName())

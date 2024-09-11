@@ -3,8 +3,6 @@ package dependency
 import (
 	"fmt"
 	"strings"
-
-	"github.com/glasskube/glasskube/api/v1alpha1"
 )
 
 type ValidationResultStatus string
@@ -28,7 +26,6 @@ type Requirement struct {
 
 type ComponentMetadata struct {
 	Name, Namespace string
-	Values          v1alpha1.ComponentValues
 }
 
 type Conflict struct {
