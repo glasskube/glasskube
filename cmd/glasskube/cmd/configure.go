@@ -19,6 +19,7 @@ import (
 
 var configureCmdOptions = struct {
 	flags.ValuesOptions
+	flags.UseDefaultOptions
 	OutputOptions
 	NamespaceOptions
 	KindOptions
@@ -72,7 +73,10 @@ func runConfigure(cmd *cobra.Command, args []string) {
 		} else if len(pkgManifest.ValueDefinitions) == 0 {
 			fmt.Fprintln(os.Stderr, "❌ this package has no configuration values")
 			cliutils.ExitWithError()
-		} else if values, err := cli.Configure(*pkgManifest, pkg.GetSpec().Values); err != nil {
+		} else if values, err := cli.Configure(*pkgManifest,
+			cli.WithOldValues(pkg.GetSpec().Values),
+			cli.WithUseDefaults(configureCmdOptions.UseDefault),
+		); err != nil {
 			fmt.Fprintf(os.Stderr, "❌ error during configure: %v\n", err)
 			cliutils.ExitWithError()
 		} else {
@@ -141,6 +145,7 @@ func runConfigure(cmd *cobra.Command, args []string) {
 
 func init() {
 	configureCmdOptions.ValuesOptions.AddFlagsToCommand(configureCmd)
+	configureCmdOptions.UseDefaultOptions.AddFlagsToCommand(configureCmd)
 	configureCmdOptions.OutputOptions.AddFlagsToCommand(configureCmd)
 	configureCmdOptions.NamespaceOptions.AddFlagsToCommand(configureCmd)
 	configureCmdOptions.KindOptions.AddFlagsToCommand(configureCmd)
