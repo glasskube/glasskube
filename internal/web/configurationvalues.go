@@ -72,9 +72,9 @@ func extractValues(r *http.Request, manifest *v1alpha1.PackageManifest) (map[str
 				if strings.ToLower(formVal) == "on" {
 					boolStr = strconv.FormatBool(true)
 				}
-				values[valueName] = v1alpha1.ValueConfiguration{Value: &boolStr}
+				values[valueName] = v1alpha1.ValueConfiguration{InlineValueConfiguration: v1alpha1.InlineValueConfiguration{Value: &boolStr}}
 			} else {
-				values[valueName] = v1alpha1.ValueConfiguration{Value: &formVal}
+				values[valueName] = v1alpha1.ValueConfiguration{InlineValueConfiguration: v1alpha1.InlineValueConfiguration{Value: &formVal}}
 			}
 		} else {
 			return nil, fmt.Errorf("cannot extract value %v because of unknown reference kind %v", valueName, refKindVal)

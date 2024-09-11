@@ -131,6 +131,14 @@ spec:
                           type: string
                         name:
                           type: string
+                        values:
+                          additionalProperties:
+                            properties:
+                              value:
+                                type: string
+                            type: object
+                          description: Specify configuration for this component
+                          type: object
                         version:
                           type: string
                       required:

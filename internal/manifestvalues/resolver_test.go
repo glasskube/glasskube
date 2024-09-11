@@ -34,7 +34,7 @@ var _ = Describe("resolver", func() {
 	It("should resolve literal value", func(ctx context.Context) {
 		resolver := newTestResolver()
 		result, err := resolver.Resolve(ctx, map[string]v1alpha1.ValueConfiguration{
-			"test": {Value: &testConst},
+			"test": {InlineValueConfiguration: v1alpha1.InlineValueConfiguration{Value: &testConst}},
 		})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(result).To(Equal(map[string]string{"test": "test"}))

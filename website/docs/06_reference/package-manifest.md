@@ -100,7 +100,7 @@ Either `resource` or `chartName` must be specified.
 | op   | string | required           |             |
 | path | string | required           |             |
 
-The `value` to create a compete JSON Patch is supplied by the controller.
+The `value` to create a complete JSON Patch is supplied by the controller.
 See https://jsonpatch.com/ for a complete reference.
 
 ### TransformationSource
@@ -129,11 +129,20 @@ See https://jsonpatch.com/ for a complete reference.
 
 ### Component
 
-| Name          | Type   | Required / Default | Description                            |
-| ------------- | ------ | ------------------ | -------------------------------------- |
-| name          | string | required           |                                        |
-| installedName | string |                    | name suffix for the created `Package`  |
-| version       | string |                    | a semver constraint for this component |
+| Name          | Type                                                             | Required / Default | Description                            |
+| ------------- | ---------------------------------------------------------------- | ------------------ | -------------------------------------- |
+| name          | string                                                           | required           |                                        |
+| installedName | string                                                           |                    | name suffix for the created `Package`  |
+| version       | string                                                           |                    | a semver constraint for this component |
+| values        | map[string][InlineValueConfiguration](#inlinevalueconfiguration) |                    | specify values for this component      |
+
+### InlineValueConfiguration
+
+A stripped down variant of a package's value configuration that only supports directly specified values and no reference values.
+
+| Name  | Type   | Required / Default | Description |
+| ----- | ------ | ------------------ | ----------- |
+| value | string | required           |             |
 
 ## Complete Example
 
@@ -173,6 +182,9 @@ components:
   - name: postgresql
     installedName: db
     version: '>=1.0.0'
+    values:
+      enableSuperuserAccess:
+        value: 'true'
 transitiveResources:
   - apiVersion: v1
     kind: Secret
@@ -209,3 +221,7 @@ transformations:
           path: /config/database/dbHost
           valueTemplate: '"{{.}}-db-rw"'
 ```
+
+## JSON Schema
+
+An up to date JSON schema file is available at https://glasskube.dev/schemas/v1/package-manifest.json.
