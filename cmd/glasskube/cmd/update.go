@@ -13,6 +13,7 @@ import (
 
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/manifestvalues/cli"
+	"github.com/glasskube/glasskube/internal/manifestvalues/flags"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clicontext"
@@ -30,6 +31,7 @@ import (
 )
 
 var updateCmdOptions struct {
+	flags.UseDefaultOptions
 	Version string
 	Yes     bool
 	DryRunOptions
@@ -255,8 +257,10 @@ func updateConfigurationIfNeeded(ctx context.Context, pkg ctrlpkg.Package, newVe
 
 	if len(newManifest.ValueDefinitions) > 0 {
 		if cliutils.YesNoPrompt(fmt.Sprintf("Do you want to update the configuration for %s?", pkg.GetName()), false) {
-
-			values, err := cli.Configure(*newManifest, pkg.GetSpec().Values)
+			values, err := cli.Configure(*newManifest,
+				cli.WithOldValues(pkg.GetSpec().Values),
+				cli.WithUseDefaults(updateCmdOptions.UseDefault),
+			)
 			if err != nil {
 				return fmt.Errorf("error during configuration: %v", err)
 			}
@@ -276,6 +280,7 @@ func init() {
 	updateCmdOptions.OutputOptions.AddFlagsToCommand(updateCmd)
 	updateCmdOptions.KindOptions.AddFlagsToCommand(updateCmd)
 	updateCmdOptions.NamespaceOptions.AddFlagsToCommand(updateCmd)
+	updateCmdOptions.UseDefaultOptions.AddFlagsToCommand(updateCmd)
 	RootCmd.AddCommand(updateCmd)
 	updateCmdOptions.DryRunOptions.AddFlagsToCommand(updateCmd)
 }

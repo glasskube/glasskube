@@ -30,6 +30,7 @@ import (
 
 var installCmdOptions = struct {
 	flags.ValuesOptions
+	flags.UseDefaultOptions
 	Version           string
 	Repository        string
 	EnableAutoUpdates bool
@@ -178,7 +179,7 @@ var installCmd = &cobra.Command{
 				pkgBuilder.WithValues(values)
 			}
 		} else {
-			if values, err := cli.Configure(manifest, nil); err != nil {
+			if values, err := cli.Configure(manifest, cli.WithUseDefaults(installCmdOptions.UseDefault)); err != nil {
 				cancel()
 			} else {
 				pkgBuilder.WithValues(values)
@@ -342,6 +343,7 @@ func init() {
 	installCmd.PersistentFlags().BoolVar(&installCmdOptions.NoWait, "no-wait", false, "Perform non-blocking install")
 	installCmd.PersistentFlags().BoolVarP(&installCmdOptions.Yes, "yes", "y", false, "Do not ask for any confirmation")
 	installCmdOptions.ValuesOptions.AddFlagsToCommand(installCmd)
+	installCmdOptions.UseDefaultOptions.AddFlagsToCommand(installCmd)
 	installCmdOptions.OutputOptions.AddFlagsToCommand(installCmd)
 	installCmdOptions.NamespaceOptions.AddFlagsToCommand(installCmd)
 	installCmdOptions.DryRunOptions.AddFlagsToCommand(installCmd)
