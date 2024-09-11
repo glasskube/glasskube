@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.21.0](https://github.com/glasskube/glasskube/compare/v0.20.1...v0.21.0) (2024-09-11)
+
+
+### Features
+
+* **cli:** add `--use-default` flag for `install`, `update`, `configure` commands ([#1219](https://github.com/glasskube/glasskube/issues/1219)) ([8f24214](https://github.com/glasskube/glasskube/commit/8f24214aedd71c8fa41d198c2b36067ec8f33947))
+* **package-operator:** add specifying values for package components ([#1218](https://github.com/glasskube/glasskube/issues/1218)) ([ff7c3ce](https://github.com/glasskube/glasskube/commit/ff7c3cefa541b59544be29a5e41ab96fc5d2cb67))
+* **package-operator:** add support for resource transformations ([#1210](https://github.com/glasskube/glasskube/issues/1210)) ([5f934cb](https://github.com/glasskube/glasskube/commit/5f934cb5e47ad02438ad2c0d55b13a25d7708807))
+
+
+### Bug Fixes
+
+* **deps:** update dependency @getcanary/web to ^0.0.102 ([#1204](https://github.com/glasskube/glasskube/issues/1204)) ([511a66b](https://github.com/glasskube/glasskube/commit/511a66b738cd60ea0fff6752cfecb71ee41c8933))
+* **deps:** update dependency @getcanary/web to ^0.0.104 ([#1217](https://github.com/glasskube/glasskube/issues/1217)) ([8c85ace](https://github.com/glasskube/glasskube/commit/8c85acecef1d618695c7c44d8c7cdfe04af0a2c0))
+* **deps:** update fontsource monorepo ([#1202](https://github.com/glasskube/glasskube/issues/1202)) ([e281523](https://github.com/glasskube/glasskube/commit/e2815234da09f37ff0b5c31e3cabf68cdb22aae4))
+
+
+### Other
+
+* change transitiveResources type to TypeLocalObjectReference ([#1211](https://github.com/glasskube/glasskube/issues/1211)) ([54c78cd](https://github.com/glasskube/glasskube/commit/54c78cdb0ea5151a661104282d11a99bea15d496))
+* **deps:** bump body-parser and express in /website ([#1222](https://github.com/glasskube/glasskube/issues/1222)) ([9c5416e](https://github.com/glasskube/glasskube/commit/9c5416edf2e1747134ba787a9bc2bba44696cc6e))
+* **deps:** update commitlint monorepo to v19.5.0 ([#1221](https://github.com/glasskube/glasskube/issues/1221)) ([ede058b](https://github.com/glasskube/glasskube/commit/ede058b09172135a3f0bad8fd6bc73551087a55d))
+* **deps:** update dependency typescript to ~5.6.0 ([#1214](https://github.com/glasskube/glasskube/issues/1214)) ([0e2ca5b](https://github.com/glasskube/glasskube/commit/0e2ca5b936c5f6d93a401efbfb1d16615bde8714))
+* **deps:** update dependency typescript-eslint to v8.5.0 ([#1215](https://github.com/glasskube/glasskube/issues/1215)) ([f5ada7e](https://github.com/glasskube/glasskube/commit/f5ada7e90c9364983eb3f8f93177bb1e3516e1f8))
+
+
+### Docs
+
+* add package manifest reference ([#1212](https://github.com/glasskube/glasskube/issues/1212)) ([7ff01ce](https://github.com/glasskube/glasskube/commit/7ff01ce5d020bf2df8cd970b0bd2fc565d5a8fab))
+* **website:** change the site banner ([#1206](https://github.com/glasskube/glasskube/issues/1206)) ([371474c](https://github.com/glasskube/glasskube/commit/371474cf3b58ed88d8a3de48bf5815f802989dff))
+* **website:** improve Blog page Layout ([#1153](https://github.com/glasskube/glasskube/issues/1153)) ([70033d5](https://github.com/glasskube/glasskube/commit/70033d57a24612f2f70482ae793c3bee3e5eec3f))
+* **website:** improve launch week wording ([#1213](https://github.com/glasskube/glasskube/issues/1213)) ([243798e](https://github.com/glasskube/glasskube/commit/243798e860785da5db4b80815e136e9bfab436b0))
+* **website:** some spelling changes and new visual assets ([#1216](https://github.com/glasskube/glasskube/issues/1216)) ([dbfd2a9](https://github.com/glasskube/glasskube/commit/dbfd2a994e65cab74fc52e2c36ae364d54125677))
+
 ## [0.20.1](https://github.com/glasskube/glasskube/compare/v0.20.0...v0.20.1) (2024-09-06)
 
 
