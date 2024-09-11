@@ -73,8 +73,6 @@ func Configure(
 		fn(&options)
 	}
 
-	fmt.Println(options)
-
 	newValues := make(map[string]v1alpha1.ValueConfiguration, len(manifest.ValueDefinitions))
 	if len(manifest.ValueDefinitions) > 0 {
 		fmt.Fprintf(os.Stderr, "\n%v has %v values for configuration.\n\n",
