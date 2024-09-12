@@ -1,4 +1,4 @@
-package flags
+package cli
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/util"
 	"github.com/spf13/cobra"
 )
 
@@ -15,6 +16,7 @@ type ValuesOptions struct {
 	Values               []string
 	KeepOldValues        bool
 	KeepOldValuesDefault *bool
+	UseDefault           UseDefaultValuesOption
 }
 
 func NewOptions(conf ...valuesOptionsConfigurer) ValuesOptions {
@@ -48,12 +50,25 @@ func (opts *ValuesOptions) AddFlagsToCommand(cmd *cobra.Command) {
 		flags.BoolVar(&opts.KeepOldValues, "keep-old-values", *opts.KeepOldValuesDefault,
 			"Set this to false in order to erase any values not specified via --value")
 	}
+	flags.StringArrayVar((*[]string)(&opts.UseDefault), "use-default", opts.UseDefault,
+		"Instruct glasskube to use the default value for the speciefied definition name(s).\n"+
+			"Specify \"all\" to use all available default values.")
 }
 
 func (opts *ValuesOptions) ParseValues(
+	manifest *v1alpha1.PackageManifest,
 	oldValues map[string]v1alpha1.ValueConfiguration,
 ) (map[string]v1alpha1.ValueConfiguration, error) {
 	newValues := make(map[string]v1alpha1.ValueConfiguration)
+	for name, def := range manifest.ValueDefinitions {
+		if opts.UseDefault.ShouldUseDefault(name, def) {
+			newValues[name] = v1alpha1.ValueConfiguration{
+				InlineValueConfiguration: v1alpha1.InlineValueConfiguration{
+					Value: util.Pointer(def.DefaultValue),
+				},
+			}
+		}
+	}
 	if opts.KeepOldValues {
 		maps.Copy(newValues, oldValues)
 	}

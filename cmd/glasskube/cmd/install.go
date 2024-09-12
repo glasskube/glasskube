@@ -14,7 +14,6 @@ import (
 	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/dependency"
 	"github.com/glasskube/glasskube/internal/manifestvalues/cli"
-	"github.com/glasskube/glasskube/internal/manifestvalues/flags"
 	"github.com/glasskube/glasskube/internal/maputils"
 	"github.com/glasskube/glasskube/internal/repo"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
@@ -29,8 +28,7 @@ import (
 )
 
 var installCmdOptions = struct {
-	flags.ValuesOptions
-	flags.UseDefaultOptions
+	cli.ValuesOptions
 	Version           string
 	Repository        string
 	EnableAutoUpdates bool
@@ -40,7 +38,7 @@ var installCmdOptions = struct {
 	NamespaceOptions
 	DryRunOptions
 }{
-	ValuesOptions: flags.NewOptions(),
+	ValuesOptions: cli.NewOptions(),
 }
 
 var installCmd = &cobra.Command{
@@ -172,7 +170,7 @@ var installCmd = &cobra.Command{
 		}
 
 		if installCmdOptions.IsValuesSet() {
-			if values, err := installCmdOptions.ParseValues(nil); err != nil {
+			if values, err := installCmdOptions.ParseValues(&manifest, nil); err != nil {
 				fmt.Fprintf(os.Stderr, "❌ invalid values in command line flags: %v\n", err)
 				cliutils.ExitWithError()
 			} else {
@@ -343,7 +341,6 @@ func init() {
 	installCmd.PersistentFlags().BoolVar(&installCmdOptions.NoWait, "no-wait", false, "Perform non-blocking install")
 	installCmd.PersistentFlags().BoolVarP(&installCmdOptions.Yes, "yes", "y", false, "Do not ask for any confirmation")
 	installCmdOptions.ValuesOptions.AddFlagsToCommand(installCmd)
-	installCmdOptions.UseDefaultOptions.AddFlagsToCommand(installCmd)
 	installCmdOptions.OutputOptions.AddFlagsToCommand(installCmd)
 	installCmdOptions.NamespaceOptions.AddFlagsToCommand(installCmd)
 	installCmdOptions.DryRunOptions.AddFlagsToCommand(installCmd)
