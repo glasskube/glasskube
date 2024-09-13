@@ -35,18 +35,6 @@ var (
 	red   = color.RedString
 )
 
-type UseDefaultValuesOption []string
-
-func (o UseDefaultValuesOption) ShouldUseDefault(name string, def v1alpha1.ValueDefinition) bool {
-	for _, v := range o {
-		switch v {
-		case "all", name:
-			return def.DefaultValue != ""
-		}
-	}
-	return false
-}
-
 type ConfigureOptions struct {
 	oldValues map[string]v1alpha1.ValueConfiguration
 	UseDefaultValuesOption

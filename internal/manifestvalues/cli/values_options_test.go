@@ -1,14 +1,17 @@
-package flags
+package cli
 
 import (
 	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/util"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("ParseValues", func() {
 	foo := "foo"
-	fooMap := map[string]v1alpha1.ValueConfiguration{"foo": {InlineValueConfiguration: v1alpha1.InlineValueConfiguration{Value: &foo}}}
+	fooMap := map[string]v1alpha1.ValueConfiguration{
+		"foo": {InlineValueConfiguration: v1alpha1.InlineValueConfiguration{Value: &foo}},
+	}
 	var opts *ValuesOptions
 	BeforeEach(func() { opts = &ValuesOptions{} })
 	DescribeTable("should parse",
@@ -16,7 +19,7 @@ var _ = Describe("ParseValues", func() {
 			expectError bool, expectedResult map[string]v1alpha1.ValueConfiguration) {
 			opts.KeepOldValues = keep
 			opts.Values = values
-			newValues, err := opts.ParseValues(oldValues)
+			newValues, err := opts.ParseValues(&v1alpha1.PackageManifest{}, oldValues)
 			if expectError {
 				Expect(err).To(HaveOccurred())
 			} else {
@@ -68,4 +71,42 @@ var _ = Describe("ParseValues", func() {
 
 		Entry("when there is an invalid PackageRef (too few args)", false, []string{"foo=$PackageRef$foo"}, nil, true, nil),
 	)
+	It("should handle defaults", func() {
+		opts.KeepOldValues = false
+		opts.Values = []string{"hello=world"}
+		opts.UseDefault = UseDefaultValuesOption{"foo"}
+		newValues, err := opts.ParseValues(
+			&v1alpha1.PackageManifest{
+				ValueDefinitions: map[string]v1alpha1.ValueDefinition{
+					"foo": {Type: "text", DefaultValue: "foo"},
+				},
+			},
+			nil,
+		)
+		Expect(err).NotTo(HaveOccurred())
+		expectedResult := map[string]v1alpha1.ValueConfiguration{
+			"foo":   {InlineValueConfiguration: v1alpha1.InlineValueConfiguration{Value: util.Pointer("foo")}},
+			"hello": {InlineValueConfiguration: v1alpha1.InlineValueConfiguration{Value: util.Pointer("world")}},
+		}
+		Expect(newValues).To(Equal(expectedResult))
+	})
+	It("should handle all defaults", func() {
+		opts.KeepOldValues = false
+		opts.Values = []string{"hello=world"}
+		opts.UseDefault = UseDefaultValuesOption{"all"}
+		newValues, err := opts.ParseValues(
+			&v1alpha1.PackageManifest{
+				ValueDefinitions: map[string]v1alpha1.ValueDefinition{
+					"foo": {Type: "text", DefaultValue: "foo"},
+				},
+			},
+			nil,
+		)
+		Expect(err).NotTo(HaveOccurred())
+		expectedResult := map[string]v1alpha1.ValueConfiguration{
+			"foo":   {InlineValueConfiguration: v1alpha1.InlineValueConfiguration{Value: util.Pointer("foo")}},
+			"hello": {InlineValueConfiguration: v1alpha1.InlineValueConfiguration{Value: util.Pointer("world")}},
+		}
+		Expect(newValues).To(Equal(expectedResult))
+	})
 })
