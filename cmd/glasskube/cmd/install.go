@@ -26,7 +26,6 @@ import (
 	"github.com/glasskube/glasskube/pkg/install"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/spf13/cobra"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -223,20 +222,10 @@ var installCmd = &cobra.Command{
 		}
 
 		if installCmdOptions.NamespaceOptions.Namespace != "" {
-			exists, err := namespaces.IsNamespaceInstalled(
-				ctx,
-				cs,
-				installCmdOptions.NamespaceOptions.Namespace,
-			)
-			if errors.IsNotFound(err) && !exists {
-				fmt.Printf(" * Namespace %v does not exist and will be created",
-					installCmdOptions.NamespaceOptions.Namespace,
-				)
-				err := namespaces.InstallNamespace(
-					ctx,
-					cs,
-					installCmdOptions.NamespaceOptions.Namespace,
-				)
+			if ok, err := namespaces.IsNamespaceInstalled(ctx, cs, installCmdOptions.NamespaceOptions.Namespace); !ok {
+				fmt.Printf(" * Namespace %v does not exist and will be created\n",
+					installCmdOptions.NamespaceOptions.Namespace)
+				err := namespaces.InstallNamespace(ctx, cs, installCmdOptions.NamespaceOptions.Namespace)
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "An error occurred in creating the Namespace:\n\n%v\n", err)
 					cliutils.ExitWithError()
