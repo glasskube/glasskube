@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"os"
 	"strings"
 
@@ -221,15 +222,12 @@ var installCmd = &cobra.Command{
 			fmt.Fprintln(os.Stderr, " * Automatic updates will be", bold("not enabled"))
 		}
 
+		createNamespace := false
 		if installCmdOptions.NamespaceOptions.Namespace != "" {
 			if ok, err := namespaces.IsNamespaceInstalled(ctx, cs, installCmdOptions.NamespaceOptions.Namespace); !ok {
 				fmt.Printf(" * Namespace %v does not exist and will be created\n",
 					installCmdOptions.NamespaceOptions.Namespace)
-				err := namespaces.InstallNamespace(ctx, cs, installCmdOptions.NamespaceOptions.Namespace)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "An error occurred in creating the Namespace:\n\n%v\n", err)
-					cliutils.ExitWithError()
-				}
+				createNamespace = true
 			} else if err != nil {
 				fmt.Fprintf(os.Stderr, "An error occurred in the Namespace check:\n\n%v\n", err)
 				cliutils.ExitWithError()
@@ -248,6 +246,13 @@ var installCmd = &cobra.Command{
 			cancel()
 		}
 
+		if createNamespace {
+			err := namespaces.InstallNamespace(ctx, cs, installCmdOptions.NamespaceOptions.Namespace)
+			if err != nil && !apierrors.IsAlreadyExists(err) {
+				fmt.Fprintf(os.Stderr, "An error occurred in creating the Namespace:\n\n%v\n", err)
+				cliutils.ExitWithError()
+			}
+		}
 		if installCmdOptions.NoWait {
 			if err := installer.Install(ctx, pkg, opts); err != nil {
 				fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
