@@ -35,10 +35,42 @@ var (
 	red   = color.RedString
 )
 
+type UseDefaultValuesOption []string
+
+func (o UseDefaultValuesOption) ShouldUseDefault(name string, def v1alpha1.ValueDefinition) bool {
+	for _, v := range o {
+		switch v {
+		case "all", name:
+			return def.DefaultValue != ""
+		}
+	}
+	return false
+}
+
+type ConfigureOptions struct {
+	oldValues map[string]v1alpha1.ValueConfiguration
+	UseDefaultValuesOption
+}
+
+type ConfigureOption func(*ConfigureOptions)
+
+func WithOldValues(oldValues map[string]v1alpha1.ValueConfiguration) ConfigureOption {
+	return func(co *ConfigureOptions) { co.oldValues = oldValues }
+}
+
+func WithUseDefaults(opts UseDefaultValuesOption) ConfigureOption {
+	return func(co *ConfigureOptions) { co.UseDefaultValuesOption = opts }
+}
+
 func Configure(
 	manifest v1alpha1.PackageManifest,
-	oldValues map[string]v1alpha1.ValueConfiguration,
+	opts ...ConfigureOption,
 ) (map[string]v1alpha1.ValueConfiguration, error) {
+	var options ConfigureOptions
+	for _, fn := range opts {
+		fn(&options)
+	}
+
 	newValues := make(map[string]v1alpha1.ValueConfiguration, len(manifest.ValueDefinitions))
 	if len(manifest.ValueDefinitions) > 0 {
 		fmt.Fprintf(os.Stderr, "\n%v has %v values for configuration.\n\n",
@@ -54,13 +86,20 @@ func Configure(
 	for i, name := range maputils.KeysSorted(manifest.ValueDefinitions) {
 		def := manifest.ValueDefinitions[name]
 		var oldValuePtr *v1alpha1.ValueConfiguration
-		if oldValue, ok := oldValues[name]; ok {
+		if oldValue, ok := options.oldValues[name]; ok {
 			oldValuePtr = &oldValue
 		}
-		if newValue, err := ConfigureSingle(name, def, oldValuePtr); err != nil {
-			return nil, err
-		} else if newValue != nil {
-			newValues[name] = *newValue
+		if options.ShouldUseDefault(name, def) {
+			fmt.Fprintf(os.Stderr, "Using default value for %v: %v\n", name, def.DefaultValue)
+			newValues[name] = v1alpha1.ValueConfiguration{
+				InlineValueConfiguration: v1alpha1.InlineValueConfiguration{Value: util.Pointer(def.DefaultValue)},
+			}
+		} else {
+			if newValue, err := ConfigureSingle(name, def, oldValuePtr); err != nil {
+				return nil, err
+			} else if newValue != nil {
+				newValues[name] = *newValue
+			}
 		}
 		fmt.Fprintf(os.Stderr, "\nProgress: %v%v\n\n",
 			green(strings.Repeat("✔", i+1)),

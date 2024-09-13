@@ -13,7 +13,7 @@ import (
 	ownerutils "github.com/glasskube/glasskube/internal/controller/owners/utils"
 	"github.com/glasskube/glasskube/internal/manifest"
 	"github.com/glasskube/glasskube/internal/manifest/result"
-	"github.com/glasskube/glasskube/internal/manifestvalues"
+	"github.com/glasskube/glasskube/internal/resourcepatch"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -56,7 +56,7 @@ func (a *Adapter) Reconcile(
 	ctx context.Context,
 	pkg ctrlpkg.Package,
 	pi *packagesv1alpha1.PackageInfo,
-	patches manifestvalues.TargetPatches,
+	patches resourcepatch.TargetPatches,
 ) (*result.ReconcileResult, error) {
 	var allOwned []packagesv1alpha1.OwnedResourceRef
 	for _, manifest := range pi.Status.Manifest.Manifests {
@@ -111,7 +111,7 @@ func (r *Adapter) reconcilePlainManifest(
 	pkg ctrlpkg.Package,
 	pi *packagesv1alpha1.PackageInfo,
 	manifest packagesv1alpha1.PlainManifest,
-	patches manifestvalues.TargetPatches,
+	patches resourcepatch.TargetPatches,
 ) ([]packagesv1alpha1.OwnedResourceRef, error) {
 	log := ctrl.LoggerFrom(ctx)
 	var objectsToApply []client.Object

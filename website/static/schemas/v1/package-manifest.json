@@ -12,6 +12,9 @@
         },
         "version": {
           "type": "string"
+        },
+        "values": {
+          "$ref": "#/$defs/ComponentValues"
         }
       },
       "additionalProperties": false,
@@ -19,6 +22,12 @@
       "required": [
         "name"
       ]
+    },
+    "ComponentValues": {
+      "additionalProperties": {
+        "$ref": "#/$defs/InlineValueConfiguration"
+      },
+      "type": "object"
     },
     "Dependency": {
       "properties": {
@@ -57,6 +66,15 @@
         "chartName",
         "chartVersion"
       ]
+    },
+    "InlineValueConfiguration": {
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
     },
     "JSON": {
       "additionalProperties": true,
@@ -145,12 +163,43 @@
         "url"
       ]
     },
-    "TransitiveResource": {
+    "TransformationDefinition": {
       "properties": {
-        "group": {
-          "type": "string"
+        "source": {
+          "$ref": "#/$defs/TransformationSource"
         },
-        "version": {
+        "targets": {
+          "items": {
+            "$ref": "#/$defs/ValueDefinitionTarget"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "source",
+        "targets"
+      ]
+    },
+    "TransformationSource": {
+      "properties": {
+        "resource": {
+          "$ref": "#/$defs/TypedLocalObjectReference"
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "path"
+      ]
+    },
+    "TypedLocalObjectReference": {
+      "properties": {
+        "apiGroup": {
           "type": "string"
         },
         "kind": {
@@ -163,8 +212,7 @@
       "additionalProperties": false,
       "type": "object",
       "required": [
-        "group",
-        "version",
+        "apiGroup",
         "kind",
         "name"
       ]
@@ -354,9 +402,15 @@
       },
       "type": "object"
     },
+    "transformations": {
+      "items": {
+        "$ref": "#/$defs/TransformationDefinition"
+      },
+      "type": "array"
+    },
     "transitiveResources": {
       "items": {
-        "$ref": "#/$defs/TransitiveResource"
+        "$ref": "#/$defs/TypedLocalObjectReference"
       },
       "type": "array"
     },
