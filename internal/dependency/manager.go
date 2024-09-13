@@ -116,7 +116,7 @@ func (dm *DependendcyManager) NewGraph(ctx context.Context) (*graph.DependencyGr
 			// A package that is currently being deleted is added to the graph, but in a state representing
 			// "not installed"
 			installedVersion = ""
-		} else if mf, err := dm.getManifest(ctx, pkg); err != nil {
+		} else if mf, err := dm.getManifest(ctx, pkg); err != nil && mf == nil {
 			return nil, err
 		} else {
 			manifest = *mf
@@ -163,13 +163,13 @@ func (dm *DependendcyManager) addDependencies(
 	var allAdded []Requirement
 	for _, dep := range g.Dependencies(name, namespace) {
 		if g.Version(dep.Name, dep.Namespace) == nil {
-			if versions, err := dm.getVersions(dep.PackageName); err != nil {
+			if versions, err := dm.getVersions(dep.PackageName); err != nil && len(versions) == 0 {
 				return nil, err
 			} else if maxVersion, err := g.Max(dep.Name, dep.Namespace, versions); err != nil {
 				// This error occurs when no suitable version exists.
 				// In this case, the dependency is not added to the graph and a validation error detects this later.
 				continue
-			} else if depManifest, err := dm.repoAdapter.GetManifest(dep.PackageName, maxVersion.Original()); err != nil {
+			} else if depManifest, err := dm.repoAdapter.GetManifest(dep.PackageName, maxVersion.Original()); err != nil && depManifest == nil {
 				return nil, err
 			} else if err := dm.add(g, dep.Name, dep.Namespace, *depManifest, maxVersion.Original()); err != nil {
 				return nil, err
@@ -229,18 +229,16 @@ func isErrNew(errCurrent error, errBefore error) bool {
 
 // getVersions is a utility to get all versions for a package from repoAdapter and also parse them
 func (dm *DependendcyManager) getVersions(name string) ([]*semver.Version, error) {
-	if versions, err := dm.repoAdapter.GetVersions(name); err != nil {
-		return nil, err
-	} else {
-		parsedVersions := make([]*semver.Version, len(versions))
-		for i, version := range versions {
-			parsedVersions[i], err = semver.NewVersion(version)
-			if err != nil {
-				return nil, err
-			}
+	versions, repoErr := dm.repoAdapter.GetVersions(name)
+	parsedVersions := make([]*semver.Version, len(versions))
+	for i, version := range versions {
+		var err error
+		parsedVersions[i], err = semver.NewVersion(version)
+		if err != nil {
+			return nil, multierr.Append(err, repoErr)
 		}
-		return parsedVersions, nil
 	}
+	return parsedVersions, repoErr
 }
 
 func (dm *DependendcyManager) getManifest(ctx context.Context, pkg ctrlpkg.Package) (*v1alpha1.PackageManifest, error) {

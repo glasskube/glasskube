@@ -128,20 +128,20 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 		}
 	}
 
-	var validatinoResult *dependency.ValidationResult
+	var validationResult *dependency.ValidationResult
 	var validationErr error
 	if d.pkg.IsNil() {
 		if d.manifest.Scope.IsCluster() {
-			validatinoResult, validationErr =
+			validationResult, validationErr =
 				s.dependencyMgr.Validate(r.Context(), d.manifestName, "", d.manifest, d.selectedVersion)
 		} else {
 			// In this case we don't know the actual namespace, but we can assume the default
 			// TODO: make name and namespace depend on user input
-			validatinoResult, validationErr =
+			validationResult, validationErr =
 				s.dependencyMgr.Validate(r.Context(), d.manifestName, d.manifest.DefaultNamespace, d.manifest, d.selectedVersion)
 		}
 	} else {
-		validatinoResult, validationErr =
+		validationResult, validationErr =
 			s.dependencyMgr.Validate(r.Context(), d.pkg.GetName(), d.pkg.GetNamespace(), d.manifest, d.selectedVersion)
 	}
 
@@ -179,8 +179,8 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 		"LatestVersion":      latestVersion,
 		"UpdateAvailable":    s.isUpdateAvailableForPkg(r.Context(), d.pkg),
 		"AutoUpdate":         clientutils.AutoUpdateString(d.pkg, "Disabled"),
-		"ValidationResult":   validatinoResult,
-		"ShowConflicts":      validatinoResult.Status == dependency.ValidationResultStatusConflict,
+		"ValidationResult":   validationResult,
+		"ShowConflicts":      validationResult.Status == dependency.ValidationResultStatusConflict,
 		"SelectedVersion":    d.selectedVersion,
 		"PackageIndex":       &idx,
 		"Repositories":       repos,
@@ -223,8 +223,9 @@ func (s *server) getRepos(ctx context.Context, manifestName string, repositoryNa
 	var repos []v1alpha1.PackageRepository
 	var err error
 	if repos, err = s.repoClientset.Meta().GetReposForPackage(manifestName); err != nil {
-		fmt.Fprintf(os.Stderr, "error getting repos for package; %v", err)
-	} else if repositoryName == "" {
+		fmt.Fprintf(os.Stderr, "error getting repos for package: %v\n", err)
+	}
+	if repositoryName == "" {
 		if len(repos) == 0 {
 			return "", nil, nil, fmt.Errorf("%v not found in any repository", manifestName)
 		}

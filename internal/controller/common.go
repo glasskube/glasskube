@@ -356,9 +356,7 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 
 			repositories, err := r.RepoClientset.Meta().GetReposForPackage(requirement.Name)
 			if err != nil {
-				log.Error(err, "could not find repos for package", "required", requirement.Name)
-				failed = append(failed, requirement.Name)
-				continue
+				log.Error(err, "could not get all repos for package", "required", requirement.Name)
 			}
 
 			var repositoryName string

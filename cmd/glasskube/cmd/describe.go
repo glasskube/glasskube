@@ -61,7 +61,7 @@ var describeCmd = &cobra.Command{
 		if pkgErr != nil {
 			if errors.IsNotFound(pkgErr) {
 				// package not installed -> use latest manifest from repo
-				if lvErr != nil {
+				if lvErr != nil && latestVersion == "" {
 					fmt.Fprintf(os.Stderr, "❌ Could not get latest info for %v: %v\n", pkgName, lvErr)
 					cliutils.ExitWithError()
 				}
@@ -122,7 +122,7 @@ var describeCmd = &cobra.Command{
 		}
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "❌ Could not get repos for %v: %v\n", pkgName, err)
-			cliutils.ExitWithError()
+			// cliutils.ExitWithError()
 		}
 
 		bold := color.New(color.Bold).SprintFunc()

@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"go.uber.org/multierr"
+
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
@@ -61,15 +63,16 @@ func DescribeLatestVersion(ctx context.Context, repositoryName string, packageNa
 	*v1alpha1.PackageManifest, string, error) {
 
 	repoClient := cliutils.RepositoryClientset(ctx)
+	var repoErr error
 	if len(repositoryName) == 0 {
-		if repos, err := repoClient.Meta().GetReposForPackage(packageName); err != nil {
-			return nil, "", err
-		} else if len(repos) == 0 {
-			return nil, "", fmt.Errorf("no repo found for package %v", packageName)
+		var repos []v1alpha1.PackageRepository
+		repos, repoErr = repoClient.Meta().GetReposForPackage(packageName)
+		if len(repos) == 0 {
+			return nil, "", multierr.Append(fmt.Errorf("no repo found for package %v", packageName), repoErr)
 		} else {
 			for _, repo := range repos {
 				repositoryName = repo.Name
-				if !repo.IsDefaultRepository() {
+				if repo.IsDefaultRepository() {
 					break
 				}
 			}
@@ -78,8 +81,8 @@ func DescribeLatestVersion(ctx context.Context, repositoryName string, packageNa
 	var packageManifest v1alpha1.PackageManifest
 	if latestVersion, err := repoClient.ForRepoWithName(repositoryName).
 		FetchLatestPackageManifest(packageName, &packageManifest); err != nil {
-		return nil, "", err
+		return nil, "", multierr.Append(err, repoErr)
 	} else {
-		return &packageManifest, latestVersion, nil
+		return &packageManifest, latestVersion, repoErr
 	}
 }

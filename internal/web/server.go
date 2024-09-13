@@ -21,6 +21,8 @@ import (
 	"syscall"
 	"time"
 
+	"go.uber.org/multierr"
+
 	"github.com/glasskube/glasskube/internal/dependency/graph"
 	"github.com/glasskube/glasskube/internal/telemetry/annotations"
 
@@ -629,8 +631,11 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 
 	repositoryName, mf, err = s.getUsedRepoAndManifest(ctx, pkg, repositoryName, manifestName, selectedVersion)
 	if err != nil {
-		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to get manifest and repo of %v: %w", manifestName, err)))
-		return
+		if mf == nil {
+			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to get manifest and repo of %v: %w", manifestName, err)))
+			return
+		}
+		fmt.Fprintf(os.Stderr, "problem fetching manifest and repo, but installation can continue: %v", err)
 	}
 
 	if values, err := extractValues(r, mf); err != nil {
@@ -716,8 +721,11 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 
 	repositoryName, mf, err = s.getUsedRepoAndManifest(ctx, pkg, repositoryName, pkgName, selectedVersion)
 	if err != nil {
-		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to get manifest and repo of %v: %w", pkgName, err)))
-		return
+		if mf == nil {
+			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to get manifest and repo of %v: %w", pkgName, err)))
+			return
+		}
+		fmt.Fprintf(os.Stderr, "problem fetching manifest and repo, but installation can continue: %v", err)
 	}
 
 	if values, err := extractValues(r, mf); err != nil {
@@ -786,36 +794,35 @@ func (s *server) getUsedRepoAndManifest(ctx context.Context, pkg ctrlpkg.Package
 	string, *v1alpha1.PackageManifest, error) {
 
 	var mf v1alpha1.PackageManifest
+	var repoErr error
 	if pkg.IsNil() {
 		var repoClient repoclient.RepoClient
 		if len(repositoryName) == 0 {
-			repos, err := s.repoClientset.Meta().GetReposForPackage(manifestName)
-			if err != nil {
-				return "", nil, err
-			}
+			var repos []v1alpha1.PackageRepository
+			repos, repoErr = s.repoClientset.Meta().GetReposForPackage(manifestName)
 			switch len(repos) {
 			case 0:
-				return "", nil, errors.New("package not found in any repository")
+				return "", nil, multierr.Append(errors.New("package not found in any repository"), repoErr)
 			case 1:
 				repositoryName = repos[0].Name
 				repoClient = s.repoClientset.ForRepo(repos[0])
 			default:
-				return "", nil, errors.New("package found in multiple repositories")
+				return "", nil, multierr.Append(errors.New("package found in multiple repositories"), repoErr)
 			}
 		} else {
 			repoClient = s.repoClientset.ForRepoWithName(repositoryName)
 		}
 		if err := repoClient.FetchPackageManifest(manifestName, selectedVersion, &mf); err != nil {
-			return "", nil, err
+			return "", nil, multierr.Append(err, repoErr)
 		}
 	} else {
 		if installedMf, err := manifest.GetInstalledManifestForPackage(ctx, pkg); err != nil {
-			return "", nil, err
+			return "", nil, multierr.Append(err, repoErr)
 		} else {
 			mf = *installedMf
 		}
 	}
-	return repositoryName, &mf, nil
+	return repositoryName, &mf, repoErr
 }
 
 // advancedClusterPackageConfiguration is a GET+POST endpoint which can be used for advanced package installation options,
@@ -881,9 +888,10 @@ func (s *server) advancedPackageConfiguration(w http.ResponseWriter, r *http.Req
 func (s *server) handleAdvancedConfig(ctx context.Context, d *packageDetailPageContext, r *http.Request, w http.ResponseWriter) {
 	var err error
 	var repos []v1alpha1.PackageRepository
-	if repos, err = s.repoClientset.Meta().GetReposForPackage(d.manifestName); err != nil {
-		fmt.Fprintf(os.Stderr, "error getting repos for package; %v", err)
-	} else if d.repositoryName == "" {
+	if d.repositoryName == "" {
+		if repos, err = s.repoClientset.Meta().GetReposForPackage(d.manifestName); err != nil {
+			fmt.Fprintf(os.Stderr, "error getting repos for package; %v", err)
+		}
 		if len(repos) == 0 {
 			s.sendToast(w,
 				toast.WithErr(fmt.Errorf("manifest %v not found in any repo", d.manifestName)),
