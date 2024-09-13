@@ -2,9 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"os"
 	"strings"
+
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/namespaces"
