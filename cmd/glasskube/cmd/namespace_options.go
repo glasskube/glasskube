@@ -38,22 +38,23 @@ func (opt *NamespaceOptions) GetActualNamespace(ctx context.Context) string {
 func DeleteNamespace(ctx context.Context, namespace string) {
 	client := cliutils.PackageClient(ctx)
 	config := clicontext.ConfigFromContext(ctx)
-	
+
 	var pkgs v1alpha1.PackageList
 	if err := client.Packages(namespace).GetAll(ctx, &pkgs); err != nil {
 		fmt.Fprintf(os.Stderr, "❌ error listing packages in namespace: %v\n", err)
 		cliutils.ExitWithError()
 	}
-	
+
 	var namespacePackages []string
 	for _, pkg := range pkgs.Items {
 		if pkg.Namespace == namespace {
 			namespacePackages = append(namespacePackages, pkg.Name)
 		}
 	}
-	
+
 	if len(namespacePackages) > 0 {
-		fmt.Printf("❌ Namespace %s cannot be deleted because it contains other packages: %v\n", namespace, strings.Join(namespacePackages, ", "))
+		fmt.Printf("❌ Namespace %s cannot be deleted because it contains other packages: %v\n",
+			namespace, strings.Join(namespacePackages, ", "))
 		cliutils.ExitWithError()
 	}
 

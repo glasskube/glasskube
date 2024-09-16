@@ -14,8 +14,8 @@ import (
 )
 
 var uninstallCmdOptions = struct {
-	NoWait bool
-	Yes    bool
+	NoWait          bool
+	Yes             bool
 	DeleteNamespace bool
 	KindOptions
 	NamespaceOptions
