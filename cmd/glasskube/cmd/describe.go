@@ -9,6 +9,8 @@ import (
 	"os"
 	"strings"
 
+	repoerror "github.com/glasskube/glasskube/internal/repo/error"
+
 	"github.com/fatih/color"
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clientutils"
@@ -61,9 +63,11 @@ var describeCmd = &cobra.Command{
 		if pkgErr != nil {
 			if errors.IsNotFound(pkgErr) {
 				// package not installed -> use latest manifest from repo
-				if lvErr != nil && latestVersion == "" {
+				if lvErr != nil {
 					fmt.Fprintf(os.Stderr, "❌ Could not get latest info for %v: %v\n", pkgName, lvErr)
-					cliutils.ExitWithError()
+					if !repoerror.IsPartial(lvErr) {
+						cliutils.ExitWithError()
+					}
 				}
 
 				manifest = latestManifest

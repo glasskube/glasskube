@@ -7,6 +7,8 @@ import (
 	"os"
 	"slices"
 
+	repoerror "github.com/glasskube/glasskube/internal/repo/error"
+
 	"go.uber.org/multierr"
 
 	"github.com/glasskube/glasskube/internal/web/components/toast"
@@ -106,7 +108,7 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 	var repos []v1alpha1.PackageRepository
 	var usedRepo *v1alpha1.PackageRepository
 	if d.repositoryName, repos, usedRepo, repoErr = s.getRepos(
-		ctx, d.manifestName, d.repositoryName); repoErr != nil && usedRepo == nil {
+		ctx, d.manifestName, d.repositoryName); !repoerror.IsPartial(repoErr) {
 		s.sendToast(w, toast.WithErr(repoErr))
 		return
 	}
@@ -227,7 +229,10 @@ func (s *server) getRepos(ctx context.Context, manifestName string, repositoryNa
 	var repos []v1alpha1.PackageRepository
 	var err error
 	if repos, err = s.repoClientset.Meta().GetReposForPackage(manifestName); err != nil {
-		fmt.Fprintf(os.Stderr, "error getting repos for package: %v\n", err)
+		if !repoerror.IsPartial(err) {
+			return "", nil, nil, err
+		}
+		fmt.Fprintf(os.Stderr, "error getting repos for package (but can continue): %v\n", err)
 	}
 	if repositoryName == "" {
 		if len(repos) == 0 {

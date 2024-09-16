@@ -6,6 +6,8 @@ import (
 	"slices"
 	"strings"
 
+	repoerror "github.com/glasskube/glasskube/internal/repo/error"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
@@ -116,7 +118,7 @@ func (dm *DependendcyManager) NewGraph(ctx context.Context) (*graph.DependencyGr
 			// A package that is currently being deleted is added to the graph, but in a state representing
 			// "not installed"
 			installedVersion = ""
-		} else if mf, err := dm.getManifest(ctx, pkg); err != nil && mf == nil {
+		} else if mf, err := dm.getManifest(ctx, pkg); !repoerror.IsPartial(err) {
 			return nil, err
 		} else {
 			manifest = *mf
@@ -163,13 +165,13 @@ func (dm *DependendcyManager) addDependencies(
 	var allAdded []Requirement
 	for _, dep := range g.Dependencies(name, namespace) {
 		if g.Version(dep.Name, dep.Namespace) == nil {
-			if versions, err := dm.getVersions(dep.PackageName); err != nil && len(versions) == 0 {
+			if versions, err := dm.getVersions(dep.PackageName); err != nil && !repoerror.IsPartial(err) {
 				return nil, err
 			} else if maxVersion, err := g.Max(dep.Name, dep.Namespace, versions); err != nil {
 				// This error occurs when no suitable version exists.
 				// In this case, the dependency is not added to the graph and a validation error detects this later.
 				continue
-			} else if depManifest, err := dm.repoAdapter.GetManifest(dep.PackageName, maxVersion.Original()); err != nil && depManifest == nil {
+			} else if depManifest, err := dm.repoAdapter.GetManifest(dep.PackageName, maxVersion.Original()); !repoerror.IsPartial(err) {
 				return nil, err
 			} else if err := dm.add(g, dep.Name, dep.Namespace, *depManifest, maxVersion.Original()); err != nil {
 				return nil, err

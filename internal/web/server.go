@@ -21,6 +21,8 @@ import (
 	"syscall"
 	"time"
 
+	repoerror "github.com/glasskube/glasskube/internal/repo/error"
+
 	"go.uber.org/multierr"
 
 	"github.com/glasskube/glasskube/internal/dependency/graph"
@@ -630,12 +632,11 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 	}
 
 	repositoryName, mf, err = s.getUsedRepoAndManifest(ctx, pkg, repositoryName, manifestName, selectedVersion)
-	if err != nil {
-		if mf == nil {
-			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to get manifest and repo of %v: %w", manifestName, err)))
-			return
-		}
+	if repoerror.IsPartial(err) {
 		fmt.Fprintf(os.Stderr, "problem fetching manifest and repo, but installation can continue: %v", err)
+	} else if err != nil {
+		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to get manifest and repo of %v: %w", manifestName, err)))
+		return
 	}
 
 	if values, err := extractValues(r, mf); err != nil {
@@ -720,12 +721,11 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 	}
 
 	repositoryName, mf, err = s.getUsedRepoAndManifest(ctx, pkg, repositoryName, pkgName, selectedVersion)
-	if err != nil {
-		if mf == nil {
-			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to get manifest and repo of %v: %w", pkgName, err)))
-			return
-		}
+	if repoerror.IsPartial(err) {
 		fmt.Fprintf(os.Stderr, "problem fetching manifest and repo, but installation can continue: %v", err)
+	} else {
+		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to get manifest and repo of %v: %w", pkgName, err)))
+		return
 	}
 
 	if values, err := extractValues(r, mf); err != nil {

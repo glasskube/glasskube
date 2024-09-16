@@ -3,6 +3,8 @@ package dependency
 import (
 	"fmt"
 
+	repoerror "github.com/glasskube/glasskube/internal/repo/error"
+
 	"go.uber.org/multierr"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
@@ -16,7 +18,7 @@ type defaultRepoAdapter struct {
 
 func (a *defaultRepoAdapter) GetVersions(name string) ([]string, error) {
 	packageRepo, repoErr := a.getRepoForPackage(name)
-	if repoErr != nil && packageRepo == nil {
+	if !repoerror.IsPartial(repoErr) {
 		return nil, repoErr
 	}
 	var idx repotypes.PackageIndex
@@ -31,7 +33,7 @@ func (a *defaultRepoAdapter) GetVersions(name string) ([]string, error) {
 }
 
 func (a *defaultRepoAdapter) GetManifest(name string, version string) (*v1alpha1.PackageManifest, error) {
-	if repo, err := a.getRepoForPackage(name); err != nil && repo == nil {
+	if repo, err := a.getRepoForPackage(name); !repoerror.IsPartial(err) {
 		return nil, err
 	} else {
 		var manifest v1alpha1.PackageManifest
