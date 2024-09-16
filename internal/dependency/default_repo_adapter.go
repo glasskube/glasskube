@@ -47,7 +47,9 @@ func (a *defaultRepoAdapter) getRepoForPackage(name string) (*v1alpha1.PackageRe
 	case 1:
 		return &repos[0], err
 	default:
-		return nil, multierr.Append(fmt.Errorf("%v is available from %v repositories (currently unsupported)", name, len(repos)), err)
+		return nil, multierr.Append(err,
+			fmt.Errorf("%v is available from %v repositories (currently unsupported)", name, len(repos)),
+		)
 	}
 
 }
