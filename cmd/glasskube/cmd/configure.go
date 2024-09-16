@@ -11,21 +11,19 @@ import (
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/manifestvalues/cli"
-	"github.com/glasskube/glasskube/internal/manifestvalues/flags"
 	"github.com/glasskube/glasskube/pkg/manifest"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var configureCmdOptions = struct {
-	flags.ValuesOptions
-	flags.UseDefaultOptions
+	cli.ValuesOptions
 	OutputOptions
 	NamespaceOptions
 	KindOptions
 	DryRunOptions
 }{
-	ValuesOptions: flags.NewOptions(flags.WithKeepOldValuesFlag),
+	ValuesOptions: cli.NewOptions(cli.WithKeepOldValuesFlag),
 	KindOptions:   DefaultKindOptions(),
 }
 
@@ -59,18 +57,21 @@ func runConfigure(cmd *cobra.Command, args []string) {
 		cliutils.ExitWithError()
 	}
 
+	pkgManifest, err := manifest.GetInstalledManifestForPackage(ctx, pkg)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "❌ error getting installed manifest: %v\n", err)
+		cliutils.ExitWithError()
+	}
+
 	if configureCmdOptions.IsValuesSet() {
-		if values, err := configureCmdOptions.ParseValues(pkg.GetSpec().Values); err != nil {
+		if values, err := configureCmdOptions.ParseValues(pkgManifest, pkg.GetSpec().Values); err != nil {
 			fmt.Fprintf(os.Stderr, "❌ invalid values in command line flags: %v\n", err)
 			cliutils.ExitWithError()
 		} else {
 			pkg.GetSpec().Values = values
 		}
 	} else {
-		if pkgManifest, err := manifest.GetInstalledManifestForPackage(ctx, pkg); err != nil {
-			fmt.Fprintf(os.Stderr, "❌ error getting installed manifest: %v\n", err)
-			cliutils.ExitWithError()
-		} else if len(pkgManifest.ValueDefinitions) == 0 {
+		if len(pkgManifest.ValueDefinitions) == 0 {
 			fmt.Fprintln(os.Stderr, "❌ this package has no configuration values")
 			cliutils.ExitWithError()
 		} else if values, err := cli.Configure(*pkgManifest,
@@ -145,7 +146,6 @@ func runConfigure(cmd *cobra.Command, args []string) {
 
 func init() {
 	configureCmdOptions.ValuesOptions.AddFlagsToCommand(configureCmd)
-	configureCmdOptions.UseDefaultOptions.AddFlagsToCommand(configureCmd)
 	configureCmdOptions.OutputOptions.AddFlagsToCommand(configureCmd)
 	configureCmdOptions.NamespaceOptions.AddFlagsToCommand(configureCmd)
 	configureCmdOptions.KindOptions.AddFlagsToCommand(configureCmd)
