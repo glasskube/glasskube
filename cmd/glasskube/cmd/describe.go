@@ -122,7 +122,6 @@ var describeCmd = &cobra.Command{
 		}
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "❌ Could not get repos for %v: %v\n", pkgName, err)
-			// cliutils.ExitWithError()
 		}
 
 		bold := color.New(color.Bold).SprintFunc()
