@@ -5,7 +5,10 @@ import (
 	"os"
 	"strings"
 
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/glasskube/glasskube/internal/clientutils"
+	"github.com/glasskube/glasskube/internal/namespaces"
 
 	"github.com/fatih/color"
 	"github.com/glasskube/glasskube/api/v1alpha1"
@@ -56,6 +59,7 @@ var installCmd = &cobra.Command{
 		valueResolver := cliutils.ValueResolver(ctx)
 		repoClientset := cliutils.RepositoryClientset(ctx)
 		installer := install.NewInstaller(pkgClient)
+		cs := clicontext.KubernetesClientFromContext(ctx)
 
 		opts := metav1.CreateOptions{}
 		if installCmdOptions.DryRun {
@@ -217,6 +221,18 @@ var installCmd = &cobra.Command{
 			fmt.Fprintln(os.Stderr, " * Automatic updates will be", bold("not enabled"))
 		}
 
+		createNamespace := false
+		if installCmdOptions.NamespaceOptions.Namespace != "" {
+			if ok, err := namespaces.Exists(ctx, cs, installCmdOptions.NamespaceOptions.Namespace); !ok {
+				fmt.Fprintf(os.Stderr, " * Namespace %v does not exist and will be created\n",
+					installCmdOptions.NamespaceOptions.Namespace)
+				createNamespace = true
+			} else if err != nil {
+				fmt.Fprintf(os.Stderr, "An error occurred in the Namespace check:\n\n%v\n", err)
+				cliutils.ExitWithError()
+			}
+		}
+
 		if len(pkg.GetSpec().Values) > 0 {
 			fmt.Fprintln(os.Stderr, bold("Configuration:"))
 			printValueConfigurations(os.Stderr, pkg.GetSpec().Values)
@@ -229,6 +245,18 @@ var installCmd = &cobra.Command{
 			cancel()
 		}
 
+		if createNamespace {
+			ns := &v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: installCmdOptions.NamespaceOptions.Namespace,
+				},
+			}
+			_, err := cs.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "An error occurred in creating the Namespace:\n\n%v\n", err)
+				cliutils.ExitWithError()
+			}
+		}
 		if installCmdOptions.NoWait {
 			if err := installer.Install(ctx, pkg, opts); err != nil {
 				fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)
