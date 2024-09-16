@@ -16,6 +16,7 @@ import (
 var uninstallCmdOptions = struct {
 	NoWait bool
 	Yes    bool
+	DeleteNamespace bool
 	KindOptions
 	NamespaceOptions
 	DryRunOptions
@@ -83,6 +84,11 @@ var uninstallCmd = &cobra.Command{
 			}
 			fmt.Fprintf(os.Stderr, "🗑️  %v uninstalled successfully.\n", pkgName)
 		}
+
+		if uninstallCmdOptions.DeleteNamespace {
+			DeleteNamespace(ctx, pkg.GetNamespace())
+			cliutils.ExitSuccess()
+		}
 	},
 }
 
@@ -104,6 +110,8 @@ func init() {
 		"Perform non-blocking uninstall")
 	uninstallCmd.PersistentFlags().BoolVarP(&uninstallCmdOptions.Yes, "yes", "y", false,
 		"Do not ask for any confirmation")
+	uninstallCmd.PersistentFlags().BoolVar(&uninstallCmdOptions.DeleteNamespace, "delete-namespace", false,
+		"Delete the namespace when uninstalling the package")
 	RootCmd.AddCommand(uninstallCmd)
 	uninstallCmdOptions.DryRunOptions.AddFlagsToCommand(uninstallCmd)
 }
