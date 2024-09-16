@@ -21,7 +21,7 @@ func (a *defaultRepoAdapter) GetVersions(name string) ([]string, error) {
 	}
 	var idx repotypes.PackageIndex
 	if err := a.client.ForRepo(*packageRepo).FetchPackageIndex(name, &idx); err != nil {
-		return nil, multierr.Append(err, repoErr)
+		return nil, multierr.Append(repoErr, err)
 	}
 	versions := make([]string, len(idx.Versions))
 	for i, item := range idx.Versions {
