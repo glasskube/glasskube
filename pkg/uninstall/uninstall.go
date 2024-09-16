@@ -4,8 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/util"
 	"github.com/glasskube/glasskube/pkg/client"
@@ -30,10 +33,10 @@ func (obj *uninstaller) WithStatusWriter(sw statuswriter.StatusWriter) *uninstal
 
 // UninstallBlocking deletes the v1alpha1.Package custom resource from the
 // cluster and waits until the package is fully deleted.
-func (obj *uninstaller) UninstallBlocking(ctx context.Context, pkg ctrlpkg.Package, isDryRun bool) error {
+func (obj *uninstaller) UninstallBlocking(ctx context.Context, pkg ctrlpkg.Package, isDryRun bool, deleteNamespace bool) error {
 	obj.status.Start()
 	defer obj.status.Stop()
-	err := obj.delete(ctx, pkg, isDryRun)
+	err := obj.delete(ctx, pkg, isDryRun, deleteNamespace)
 	if err != nil {
 		return err
 	}
@@ -46,18 +49,24 @@ func (obj *uninstaller) UninstallBlocking(ctx context.Context, pkg ctrlpkg.Packa
 }
 
 // Uninstall deletes the v1alpha1.Package custom resource from the cluster.
-func (obj *uninstaller) Uninstall(ctx context.Context, pkg ctrlpkg.Package, isDryRun bool) error {
+func (obj *uninstaller) Uninstall(ctx context.Context, pkg ctrlpkg.Package, isDryRun bool, deleteNamespace bool) error {
 	obj.status.Start()
 	defer obj.status.Stop()
-	return obj.delete(ctx, pkg, isDryRun)
+	return obj.delete(ctx, pkg, isDryRun, deleteNamespace)
 }
 
-func (uninstaller *uninstaller) delete(ctx context.Context, pkg ctrlpkg.Package, isDryRun bool) error {
+func (uninstaller *uninstaller) delete(ctx context.Context, pkg ctrlpkg.Package, isDryRun bool, deleteNamespace bool) error {
 	deleteOptions := metav1.DeleteOptions{
 		PropagationPolicy: util.Pointer(metav1.DeletePropagationForeground),
 	}
 	if isDryRun {
 		deleteOptions.DryRun = []string{metav1.DryRunAll}
+	}
+	if deleteNamespace {
+		validateDeletion := ValidateNamespaceDeletion(ctx, pkg)
+		if validateDeletion {
+			DeleteNamespace(ctx, pkg.GetNamespace())
+		}
 	}
 	uninstaller.status.SetStatus(fmt.Sprintf("Uninstalling %v...", pkg.GetName()))
 
@@ -96,4 +105,38 @@ func (obj *uninstaller) createWatcher(ctx context.Context, pkg ctrlpkg.Package) 
 	default:
 		return nil, fmt.Errorf("unexpected object kind: %v", pkg.GroupVersionKind().Kind)
 	}
+}
+
+func DeleteNamespace(ctx context.Context, namespace string) {
+	clientset := cliutils.KubernetesClient(ctx)
+	err := clientset.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "❌ error deleting namespace: %v\n", err)
+		cliutils.ExitWithError()
+	}
+
+	fmt.Printf("\nNamespace %s has been deleted.\n", namespace)
+}
+
+func ValidateNamespaceDeletion(ctx context.Context, pkg ctrlpkg.Package) bool {
+	client := cliutils.PackageClient(ctx)
+	namespace := pkg.GetNamespace()
+	var pkgs v1alpha1.PackageList
+	if err := client.Packages(namespace).GetAll(ctx, &pkgs); err != nil {
+		fmt.Fprintf(os.Stderr, "❌ error listing packages in namespace: %v\n", err)
+		cliutils.ExitWithError()
+	}
+
+	var namespacePackages []string
+	for _, pkg := range pkgs.Items {
+		namespacePackages = append(namespacePackages, pkg.Name)
+	}
+
+	if len(namespacePackages) > 1 {
+		fmt.Printf("\n❌ Namespace %s cannot be deleted because it contains other packages: %v\n",
+			namespace, strings.Join(namespacePackages, ", "))
+		return false
+	}
+
+	return true
 }
