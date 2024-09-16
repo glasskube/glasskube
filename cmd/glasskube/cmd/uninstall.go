@@ -72,13 +72,15 @@ var uninstallCmd = &cobra.Command{
 		}
 
 		if uninstallCmdOptions.NoWait {
-			if err := uninstaller.Uninstall(ctx, pkg, uninstallCmdOptions.DryRun, uninstallCmdOptions.DeleteNamespace); err != nil {
+			if err := uninstaller.Uninstall(ctx, pkg, uninstallCmdOptions.DryRun,
+				uninstallCmdOptions.DeleteNamespace); err != nil {
 				fmt.Fprintf(os.Stderr, "\n❌ An error occurred during uninstallation:\n\n%v\n", err)
 				cliutils.ExitWithError()
 			}
 			fmt.Fprintln(os.Stderr, "Uninstallation started in background")
 		} else {
-			if err := uninstaller.UninstallBlocking(ctx, pkg, uninstallCmdOptions.DryRun, uninstallCmdOptions.DeleteNamespace); err != nil {
+			if err := uninstaller.UninstallBlocking(ctx, pkg, uninstallCmdOptions.DryRun,
+				uninstallCmdOptions.DeleteNamespace); err != nil {
 				fmt.Fprintf(os.Stderr, "\n❌ An error occurred during uninstallation:\n\n%v\n", err)
 				cliutils.ExitWithError()
 			}

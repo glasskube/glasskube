@@ -33,7 +33,8 @@ func (obj *uninstaller) WithStatusWriter(sw statuswriter.StatusWriter) *uninstal
 
 // UninstallBlocking deletes the v1alpha1.Package custom resource from the
 // cluster and waits until the package is fully deleted.
-func (obj *uninstaller) UninstallBlocking(ctx context.Context, pkg ctrlpkg.Package, isDryRun bool, deleteNamespace bool) error {
+func (obj *uninstaller) UninstallBlocking(ctx context.Context, pkg ctrlpkg.Package, isDryRun bool,
+	deleteNamespace bool) error {
 	obj.status.Start()
 	defer obj.status.Stop()
 	err := obj.delete(ctx, pkg, isDryRun, deleteNamespace)
@@ -55,7 +56,8 @@ func (obj *uninstaller) Uninstall(ctx context.Context, pkg ctrlpkg.Package, isDr
 	return obj.delete(ctx, pkg, isDryRun, deleteNamespace)
 }
 
-func (uninstaller *uninstaller) delete(ctx context.Context, pkg ctrlpkg.Package, isDryRun bool, deleteNamespace bool) error {
+func (uninstaller *uninstaller) delete(ctx context.Context, pkg ctrlpkg.Package, isDryRun bool,
+	deleteNamespace bool) error {
 	deleteOptions := metav1.DeleteOptions{
 		PropagationPolicy: util.Pointer(metav1.DeletePropagationForeground),
 	}
@@ -127,7 +129,7 @@ func ValidateNamespaceDeletion(ctx context.Context, pkg ctrlpkg.Package) bool {
 		cliutils.ExitWithError()
 	}
 
-	var namespacePackages []string
+	var namespacePackages = make([]string, 0, len(pkgs.Items))
 	for _, pkg := range pkgs.Items {
 		namespacePackages = append(namespacePackages, pkg.Name)
 	}
