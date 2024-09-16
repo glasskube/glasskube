@@ -7,6 +7,8 @@ import (
 	"os"
 	"slices"
 
+	"go.uber.org/multierr"
+
 	"github.com/glasskube/glasskube/internal/web/components/toast"
 
 	"github.com/glasskube/glasskube/internal/manifestvalues"
@@ -100,21 +102,23 @@ func (s *server) clusterPackageDetail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPageContext, r *http.Request, w http.ResponseWriter) {
-	var err error
+	var repoErr error
 	var repos []v1alpha1.PackageRepository
 	var usedRepo *v1alpha1.PackageRepository
-	if d.repositoryName, repos, usedRepo, err = s.getRepos(
-		ctx, d.manifestName, d.repositoryName); err != nil {
-		s.sendToast(w, toast.WithErr(err))
+	if d.repositoryName, repos, usedRepo, repoErr = s.getRepos(
+		ctx, d.manifestName, d.repositoryName); repoErr != nil && usedRepo == nil {
+		s.sendToast(w, toast.WithErr(repoErr))
 		return
 	}
 
 	var idx repo.PackageIndex
 	var latestVersion string
+	var err error
 	if idx, latestVersion, d.selectedVersion, err = s.getVersions(
 		d.repositoryName, d.manifestName, d.selectedVersion); err != nil {
 		s.sendToast(w,
-			toast.WithErr(fmt.Errorf("failed to fetch package index of %v in repo %v: %w", d.manifestName, d.repositoryName, err)))
+			toast.WithErr(fmt.Errorf("failed to fetch package index of %v in repo %v: %w",
+				d.manifestName, d.repositoryName, multierr.Append(repoErr, err))))
 		return
 	}
 
@@ -193,11 +197,11 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 	}
 
 	if d.renderedComponent == "header" {
-		err = s.templates.pkgDetailHeaderTmpl.Execute(w, templateData)
-		webutil.CheckTmplError(err, fmt.Sprintf("package-detail-header (%s)", d.manifestName))
+		repoErr = s.templates.pkgDetailHeaderTmpl.Execute(w, templateData)
+		webutil.CheckTmplError(repoErr, fmt.Sprintf("package-detail-header (%s)", d.manifestName))
 	} else {
-		err = s.templates.pkgPageTmpl.Execute(w, s.enrichPage(r, templateData, err))
-		webutil.CheckTmplError(err, fmt.Sprintf("package-detail (%s)", d.manifestName))
+		repoErr = s.templates.pkgPageTmpl.Execute(w, s.enrichPage(r, templateData, repoErr))
+		webutil.CheckTmplError(repoErr, fmt.Sprintf("package-detail (%s)", d.manifestName))
 	}
 }
 
@@ -242,5 +246,5 @@ func (s *server) getRepos(ctx context.Context, manifestName string, repositoryNa
 		return "", nil, nil, err
 	}
 
-	return repositoryName, repos, &usedRepo, nil
+	return repositoryName, repos, &usedRepo, err
 }
