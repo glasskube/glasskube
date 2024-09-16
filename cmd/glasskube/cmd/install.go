@@ -226,7 +226,7 @@ var installCmd = &cobra.Command{
 		createNamespace := false
 		if installCmdOptions.NamespaceOptions.Namespace != "" {
 			if ok, err := namespaces.IsNamespaceInstalled(ctx, cs, installCmdOptions.NamespaceOptions.Namespace); !ok {
-				fmt.Printf(" * Namespace %v does not exist and will be created\n",
+				fmt.Fprintf(os.Stderr, " * Namespace %v does not exist and will be created\n",
 					installCmdOptions.NamespaceOptions.Namespace)
 				createNamespace = true
 			} else if err != nil {
