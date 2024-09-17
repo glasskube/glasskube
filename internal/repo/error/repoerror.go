@@ -9,6 +9,9 @@ type PartialErr struct {
 }
 
 func Partial(err error) *PartialErr {
+	if err == nil {
+		return nil
+	}
 	return &PartialErr{err: err}
 }
 
