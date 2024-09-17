@@ -21,6 +21,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/glasskube/glasskube/internal/namespaces"
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/glasskube/glasskube/internal/dependency/graph"
 	"github.com/glasskube/glasskube/internal/telemetry/annotations"
 
@@ -637,6 +640,20 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to parse values: %w", err)))
 		return
 	} else if pkg == nil {
+		if exists, err := namespaces.Exists(ctx, s.k8sClient, requestedNamespace); err != nil {
+			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to check namespace: %w", err)))
+			return
+		} else if !exists {
+			ns := v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: requestedNamespace,
+				},
+			}
+			if _, err := s.k8sClient.CoreV1().Namespaces().Create(ctx, &ns, metav1.CreateOptions{}); err != nil {
+				s.sendToast(w, toast.WithErr(fmt.Errorf("failed to create namespace: %w", err)))
+				return
+			}
+		}
 		pkg = client.PackageBuilder(manifestName).WithVersion(selectedVersion).
 			WithVersion(selectedVersion).
 			WithRepositoryName(repositoryName).

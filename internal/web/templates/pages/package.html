@@ -129,16 +129,20 @@
 
                   {{ if .Manifest.Scope.IsNamespaced }}
                     <label class="form-label" for="pkg-install-namespace">Namespace</label>
-                    <div class="input-group mb-2">
+                    <div class="input-group">
                       <input
                         class="form-control"
                         type="text"
                         name="requestedNamespace"
                         id="pkg-install-namespace"
+                        list="namespaces"
+                        autocomplete="off"
                         required />
+                      {{ template "datalist" ForDatalist "namespaces" "" (index $.DatalistOptions "").Namespaces }}
                     </div>
+                    <div class="form-text">Will be created if necessary</div>
 
-                    <label class="form-label" for="pkg-install-name">Name</label>
+                    <label class="form-label mt-2" for="pkg-install-name">Name</label>
                     <div class="input-group mb-2">
                       <input class="form-control" type="text" name="requestedName" id="pkg-install-name" required />
                     </div>
