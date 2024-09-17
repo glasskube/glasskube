@@ -103,6 +103,13 @@ func (d metaclient) GetReposForPackage(name string) ([]v1alpha1.PackageRepositor
 				}
 			}
 		}
-		return result, repoerror.Partial(compositeErr)
+		if compositeErr != nil {
+			if len(result) == 0 {
+				return result, compositeErr
+			} else {
+				return result, repoerror.Partial(compositeErr)
+			}
+		}
+		return result, nil
 	}
 }
