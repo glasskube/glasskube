@@ -127,6 +127,7 @@ type server struct {
 	configMapLister         *corev1.ConfigMapLister
 	secretLister            *corev1.SecretLister
 	forwarders              map[string]*open.OpenResult
+	forwardersMutex         sync.Mutex
 	dependencyMgr           *dependency.DependendcyManager
 	updateMutex             sync.Mutex
 	updateTransactions      map[int]update.UpdateTransaction
@@ -525,10 +526,62 @@ func (s *server) handleOpen(ctx context.Context, w http.ResponseWriter, pkg ctrl
 	if err != nil {
 		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to open %v: %w", pkg.GetName(), err)))
 	} else {
+		s.forwardersMutex.Lock()
 		s.forwarders[fwName] = result
+		s.forwardersMutex.Unlock()
 		result.WaitReady()
 		_ = cliutils.OpenInBrowser(result.Url)
 		w.WriteHeader(http.StatusAccepted)
+
+		go func() {
+			ctx = context.WithoutCancel(ctx)
+		resultLoop:
+			for {
+				select {
+				case <-s.stopCh:
+					break resultLoop
+				case fwErr := <-result.Completion:
+					// note: this does not happen in "realtime" (e.g. when the forwarded-to-pod is deleted), but only
+					// the next time a connection on that port is requested, e.g. when the user reloads the forwarded
+					// page or clicks open again – only then we will end up here.
+					if fwErr != nil {
+						fmt.Fprintf(os.Stderr, "forwarder %v completed with error: %v\n", fwName, fwErr)
+					} else {
+						fmt.Fprintf(os.Stderr, "forwarder %v completed without error\n", fwName)
+					}
+					// try to re-open if the package is still installed
+					if pkg.IsNamespaceScoped() {
+						var p v1alpha1.Package
+						if err := s.pkgClient.Packages(pkg.GetNamespace()).Get(ctx, pkg.GetName(), &p); err != nil || !p.DeletionTimestamp.IsZero() {
+							fmt.Fprintf(os.Stderr, "not reopening %v because of error/deletion: %v\n", fwName, err)
+							break resultLoop
+						} else {
+							pkg = &p
+						}
+					} else {
+						var cp v1alpha1.ClusterPackage
+						if err := s.pkgClient.ClusterPackages().Get(ctx, pkg.GetName(), &cp); err != nil || !cp.DeletionTimestamp.IsZero() {
+							fmt.Fprintf(os.Stderr, "not reopening %v because of error/deletion: %v\n", fwName, err)
+							break resultLoop
+						} else {
+							pkg = &cp
+						}
+					}
+					result, err = open.NewOpener().Open(ctx, pkg, "", s.Host, 0)
+					s.forwardersMutex.Lock()
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "failed to reopen forwarder %v: %v\n", fwName, err)
+						delete(s.forwarders, fwName)
+						s.forwardersMutex.Unlock()
+						break resultLoop
+					} else {
+						fmt.Fprintf(os.Stderr, "reopened forwarder %v\n", fwName)
+						s.forwarders[fwName] = result
+						s.forwardersMutex.Unlock()
+					}
+				}
+			}
+		}()
 	}
 }
 
@@ -740,7 +793,7 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 	repositoryName, mf, err = s.getUsedRepoAndManifest(ctx, pkg, repositoryName, pkgName, selectedVersion)
 	if repoerror.IsPartial(err) {
 		fmt.Fprintf(os.Stderr, "problem fetching manifest and repo, but installation can continue: %v", err)
-	} else {
+	} else if err != nil {
 		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to get manifest and repo of %v: %w", pkgName, err)))
 		return
 	}
@@ -1505,10 +1558,12 @@ func (s *server) initClusterPackageStoreAndController(ctx context.Context) (cach
 				if pkg, ok := obj.(*v1alpha1.ClusterPackage); ok {
 					s.broadcaster.UpdatesAvailableForPackage(pkg, nil)
 					fwName := pkg.GetName()
+					s.forwardersMutex.Lock()
 					if result, ok := s.forwarders[fwName]; ok {
 						result.Stop()
 						delete(s.forwarders, fwName)
 					}
+					s.forwardersMutex.Unlock()
 				}
 			},
 		},
@@ -1546,10 +1601,12 @@ func (s *server) initPackageStoreAndController(ctx context.Context) (cache.Store
 				if pkg, ok := obj.(*v1alpha1.Package); ok {
 					s.broadcaster.UpdatesAvailableForPackage(pkg, nil)
 					fwName := cache.ObjectName{Namespace: pkg.GetNamespace(), Name: pkg.GetName()}.String()
+					s.forwardersMutex.Lock()
 					if result, ok := s.forwarders[fwName]; ok {
 						result.Stop()
 						delete(s.forwarders, fwName)
 					}
+					s.forwardersMutex.Unlock()
 				}
 			},
 		},
