@@ -159,8 +159,8 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 
 	valueErrors := make(map[string]error)
 	datalistOptions := make(map[string]*pkg_config_input.PkgConfigInputDatalistOptions)
+	nsOptions, _ := s.getNamespaceOptions()
 	if !d.pkg.IsNil() {
-		nsOptions, _ := s.getNamespaceOptions()
 		pkgsOptions, _ := s.getPackagesOptions(r.Context())
 		for key, v := range d.pkg.GetSpec().Values {
 			if resolved, err := s.valueResolver.ResolveValue(r.Context(), v); err != nil {
@@ -176,6 +176,8 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 				datalistOptions[key] = options
 			}
 		}
+	} else {
+		datalistOptions[""] = &pkg_config_input.PkgConfigInputDatalistOptions{Namespaces: nsOptions}
 	}
 
 	templateData := map[string]any{
