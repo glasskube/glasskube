@@ -108,7 +108,7 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 	var repos []v1alpha1.PackageRepository
 	var usedRepo *v1alpha1.PackageRepository
 	if d.repositoryName, repos, usedRepo, repoErr = s.getRepos(
-		ctx, d.manifestName, d.repositoryName); !repoerror.IsPartial(repoErr) {
+		ctx, d.manifestName, d.repositoryName); repoerror.IsComplete(repoErr) {
 		s.sendToast(w, toast.WithErr(repoErr))
 		return
 	}
@@ -229,7 +229,7 @@ func (s *server) getRepos(ctx context.Context, manifestName string, repositoryNa
 	var repos []v1alpha1.PackageRepository
 	var err error
 	if repos, err = s.repoClientset.Meta().GetReposForPackage(manifestName); err != nil {
-		if !repoerror.IsPartial(err) {
+		if repoerror.IsComplete(err) {
 			return "", nil, nil, err
 		}
 		fmt.Fprintf(os.Stderr, "error getting repos for package (but can continue): %v\n", err)

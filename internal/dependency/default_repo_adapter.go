@@ -18,7 +18,7 @@ type defaultRepoAdapter struct {
 
 func (a *defaultRepoAdapter) GetVersions(name string) ([]string, error) {
 	packageRepo, repoErr := a.getRepoForPackage(name)
-	if !repoerror.IsPartial(repoErr) {
+	if repoerror.IsComplete(repoErr) {
 		return nil, repoErr
 	}
 	var idx repotypes.PackageIndex
@@ -33,7 +33,7 @@ func (a *defaultRepoAdapter) GetVersions(name string) ([]string, error) {
 }
 
 func (a *defaultRepoAdapter) GetManifest(name string, version string) (*v1alpha1.PackageManifest, error) {
-	if repo, err := a.getRepoForPackage(name); !repoerror.IsPartial(err) {
+	if repo, err := a.getRepoForPackage(name); repoerror.IsComplete(err) {
 		return nil, err
 	} else {
 		var manifest v1alpha1.PackageManifest

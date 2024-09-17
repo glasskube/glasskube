@@ -65,7 +65,7 @@ var describeCmd = &cobra.Command{
 				// package not installed -> use latest manifest from repo
 				if lvErr != nil {
 					fmt.Fprintf(os.Stderr, "❌ Could not get latest info for %v: %v\n", pkgName, lvErr)
-					if !repoerror.IsPartial(lvErr) {
+					if repoerror.IsComplete(lvErr) {
 						cliutils.ExitWithError()
 					}
 				}

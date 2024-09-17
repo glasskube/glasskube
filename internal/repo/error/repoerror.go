@@ -21,5 +21,12 @@ func (e *PartialErr) Error() string {
 
 func IsPartial(err error) bool {
 	var e *PartialErr
-	return err == nil || errors.As(err, &e)
+	return errors.As(err, &e)
+}
+func IsPartialOrNil(err error) bool {
+	return err == nil || IsPartial(err)
+}
+
+func IsComplete(err error) bool {
+	return !IsPartialOrNil(err)
 }
