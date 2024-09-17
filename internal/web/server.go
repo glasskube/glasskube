@@ -516,6 +516,8 @@ func (s *server) open(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) handleOpen(ctx context.Context, w http.ResponseWriter, pkg ctrlpkg.Package) {
 	fwName := cache.NewObjectName(pkg.GetNamespace(), pkg.GetName()).String()
+	s.forwardersMutex.Lock()
+	defer s.forwardersMutex.Unlock()
 	if result, ok := s.forwarders[fwName]; ok {
 		result.WaitReady()
 		_ = cliutils.OpenInBrowser(result.Url)
@@ -526,9 +528,7 @@ func (s *server) handleOpen(ctx context.Context, w http.ResponseWriter, pkg ctrl
 	if err != nil {
 		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to open %v: %w", pkg.GetName(), err)))
 	} else {
-		s.forwardersMutex.Lock()
 		s.forwarders[fwName] = result
-		s.forwardersMutex.Unlock()
 		result.WaitReady()
 		_ = cliutils.OpenInBrowser(result.Url)
 		w.WriteHeader(http.StatusAccepted)
@@ -552,16 +552,20 @@ func (s *server) handleOpen(ctx context.Context, w http.ResponseWriter, pkg ctrl
 					// try to re-open if the package is still installed
 					if pkg.IsNamespaceScoped() {
 						var p v1alpha1.Package
-						if err := s.pkgClient.Packages(pkg.GetNamespace()).Get(ctx, pkg.GetName(), &p); err != nil || !p.DeletionTimestamp.IsZero() {
-							fmt.Fprintf(os.Stderr, "not reopening %v because of error/deletion: %v\n", fwName, err)
+						if err := s.pkgClient.Packages(pkg.GetNamespace()).Get(ctx, pkg.GetName(), &p); err != nil {
+							if !apierrors.IsNotFound(err) {
+								fmt.Fprintf(os.Stderr, "can not reopen %v: %v\n", fwName, err)
+							}
 							break resultLoop
 						} else {
 							pkg = &p
 						}
 					} else {
 						var cp v1alpha1.ClusterPackage
-						if err := s.pkgClient.ClusterPackages().Get(ctx, pkg.GetName(), &cp); err != nil || !cp.DeletionTimestamp.IsZero() {
-							fmt.Fprintf(os.Stderr, "not reopening %v because of error/deletion: %v\n", fwName, err)
+						if err := s.pkgClient.ClusterPackages().Get(ctx, pkg.GetName(), &cp); err != nil {
+							if !apierrors.IsNotFound(err) {
+								fmt.Fprintf(os.Stderr, "can not reopen %v: %v\n", fwName, err)
+							}
 							break resultLoop
 						} else {
 							pkg = &cp
