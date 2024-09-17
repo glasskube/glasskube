@@ -740,7 +740,7 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 	repositoryName, mf, err = s.getUsedRepoAndManifest(ctx, pkg, repositoryName, pkgName, selectedVersion)
 	if repoerror.IsPartial(err) {
 		fmt.Fprintf(os.Stderr, "problem fetching manifest and repo, but installation can continue: %v", err)
-	} else {
+	} else if err != nil {
 		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to get manifest and repo of %v: %w", pkgName, err)))
 		return
 	}
