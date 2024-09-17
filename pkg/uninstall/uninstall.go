@@ -64,19 +64,22 @@ func (uninstaller *uninstaller) delete(ctx context.Context, pkg ctrlpkg.Package,
 	if isDryRun {
 		deleteOptions.DryRun = []string{metav1.DryRunAll}
 	}
-	if deleteNamespace {
-		validateDeletion := ValidateNamespaceDeletion(ctx, pkg)
-		if validateDeletion {
-			DeleteNamespace(ctx, pkg.GetNamespace())
-		}
-	}
 	uninstaller.status.SetStatus(fmt.Sprintf("Uninstalling %v...", pkg.GetName()))
 
 	switch pkg := pkg.(type) {
 	case *v1alpha1.ClusterPackage:
 		return uninstaller.client.ClusterPackages().Delete(ctx, pkg, deleteOptions)
 	case *v1alpha1.Package:
-		return uninstaller.client.Packages(pkg.Namespace).Delete(ctx, pkg, deleteOptions)
+		var validateDeletion bool
+		if deleteNamespace {
+			validateDeletion = ValidateNamespaceDeletion(ctx, pkg)
+		}
+		err := uninstaller.client.Packages(pkg.Namespace).Delete(ctx, pkg, deleteOptions)
+		if validateDeletion {
+			DeleteNamespace(ctx, pkg.GetNamespace())
+		}
+		return err
+
 	default:
 		return fmt.Errorf("unexpected object kind: %v", pkg.GroupVersionKind().Kind)
 	}
