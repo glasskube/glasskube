@@ -227,7 +227,7 @@
 {{ end }}
 
 {{ define "pkg-config-input-required-label" }}
-  <label for="{{ .FormId }}" class="form-label">
+  <label for="{{ .FormId }}" class="form-label mb-0">
     {{ .FormLabel }}
     {{ if .ValueDefinition.Constraints.Required }}
       <span class="text-danger">*</span>

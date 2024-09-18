@@ -117,12 +117,14 @@ func (s *server) packageConfigurationInput(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	s.handleConfigurationInput(w, r, &packageDetailPageContext{
-		repositoryName:  repositoryName,
-		selectedVersion: selectedVersion,
-		manifestName:    manifestName,
-		pkg:             pkg,
-		manifest:        manifest,
+	s.handleConfigurationInput(w, r, &packageContext{
+		request: packageContextRequest{
+			repositoryName:  repositoryName,
+			selectedVersion: selectedVersion,
+			manifestName:    manifestName,
+		},
+		pkg:      pkg,
+		manifest: manifest,
 	})
 }
 
@@ -144,22 +146,25 @@ func (s *server) clusterPackageConfigurationInput(w http.ResponseWriter, r *http
 		return
 	}
 
-	s.handleConfigurationInput(w, r, &packageDetailPageContext{
-		repositoryName:  repositoryName,
-		selectedVersion: selectedVersion,
-		manifestName:    pkgName,
-		pkg:             pkg,
-		manifest:        manifest,
+	s.handleConfigurationInput(w, r, &packageContext{
+		request: packageContextRequest{
+			repositoryName:  repositoryName,
+			selectedVersion: selectedVersion,
+			manifestName:    pkgName,
+		},
+		pkg:      pkg,
+		manifest: manifest,
 	})
 }
 
-func (s *server) handleConfigurationInput(w http.ResponseWriter, r *http.Request, d *packageDetailPageContext) {
+func (s *server) handleConfigurationInput(w http.ResponseWriter, r *http.Request, d *packageContext) {
 	if d.manifest == nil {
 		d.manifest = &v1alpha1.PackageManifest{}
-		if err := s.repoClientset.ForRepoWithName(d.repositoryName).
-			FetchPackageManifest(d.manifestName, d.selectedVersion, d.manifest); err != nil {
+		if err := s.repoClientset.ForRepoWithName(d.request.repositoryName).
+			FetchPackageManifest(d.request.manifestName, d.request.selectedVersion, d.manifest); err != nil {
 			s.sendToast(w,
-				toast.WithErr(fmt.Errorf("failed to fetch manifest of %v in version %v: %w", d.manifestName, d.selectedVersion, err)))
+				toast.WithErr(fmt.Errorf("failed to fetch manifest of %v in version %v: %w",
+					d.request.manifestName, d.request.selectedVersion, err)))
 			return
 		}
 	}
@@ -182,13 +187,13 @@ func (s *server) handleConfigurationInput(w http.ResponseWriter, r *http.Request
 			}
 		}
 		input := pkg_config_input.ForPkgConfigInput(
-			d.pkg, d.repositoryName, d.selectedVersion, d.manifest, valueName, valueDefinition, nil, &options,
+			d.pkg, d.request.repositoryName, d.request.selectedVersion, d.manifest, valueName, valueDefinition, nil, &options,
 			&pkg_config_input.PkgConfigInputRenderOptions{
 				Autofocus:      true,
 				DesiredRefKind: &refKind,
 			})
 		err := s.templates.pkgConfigInput.Execute(w, input)
-		util.CheckTmplError(err, fmt.Sprintf("package config input (%s, %s)", d.manifestName, valueName))
+		util.CheckTmplError(err, fmt.Sprintf("package config input (%s, %s)", d.request.manifestName, valueName))
 	}
 }
 
