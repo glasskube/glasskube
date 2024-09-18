@@ -127,6 +127,7 @@ type server struct {
 	configMapLister         *corev1.ConfigMapLister
 	secretLister            *corev1.SecretLister
 	forwarders              map[string]*open.OpenResult
+	forwardersMutex         sync.Mutex
 	dependencyMgr           *dependency.DependendcyManager
 	updateMutex             sync.Mutex
 	updateTransactions      map[int]update.UpdateTransaction
@@ -515,6 +516,8 @@ func (s *server) open(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) handleOpen(ctx context.Context, w http.ResponseWriter, pkg ctrlpkg.Package) {
 	fwName := cache.NewObjectName(pkg.GetNamespace(), pkg.GetName()).String()
+	s.forwardersMutex.Lock()
+	defer s.forwardersMutex.Unlock()
 	if result, ok := s.forwarders[fwName]; ok {
 		result.WaitReady()
 		_ = cliutils.OpenInBrowser(result.Url)
@@ -529,6 +532,60 @@ func (s *server) handleOpen(ctx context.Context, w http.ResponseWriter, pkg ctrl
 		result.WaitReady()
 		_ = cliutils.OpenInBrowser(result.Url)
 		w.WriteHeader(http.StatusAccepted)
+
+		go func() {
+			ctx = context.WithoutCancel(ctx)
+		resultLoop:
+			for {
+				select {
+				case <-s.stopCh:
+					break resultLoop
+				case fwErr := <-result.Completion:
+					// note: this does not happen in "realtime" (e.g. when the forwarded-to-pod is deleted), but only
+					// the next time a connection on that port is requested, e.g. when the user reloads the forwarded
+					// page or clicks open again – only then we will end up here.
+					if fwErr != nil {
+						fmt.Fprintf(os.Stderr, "forwarder %v completed with error: %v\n", fwName, fwErr)
+					} else {
+						fmt.Fprintf(os.Stderr, "forwarder %v completed without error\n", fwName)
+					}
+					// try to re-open if the package is still installed
+					if pkg.IsNamespaceScoped() {
+						var p v1alpha1.Package
+						if err := s.pkgClient.Packages(pkg.GetNamespace()).Get(ctx, pkg.GetName(), &p); err != nil {
+							if !apierrors.IsNotFound(err) {
+								fmt.Fprintf(os.Stderr, "can not reopen %v: %v\n", fwName, err)
+							}
+							break resultLoop
+						} else {
+							pkg = &p
+						}
+					} else {
+						var cp v1alpha1.ClusterPackage
+						if err := s.pkgClient.ClusterPackages().Get(ctx, pkg.GetName(), &cp); err != nil {
+							if !apierrors.IsNotFound(err) {
+								fmt.Fprintf(os.Stderr, "can not reopen %v: %v\n", fwName, err)
+							}
+							break resultLoop
+						} else {
+							pkg = &cp
+						}
+					}
+					result, err = open.NewOpener().Open(ctx, pkg, "", s.Host, 0)
+					s.forwardersMutex.Lock()
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "failed to reopen forwarder %v: %v\n", fwName, err)
+						delete(s.forwarders, fwName)
+						s.forwardersMutex.Unlock()
+						break resultLoop
+					} else {
+						fmt.Fprintf(os.Stderr, "reopened forwarder %v\n", fwName)
+						s.forwarders[fwName] = result
+						s.forwardersMutex.Unlock()
+					}
+				}
+			}
+		}()
 	}
 }
 
@@ -1505,10 +1562,12 @@ func (s *server) initClusterPackageStoreAndController(ctx context.Context) (cach
 				if pkg, ok := obj.(*v1alpha1.ClusterPackage); ok {
 					s.broadcaster.UpdatesAvailableForPackage(pkg, nil)
 					fwName := pkg.GetName()
+					s.forwardersMutex.Lock()
 					if result, ok := s.forwarders[fwName]; ok {
 						result.Stop()
 						delete(s.forwarders, fwName)
 					}
+					s.forwardersMutex.Unlock()
 				}
 			},
 		},
@@ -1546,10 +1605,12 @@ func (s *server) initPackageStoreAndController(ctx context.Context) (cache.Store
 				if pkg, ok := obj.(*v1alpha1.Package); ok {
 					s.broadcaster.UpdatesAvailableForPackage(pkg, nil)
 					fwName := cache.ObjectName{Namespace: pkg.GetNamespace(), Name: pkg.GetName()}.String()
+					s.forwardersMutex.Lock()
 					if result, ok := s.forwarders[fwName]; ok {
 						result.Stop()
 						delete(s.forwarders, fwName)
 					}
+					s.forwardersMutex.Unlock()
 				}
 			},
 		},
