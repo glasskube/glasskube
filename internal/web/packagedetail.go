@@ -40,12 +40,12 @@ import (
 )
 
 type packageContextRequest struct {
-	repositoryName  string
-	selectedVersion string
-	manifestName    string
-	namespace       string
-	name            string
-	component       string
+	repositoryName string
+	version        string
+	manifestName   string
+	namespace      string
+	name           string
+	component      string
 }
 
 func (r packageContextRequest) namespaceAndNameSet() bool {
@@ -62,12 +62,12 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	p := packageContext{
 		request: packageContextRequest{
-			manifestName:    mux.Vars(r)["manifestName"],
-			namespace:       mux.Vars(r)["namespace"],
-			name:            mux.Vars(r)["name"],
-			repositoryName:  r.FormValue("repositoryName"),
-			selectedVersion: r.FormValue("selectedVersion"),
-			component:       r.FormValue("component"),
+			manifestName:   mux.Vars(r)["manifestName"],
+			namespace:      mux.Vars(r)["namespace"],
+			name:           mux.Vars(r)["name"],
+			repositoryName: r.FormValue("repositoryName"),
+			version:        r.FormValue("version"),
+			component:      r.FormValue("component"),
 		},
 	}
 
@@ -100,10 +100,10 @@ func (s *server) clusterPackageDetail(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	p := packageContext{
 		request: packageContextRequest{
-			manifestName:    mux.Vars(r)["pkgName"],
-			repositoryName:  r.FormValue("repositoryName"),
-			selectedVersion: r.FormValue("selectedVersion"),
-			component:       r.FormValue("component"),
+			manifestName:   mux.Vars(r)["pkgName"],
+			repositoryName: r.FormValue("repositoryName"),
+			version:        r.FormValue("version"),
+			component:      r.FormValue("component"),
 		},
 	}
 
@@ -128,8 +128,8 @@ func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w
 		if p.request.repositoryName == "" {
 			p.request.repositoryName = p.pkg.GetSpec().PackageInfo.RepositoryName
 		}
-		if p.request.selectedVersion == "" {
-			p.request.selectedVersion = p.pkg.GetSpec().PackageInfo.Version
+		if p.request.version == "" {
+			p.request.version = p.pkg.GetSpec().PackageInfo.Version
 		}
 	}
 
@@ -145,8 +145,8 @@ func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w
 	var idx repo.PackageIndex
 	var latestVersion string
 	var err error
-	if idx, latestVersion, p.request.selectedVersion, err = s.resolveVersions(
-		p.request.repositoryName, p.request.manifestName, p.request.selectedVersion); err != nil {
+	if idx, latestVersion, p.request.version, err = s.resolveVersions(
+		p.request.repositoryName, p.request.manifestName, p.request.version); err != nil {
 		s.sendToast(w,
 			toast.WithErr(fmt.Errorf("failed to fetch package index of %v in repo %v: %w",
 				p.request.manifestName, p.request.repositoryName, multierr.Append(repoErr, err))))
@@ -156,10 +156,10 @@ func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w
 	if p.manifest == nil {
 		p.manifest = &v1alpha1.PackageManifest{}
 		if err := s.repoClientset.ForRepoWithName(p.request.repositoryName).
-			FetchPackageManifest(p.request.manifestName, p.request.selectedVersion, p.manifest); err != nil {
+			FetchPackageManifest(p.request.manifestName, p.request.version, p.manifest); err != nil {
 			s.sendToast(w,
 				toast.WithErr(fmt.Errorf("failed to fetch manifest of %v (%v) in repo %v: %w",
-					p.request.manifestName, p.request.selectedVersion, p.request.repositoryName, err)))
+					p.request.manifestName, p.request.version, p.request.repositoryName, err)))
 			return
 		}
 	}
@@ -169,22 +169,22 @@ func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w
 	if p.pkg.IsNil() {
 		if p.manifest.Scope.IsCluster() {
 			validationResult, validationErr =
-				s.dependencyMgr.Validate(r.Context(), p.request.manifestName, "", p.manifest, p.request.selectedVersion)
+				s.dependencyMgr.Validate(r.Context(), p.request.manifestName, "", p.manifest, p.request.version)
 		} else {
 			// In this case we don't know the actual namespace, but we can assume the default
 			// TODO: make name and namespace depend on user input
 			validationResult, validationErr =
-				s.dependencyMgr.Validate(r.Context(), p.request.manifestName, p.manifest.DefaultNamespace, p.manifest, p.request.selectedVersion)
+				s.dependencyMgr.Validate(r.Context(), p.request.manifestName, p.manifest.DefaultNamespace, p.manifest, p.request.version)
 		}
 	} else {
 		validationResult, validationErr =
-			s.dependencyMgr.Validate(r.Context(), p.pkg.GetName(), p.pkg.GetNamespace(), p.manifest, p.request.selectedVersion)
+			s.dependencyMgr.Validate(r.Context(), p.pkg.GetName(), p.pkg.GetNamespace(), p.manifest, p.request.version)
 	}
 
 	if validationErr != nil {
 		s.sendToast(w,
 			toast.WithErr(fmt.Errorf("failed to validate dependencies of %v (%v): %w",
-				p.request.manifestName, p.request.selectedVersion, validationErr)))
+				p.request.manifestName, p.request.version, validationErr)))
 		return
 	}
 
@@ -223,7 +223,7 @@ func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w
 		"AutoUpdate":         clientutils.AutoUpdateString(p.pkg, "Disabled"),
 		"ValidationResult":   validationResult,
 		"ShowConflicts":      validationResult.Status == dependency.ValidationResultStatusConflict,
-		"SelectedVersion":    p.request.selectedVersion,
+		"SelectedVersion":    p.request.version,
 		"PackageIndex":       &idx,
 		"Repositories":       repos,
 		"RepositoryName":     p.request.repositoryName,
@@ -294,8 +294,8 @@ func (s *server) resolveRepos(ctx context.Context, manifestName string, reposito
 // installOrConfigurePackage is like installOrConfigureClusterPackage but for packages
 func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Request, p *packageContextRequest) {
 	ctx := r.Context()
-	requestedNamespace := r.FormValue("requestedNamespace")
-	requestedName := r.FormValue("requestedName")
+	namespace := r.FormValue("namespace")
+	name := r.FormValue("name")
 	enableAutoUpdate := r.FormValue("enableAutoUpdate")
 	dryRun, _ := strconv.ParseBool(r.FormValue("dryRun"))
 
@@ -312,12 +312,12 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 		if p.repositoryName == "" {
 			p.repositoryName = pkg.Spec.PackageInfo.RepositoryName
 		}
-		if p.selectedVersion == "" {
-			p.selectedVersion = pkg.Spec.PackageInfo.Version
+		if p.version == "" {
+			p.version = pkg.Spec.PackageInfo.Version
 		}
 	}
 
-	mf, err = s.resolveManifest(ctx, pkg, p.repositoryName, p.manifestName, p.selectedVersion)
+	mf, err = s.resolveManifest(ctx, pkg, p.repositoryName, p.manifestName, p.version)
 	if repoerror.IsPartial(err) {
 		fmt.Fprintf(os.Stderr, "problem fetching manifest and repo, but installation can continue: %v", err)
 	} else if err != nil {
@@ -333,13 +333,13 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 		if dryRun {
 			opts.DryRun = []string{v1.DryRunAll}
 		}
-		if exists, err := namespaces.Exists(ctx, s.k8sClient, requestedNamespace); err != nil {
+		if exists, err := namespaces.Exists(ctx, s.k8sClient, namespace); err != nil {
 			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to check namespace: %w", err)))
 			return
 		} else if !exists {
 			ns := v12.Namespace{
 				ObjectMeta: v1.ObjectMeta{
-					Name: requestedNamespace,
+					Name: namespace,
 				},
 			}
 			if _, err := s.k8sClient.CoreV1().Namespaces().Create(ctx, &ns, opts); err != nil {
@@ -348,12 +348,12 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 			}
 		}
 		pkg = client.PackageBuilder(p.manifestName).
-			WithVersion(p.selectedVersion).
+			WithVersion(p.version).
 			WithRepositoryName(p.repositoryName).
 			WithAutoUpdates(strings.ToLower(enableAutoUpdate) == "on").
 			WithValues(values).
-			WithNamespace(requestedNamespace).
-			WithName(requestedName).
+			WithNamespace(namespace).
+			WithName(name).
 			BuildPackage()
 		err := install.NewInstaller(s.pkgClient).Install(ctx, pkg, opts)
 		if err != nil {
@@ -369,7 +369,7 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 			w.WriteHeader(http.StatusAccepted)
 		}
 	} else {
-		pkg.Spec.PackageInfo.Version = p.selectedVersion
+		pkg.Spec.PackageInfo.Version = p.version
 		pkg.Spec.PackageInfo.RepositoryName = p.repositoryName
 		pkg.Spec.Values = values
 		opts := v1.UpdateOptions{}
@@ -420,12 +420,12 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 		if p.repositoryName == "" {
 			p.repositoryName = pkg.Spec.PackageInfo.RepositoryName
 		}
-		if p.selectedVersion == "" {
-			p.selectedVersion = pkg.Spec.PackageInfo.Version
+		if p.version == "" {
+			p.version = pkg.Spec.PackageInfo.Version
 		}
 	}
 
-	mf, err = s.resolveManifest(ctx, pkg, p.repositoryName, p.manifestName, p.selectedVersion)
+	mf, err = s.resolveManifest(ctx, pkg, p.repositoryName, p.manifestName, p.version)
 	if repoerror.IsPartial(err) {
 		fmt.Fprintf(os.Stderr, "problem fetching manifest and repo, but installation can continue: %v", err)
 	} else if err != nil {
@@ -438,7 +438,7 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 		return
 	} else if pkg == nil {
 		pkg = client.PackageBuilder(p.manifestName).
-			WithVersion(p.selectedVersion).
+			WithVersion(p.version).
 			WithRepositoryName(p.repositoryName).
 			WithAutoUpdates(strings.ToLower(enableAutoUpdate) == "on").
 			WithValues(values).
@@ -459,7 +459,7 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 			}
 		}
 	} else {
-		pkg.Spec.PackageInfo.Version = p.selectedVersion
+		pkg.Spec.PackageInfo.Version = p.version
 		pkg.Spec.PackageInfo.RepositoryName = p.repositoryName
 		pkg.Spec.Values = values
 		opts := v1.UpdateOptions{}

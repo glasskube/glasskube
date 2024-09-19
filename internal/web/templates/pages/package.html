@@ -100,7 +100,7 @@
                     <select
                       class="form-select"
                       id="pkg-install-version"
-                      name="selectedVersion"
+                      name="version"
                       required
                       {{ if (and .Status (not .AdvancedOptions)) }}disabled{{ end }}
                       hx-select="main"
@@ -137,7 +137,7 @@
                     <input
                       class="form-control"
                       type="text"
-                      name="requestedNamespace"
+                      name="namespace"
                       id="pkg-install-namespace"
                       list="namespaces"
                       autocomplete="off"
@@ -150,7 +150,7 @@
                     <input
                       class="form-control"
                       type="text"
-                      name="requestedName"
+                      name="name"
                       id="pkg-install-name"
                       {{ if .Status }}value="{{ .Package.Name }}" disabled{{ end }}
                       autocomplete="off"
