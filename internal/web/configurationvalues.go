@@ -26,6 +26,7 @@ import (
 )
 
 const (
+	formValuePrefix  = "values"
 	namespaceKey     = "namespace"
 	nameKey          = "name"
 	keyKey           = "key"
@@ -38,16 +39,18 @@ const (
 )
 
 func formKey(valueName string, key string) string {
-	return fmt.Sprintf("%s[%s]", valueName, key)
+	return fmt.Sprintf("%s.%s[%s]", formValuePrefix, valueName, key)
 }
 
+// extractValues extracts dynamic package configuration values from the form of the given request, such that installation
+// or configuration can be done with the provided values
 func extractValues(r *http.Request, manifest *v1alpha1.PackageManifest) (map[string]v1alpha1.ValueConfiguration, error) {
 	values := make(map[string]v1alpha1.ValueConfiguration)
 	if err := r.ParseForm(); err != nil {
 		return nil, err
 	}
 	for valueName, valueDef := range manifest.ValueDefinitions {
-		if refKindVal := r.Form.Get(fmt.Sprintf("%s[%s]", valueName, refKindKey)); refKindVal == refKindConfigMap {
+		if refKindVal := r.Form.Get(fmt.Sprintf("%s.%s[%s]", formValuePrefix, valueName, refKindKey)); refKindVal == refKindConfigMap {
 			values[valueName] = v1alpha1.ValueConfiguration{
 				ValueFrom: &v1alpha1.ValueReference{
 					ConfigMapRef: extractObjectKeyValueSource(r, valueName),
@@ -66,7 +69,7 @@ func extractValues(r *http.Request, manifest *v1alpha1.PackageManifest) (map[str
 				},
 			}
 		} else if refKindVal == "" {
-			formVal := r.Form.Get(valueName)
+			formVal := r.Form.Get(fmt.Sprintf("%v.%v", formValuePrefix, valueName))
 			if valueDef.Type == v1alpha1.ValueTypeBoolean {
 				boolStr := strconv.FormatBool(false)
 				if strings.ToLower(formVal) == "on" {

@@ -27,6 +27,7 @@ type pkgConfigInputInput struct {
 	SelectedVersion    string
 	PkgName            string
 	ValueName          string
+	FormValueName      string // ValueName prefixed with "values."
 	ValueDefinition    v1alpha1.ValueDefinition
 	StringValue        string
 	BoolValue          bool
@@ -119,6 +120,7 @@ func ForPkgConfigInput(
 		SelectedVersion:    selectedVersion,
 		PkgName:            manifest.Name,
 		ValueName:          valueName,
+		FormValueName:      fmt.Sprintf("values.%v", valueName),
 		ValueDefinition:    valueDefinition,
 		StringValue:        getStringValue(pkg, valueName, &valueDefinition),
 		BoolValue:          getBoolValue(pkg, valueName, &valueDefinition),

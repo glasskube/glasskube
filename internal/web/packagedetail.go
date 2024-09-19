@@ -389,7 +389,7 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 			}
 		} else if resolveErr != nil {
 			s.sendToast(w,
-				toast.WithErr(fmt.Errorf("some values could not be resolved: %w", err)),
+				toast.WithErr(fmt.Errorf("some values could not be resolved: %w", resolveErr)),
 				toast.WithCssClass("warning"),
 				toast.WithStatusCode(http.StatusAccepted))
 		} else {
@@ -479,7 +479,7 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 			}
 		} else if resolveErr != nil {
 			s.sendToast(w,
-				toast.WithErr(fmt.Errorf("some values could not be resolved: %w", err)),
+				toast.WithErr(fmt.Errorf("some values could not be resolved: %w", resolveErr)),
 				toast.WithCssClass("warning"),
 				toast.WithStatusCode(http.StatusAccepted))
 		} else {
