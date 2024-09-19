@@ -91,7 +91,7 @@ func (c *updater) PrepareForVersion(
 	if err := c.repoClient.ForPackage(pkg).
 		FetchPackageManifest(pkg.GetSpec().PackageInfo.Name, pkgVersion, &manifest); err != nil {
 		return nil, err
-	} else if result, err := c.dm.Validate(ctx, &manifest, pkgVersion); err != nil {
+	} else if result, err := c.dm.Validate(ctx, pkg.GetName(), pkg.GetNamespace(), &manifest, pkgVersion); err != nil {
 		return nil, err
 	} else if len(result.Conflicts) > 0 {
 		tx.ConflictItems = append(tx.ConflictItems, updateTransactionItemConflict{item, result.Conflicts})
@@ -144,7 +144,8 @@ outer:
 						pkg.GetSpec().PackageInfo.Name, indexItem.LatestVersion, &manifest); err != nil {
 						return nil, err
 					}
-					if result, err := c.dm.Validate(ctx, &manifest, indexItem.LatestVersion); err != nil {
+					if result, err := c.dm.Validate(ctx, pkg.GetName(), pkg.GetNamespace(),
+						&manifest, indexItem.LatestVersion); err != nil {
 						return nil, err
 					} else if len(result.Conflicts) > 0 {
 						// This package can't be updated due to conflicts
@@ -256,7 +257,8 @@ func (c *updater) await(watcher watch.Interface, pkg ctrlpkg.Package) error {
 			if condition := meta.FindStatusCondition(
 				eventPkg.GetStatus().Conditions, string(condition.Ready)); condition != nil {
 				if condition.Status == metav1.ConditionFalse {
-					return fmt.Errorf("Package is not ready (reason %v): %v", condition.Reason, condition.Message)
+					return fmt.Errorf("%vackage is not ready (reason %v): %v",
+						pkg.GroupVersionKind().Kind, condition.Reason, condition.Message)
 				}
 			}
 		}

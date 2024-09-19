@@ -1,4 +1,4 @@
-package flags
+package manifesttransformations
 
 import (
 	"testing"
@@ -9,5 +9,5 @@ import (
 
 func TestDependency(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "flags Suite")
+	RunSpecs(t, "ManifestTransformations Suite")
 }

@@ -61,6 +61,8 @@ func (p *PackageRepositoryValidatingWebhook) ValidateUpdate(ctx context.Context,
 			log.Info("validate update", "name", newRepo.Name)
 			if oldRepo.Spec.Url != newRepo.Spec.Url {
 				return nil, p.validateUpdateOrDelete(ctx, oldRepo)
+			} else {
+				return nil, nil
 			}
 		}
 	}

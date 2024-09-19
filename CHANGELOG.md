@@ -1,5 +1,183 @@
 # Changelog
 
+## [0.21.0](https://github.com/glasskube/glasskube/compare/v0.20.1...v0.21.0) (2024-09-11)
+
+
+### Features
+
+* **cli:** add `--use-default` flag for `install`, `update`, `configure` commands ([#1219](https://github.com/glasskube/glasskube/issues/1219)) ([8f24214](https://github.com/glasskube/glasskube/commit/8f24214aedd71c8fa41d198c2b36067ec8f33947))
+* **package-operator:** add specifying values for package components ([#1218](https://github.com/glasskube/glasskube/issues/1218)) ([ff7c3ce](https://github.com/glasskube/glasskube/commit/ff7c3cefa541b59544be29a5e41ab96fc5d2cb67))
+* **package-operator:** add support for resource transformations ([#1210](https://github.com/glasskube/glasskube/issues/1210)) ([5f934cb](https://github.com/glasskube/glasskube/commit/5f934cb5e47ad02438ad2c0d55b13a25d7708807))
+
+
+### Bug Fixes
+
+* **deps:** update dependency @getcanary/web to ^0.0.102 ([#1204](https://github.com/glasskube/glasskube/issues/1204)) ([511a66b](https://github.com/glasskube/glasskube/commit/511a66b738cd60ea0fff6752cfecb71ee41c8933))
+* **deps:** update dependency @getcanary/web to ^0.0.104 ([#1217](https://github.com/glasskube/glasskube/issues/1217)) ([8c85ace](https://github.com/glasskube/glasskube/commit/8c85acecef1d618695c7c44d8c7cdfe04af0a2c0))
+* **deps:** update fontsource monorepo ([#1202](https://github.com/glasskube/glasskube/issues/1202)) ([e281523](https://github.com/glasskube/glasskube/commit/e2815234da09f37ff0b5c31e3cabf68cdb22aae4))
+
+
+### Other
+
+* change transitiveResources type to TypeLocalObjectReference ([#1211](https://github.com/glasskube/glasskube/issues/1211)) ([54c78cd](https://github.com/glasskube/glasskube/commit/54c78cdb0ea5151a661104282d11a99bea15d496))
+* **deps:** bump body-parser and express in /website ([#1222](https://github.com/glasskube/glasskube/issues/1222)) ([9c5416e](https://github.com/glasskube/glasskube/commit/9c5416edf2e1747134ba787a9bc2bba44696cc6e))
+* **deps:** update commitlint monorepo to v19.5.0 ([#1221](https://github.com/glasskube/glasskube/issues/1221)) ([ede058b](https://github.com/glasskube/glasskube/commit/ede058b09172135a3f0bad8fd6bc73551087a55d))
+* **deps:** update dependency typescript to ~5.6.0 ([#1214](https://github.com/glasskube/glasskube/issues/1214)) ([0e2ca5b](https://github.com/glasskube/glasskube/commit/0e2ca5b936c5f6d93a401efbfb1d16615bde8714))
+* **deps:** update dependency typescript-eslint to v8.5.0 ([#1215](https://github.com/glasskube/glasskube/issues/1215)) ([f5ada7e](https://github.com/glasskube/glasskube/commit/f5ada7e90c9364983eb3f8f93177bb1e3516e1f8))
+
+
+### Docs
+
+* add package manifest reference ([#1212](https://github.com/glasskube/glasskube/issues/1212)) ([7ff01ce](https://github.com/glasskube/glasskube/commit/7ff01ce5d020bf2df8cd970b0bd2fc565d5a8fab))
+* **website:** change the site banner ([#1206](https://github.com/glasskube/glasskube/issues/1206)) ([371474c](https://github.com/glasskube/glasskube/commit/371474cf3b58ed88d8a3de48bf5815f802989dff))
+* **website:** improve Blog page Layout ([#1153](https://github.com/glasskube/glasskube/issues/1153)) ([70033d5](https://github.com/glasskube/glasskube/commit/70033d57a24612f2f70482ae793c3bee3e5eec3f))
+* **website:** improve launch week wording ([#1213](https://github.com/glasskube/glasskube/issues/1213)) ([243798e](https://github.com/glasskube/glasskube/commit/243798e860785da5db4b80815e136e9bfab436b0))
+* **website:** some spelling changes and new visual assets ([#1216](https://github.com/glasskube/glasskube/issues/1216)) ([dbfd2a9](https://github.com/glasskube/glasskube/commit/dbfd2a994e65cab74fc52e2c36ae364d54125677))
+
+## [0.20.1](https://github.com/glasskube/glasskube/compare/v0.20.0...v0.20.1) (2024-09-06)
+
+
+### Bug Fixes
+
+* **cli:** fix typo in homebrew completion command ([#1200](https://github.com/glasskube/glasskube/issues/1200)) ([1a2e841](https://github.com/glasskube/glasskube/commit/1a2e841c8cf37d50f91acfcbec70283e469e7ec1))
+
+## [0.20.0](https://github.com/glasskube/glasskube/compare/v0.19.2...v0.20.0) (2024-09-06)
+
+
+### Features
+
+* generate completions after brew install ([#1194](https://github.com/glasskube/glasskube/issues/1194)) ([5968273](https://github.com/glasskube/glasskube/commit/5968273c80cbaabf774166eff8d5fa26c958e739))
+* **package-controller:** add name prefixing of managed resources ([#1186](https://github.com/glasskube/glasskube/issues/1186)) ([5a2a7b7](https://github.com/glasskube/glasskube/commit/5a2a7b7a678d5c732580149e4a9db28b18516959))
+
+
+### Other
+
+* **deps:** update dependency @eslint/js to v9.10.0 ([#1199](https://github.com/glasskube/glasskube/issues/1199)) ([5cb7f5d](https://github.com/glasskube/glasskube/commit/5cb7f5df37a21695fbf13b5ef5adef18b312c0be))
+
+
+### Docs
+
+* **website:** add launch blog post ([#1182](https://github.com/glasskube/glasskube/issues/1182)) ([f8eb907](https://github.com/glasskube/glasskube/commit/f8eb9079d28edac4d58c5ea836c32634d2258b2c))
+* **website:** added truncation marker to template and launch post ([#1197](https://github.com/glasskube/glasskube/issues/1197)) ([9d47700](https://github.com/glasskube/glasskube/commit/9d4770042985cff3a68a6eda0ecdba824d3094bc))
+
+## [0.19.2](https://github.com/glasskube/glasskube/compare/v0.19.1...v0.19.2) (2024-09-06)
+
+
+### Bug Fixes
+
+* **build:** fix completions ([#1193](https://github.com/glasskube/glasskube/issues/1193)) ([54b2d3e](https://github.com/glasskube/glasskube/commit/54b2d3edeb42de25b1846cef688686ba704214cf))
+
+## [0.19.1](https://github.com/glasskube/glasskube/compare/v0.19.0...v0.19.1) (2024-09-05)
+
+
+### Docs
+
+* **website:** added helloGitHub badge to readme ([#1189](https://github.com/glasskube/glasskube/issues/1189)) ([f13571b](https://github.com/glasskube/glasskube/commit/f13571b93797cbe598ff89780632ebfcde8243e5))
+* **website:** added Series A IDP blog post to blog section ([#1080](https://github.com/glasskube/glasskube/issues/1080)) ([5c6892f](https://github.com/glasskube/glasskube/commit/5c6892f77fbd231032f97a1b9988aecd078ca5c3))
+
+## [0.19.0](https://github.com/glasskube/glasskube/compare/v0.18.1...v0.19.0) (2024-09-05)
+
+
+### Features
+
+* **cli:** add markdown support for value descriptions when configuring a package via CLI ([#1174](https://github.com/glasskube/glasskube/issues/1174)) ([51d3bf8](https://github.com/glasskube/glasskube/commit/51d3bf8ab69265bf0776631db0a89b727f90c737))
+* **cli:** improve gitops bootstrap support ([#1154](https://github.com/glasskube/glasskube/issues/1154)) ([3d1e57a](https://github.com/glasskube/glasskube/commit/3d1e57a06ec4f7cb28bae612f416125b4b24834a))
+* **package-operator:** check readiness of deployments and stateful sets ([#1185](https://github.com/glasskube/glasskube/issues/1185)) ([4ec0dbf](https://github.com/glasskube/glasskube/commit/4ec0dbf7dc6f32c2bed7f19e4886cf63a4396e39))
+* **ui:** add editing of package repositories ([#1181](https://github.com/glasskube/glasskube/issues/1181)) ([69eef28](https://github.com/glasskube/glasskube/commit/69eef288faee545f13a15cafed46daf56c849bb3))
+
+
+### Bug Fixes
+
+* **deps:** update module golang.org/x/term to v0.24.0 ([#1180](https://github.com/glasskube/glasskube/issues/1180)) ([83753bf](https://github.com/glasskube/glasskube/commit/83753bf6d253fbf476ff19fc7fc691ea966be1f1))
+* package manifest fallback strategy in dependency manager ([#1177](https://github.com/glasskube/glasskube/issues/1177)) ([98bf4eb](https://github.com/glasskube/glasskube/commit/98bf4eb38fae5faf81bbe793c3e9376e67f112be))
+
+
+### Other
+
+* output of package dependencies and components ([#1179](https://github.com/glasskube/glasskube/issues/1179)) ([e41ff25](https://github.com/glasskube/glasskube/commit/e41ff25e56fde108aaccb20c80a99f453c450b3b))
+
+
+### Docs
+
+* **website:** added image thumbnails to blog which are missing them ([#1183](https://github.com/glasskube/glasskube/issues/1183)) ([ea78d67](https://github.com/glasskube/glasskube/commit/ea78d67375b1e7851c7b7a1d7fd2b2bd6432c3b5))
+
+## [0.18.1](https://github.com/glasskube/glasskube/compare/v0.18.0...v0.18.1) (2024-09-04)
+
+
+### Bug Fixes
+
+* **cli:** show a different operator version warning in dev mode ([#1158](https://github.com/glasskube/glasskube/issues/1158)) ([eee0ea8](https://github.com/glasskube/glasskube/commit/eee0ea84d81f38268f0e342e43d1e75bd567eadf))
+* **cli:** use default name when `--yes` is specified  ([#1166](https://github.com/glasskube/glasskube/issues/1166)) ([0c489d5](https://github.com/glasskube/glasskube/commit/0c489d5bac6535110c08ee3ad80d2fa578634d46))
+* **deps:** update dependency @getcanary/docusaurus-theme-search-pagefind to ^0.0.13 ([#1151](https://github.com/glasskube/glasskube/issues/1151)) ([1d2dd8b](https://github.com/glasskube/glasskube/commit/1d2dd8be4318e3159ce04d6d637d7bb601c1496b))
+* **deps:** update dependency @getcanary/web to ^0.0.101 ([#1150](https://github.com/glasskube/glasskube/issues/1150)) ([25c2481](https://github.com/glasskube/glasskube/commit/25c2481f873bead5ad69e9bec4528454f1a92351))
+* **deps:** update module github.com/masterminds/semver/v3 to v3.3.0 ([#1140](https://github.com/glasskube/glasskube/issues/1140)) ([13e7ea9](https://github.com/glasskube/glasskube/commit/13e7ea9e31f7626d854092ccfe435b5082f29939))
+* **deps:** update module github.com/onsi/ginkgo/v2 to v2.20.2 ([#1144](https://github.com/glasskube/glasskube/issues/1144)) ([dccbfb8](https://github.com/glasskube/glasskube/commit/dccbfb8bc5aaad24d9ad03952551d1e12015a8b9))
+* **deps:** update module github.com/onsi/gomega to v1.34.2 ([#1145](https://github.com/glasskube/glasskube/issues/1145)) ([e215b8c](https://github.com/glasskube/glasskube/commit/e215b8c3ac86b199890dae8b2a000fe56e3e1945))
+* **deps:** update module github.com/posthog/posthog-go to v1.2.21 ([#1136](https://github.com/glasskube/glasskube/issues/1136)) ([502ca2d](https://github.com/glasskube/glasskube/commit/502ca2d8e659d635dad8eec42cf03507fe986469))
+* **package-operator:** package repository webhook validation ([#1160](https://github.com/glasskube/glasskube/issues/1160)) ([b0c4aa8](https://github.com/glasskube/glasskube/commit/b0c4aa85978cbbaadc62be5215ba34e77b40180f))
+* remove base64 decoding of secret values in config resolver ([#1168](https://github.com/glasskube/glasskube/issues/1168)) ([187d40b](https://github.com/glasskube/glasskube/commit/187d40b6348b7db22165a1448e8186be88d9b1cd))
+* retry on certificate errors during bootstrap ([#1172](https://github.com/glasskube/glasskube/issues/1172)) ([e0c42dd](https://github.com/glasskube/glasskube/commit/e0c42dd1f17b9722c35b87f592c0d0cbbb0a9d4f))
+
+
+### Other
+
+* **deps:** bump pagefind from 1.1.0 to 1.1.1 in /website ([#1170](https://github.com/glasskube/glasskube/issues/1170)) ([3752aa0](https://github.com/glasskube/glasskube/commit/3752aa01a56417ae948bc810dce1a762212391b0))
+* **deps:** update actions/upload-artifact action to v4.4.0 ([#1152](https://github.com/glasskube/glasskube/issues/1152)) ([dfa344a](https://github.com/glasskube/glasskube/commit/dfa344ae552598f5783440f144f5fa331aa95990))
+* **deps:** update dependency eslint-plugin-import to v2.30.0 ([#1161](https://github.com/glasskube/glasskube/issues/1161)) ([4e358e3](https://github.com/glasskube/glasskube/commit/4e358e3c8812d13e557f3bc43d7cde0d2a7da511))
+* **deps:** update dependency eslint-plugin-react to v7.35.1 ([#1159](https://github.com/glasskube/glasskube/issues/1159)) ([1b0179a](https://github.com/glasskube/glasskube/commit/1b0179ab01ffce273d224236828905216c799249))
+* **deps:** update dependency eslint-plugin-react to v7.35.2 ([#1171](https://github.com/glasskube/glasskube/issues/1171)) ([ed55b24](https://github.com/glasskube/glasskube/commit/ed55b24b0cd0f2b8a57386725c6e75953eda0bbe))
+* **deps:** update dependency typescript-eslint to v8.4.0 ([#1156](https://github.com/glasskube/glasskube/issues/1156)) ([0ae1770](https://github.com/glasskube/glasskube/commit/0ae177090a831007b7145507cfaed6db65f7e3fe))
+
+
+### Docs
+
+* add documenation for renovate integration ([#1165](https://github.com/glasskube/glasskube/issues/1165)) ([a765c3d](https://github.com/glasskube/glasskube/commit/a765c3dbccabff0fcc507269dddc13cda23805b9))
+* add documentation for the auto-update command ([#1164](https://github.com/glasskube/glasskube/issues/1164)) ([d5b2bc5](https://github.com/glasskube/glasskube/commit/d5b2bc5a18ba6f2495359e2f215402d9d4778c5e))
+* **website:** add Renovate example ([#1169](https://github.com/glasskube/glasskube/issues/1169)) ([c34d8a5](https://github.com/glasskube/glasskube/commit/c34d8a5cd18f536132581d52b67200fba8284412))
+
+## [0.18.0](https://github.com/glasskube/glasskube/compare/v0.17.0...v0.18.0) (2024-08-29)
+
+
+### Features
+
+* add support for package components ([#1129](https://github.com/glasskube/glasskube/issues/1129)) ([96e2fcc](https://github.com/glasskube/glasskube/commit/96e2fcc833357b3f183ae5ab4645b7b9c94ae938))
+* **cli:** add --dry-run to uninstall command ([#1069](https://github.com/glasskube/glasskube/issues/1069)) ([ac472ee](https://github.com/glasskube/glasskube/commit/ac472ee83b276612fe7290d879be2144d2d2bfd6))
+* **cli:** added `--repositroy` flag for `glasskube list` command to filter based on repo ([#1030](https://github.com/glasskube/glasskube/issues/1030)) ([4dc6ca5](https://github.com/glasskube/glasskube/commit/4dc6ca54f6b8efa1cb72128227a4597435592c20))
+* **package-operator:** add package repository validating webhook ([#1094](https://github.com/glasskube/glasskube/issues/1094)) ([d04bf89](https://github.com/glasskube/glasskube/commit/d04bf89b7546f4006dc3d5d8c5537ba3527d2ef4))
+
+
+### Bug Fixes
+
+* **deps:** update dependency @fontsource/poppins to v5.0.15 ([#1120](https://github.com/glasskube/glasskube/issues/1120)) ([31cfe95](https://github.com/glasskube/glasskube/commit/31cfe95d2088d3c0166e04b000af4f5a315db03d))
+* **deps:** update dependency htmx-ext-response-targets to v2.0.1 ([#1117](https://github.com/glasskube/glasskube/issues/1117)) ([c58a5f2](https://github.com/glasskube/glasskube/commit/c58a5f254257a4770300077f05ec8ff9c001a1c9))
+* **deps:** update dependency htmx-ext-sse to v2.2.2 ([#1115](https://github.com/glasskube/glasskube/issues/1115)) ([6443fb7](https://github.com/glasskube/glasskube/commit/6443fb7c32c7006bd3afc339f39e1343b62ca243))
+* **deps:** update docusaurus monorepo to v3.5.2 ([#1092](https://github.com/glasskube/glasskube/issues/1092)) ([52bae91](https://github.com/glasskube/glasskube/commit/52bae9149fc3b5f4735ad8686956f47555c322b6))
+* **deps:** update module github.com/onsi/ginkgo/v2 to v2.20.1 ([#1127](https://github.com/glasskube/glasskube/issues/1127)) ([2cd6442](https://github.com/glasskube/glasskube/commit/2cd6442d95e12592bfd56530ca311cbea94c4035))
+* **deps:** update module github.com/posthog/posthog-go to v1.2.18 ([#1118](https://github.com/glasskube/glasskube/issues/1118)) ([25b7617](https://github.com/glasskube/glasskube/commit/25b76172d825edbc0e9d1749c21cf765c6a26e81))
+* **deps:** update module github.com/posthog/posthog-go to v1.2.19 ([#1130](https://github.com/glasskube/glasskube/issues/1130)) ([cdbd78d](https://github.com/glasskube/glasskube/commit/cdbd78d3c3d6309044181ffe3b7611806f19a4fa))
+* **deps:** update module sigs.k8s.io/controller-runtime to v0.19.0 ([#1113](https://github.com/glasskube/glasskube/issues/1113)) ([f3bcbec](https://github.com/glasskube/glasskube/commit/f3bcbec3f78385c302be5b816585bbfa37f20ab2))
+
+
+### Other
+
+* add name field to package.json ([#1128](https://github.com/glasskube/glasskube/issues/1128)) ([1ff7e04](https://github.com/glasskube/glasskube/commit/1ff7e04c4378cfeed3a000579715baec720be7e3))
+* **deps:** bump micromatch from 4.0.5 to 4.0.8 in /website ([#1133](https://github.com/glasskube/glasskube/issues/1133)) ([e3e2497](https://github.com/glasskube/glasskube/commit/e3e249758549d2cb4a78f0b1ea93de93d62207ea))
+* **deps:** update dependency @commitlint/cli to v19.4.1 ([#1142](https://github.com/glasskube/glasskube/issues/1142)) ([bdead0b](https://github.com/glasskube/glasskube/commit/bdead0bbdb09c3c652458c6a16466ad2f90f19d1))
+* **deps:** update dependency @commitlint/config-conventional to v19.4.1 ([#1141](https://github.com/glasskube/glasskube/issues/1141)) ([456b20b](https://github.com/glasskube/glasskube/commit/456b20beb3bb22dfe4aa194e763f40302f78aef3))
+* **deps:** update dependency @eslint/js to v9.9.1 ([#1132](https://github.com/glasskube/glasskube/issues/1132)) ([d6642c3](https://github.com/glasskube/glasskube/commit/d6642c361c810c21fac24673baf92a0d1beae8bf))
+* **deps:** update dependency @types/eslint to v8.56.12 ([#1135](https://github.com/glasskube/glasskube/issues/1135)) ([aab9349](https://github.com/glasskube/glasskube/commit/aab93499a8e7bce30d28784c10ebc55ec7915b57))
+* **deps:** update dependency esbuild to v0.23.1 ([#1119](https://github.com/glasskube/glasskube/issues/1119)) ([dfeff0b](https://github.com/glasskube/glasskube/commit/dfeff0b17089b1c6421bfae44900d7a6c6013f64))
+* **deps:** update dependency typescript-eslint to v8.2.0 ([#1123](https://github.com/glasskube/glasskube/issues/1123)) ([1e8532a](https://github.com/glasskube/glasskube/commit/1e8532a4760278cc6cd9b6a75a6c48229bbce975))
+* **deps:** update dependency typescript-eslint to v8.3.0 ([#1137](https://github.com/glasskube/glasskube/issues/1137)) ([553f7b1](https://github.com/glasskube/glasskube/commit/553f7b13017c7602f7b111d8f5e6c98f242abb0c))
+* update Go version to 1.23.0 and golangci-lint to 1.60.1 ([#1108](https://github.com/glasskube/glasskube/issues/1108)) ([1c532ea](https://github.com/glasskube/glasskube/commit/1c532ea8d24f97defa988595f88b731d649a3245))
+
+
+### Docs
+
+* **contrib:** add guide for creating a new validating webhook ([#1114](https://github.com/glasskube/glasskube/issues/1114)) ([a91fcc8](https://github.com/glasskube/glasskube/commit/a91fcc8a80c3064805a5b76a345267184e4ae5d7))
+* **website:** correct install command for Alpine Linux ([#1146](https://github.com/glasskube/glasskube/issues/1146)) ([36bb618](https://github.com/glasskube/glasskube/commit/36bb61890e41bbe6bee41e4c0847e3d28571d83f))
+* **website:** switch to pagefind-based local search ([#1134](https://github.com/glasskube/glasskube/issues/1134)) ([1baa0a2](https://github.com/glasskube/glasskube/commit/1baa0a2d105176138a35a86cc2370b39af52f98d))
+
 ## [0.17.0](https://github.com/glasskube/glasskube/compare/v0.16.0...v0.17.0) (2024-08-15)
 
 

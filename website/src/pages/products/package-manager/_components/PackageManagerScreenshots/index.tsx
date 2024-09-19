@@ -85,7 +85,7 @@ const ScreenshotList: ScreenshotItem[] = [
     title: 'Reactions and comments',
     description: (
       <>
-        Discuss and upvote your favorit Kubernetes package on{' '}
+        Discuss and upvote your favorite Kubernetes package on{' '}
         <Link href="https://github.com/glasskube/glasskube/discussions/categories/packages">
           GitHub
         </Link>{' '}

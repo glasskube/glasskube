@@ -2,6 +2,33 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://glasskube.dev/schemas/v1/package-manifest.json",
   "$defs": {
+    "Component": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "installedName": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "values": {
+          "$ref": "#/$defs/ComponentValues"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name"
+      ]
+    },
+    "ComponentValues": {
+      "additionalProperties": {
+        "$ref": "#/$defs/InlineValueConfiguration"
+      },
+      "type": "object"
+    },
     "Dependency": {
       "properties": {
         "name": {
@@ -39,6 +66,15 @@
         "chartName",
         "chartVersion"
       ]
+    },
+    "InlineValueConfiguration": {
+      "properties": {
+        "value": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
     },
     "JSON": {
       "additionalProperties": true,
@@ -125,6 +161,60 @@
       "type": "object",
       "required": [
         "url"
+      ]
+    },
+    "TransformationDefinition": {
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/TransformationSource"
+        },
+        "targets": {
+          "items": {
+            "$ref": "#/$defs/ValueDefinitionTarget"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "source",
+        "targets"
+      ]
+    },
+    "TransformationSource": {
+      "properties": {
+        "resource": {
+          "$ref": "#/$defs/TypedLocalObjectReference"
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "path"
+      ]
+    },
+    "TypedLocalObjectReference": {
+      "properties": {
+        "apiGroup": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "apiGroup",
+        "kind",
+        "name"
       ]
     },
     "TypedObjectReference": {
@@ -312,6 +402,18 @@
       },
       "type": "object"
     },
+    "transformations": {
+      "items": {
+        "$ref": "#/$defs/TransformationDefinition"
+      },
+      "type": "array"
+    },
+    "transitiveResources": {
+      "items": {
+        "$ref": "#/$defs/TypedLocalObjectReference"
+      },
+      "type": "array"
+    },
     "defaultNamespace": {
       "type": "string"
     },
@@ -324,6 +426,12 @@
     "dependencies": {
       "items": {
         "$ref": "#/$defs/Dependency"
+      },
+      "type": "array"
+    },
+    "components": {
+      "items": {
+        "$ref": "#/$defs/Component"
       },
       "type": "array"
     }

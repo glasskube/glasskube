@@ -198,3 +198,13 @@ h2 {
   text-shadow: 0 0 5px var(--glasskube-pink);
 }
 
+canary-root {
+  --canary-color-primary-c: 0.08;
+  --canary-color-primary-h: 250;
+}
+canary-trigger-searchbar::part(button) {
+  background-color: var(--ifm-color-emphasis-100);
+}
+canary-trigger-searchbar::part(kbd) {
+  background-color: var(--ifm-color-emphasis-200);
+}

@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.14.0
+    controller-gen.kubebuilder.io/version: v0.16.1
   name: packageinfos.packages.glasskube.dev
 spec:
   group: packages.glasskube.dev
@@ -65,16 +65,8 @@ spec:
             properties:
               conditions:
                 items:
-                  description: "Condition contains details for one aspect of the current
-                    state of this API Resource.\n---\nThis struct is intended for
-                    direct use as an array at the field path .status.conditions.  For
-                    example,\n\n\n\ttype FooStatus struct{\n\t    // Represents the
-                    observations of a foo's current state.\n\t    // Known .status.conditions.type
-                    are: \"Available\", \"Progressing\", and \"Degraded\"\n\t    //
-                    +patchMergeKey=type\n\t    // +patchStrategy=merge\n\t    // +listType=map\n\t
-                    \   // +listMapKey=type\n\t    Conditions []metav1.Condition `json:\"conditions,omitempty\"
-                    patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`\n\n\n\t
-                    \   // other fields\n\t}"
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
                   properties:
                     lastTransitionTime:
                       description: |-
@@ -115,12 +107,7 @@ spec:
                       - Unknown
                       type: string
                     type:
-                      description: |-
-                        type of condition in CamelCase or in foo.example.com/CamelCase.
-                        ---
-                        Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
-                        useful (see .node.status.conditions), the ability to deconflict is important.
-                        The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
                       maxLength: 316
                       pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
                       type: string
@@ -137,6 +124,27 @@ spec:
                 type: string
               manifest:
                 properties:
+                  components:
+                    items:
+                      properties:
+                        installedName:
+                          type: string
+                        name:
+                          type: string
+                        values:
+                          additionalProperties:
+                            properties:
+                              value:
+                                type: string
+                            type: object
+                          description: Specify configuration for this component
+                          type: object
+                        version:
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    type: array
                   defaultNamespace:
                     description: DefaultNamespace to install the package. May be overridden.
                     type: string
@@ -254,6 +262,120 @@ spec:
                     type: string
                   shortDescription:
                     type: string
+                  transformations:
+                    items:
+                      properties:
+                        source:
+                          properties:
+                            path:
+                              type: string
+                            resource:
+                              description: |-
+                                TypedLocalObjectReference contains enough information to let you locate the
+                                typed referenced object inside the same namespace.
+                              properties:
+                                apiGroup:
+                                  description: |-
+                                    APIGroup is the group for the resource being referenced.
+                                    If APIGroup is not specified, the specified Kind must be in the core API group.
+                                    For any other third-party types, APIGroup is required.
+                                  type: string
+                                kind:
+                                  description: Kind is the type of resource being
+                                    referenced
+                                  type: string
+                                name:
+                                  description: Name is the name of resource being
+                                    referenced
+                                  type: string
+                              required:
+                              - kind
+                              - name
+                              type: object
+                              x-kubernetes-map-type: atomic
+                          required:
+                          - path
+                          type: object
+                        targets:
+                          items:
+                            properties:
+                              chartName:
+                                type: string
+                              patch:
+                                properties:
+                                  op:
+                                    type: string
+                                  path:
+                                    type: string
+                                required:
+                                - op
+                                - path
+                                type: object
+                              resource:
+                                properties:
+                                  apiGroup:
+                                    description: |-
+                                      APIGroup is the group for the resource being referenced.
+                                      If APIGroup is not specified, the specified Kind must be in the core API group.
+                                      For any other third-party types, APIGroup is required.
+                                    type: string
+                                  kind:
+                                    description: Kind is the type of resource being
+                                      referenced
+                                    type: string
+                                  name:
+                                    description: Name is the name of resource being
+                                      referenced
+                                    type: string
+                                  namespace:
+                                    description: |-
+                                      Namespace is the namespace of resource being referenced
+                                      Note that when a namespace is specified, a gateway.networking.k8s.io/ReferenceGrant object is required in the referent namespace to allow that namespace's owner to accept the reference. See the ReferenceGrant documentation for details.
+                                      (Alpha) This field requires the CrossNamespaceVolumeDataSource feature gate to be enabled.
+                                    type: string
+                                required:
+                                - kind
+                                - name
+                                type: object
+                              valueTemplate:
+                                type: string
+                            required:
+                            - patch
+                            type: object
+                            x-kubernetes-validations:
+                            - message: ValueDefinitionTarget must have either resource
+                                or chartName but not both
+                              rule: has(self.resource) != has(self.chartName)
+                          type: array
+                      required:
+                      - source
+                      - targets
+                      type: object
+                    type: array
+                  transitiveResources:
+                    items:
+                      description: |-
+                        TypedLocalObjectReference contains enough information to let you locate the
+                        typed referenced object inside the same namespace.
+                      properties:
+                        apiGroup:
+                          description: |-
+                            APIGroup is the group for the resource being referenced.
+                            If APIGroup is not specified, the specified Kind must be in the core API group.
+                            For any other third-party types, APIGroup is required.
+                          type: string
+                        kind:
+                          description: Kind is the type of resource being referenced
+                          type: string
+                        name:
+                          description: Name is the name of resource being referenced
+                          type: string
+                      required:
+                      - kind
+                      - name
+                      type: object
+                      x-kubernetes-map-type: atomic
+                    type: array
                   valueDefinitions:
                     additionalProperties:
                       properties:

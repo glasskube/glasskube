@@ -170,6 +170,8 @@ brews:
     commit_msg_template: "chore: brew formula update for {{ .ProjectName }} version {{ .Tag }}"
     install: |
       bin.install "glasskube"
+    post_install: |
+      generate_completions_from_executable(bin/"glasskube", "completion")
     skip_upload: "auto"
 
 release:

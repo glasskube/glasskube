@@ -9,6 +9,8 @@ import (
 	"os"
 	"strings"
 
+	repoerror "github.com/glasskube/glasskube/internal/repo/error"
+
 	"github.com/fatih/color"
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clientutils"
@@ -63,7 +65,9 @@ var describeCmd = &cobra.Command{
 				// package not installed -> use latest manifest from repo
 				if lvErr != nil {
 					fmt.Fprintf(os.Stderr, "❌ Could not get latest info for %v: %v\n", pkgName, lvErr)
-					cliutils.ExitWithError()
+					if repoerror.IsComplete(lvErr) {
+						cliutils.ExitWithError()
+					}
 				}
 
 				manifest = latestManifest
@@ -122,7 +126,6 @@ var describeCmd = &cobra.Command{
 		}
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "❌ Could not get repos for %v: %v\n", pkgName, err)
-			cliutils.ExitWithError()
 		}
 
 		bold := color.New(color.Bold).SprintFunc()

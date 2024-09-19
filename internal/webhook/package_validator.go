@@ -93,7 +93,7 @@ func (p *PackageValidatingWebhook) ValidateDelete(ctx context.Context, obj runti
 			return nil, err
 		} else if !pkg.IsNamespaceScoped() {
 			// deletion is only validated for cluster-scoped packages
-			if _, err := g.ValidateDelete(pkg.GetName()); err != nil {
+			if _, err := g.ValidateDelete(pkg.GetName(), pkg.GetNamespace()); err != nil {
 				for _, err1 := range multierr.Errors(err) {
 					if !errors.Is(err1, &graph.DependencyError{}) {
 						return nil, err1
@@ -130,7 +130,7 @@ func (p *PackageValidatingWebhook) validateCreateOrUpdate(ctx context.Context, p
 		return err
 	}
 
-	if result, err := p.Validate(ctx, &manifest, pkg.GetSpec().PackageInfo.Version); err != nil {
+	if result, err := p.Validate(ctx, pkg.GetName(), pkg.GetNamespace(), &manifest, pkg.GetSpec().PackageInfo.Version); err != nil {
 		return err
 	} else if len(result.Conflicts) > 0 {
 		// Conflicts are not allowed.

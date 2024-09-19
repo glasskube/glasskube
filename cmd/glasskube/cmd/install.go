@@ -5,7 +5,10 @@ import (
 	"os"
 	"strings"
 
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/glasskube/glasskube/internal/clientutils"
+	"github.com/glasskube/glasskube/internal/namespaces"
 
 	"github.com/fatih/color"
 	"github.com/glasskube/glasskube/api/v1alpha1"
@@ -14,7 +17,6 @@ import (
 	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/dependency"
 	"github.com/glasskube/glasskube/internal/manifestvalues/cli"
-	"github.com/glasskube/glasskube/internal/manifestvalues/flags"
 	"github.com/glasskube/glasskube/internal/maputils"
 	"github.com/glasskube/glasskube/internal/repo"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
@@ -29,7 +31,7 @@ import (
 )
 
 var installCmdOptions = struct {
-	flags.ValuesOptions
+	cli.ValuesOptions
 	Version           string
 	Repository        string
 	EnableAutoUpdates bool
@@ -39,7 +41,7 @@ var installCmdOptions = struct {
 	NamespaceOptions
 	DryRunOptions
 }{
-	ValuesOptions: flags.NewOptions(),
+	ValuesOptions: cli.NewOptions(),
 }
 
 var installCmd = &cobra.Command{
@@ -57,6 +59,7 @@ var installCmd = &cobra.Command{
 		valueResolver := cliutils.ValueResolver(ctx)
 		repoClientset := cliutils.RepositoryClientset(ctx)
 		installer := install.NewInstaller(pkgClient)
+		cs := clicontext.KubernetesClientFromContext(ctx)
 
 		opts := metav1.CreateOptions{}
 		if installCmdOptions.DryRun {
@@ -147,10 +150,15 @@ var installCmd = &cobra.Command{
 		} else {
 			var name string
 			if len(args) != 2 {
-				fmt.Fprintf(os.Stderr, "%v has scope Namespaced. Please enter a name (default %v):\n", packageName, packageName)
-				name = cliutils.GetInputStr("name")
-				if name == "" {
+				if installCmdOptions.Yes {
+					fmt.Fprintf(os.Stderr, "Name not specified. Using default name: %v\n", packageName)
 					name = packageName
+				} else {
+					fmt.Fprintf(os.Stderr, "%v has scope Namespaced. Please enter a name (default %v):\n", packageName, packageName)
+					name = cliutils.GetInputStr("name")
+					if name == "" {
+						name = packageName
+					}
 				}
 			} else {
 				name = args[1]
@@ -165,25 +173,15 @@ var installCmd = &cobra.Command{
 			)
 		}
 
-		if validationResult, err :=
-			dm.Validate(ctx, &manifest, installCmdOptions.Version); err != nil {
-			fmt.Fprintf(os.Stderr, "❗ Error: Could not validate dependencies: %v\n", err)
-			cliutils.ExitWithError()
-		} else if len(validationResult.Conflicts) > 0 {
-			fmt.Fprintf(os.Stderr, "❗ Error: %v cannot be installed due to conflicts: %v\n",
-				packageName, validationResult.Conflicts)
-			cliutils.ExitWithError()
-		} else if len(validationResult.Requirements) > 0 {
-			installationPlan = append(installationPlan, validationResult.Requirements...)
-		} else if installCmdOptions.IsValuesSet() {
-			if values, err := installCmdOptions.ParseValues(nil); err != nil {
+		if installCmdOptions.IsValuesSet() {
+			if values, err := installCmdOptions.ParseValues(&manifest, nil); err != nil {
 				fmt.Fprintf(os.Stderr, "❌ invalid values in command line flags: %v\n", err)
 				cliutils.ExitWithError()
 			} else {
 				pkgBuilder.WithValues(values)
 			}
 		} else {
-			if values, err := cli.Configure(manifest, nil); err != nil {
+			if values, err := cli.Configure(manifest, cli.WithUseDefaults(installCmdOptions.UseDefault)); err != nil {
 				cancel()
 			} else {
 				pkgBuilder.WithValues(values)
@@ -200,6 +198,18 @@ var installCmd = &cobra.Command{
 
 		pkg := pkgBuilder.Build(manifest.Scope)
 
+		if validationResult, err :=
+			dm.Validate(ctx, pkg.GetName(), pkg.GetNamespace(), &manifest, installCmdOptions.Version); err != nil {
+			fmt.Fprintf(os.Stderr, "❗ Error: Could not validate dependencies: %v\n", err)
+			cliutils.ExitWithError()
+		} else if len(validationResult.Conflicts) > 0 {
+			fmt.Fprintf(os.Stderr, "❗ Error: %v cannot be installed due to conflicts: %v\n",
+				packageName, validationResult.Conflicts)
+			cliutils.ExitWithError()
+		} else if len(validationResult.Requirements) > 0 {
+			installationPlan = append(installationPlan, validationResult.Requirements...)
+		}
+
 		fmt.Fprintln(os.Stderr, bold("Summary:"))
 		fmt.Fprintf(os.Stderr, " * The following packages will be installed in your cluster (%v):\n", config.CurrentContext)
 		for i, p := range installationPlan {
@@ -209,6 +219,18 @@ var installCmd = &cobra.Command{
 			fmt.Fprintln(os.Stderr, " * Automatic updates will be", bold("enabled"))
 		} else {
 			fmt.Fprintln(os.Stderr, " * Automatic updates will be", bold("not enabled"))
+		}
+
+		createNamespace := false
+		if installCmdOptions.NamespaceOptions.Namespace != "" {
+			if ok, err := namespaces.Exists(ctx, cs, installCmdOptions.NamespaceOptions.Namespace); !ok {
+				fmt.Fprintf(os.Stderr, " * Namespace %v does not exist and will be created\n",
+					installCmdOptions.NamespaceOptions.Namespace)
+				createNamespace = true
+			} else if err != nil {
+				fmt.Fprintf(os.Stderr, "An error occurred in the Namespace check:\n\n%v\n", err)
+				cliutils.ExitWithError()
+			}
 		}
 
 		if len(pkg.GetSpec().Values) > 0 {
@@ -223,6 +245,18 @@ var installCmd = &cobra.Command{
 			cancel()
 		}
 
+		if createNamespace {
+			ns := &v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: installCmdOptions.NamespaceOptions.Namespace,
+				},
+			}
+			_, err := cs.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{})
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "An error occurred in creating the Namespace:\n\n%v\n", err)
+				cliutils.ExitWithError()
+			}
+		}
 		if installCmdOptions.NoWait {
 			if err := installer.Install(ctx, pkg, opts); err != nil {
 				fmt.Fprintf(os.Stderr, "An error occurred during installation:\n\n%v\n", err)

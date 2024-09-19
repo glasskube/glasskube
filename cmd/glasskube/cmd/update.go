@@ -11,13 +11,12 @@ import (
 	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/util"
 
-	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
-	"github.com/glasskube/glasskube/internal/manifestvalues/cli"
-
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/config"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
+	"github.com/glasskube/glasskube/internal/manifestvalues/cli"
 	"github.com/glasskube/glasskube/internal/repo"
 	"github.com/glasskube/glasskube/internal/semver"
 	"github.com/glasskube/glasskube/pkg/client"
@@ -29,13 +28,16 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-var updateCmdOptions struct {
+var updateCmdOptions = struct {
+	cli.ValuesOptions
 	Version string
 	Yes     bool
 	DryRunOptions
 	OutputOptions
 	NamespaceOptions
 	KindOptions
+}{
+	ValuesOptions: cli.NewOptions(cli.WithKeepOldValuesFlag),
 }
 
 var updateCmd = &cobra.Command{
@@ -253,10 +255,18 @@ func updateConfigurationIfNeeded(ctx context.Context, pkg ctrlpkg.Package, newVe
 		return fmt.Errorf("error getting manifest for new version: %v", err)
 	}
 
-	if len(newManifest.ValueDefinitions) > 0 {
+	if updateCmdOptions.ValuesOptions.IsValuesSet() {
+		if values, err := updateCmdOptions.ValuesOptions.ParseValues(newManifest, pkg.GetSpec().Values); err != nil {
+			return err
+		} else {
+			pkg.GetSpec().Values = values
+		}
+	} else if len(newManifest.ValueDefinitions) > 0 || len(pkg.GetSpec().Values) > 0 {
 		if cliutils.YesNoPrompt(fmt.Sprintf("Do you want to update the configuration for %s?", pkg.GetName()), false) {
-
-			values, err := cli.Configure(*newManifest, pkg.GetSpec().Values)
+			values, err := cli.Configure(*newManifest,
+				cli.WithOldValues(pkg.GetSpec().Values),
+				cli.WithUseDefaults(updateCmdOptions.UseDefault),
+			)
 			if err != nil {
 				return fmt.Errorf("error during configuration: %v", err)
 			}
@@ -276,6 +286,7 @@ func init() {
 	updateCmdOptions.OutputOptions.AddFlagsToCommand(updateCmd)
 	updateCmdOptions.KindOptions.AddFlagsToCommand(updateCmd)
 	updateCmdOptions.NamespaceOptions.AddFlagsToCommand(updateCmd)
+	updateCmdOptions.ValuesOptions.AddFlagsToCommand(updateCmd)
 	RootCmd.AddCommand(updateCmd)
 	updateCmdOptions.DryRunOptions.AddFlagsToCommand(updateCmd)
 }

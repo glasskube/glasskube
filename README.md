@@ -6,7 +6,8 @@
 [![Downloads](https://img.shields.io/github/downloads/glasskube/glasskube/total)](https://github.com/glasskube/glasskube/releases)
 [![CNCF Landscape](https://img.shields.io/badge/CNCF%20Landscape-5699C6)](https://landscape.cncf.io/?item=app-definition-and-development--application-definition-image-build--glasskube)
 [![Go Reference](https://pkg.go.dev/badge/github.com/glasskube/glasskube)](https://pkg.go.dev/github.com/glasskube/glasskube)
-[![Go Report Card](https://goreportcard.com/badge/github.com/glasskube/glasskube)](https://goreportcard.com/report/github.com/glasskube/glasskube)
+[![Go Report Card](https://goreportcard.com/badge/github.com/glasskube/glasskube)](https://goreportcard.com/report/github.com/glasskube/glasskube) 
+[![HelloGitHub](https://abroad.hellogithub.com/v1/widgets/recommend.svg?rid=5bcfc97b9ef44c409ae26d7531072f16&claim_uid=jClrT0P8zO5sJID&theme=small)](https://hellogithub.com/repository/5bcfc97b9ef44c409ae26d7531072f16)
 
 <br>
 <div align="center">
@@ -77,7 +78,7 @@ This realization prompted us to tackle the larger issue of package management in
 | **Package configurations** <br> Configure packages with typesafe input values via the UI or interactive CLI questionnaire. Inject values from other packages, ConfigMaps, and Secrets easily. No more untyped and undocumented `values.yaml` files.              | ![Configuration](https://github.com/glasskube/glasskube/assets/3041752/df6bd7d4-7cac-435b-b3a0-31c3cab6069b) |
 | **Dependency Management** <br> Glasskube packages are dependency aware, so they can be used and referenced by multiple other packages. They will also get installed in the correct namespace. This is how umbrella charts should have worked from the beginning. | ![Dependency](https://github.com/glasskube/glasskube/assets/3041752/9588b3fc-2a87-454e-97ff-b0f7558717bc)    |
 | **Safe Package Updates** <br> Preview and perform pending updates to your desired version with a single click (or CLI command). All updates are pre-tested by the Glasskube test suite.                                                                          | ![Updates](https://github.com/glasskube/glasskube/assets/3041752/a6e6dc72-9919-4d15-addf-bc709ec76d9d)       |
-| **Reactions and comments** <br> Discuss and upvote your favorit Kubernetes package on [GitHub](https://github.com/glasskube/glasskube/discussions/categories/packages) or right inside the Glasskube UI.                                                         | ![Reactions](https://github.com/glasskube/glasskube/assets/3041752/56f08373-fbbe-46fd-820e-fb637114336b)     |
+| **Reactions and comments** <br> Discuss and upvote your favorite Kubernetes package on [GitHub](https://github.com/glasskube/glasskube/discussions/categories/packages) or right inside the Glasskube UI.                                                         | ![Reactions](https://github.com/glasskube/glasskube/assets/3041752/56f08373-fbbe-46fd-820e-fb637114336b)     |
 | **GitOps Integration** <br> All Glasskube packages are custom resources, manageable via GitOps. We're also integrating with [renovate](https://github.com/renovatebot/renovate/issues/29322)                                                                     | ![GitOps](https://github.com/glasskube/glasskube/assets/3041752/8c359e61-9eec-4413-9c13-bca5cd8710d1)        |
 | **Multiple Repositories and private packages** <br> Use multiple repositories and publish your own private packages. This could be your companies internal services packages, so all developers will have up-to-date and easily configured internal services.    | ![Repo](https://github.com/glasskube/glasskube/assets/130456438/e2f4472b-5b80-4043-9c78-9ccabd8f3337)        |
 

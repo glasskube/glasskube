@@ -3,9 +3,12 @@ package dependency
 import (
 	"context"
 	"errors"
-	"fmt"
 	"slices"
 	"strings"
+
+	repoerror "github.com/glasskube/glasskube/internal/repo/error"
+
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/names"
@@ -33,6 +36,7 @@ func NewDependencyManager(pkgClient adapter.PackageClientAdapter, repoClient rep
 
 func (dm *DependendcyManager) Validate(
 	ctx context.Context,
+	name, namespace string,
 	manifest *v1alpha1.PackageManifest,
 	version string,
 ) (*ValidationResult, error) {
@@ -52,11 +56,11 @@ func (dm *DependendcyManager) Validate(
 	// is currently validated or existed before.
 	errBefore := g.Validate()
 
-	if err := dm.add(g, *manifest, version); err != nil {
+	if err := dm.add(g, name, namespace, *manifest, version); err != nil {
 		return nil, err
 	}
 
-	requirements, err := dm.addDependencies(g, manifest.Name, false)
+	requirements, err := dm.addDependencies(g, name, namespace, false)
 	if err != nil {
 		return nil, err
 	}
@@ -108,33 +112,29 @@ func (dm *DependendcyManager) NewGraph(ctx context.Context) (*graph.DependencyGr
 
 	g := graph.NewGraph()
 	for _, pkg := range allPkgs {
-		var deps []v1alpha1.Dependency
 		installedVersion := pkg.GetSpec().PackageInfo.Version
+		var manifest v1alpha1.PackageManifest
 		if !pkg.GetDeletionTimestamp().IsZero() {
 			// A package that is currently being deleted is added to the graph, but in a state representing
 			// "not installed"
 			installedVersion = ""
-		} else if pi, err := dm.pkgClient.GetPackageInfo(ctx, names.PackageInfoName(pkg)); err != nil {
+		} else if mf, err := dm.getManifest(ctx, pkg); repoerror.IsComplete(err) {
 			return nil, err
-		} else if pi.Status.Manifest != nil {
-			deps = pi.Status.Manifest.Dependencies
+		} else {
+			manifest = *mf
 		}
 		if pkg.IsNamespaceScoped() {
 			if err := g.AddNamespaced(
-				fmt.Sprintf("%v.%v", pkg.GetName(), pkg.GetNamespace()),
-				pkg.GetSpec().PackageInfo.Name,
+				pkg.GetName(),
+				pkg.GetNamespace(),
+				manifest,
 				installedVersion,
-				deps,
+				!pkg.InstalledAsDependency(),
 			); err != nil {
 				return nil, err
 			}
 		} else {
-			if err := g.AddCluster(
-				pkg.GetSpec().PackageInfo.Name,
-				installedVersion,
-				deps,
-				len(pkg.GetOwnerReferences()) == 0,
-			); err != nil {
+			if err := g.AddCluster(manifest, installedVersion, !pkg.InstalledAsDependency()); err != nil {
 				return nil, err
 			}
 		}
@@ -144,38 +144,48 @@ func (dm *DependendcyManager) NewGraph(ctx context.Context) (*graph.DependencyGr
 
 func (dm *DependendcyManager) add(
 	g *graph.DependencyGraph,
+	name, namespace string,
 	manifest v1alpha1.PackageManifest,
 	version string,
 ) error {
-	return g.AddCluster(manifest.Name, version, manifest.Dependencies, g.Manual(manifest.Name))
+	if namespace == "" {
+		return g.AddCluster(manifest, version, g.Manual(manifest.Name, ""))
+	} else {
+		return g.AddNamespaced(name, namespace, manifest, version, g.Manual(manifest.Name, ""))
+	}
 }
 
 // addDependencies adds the highest possible version of every uninstalled dependency and installs all transitive
 // dependencies
 func (dm *DependendcyManager) addDependencies(
 	g *graph.DependencyGraph,
-	name string,
+	name, namespace string,
 	transitive bool,
 ) ([]Requirement, error) {
 	var allAdded []Requirement
-	for _, dep := range g.Dependencies(name) {
-		if g.Version(dep) == nil {
-			if versions, err := dm.getVersions(dep); err != nil {
+	for _, dep := range g.Dependencies(name, namespace) {
+		if g.Version(dep.Name, dep.Namespace) == nil {
+			if versions, err := dm.getVersions(dep.PackageName); repoerror.IsComplete(err) {
 				return nil, err
-			} else if maxVersion, err := g.Max(dep, versions); err != nil {
+			} else if maxVersion, err := g.Max(dep.Name, dep.Namespace, versions); err != nil {
 				// This error occurs when no suitable version exists.
 				// In this case, the dependency is not added to the graph and a validation error detects this later.
 				continue
-			} else if depManifest, err := dm.repoAdapter.GetManifest(dep, maxVersion.Original()); err != nil {
+			} else if depManifest, err := dm.repoAdapter.GetManifest(dep.PackageName, maxVersion.Original()); repoerror.IsComplete(err) {
 				return nil, err
-			} else if err := dm.add(g, *depManifest, maxVersion.Original()); err != nil {
+			} else if err := dm.add(g, dep.Name, dep.Namespace, *depManifest, maxVersion.Original()); err != nil {
 				return nil, err
-			} else if added, err := dm.addDependencies(g, depManifest.Name, true); err != nil {
+			} else if added, err := dm.addDependencies(g, dep.Name, dep.Namespace, true); err != nil {
 				return nil, err
 			} else {
-				allAdded = append(allAdded, Requirement{
+				req := Requirement{
 					PackageWithVersion: PackageWithVersion{Name: depManifest.Name, Version: maxVersion.Original()},
-					Transitive:         transitive})
+					Transitive:         transitive,
+				}
+				if dep.Namespace != "" {
+					req.ComponentMetadata = &ComponentMetadata{Name: dep.Name, Namespace: dep.Namespace}
+				}
+				allAdded = append(allAdded, req)
 				allAdded = append(allAdded, added...)
 			}
 		}
@@ -196,8 +206,8 @@ func errorToConflict(err error) (*Conflict, error) {
 			constraint = errConstraint.Constraint.String()
 		}
 		return &Conflict{
-			Actual:   PackageWithVersion{Name: errConstraint.Name, Version: version},
-			Required: PackageWithVersion{Name: errConstraint.Name, Version: constraint},
+			Actual:   PackageWithVersion{Name: errConstraint.Package.Name, Version: version},
+			Required: PackageWithVersion{Name: errConstraint.Package.Name, Version: constraint},
 			Cause:    err,
 		}, nil
 	} else {
@@ -209,7 +219,7 @@ func isErrNew(errCurrent error, errBefore error) bool {
 	if errCurrentDep := (&graph.DependencyError{}); errors.As(errCurrent, &errCurrentDep) {
 		for _, err := range multierr.Errors(errBefore) {
 			if errBeforeDep := (&graph.DependencyError{}); errors.As(err, &errBeforeDep) &&
-				errBeforeDep.Name == errCurrentDep.Name &&
+				errBeforeDep.Package == errCurrentDep.Package &&
 				errBeforeDep.Dependency == errCurrentDep.Dependency {
 				return false
 			}
@@ -221,16 +231,25 @@ func isErrNew(errCurrent error, errBefore error) bool {
 
 // getVersions is a utility to get all versions for a package from repoAdapter and also parse them
 func (dm *DependendcyManager) getVersions(name string) ([]*semver.Version, error) {
-	if versions, err := dm.repoAdapter.GetVersions(name); err != nil {
-		return nil, err
-	} else {
-		parsedVersions := make([]*semver.Version, len(versions))
-		for i, version := range versions {
-			parsedVersions[i], err = semver.NewVersion(version)
-			if err != nil {
-				return nil, err
-			}
+	versions, repoErr := dm.repoAdapter.GetVersions(name)
+	parsedVersions := make([]*semver.Version, len(versions))
+	for i, version := range versions {
+		var err error
+		parsedVersions[i], err = semver.NewVersion(version)
+		if err != nil {
+			return nil, multierr.Append(err, repoErr)
 		}
-		return parsedVersions, nil
+	}
+	return parsedVersions, repoErr
+}
+
+func (dm *DependendcyManager) getManifest(ctx context.Context, pkg ctrlpkg.Package) (*v1alpha1.PackageManifest, error) {
+	if pi, err :=
+		dm.pkgClient.GetPackageInfo(ctx, names.PackageInfoName(pkg)); err != nil && !apierrors.IsNotFound(err) {
+		return nil, err
+	} else if apierrors.IsNotFound(err) || (err == nil && pi.Status.Manifest == nil) {
+		return dm.repoAdapter.GetManifest(pkg.GetSpec().PackageInfo.Name, pkg.GetSpec().PackageInfo.Version)
+	} else {
+		return pi.Status.Manifest, nil
 	}
 }

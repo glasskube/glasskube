@@ -2,7 +2,6 @@ package manifestvalues
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
 	"fmt"
 
@@ -77,10 +76,8 @@ func (r *Resolver) resolveSecretRef(ctx context.Context, ref v1alpha1.ObjectKeyV
 		return "", NewSecretRefError(ref, err)
 	} else if v, ok := c.Data[ref.Key]; !ok {
 		return "", NewSecretRefError(ref, NewKeyError(ref.Key))
-	} else if decoded, err := base64.StdEncoding.DecodeString(string(v)); err != nil {
-		return "", NewSecretRefError(ref, err)
 	} else {
-		return string(decoded), nil
+		return string(v), nil
 	}
 }
 

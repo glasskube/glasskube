@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/invopop/jsonschema"
+	corev1 "k8s.io/api/core/v1"
 	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
@@ -78,6 +79,24 @@ type Dependency struct {
 	Version string `json:"version,omitempty"`
 }
 
+type Component struct {
+	Name          string `json:"name" jsonschema:"required"`
+	InstalledName string `json:"installedName,omitempty"`
+	Version       string `json:"version,omitempty"`
+	// Specify configuration for this component
+	Values ComponentValues `json:"values,omitempty"`
+}
+
+type ComponentValues map[string]InlineValueConfiguration
+
+func (values ComponentValues) AsPackageValues() map[string]ValueConfiguration {
+	result := make(map[string]ValueConfiguration, len(values))
+	for name, value := range values {
+		result[name] = ValueConfiguration{InlineValueConfiguration: value}
+	}
+	return result
+}
+
 // +kubebuilder:validation:Enum=Cluster;Namespaced
 type PackageScope string
 
@@ -103,6 +122,16 @@ func (s *PackageScope) IsNamespaced() bool {
 	return s != nil && *s == ScopeNamespaced
 }
 
+type TransformationSource struct {
+	Resource *corev1.TypedLocalObjectReference `json:"resource,omitempty"`
+	Path     string                            `json:"path" jsonschema:"required"`
+}
+
+type TransformationDefinition struct {
+	Source  TransformationSource    `json:"source" jsonschema:"required"`
+	Targets []ValueDefinitionTarget `json:"targets" jsonschema:"required"`
+}
+
 type PackageManifest struct {
 	// Scope is optional (default is Cluster)
 	Scope            *PackageScope      `json:"scope,omitempty"`
@@ -114,11 +143,14 @@ type PackageManifest struct {
 	// Helm instructs the controller to create a helm release when installing this package.
 	Helm *HelmManifest `json:"helm,omitempty"`
 	// Kustomize instructs the controller to apply a kustomization when installing this package [PLACEHOLDER].
-	Kustomize        *KustomizeManifest         `json:"kustomize,omitempty"`
-	Manifests        []PlainManifest            `json:"manifests,omitempty"`
-	ValueDefinitions map[string]ValueDefinition `json:"valueDefinitions,omitempty"`
+	Kustomize           *KustomizeManifest                 `json:"kustomize,omitempty"`
+	Manifests           []PlainManifest                    `json:"manifests,omitempty"`
+	ValueDefinitions    map[string]ValueDefinition         `json:"valueDefinitions,omitempty"`
+	Transformations     []TransformationDefinition         `json:"transformations,omitempty"`
+	TransitiveResources []corev1.TypedLocalObjectReference `json:"transitiveResources,omitempty"`
 	// DefaultNamespace to install the package. May be overridden.
 	DefaultNamespace string              `json:"defaultNamespace,omitempty" jsonschema:"required"`
 	Entrypoints      []PackageEntrypoint `json:"entrypoints,omitempty"`
 	Dependencies     []Dependency        `json:"dependencies,omitempty"`
+	Components       []Component         `json:"components,omitempty"`
 }

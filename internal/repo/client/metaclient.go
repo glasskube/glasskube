@@ -4,6 +4,8 @@ import (
 	"context"
 	"slices"
 
+	repoerror "github.com/glasskube/glasskube/internal/repo/error"
+
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/maputils"
 	"github.com/glasskube/glasskube/internal/repo/types"
@@ -101,6 +103,13 @@ func (d metaclient) GetReposForPackage(name string) ([]v1alpha1.PackageRepositor
 				}
 			}
 		}
-		return result, compositeErr
+		if compositeErr != nil {
+			if len(result) == 0 {
+				return result, compositeErr
+			} else {
+				return result, repoerror.Partial(compositeErr)
+			}
+		}
+		return result, nil
 	}
 }

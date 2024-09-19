@@ -7,6 +7,10 @@ import (
 	"os"
 	"slices"
 
+	repoerror "github.com/glasskube/glasskube/internal/repo/error"
+
+	"go.uber.org/multierr"
+
 	"github.com/glasskube/glasskube/internal/web/components/toast"
 
 	"github.com/glasskube/glasskube/internal/manifestvalues"
@@ -100,21 +104,23 @@ func (s *server) clusterPackageDetail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPageContext, r *http.Request, w http.ResponseWriter) {
-	var err error
+	var repoErr error
 	var repos []v1alpha1.PackageRepository
 	var usedRepo *v1alpha1.PackageRepository
-	if d.repositoryName, repos, usedRepo, err = s.getRepos(
-		ctx, d.manifestName, d.repositoryName); err != nil {
-		s.sendToast(w, toast.WithErr(err))
+	if d.repositoryName, repos, usedRepo, repoErr = s.getRepos(
+		ctx, d.manifestName, d.repositoryName); repoerror.IsComplete(repoErr) {
+		s.sendToast(w, toast.WithErr(repoErr))
 		return
 	}
 
 	var idx repo.PackageIndex
 	var latestVersion string
+	var err error
 	if idx, latestVersion, d.selectedVersion, err = s.getVersions(
 		d.repositoryName, d.manifestName, d.selectedVersion); err != nil {
 		s.sendToast(w,
-			toast.WithErr(fmt.Errorf("failed to fetch package index of %v in repo %v: %w", d.manifestName, d.repositoryName, err)))
+			toast.WithErr(fmt.Errorf("failed to fetch package index of %v in repo %v: %w",
+				d.manifestName, d.repositoryName, multierr.Append(repoErr, err))))
 		return
 	}
 
@@ -128,17 +134,33 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 		}
 	}
 
-	res, err := s.dependencyMgr.Validate(r.Context(), d.manifest, d.selectedVersion)
-	if err != nil {
+	var validationResult *dependency.ValidationResult
+	var validationErr error
+	if d.pkg.IsNil() {
+		if d.manifest.Scope.IsCluster() {
+			validationResult, validationErr =
+				s.dependencyMgr.Validate(r.Context(), d.manifestName, "", d.manifest, d.selectedVersion)
+		} else {
+			// In this case we don't know the actual namespace, but we can assume the default
+			// TODO: make name and namespace depend on user input
+			validationResult, validationErr =
+				s.dependencyMgr.Validate(r.Context(), d.manifestName, d.manifest.DefaultNamespace, d.manifest, d.selectedVersion)
+		}
+	} else {
+		validationResult, validationErr =
+			s.dependencyMgr.Validate(r.Context(), d.pkg.GetName(), d.pkg.GetNamespace(), d.manifest, d.selectedVersion)
+	}
+
+	if validationErr != nil {
 		s.sendToast(w,
-			toast.WithErr(fmt.Errorf("failed to validate dependencies of %v (%v): %w", d.manifestName, d.selectedVersion, err)))
+			toast.WithErr(fmt.Errorf("failed to validate dependencies of %v (%v): %w", d.manifestName, d.selectedVersion, validationErr)))
 		return
 	}
 
 	valueErrors := make(map[string]error)
 	datalistOptions := make(map[string]*pkg_config_input.PkgConfigInputDatalistOptions)
+	nsOptions, _ := s.getNamespaceOptions()
 	if !d.pkg.IsNil() {
-		nsOptions, _ := s.getNamespaceOptions()
 		pkgsOptions, _ := s.getPackagesOptions(r.Context())
 		for key, v := range d.pkg.GetSpec().Values {
 			if resolved, err := s.valueResolver.ResolveValue(r.Context(), v); err != nil {
@@ -154,6 +176,8 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 				datalistOptions[key] = options
 			}
 		}
+	} else {
+		datalistOptions[""] = &pkg_config_input.PkgConfigInputDatalistOptions{Namespaces: nsOptions}
 	}
 
 	templateData := map[string]any{
@@ -163,8 +187,8 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 		"LatestVersion":      latestVersion,
 		"UpdateAvailable":    s.isUpdateAvailableForPkg(r.Context(), d.pkg),
 		"AutoUpdate":         clientutils.AutoUpdateString(d.pkg, "Disabled"),
-		"ValidationResult":   res,
-		"ShowConflicts":      res.Status == dependency.ValidationResultStatusConflict,
+		"ValidationResult":   validationResult,
+		"ShowConflicts":      validationResult.Status == dependency.ValidationResultStatusConflict,
 		"SelectedVersion":    d.selectedVersion,
 		"PackageIndex":       &idx,
 		"Repositories":       repos,
@@ -177,11 +201,11 @@ func (s *server) handlePackageDetailPage(ctx context.Context, d *packageDetailPa
 	}
 
 	if d.renderedComponent == "header" {
-		err = s.templates.pkgDetailHeaderTmpl.Execute(w, templateData)
-		webutil.CheckTmplError(err, fmt.Sprintf("package-detail-header (%s)", d.manifestName))
+		repoErr = s.templates.pkgDetailHeaderTmpl.Execute(w, templateData)
+		webutil.CheckTmplError(repoErr, fmt.Sprintf("package-detail-header (%s)", d.manifestName))
 	} else {
-		err = s.templates.pkgPageTmpl.Execute(w, s.enrichPage(r, templateData, err))
-		webutil.CheckTmplError(err, fmt.Sprintf("package-detail (%s)", d.manifestName))
+		repoErr = s.templates.pkgPageTmpl.Execute(w, s.enrichPage(r, templateData, repoErr))
+		webutil.CheckTmplError(repoErr, fmt.Sprintf("package-detail (%s)", d.manifestName))
 	}
 }
 
@@ -207,8 +231,12 @@ func (s *server) getRepos(ctx context.Context, manifestName string, repositoryNa
 	var repos []v1alpha1.PackageRepository
 	var err error
 	if repos, err = s.repoClientset.Meta().GetReposForPackage(manifestName); err != nil {
-		fmt.Fprintf(os.Stderr, "error getting repos for package; %v", err)
-	} else if repositoryName == "" {
+		if repoerror.IsComplete(err) {
+			return "", nil, nil, err
+		}
+		fmt.Fprintf(os.Stderr, "error getting repos for package (but can continue): %v\n", err)
+	}
+	if repositoryName == "" {
 		if len(repos) == 0 {
 			return "", nil, nil, fmt.Errorf("%v not found in any repository", manifestName)
 		}
@@ -225,5 +253,5 @@ func (s *server) getRepos(ctx context.Context, manifestName string, repositoryNa
 		return "", nil, nil, err
 	}
 
-	return repositoryName, repos, &usedRepo, nil
+	return repositoryName, repos, &usedRepo, err
 }

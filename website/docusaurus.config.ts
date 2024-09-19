@@ -100,13 +100,17 @@ const config: Config = {
   ],
   themes: [
     [
-      require.resolve('@easyops-cn/docusaurus-search-local'),
-      /** @type {import("@easyops-cn/docusaurus-search-local").PluginOptions} */
-      {
-        hashed: true,
-        indexBlog: false,
-        docsRouteBasePath: '/',
-      },
+      require.resolve('@getcanary/docusaurus-theme-search-pagefind'),
+      { 
+        includeRoutes: ["**/*"],
+        group: true,
+        tabs: [
+          { name: "All", pattern: "**/*" },
+          { name: "Docs", pattern: "/docs/**" },
+          { name: "Guides", pattern: "/guides/**" },
+          { name: "Blog", pattern: "/blog/**" },
+        ],
+       },
     ],
   ],
   markdown: {
@@ -124,7 +128,7 @@ const config: Config = {
     },
     announcementBar: {
       id: 'announcementBar-1', // Increment on change
-      content: `🧊 Glasskube Native Packages are on the horizon! 😎 <a target="_blank" href="https://github.com/glasskube/glasskube/discussions/1018">Help us make architecture decisions</a> 💡`,
+      content: `Launch Week #2: September 9-13 🧊 <a href="https://glasskube.dev/blog/launch-week-number-2/">See what's new!</a> 🌵`,
       isCloseable: false,
     },
     image:

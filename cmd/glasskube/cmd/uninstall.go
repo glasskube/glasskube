@@ -7,6 +7,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/cliutils"
+	"github.com/glasskube/glasskube/internal/dependency/graph"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
 	"github.com/glasskube/glasskube/pkg/uninstall"
 	"github.com/spf13/cobra"
@@ -52,22 +53,20 @@ var uninstallCmd = &cobra.Command{
 			cliutils.ExitWithError()
 		}
 
-		if !pkg.IsNamespaceScoped() {
-			if g, err := dm.NewGraph(ctx); err != nil {
-				fmt.Fprintf(os.Stderr, "❌ Error validating uninstall: %v\n", err)
+		if g, err := dm.NewGraph(ctx); err != nil {
+			fmt.Fprintf(os.Stderr, "❌ Error validating uninstall: %v\n", err)
+			cliutils.ExitWithError()
+		} else {
+			g.Delete(pkg.GetName(), pkg.GetNamespace())
+			pruned := g.Prune()
+			if err := g.Validate(); err != nil {
+				fmt.Fprintf(os.Stderr, "❌ %v can not be uninstalled for the following reason: %v\n", pkgName, err)
 				cliutils.ExitWithError()
 			} else {
-				g.Delete(pkgName)
-				pruned := g.Prune()
-				if err := g.Validate(); err != nil {
-					fmt.Fprintf(os.Stderr, "❌ %v can not be uninstalled for the following reason: %v\n", pkgName, err)
-					cliutils.ExitWithError()
-				} else {
-					showUninstallDetails(currentContext, pkgName, pruned)
-					if !uninstallCmdOptions.Yes && !cliutils.YesNoPrompt("Do you want to continue?", false) {
-						fmt.Println("❌ Uninstallation cancelled.")
-						cliutils.ExitSuccess()
-					}
+				showUninstallDetails(currentContext, pkgName, pruned)
+				if !uninstallCmdOptions.Yes && !cliutils.YesNoPrompt("Do you want to continue?", false) {
+					fmt.Println("❌ Uninstallation cancelled.")
+					cliutils.ExitSuccess()
 				}
 			}
 		}
@@ -87,14 +86,14 @@ var uninstallCmd = &cobra.Command{
 	},
 }
 
-func showUninstallDetails(context, name string, pruned []string) {
+func showUninstallDetails(context, name string, pruned []graph.PackageRef) {
 	fmt.Fprintf(os.Stderr,
 		"The following packages will be %v from your cluster (%v):\n",
 		color.New(color.Bold).Sprint("removed"),
 		context)
 	fmt.Fprintf(os.Stderr, " * %v (requested by user)\n", name)
 	for _, dep := range pruned {
-		fmt.Fprintf(os.Stderr, " * %v (dependency)\n", dep)
+		fmt.Fprintf(os.Stderr, " * %+v (no longer needed)\n", dep)
 	}
 }
 

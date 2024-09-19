@@ -6,9 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/fatih/color"
 	"github.com/glasskube/glasskube/api/v1alpha1"
@@ -121,7 +124,14 @@ func (c *BootstrapClient) Bootstrap(
 		fmt.Fprintln(os.Stderr, installMessage)
 	}
 
-	statusMessage("Fetching Glasskube manifest from "+options.Url, true, options.NoProgress)
+	parsedUrl, err := url.Parse(options.Url)
+	if err != nil {
+		statusMessage("Couldn't parse Glasskube manifest url", false, false)
+		telemetry.BootstrapFailure(time.Since(start))
+		return nil, err
+	}
+
+	statusMessage("Fetching Glasskube manifest from "+parsedUrl.Redacted(), true, options.NoProgress)
 	manifests, err := clientutils.FetchResources(options.Url)
 	if err != nil {
 		statusMessage("Couldn't fetch Glasskube manifests", false, false)
@@ -172,6 +182,11 @@ func (c *BootstrapClient) preprocessManifests(
 		gvk := obj.GroupVersionKind()
 		mapping, err := c.Mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 		if err != nil {
+			var noKindMatchErr *meta.NoKindMatchError
+			if errors.Is(err, noKindMatchErr) {
+				// if the kind doesn't exist yet, there is nothing of that kind that can exist -> ignorable here
+				continue
+			}
 			return err
 		}
 		existing, err := c.Client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).
@@ -258,9 +273,24 @@ func (c *BootstrapClient) applyManifests(
 			}
 		}
 
-		if err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			_, err = c.Client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).
-				Apply(ctx, obj.GetName(), &obj, getApplyOptions(options))
+		// when updating an existing installation, new certs are generated and might not be ready yet.
+		// in that case, there will be an error from the kubernetes api with status 500, that has a message like this:
+		// failed calling webhook "vpackagerepository.kb.io": failed to call webhook: Post "https://.../validate-...":
+		// tls: failed to verify certificate: x509: certificate signed by unknown authority
+		// however, there can apparently also be other errors like "resource not found" wrapped in the internal error,
+		// so instead of explicitly looking for the cert error message, we simply retry in all internal error cases
+		internalErrorBackoff := wait.Backoff{
+			Duration: 2 * time.Second,
+			Factor:   3,
+			Jitter:   0.1,
+			Steps:    5,
+		}
+		if err = retry.OnError(internalErrorBackoff, apierrors.IsInternalError, func() error {
+			err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+				_, err = c.Client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).
+					Apply(ctx, obj.GetName(), &obj, getApplyOptions(options))
+				return err
+			})
 			return err
 		}); err != nil && (!options.DryRun || !apierrors.IsNotFound(err)) {
 			// we can recover from dry-run errors appearing because an old job has not been deleted
