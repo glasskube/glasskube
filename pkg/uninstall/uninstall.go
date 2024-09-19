@@ -32,7 +32,12 @@ func (obj *uninstaller) WithStatusWriter(sw statuswriter.StatusWriter) *uninstal
 
 // UninstallBlocking deletes the v1alpha1.Package custom resource from the
 // cluster and waits until the package is fully deleted.
-func (obj *uninstaller) UninstallBlocking(ctx context.Context, pkg ctrlpkg.Package, isDryRun bool, deleteNamespace bool) error {
+func (obj *uninstaller) UninstallBlocking(
+	ctx context.Context,
+	pkg ctrlpkg.Package,
+	isDryRun bool,
+	deleteNamespace bool,
+) error {
 	if deleteNamespace {
 		if pkg.IsNamespaceScoped() {
 			if err := obj.isNamespaceSafeToDelete(ctx, pkg); err != nil {

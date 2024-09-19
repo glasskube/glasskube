@@ -90,7 +90,7 @@ test: manifests generate fmt lint-go envtest ## Run tests.
 GOLANGCI_LINT = $(shell pwd)/bin/golangci-lint
 GOLANGCI_LINT_VERSION ?= v1.60.1
 golangci-lint:
-	@[ -f $(GOLANGCI_LINT) ] || { \
+	@[ -f $(GOLANGCI_LINT) ] && [ "$$($(GOLANGCI_LINT) --version | grep -oE 'version [0-9]+\.[0-9]+\.[0-9]+' | sed 's/version //')" = "$$(echo $(GOLANGCI_LINT_VERSION) | sed 's/^v//')" ] || { \
 	set -e ;\
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell dirname $(GOLANGCI_LINT)) $(GOLANGCI_LINT_VERSION) ;\
 	}
