@@ -187,6 +187,18 @@
                   }}
                 {{ end }}
               {{ end }}
+              {{ if ne (len .LostValueDefinitions) 0 }}
+                <div class="alert alert-warning m-0 mb-2" role="alert">
+                  <span
+                    >The following value definitions are not present in the selected manifest and will be deleted:</span
+                  >
+                  <ul class="mb-0 mt-1">
+                    {{ range .LostValueDefinitions }}
+                      <li>{{ . }}</li>
+                    {{ end }}
+                  </ul>
+                </div>
+              {{ end }}
               {{ if $.ShowConflicts }}
                 <div class="alert alert-danger m-0 mb-2" role="alert">
                   <span>Cannot install due to dependency conflicts:</span>

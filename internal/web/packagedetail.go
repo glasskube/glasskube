@@ -123,6 +123,7 @@ func (s *server) clusterPackageDetail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w http.ResponseWriter, p *packageContext) {
+	migrateManifest := false
 	if !p.pkg.IsNil() {
 		// for installed packages, the installed repo + version is the fallback, if they are not requested explicitly
 		if p.request.repositoryName == "" {
@@ -131,6 +132,9 @@ func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w
 		if p.request.version == "" {
 			p.request.version = p.pkg.GetSpec().PackageInfo.Version
 		}
+		migrateManifest =
+			p.request.repositoryName != p.pkg.GetSpec().PackageInfo.RepositoryName ||
+				p.request.version != p.pkg.GetSpec().PackageInfo.Version
 	}
 
 	var repoErr error
@@ -153,7 +157,7 @@ func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w
 		return
 	}
 
-	if p.manifest == nil {
+	if p.manifest == nil || migrateManifest {
 		p.manifest = &v1alpha1.PackageManifest{}
 		if err := s.repoClientset.ForRepoWithName(p.request.repositoryName).
 			FetchPackageManifest(p.request.manifestName, p.request.version, p.manifest); err != nil {
@@ -164,6 +168,8 @@ func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w
 		}
 	}
 
+	// TODO check if dependency validation is even needed if the package is already installed??
+	// probably not if the repo/version did not change, also not if only header component is rendered
 	var validationResult *dependency.ValidationResult
 	var validationErr error
 	if p.pkg.IsNil() {
@@ -188,6 +194,7 @@ func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w
 		return
 	}
 
+	var lostValueDefinitions []string
 	valueErrors := make(map[string]error)
 	datalistOptions := make(map[string]*pkg_config_input.PkgConfigInputDatalistOptions)
 	nsOptions, _ := s.getNamespaceOptions()
@@ -196,7 +203,10 @@ func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w
 		for key, v := range p.pkg.GetSpec().Values {
 			if resolved, err := s.valueResolver.ResolveValue(r.Context(), v); err != nil {
 				valueErrors[key] = util.GetRootCause(err)
-			} else if err := manifestvalues.ValidateSingle(key, p.manifest.ValueDefinitions[key], resolved); err != nil {
+			} else if valDef, exists := p.manifest.ValueDefinitions[key]; !exists {
+				// can happen when a different repo/version of the pkg is requested (advanced options)
+				lostValueDefinitions = append(lostValueDefinitions, key)
+			} else if err := manifestvalues.ValidateSingle(key, valDef, resolved); err != nil {
 				valueErrors[key] = err
 			}
 			if v.ValueFrom != nil {
@@ -215,24 +225,25 @@ func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w
 		fmt.Fprintf(os.Stderr, "failed to get advanced options from cookie: %v\n", err)
 	}
 	templateData := map[string]any{
-		"Package":            p.pkg,
-		"Status":             client.GetStatusOrPending(p.pkg),
-		"Manifest":           p.manifest,
-		"LatestVersion":      latestVersion,
-		"UpdateAvailable":    s.isUpdateAvailableForPkg(r.Context(), p.pkg),
-		"AutoUpdate":         clientutils.AutoUpdateString(p.pkg, "Disabled"),
-		"ValidationResult":   validationResult,
-		"ShowConflicts":      validationResult.Status == dependency.ValidationResultStatusConflict,
-		"SelectedVersion":    p.request.version,
-		"PackageIndex":       &idx,
-		"Repositories":       repos,
-		"RepositoryName":     p.request.repositoryName,
-		"ShowConfiguration":  (!p.pkg.IsNil() && len(p.manifest.ValueDefinitions) > 0 && p.pkg.GetDeletionTimestamp().IsZero()) || p.pkg.IsNil(),
-		"ValueErrors":        valueErrors,
-		"DatalistOptions":    datalistOptions,
-		"ShowDiscussionLink": usedRepo.IsGlasskubeRepo(),
-		"PackageHref":        webutil.GetPackageHrefWithFallback(p.pkg, p.manifest),
-		"AdvancedOptions":    advancedOptions,
+		"Package":              p.pkg,
+		"Status":               client.GetStatusOrPending(p.pkg),
+		"Manifest":             p.manifest,
+		"LatestVersion":        latestVersion,
+		"UpdateAvailable":      s.isUpdateAvailableForPkg(r.Context(), p.pkg),
+		"AutoUpdate":           clientutils.AutoUpdateString(p.pkg, "Disabled"),
+		"ValidationResult":     validationResult,
+		"ShowConflicts":        validationResult.Status == dependency.ValidationResultStatusConflict,
+		"SelectedVersion":      p.request.version,
+		"PackageIndex":         &idx,
+		"Repositories":         repos,
+		"RepositoryName":       p.request.repositoryName,
+		"ShowConfiguration":    (!p.pkg.IsNil() && len(p.manifest.ValueDefinitions) > 0 && p.pkg.GetDeletionTimestamp().IsZero()) || p.pkg.IsNil(),
+		"ValueErrors":          valueErrors,
+		"DatalistOptions":      datalistOptions,
+		"ShowDiscussionLink":   usedRepo.IsGlasskubeRepo(),
+		"PackageHref":          webutil.GetPackageHrefWithFallback(p.pkg, p.manifest),
+		"AdvancedOptions":      advancedOptions,
+		"LostValueDefinitions": lostValueDefinitions,
 	}
 
 	if p.request.component == "header" {
