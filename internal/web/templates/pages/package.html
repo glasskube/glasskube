@@ -163,7 +163,7 @@
               {{ end }}
 
 
-              <div class="mt-1 mb-4">
+              <div class="mt-1 mb-2">
                 <div class="form-check ">
                   <input class="form-check-input" type="checkbox" name="enableAutoUpdate" id="enable-auto-update" />
                   <label class="form-check-label ms-1" for="enable-auto-update">Automatically Update Version</label>
@@ -171,6 +171,7 @@
               </div>
 
               {{ if ne (len .Manifest.ValueDefinitions) 0 }}
+                <hr class="border border-1 opacity-75" />
                 {{ range $valName, $valDef := .Manifest.ValueDefinitions }}
                   {{ template "pkg-config-input"
                     (ForPkgConfigInput
