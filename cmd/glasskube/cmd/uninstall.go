@@ -79,25 +79,9 @@ var uninstallCmd = &cobra.Command{
 			}
 			fmt.Fprintln(os.Stderr, "Uninstallation started in background")
 		} else {
-			// delete the namespace only if it is namespace scoped and there are no other packages in the namespace since
-			// cluster packages delete the namespace once they are deleted
-			deleteNamespace := uninstallCmdOptions.DeleteNamespace && pkg.IsNamespaceScoped()
-			if deleteNamespace {
-				if err := uninstaller.IsNamespaceSafeToDelete(ctx, pkg); err != nil {
-					fmt.Fprintf(os.Stderr, "❌ Error validating namespace deletion: %v\n", err)
-					cliutils.ExitWithError()
-				}
-				if err := uninstaller.UninstallAndDeleteNamespaceBlocking(ctx, pkg, uninstallCmdOptions.DryRun); err != nil {
-					fmt.Fprintf(os.Stderr, "\n❌ An error occurred during uninstallation:\n\n%v\n", err)
-					cliutils.ExitWithError()
-				}
-				fmt.Fprintf(os.Stderr, "🗑️  %v uninstalled successfully and namespace %v deleted.\n", pkgName, pkg.GetNamespace())
-			} else {
-				if err := uninstaller.UninstallBlocking(ctx, pkg, uninstallCmdOptions.DryRun); err != nil {
-					fmt.Fprintf(os.Stderr, "\n❌ An error occurred during uninstallation:\n\n%v\n", err)
-					cliutils.ExitWithError()
-				}
-				fmt.Fprintf(os.Stderr, "🗑️  %v uninstalled successfully.\n", pkgName)
+			if err := uninstaller.UninstallBlocking(ctx, pkg, uninstallCmdOptions.DryRun, uninstallCmdOptions.DeleteNamespace); err != nil {
+				fmt.Fprintf(os.Stderr, "\n❌ An error occurred during uninstallation:\n\n%v\n", err)
+				cliutils.ExitWithError()
 			}
 		}
 	},

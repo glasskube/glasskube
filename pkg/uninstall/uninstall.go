@@ -32,7 +32,16 @@ func (obj *uninstaller) WithStatusWriter(sw statuswriter.StatusWriter) *uninstal
 
 // UninstallBlocking deletes the v1alpha1.Package custom resource from the
 // cluster and waits until the package is fully deleted.
-func (obj *uninstaller) UninstallBlocking(ctx context.Context, pkg ctrlpkg.Package, isDryRun bool) error {
+func (obj *uninstaller) UninstallBlocking(ctx context.Context, pkg ctrlpkg.Package, isDryRun bool, deleteNamespace bool) error {
+	if deleteNamespace {
+		if pkg.IsNamespaceScoped() {
+			if err := obj.isNamespaceSafeToDelete(ctx, pkg); err != nil {
+				return err
+			}
+		} else {
+			return fmt.Errorf("cannot delete namespace for cluster-scoped package")
+		}
+	}
 	obj.status.Start()
 	defer obj.status.Stop()
 	err := obj.delete(ctx, pkg, isDryRun)
@@ -40,11 +49,15 @@ func (obj *uninstaller) UninstallBlocking(ctx context.Context, pkg ctrlpkg.Packa
 		return err
 	}
 
-	if isDryRun {
-		return nil
-	} else {
-		return obj.awaitDeletion(ctx, pkg)
+	if !isDryRun {
+		if err := obj.awaitDeletion(ctx, pkg); err != nil {
+			return err
+		}
 	}
+	if deleteNamespace {
+		return obj.deleteNamespaceBlocking(ctx, pkg.GetNamespace(), isDryRun)
+	}
+	return nil
 }
 
 // Uninstall deletes the v1alpha1.Package custom resource from the cluster.
@@ -54,7 +67,7 @@ func (obj *uninstaller) Uninstall(ctx context.Context, pkg ctrlpkg.Package, isDr
 	return obj.delete(ctx, pkg, isDryRun)
 }
 
-func (obj *uninstaller) IsNamespaceSafeToDelete(ctx context.Context, pkg ctrlpkg.Package) error {
+func (obj *uninstaller) isNamespaceSafeToDelete(ctx context.Context, pkg ctrlpkg.Package) error {
 	var packages v1alpha1.PackageList
 	err := obj.client.Packages(pkg.GetNamespace()).GetAll(ctx, &packages)
 	if err != nil {
@@ -64,20 +77,6 @@ func (obj *uninstaller) IsNamespaceSafeToDelete(ctx context.Context, pkg ctrlpkg
 		return fmt.Errorf("namespace %s contains more than one package", pkg.GetNamespace())
 	}
 	return nil
-}
-
-func (obj *uninstaller) UninstallAndDeleteNamespaceBlocking(
-	ctx context.Context,
-	pkg ctrlpkg.Package,
-	isDryRun bool,
-) error {
-	namespace := pkg.GetNamespace()
-	if err := obj.UninstallBlocking(ctx, pkg, isDryRun); err != nil {
-		return err
-	}
-	clientset := clicontext.KubernetesClientFromContext(ctx)
-
-	return obj.deleteNamespaceBlocking(ctx, clientset, namespace)
 }
 
 func (uninstaller *uninstaller) delete(ctx context.Context, pkg ctrlpkg.Package, isDryRun bool) error {
@@ -99,24 +98,27 @@ func (uninstaller *uninstaller) delete(ctx context.Context, pkg ctrlpkg.Package,
 	}
 }
 
-func (obj *uninstaller) deleteNamespaceBlocking(
+func (uninstaller *uninstaller) deleteNamespaceBlocking(
 	ctx context.Context,
-	clientset *kubernetes.Clientset,
 	namespace string,
+	isDryRun bool,
 ) error {
 	deleteOptions := metav1.DeleteOptions{
 		PropagationPolicy: util.Pointer(metav1.DeletePropagationForeground),
 	}
+	if isDryRun {
+		deleteOptions.DryRun = []string{metav1.DryRunAll}
+	}
+	uninstaller.status.SetStatus(fmt.Sprintf("Deleting namespace %v...", namespace))
 
-	obj.status.Start()
-	defer obj.status.Stop()
-
-	obj.status.SetStatus(fmt.Sprintf("Deleting namespace %v...", namespace))
-
+	clientset := clicontext.KubernetesClientFromContext(ctx)
 	if err := clientset.CoreV1().Namespaces().Delete(ctx, namespace, deleteOptions); err != nil {
 		return err
 	}
-	return obj.awaitNamespaceDeletion(ctx, clientset, namespace)
+	if !isDryRun {
+		return uninstaller.awaitNamespaceDeletion(ctx, clientset, namespace)
+	}
+	return nil
 }
 
 func (obj *uninstaller) awaitDeletion(ctx context.Context, pkg ctrlpkg.Package) error {
