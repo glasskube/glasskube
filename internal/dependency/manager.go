@@ -3,6 +3,8 @@ package dependency
 import (
 	"context"
 	"errors"
+	"fmt"
+	"os"
 	"slices"
 	"strings"
 
@@ -118,6 +120,8 @@ func (dm *DependendcyManager) NewGraph(ctx context.Context) (*graph.DependencyGr
 			// A package that is currently being deleted is added to the graph, but in a state representing
 			// "not installed"
 			installedVersion = ""
+			// we need a fake manifest with the name, in order to know the packageName of the vertex
+			manifest.Name = pkg.GetSpec().PackageInfo.Name
 		} else if mf, err := dm.getManifestForInstalledPkg(ctx, pkg); repoerror.IsComplete(err) {
 			return nil, err
 		} else {
@@ -164,15 +168,16 @@ func (dm *DependendcyManager) addDependencies(
 ) ([]Requirement, error) {
 	var allAdded []Requirement
 	for _, dep := range g.Dependencies(name, namespace) {
+		fmt.Fprintf(os.Stderr, ">>> addDependencies \"%v/%v\": \"%v\" (\"%v\")\n", namespace, name, dep.Name, dep.PackageName)
 		if g.Version(dep.Name, dep.Namespace) == nil {
 			if versions, err := dm.getVersions(dep.PackageName); repoerror.IsComplete(err) {
-				return nil, err
+				return nil, fmt.Errorf("failed to get version of dep package \"%v\": %w", dep.PackageName, err)
 			} else if maxVersion, err := g.Max(dep.Name, dep.Namespace, versions); err != nil {
 				// This error occurs when no suitable version exists.
 				// In this case, the dependency is not added to the graph and a validation error detects this later.
 				continue
 			} else if depManifest, err := dm.repoAdapter.GetManifest(dep.PackageName, maxVersion.Original()); repoerror.IsComplete(err) {
-				return nil, err
+				return nil, fmt.Errorf("failed to get manifest of dep package \"%v\" in version %v: %w", dep.PackageName, maxVersion.Original(), err)
 			} else if err := dm.add(g, dep.Name, dep.Namespace, *depManifest, maxVersion.Original()); err != nil {
 				return nil, err
 			} else if added, err := dm.addDependencies(g, dep.Name, dep.Namespace, true); err != nil {

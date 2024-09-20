@@ -2,6 +2,7 @@ package dependency
 
 import (
 	"fmt"
+	"os"
 
 	repoerror "github.com/glasskube/glasskube/internal/repo/error"
 
@@ -17,6 +18,7 @@ type defaultRepoAdapter struct {
 }
 
 func (a *defaultRepoAdapter) GetVersions(name string) ([]string, error) {
+	fmt.Fprintf(os.Stderr, ">>> GetVersions '%v'\n", name)
 	packageRepo, repoErr := a.getRepoForPackage(name)
 	if repoerror.IsComplete(repoErr) {
 		return nil, repoErr
@@ -33,6 +35,7 @@ func (a *defaultRepoAdapter) GetVersions(name string) ([]string, error) {
 }
 
 func (a *defaultRepoAdapter) GetManifest(name string, version string) (*v1alpha1.PackageManifest, error) {
+	fmt.Fprintf(os.Stderr, ">>> GetManifest '%v' '%v'\n", name, version)
 	if repo, err := a.getRepoForPackage(name); repoerror.IsComplete(err) {
 		return nil, err
 	} else {
@@ -45,7 +48,7 @@ func (a *defaultRepoAdapter) getRepoForPackage(name string) (*v1alpha1.PackageRe
 	repos, err := a.client.Meta().GetReposForPackage(name)
 	switch len(repos) {
 	case 0:
-		return nil, multierr.Append(fmt.Errorf("%v is not available in any repository", name), err)
+		return nil, multierr.Append(fmt.Errorf("\"%v\" is not available in any repository", name), err)
 	case 1:
 		return &repos[0], err
 	default:
