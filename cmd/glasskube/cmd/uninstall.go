@@ -63,7 +63,7 @@ var uninstallCmd = &cobra.Command{
 				fmt.Fprintf(os.Stderr, "❌ %v can not be uninstalled for the following reason: %v\n", pkgName, err)
 				cliutils.ExitWithError()
 			} else {
-				showUninstallDetails(currentContext, pkgName, pruned)
+				showUninstallDetails(currentContext, pkgName, pruned, pkg.GetNamespace())
 				if !uninstallCmdOptions.Yes && !cliutils.YesNoPrompt("Do you want to continue?", false) {
 					fmt.Println("❌ Uninstallation cancelled.")
 					cliutils.ExitSuccess()
@@ -72,8 +72,7 @@ var uninstallCmd = &cobra.Command{
 		}
 
 		if uninstallCmdOptions.NoWait {
-			if err := uninstaller.Uninstall(ctx, pkg, uninstallCmdOptions.DryRun,
-				uninstallCmdOptions.DeleteNamespace); err != nil {
+			if err := uninstaller.Uninstall(ctx, pkg, uninstallCmdOptions.DryRun); err != nil {
 				fmt.Fprintf(os.Stderr, "\n❌ An error occurred during uninstallation:\n\n%v\n", err)
 				cliutils.ExitWithError()
 			}
@@ -89,7 +88,7 @@ var uninstallCmd = &cobra.Command{
 	},
 }
 
-func showUninstallDetails(context, name string, pruned []graph.PackageRef) {
+func showUninstallDetails(context, name string, pruned []graph.PackageRef, namespace string) {
 	fmt.Fprintf(os.Stderr,
 		"The following packages will be %v from your cluster (%v):\n",
 		color.New(color.Bold).Sprint("removed"),
@@ -97,6 +96,9 @@ func showUninstallDetails(context, name string, pruned []graph.PackageRef) {
 	fmt.Fprintf(os.Stderr, " * %v (requested by user)\n", name)
 	for _, dep := range pruned {
 		fmt.Fprintf(os.Stderr, " * %+v (no longer needed)\n", dep)
+	}
+	if namespace != "" {
+		fmt.Fprintf(os.Stderr, "Namespace %v will also be deleted.\n", color.New(color.Bold).Sprint(namespace))
 	}
 }
 

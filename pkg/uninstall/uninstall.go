@@ -33,31 +33,45 @@ func (obj *uninstaller) WithStatusWriter(sw statuswriter.StatusWriter) *uninstal
 
 // UninstallBlocking deletes the v1alpha1.Package custom resource from the
 // cluster and waits until the package is fully deleted.
-func (obj *uninstaller) UninstallBlocking(ctx context.Context, pkg ctrlpkg.Package, isDryRun bool,
-	deleteNamespace bool) error {
+func (obj *uninstaller) UninstallBlocking(ctx context.Context, pkg ctrlpkg.Package, isDryRun bool, deletenamespace bool) error {
 	obj.status.Start()
 	defer obj.status.Stop()
-	err := obj.delete(ctx, pkg, isDryRun, deleteNamespace)
+	var validateDeletion bool
+	if deletenamespace {
+		validateDeletion = validateNamespaceDeletion(ctx, pkg)
+	}
+	err := obj.delete(ctx, pkg, isDryRun)
 	if err != nil {
 		return err
 	}
-
 	if isDryRun {
 		return nil
-	} else {
-		return obj.awaitDeletion(ctx, pkg)
 	}
+	err = obj.awaitDeletion(ctx, pkg)
+	if err != nil {
+		return err
+	} else {
+		if validateDeletion && deletenamespace {
+			obj.deleteNamespace(ctx, pkg.GetNamespace())
+			fmt.Printf("\nDeleting namespace %s ...\n", pkg.GetNamespace())
+			err = obj.awaitNamespaceRemoval(ctx, pkg.GetNamespace())
+			if err != nil {
+				return err
+			}
+			fmt.Printf("\nNamespace %s has been deleted.", pkg.GetNamespace())
+		}
+	}
+	return nil
 }
 
 // Uninstall deletes the v1alpha1.Package custom resource from the cluster.
-func (obj *uninstaller) Uninstall(ctx context.Context, pkg ctrlpkg.Package, isDryRun bool, deleteNamespace bool) error {
+func (obj *uninstaller) Uninstall(ctx context.Context, pkg ctrlpkg.Package, isDryRun bool) error {
 	obj.status.Start()
 	defer obj.status.Stop()
-	return obj.delete(ctx, pkg, isDryRun, deleteNamespace)
+	return obj.delete(ctx, pkg, isDryRun)
 }
 
-func (uninstaller *uninstaller) delete(ctx context.Context, pkg ctrlpkg.Package, isDryRun bool,
-	deleteNamespace bool) error {
+func (uninstaller *uninstaller) delete(ctx context.Context, pkg ctrlpkg.Package, isDryRun bool) error {
 	deleteOptions := metav1.DeleteOptions{
 		PropagationPolicy: util.Pointer(metav1.DeletePropagationForeground),
 	}
@@ -70,15 +84,7 @@ func (uninstaller *uninstaller) delete(ctx context.Context, pkg ctrlpkg.Package,
 	case *v1alpha1.ClusterPackage:
 		return uninstaller.client.ClusterPackages().Delete(ctx, pkg, deleteOptions)
 	case *v1alpha1.Package:
-		var validateDeletion bool
-		if deleteNamespace {
-			validateDeletion = ValidateNamespaceDeletion(ctx, pkg)
-		}
-		err := uninstaller.client.Packages(pkg.Namespace).Delete(ctx, pkg, deleteOptions)
-		if validateDeletion {
-			DeleteNamespace(ctx, pkg.GetNamespace())
-		}
-		return err
+		return uninstaller.client.Packages(pkg.Namespace).Delete(ctx, pkg, deleteOptions)
 
 	default:
 		return fmt.Errorf("unexpected object kind: %v", pkg.GroupVersionKind().Kind)
@@ -101,6 +107,23 @@ func (obj *uninstaller) awaitDeletion(ctx context.Context, pkg ctrlpkg.Package) 
 	return errors.New("failed to confirm package deletion")
 }
 
+func (obj *uninstaller) awaitNamespaceRemoval(ctx context.Context, namespace string) error {
+	clientset := cliutils.KubernetesClient(ctx)
+	watcher, err := clientset.CoreV1().Namespaces().Watch(ctx, metav1.ListOptions{
+		FieldSelector: fmt.Sprintf("metadata.name=%s", namespace),
+	})
+	if err != nil {
+		return err
+	}
+	defer watcher.Stop()
+	for event := range watcher.ResultChan() {
+		if event.Type == watch.Deleted {
+			return nil
+		}
+	}
+	return errors.New("failed to confirm namespace deletion")
+}
+
 func (obj *uninstaller) createWatcher(ctx context.Context, pkg ctrlpkg.Package) (watch.Interface, error) {
 	switch pkg := pkg.(type) {
 	case *v1alpha1.ClusterPackage:
@@ -112,18 +135,16 @@ func (obj *uninstaller) createWatcher(ctx context.Context, pkg ctrlpkg.Package) 
 	}
 }
 
-func DeleteNamespace(ctx context.Context, namespace string) {
+func (uninstaller *uninstaller) deleteNamespace(ctx context.Context, namespace string) {
 	clientset := cliutils.KubernetesClient(ctx)
 	err := clientset.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "❌ error deleting namespace: %v\n", err)
 		cliutils.ExitWithError()
 	}
-
-	fmt.Printf("\nNamespace %s has been deleted.\n", namespace)
 }
 
-func ValidateNamespaceDeletion(ctx context.Context, pkg ctrlpkg.Package) bool {
+func validateNamespaceDeletion(ctx context.Context, pkg ctrlpkg.Package) bool {
 	client := cliutils.PackageClient(ctx)
 	namespace := pkg.GetNamespace()
 	var pkgs v1alpha1.PackageList
