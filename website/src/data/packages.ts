@@ -1,5 +1,3 @@
-/* eslint-disable global-require */
-
 import {sortBy} from '@site/src/utils/jsUtils';
 
 /*

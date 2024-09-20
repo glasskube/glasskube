@@ -6,7 +6,8 @@ import PricingFaq from '@site/src/pages/pricing/_components/PricingFaqComponent'
 
 const TITLE = translate({message: 'Glasskube Pricing'});
 const DESCRIPTION = translate({
-  message: 'Choose the Right Plan for Your Cloud Security and DevOps Needs',
+  message:
+    'Our products help you distribute software even in the most challenging environments',
 });
 
 function PricingHeader() {

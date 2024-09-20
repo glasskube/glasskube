@@ -13,8 +13,8 @@ function Pricing() {
           <div className="col col--4">
             <div className="card margin-top--lg shadow--md">
               <div className="card__header text--center">
-                <h3>Totally free</h3>
-                <h4>$0</h4>
+                <h3>Open Source Kubernetes Package Manager</h3>
+                <h4>FREE</h4>
               </div>
               <hr />
               <div className="card__body">
@@ -46,36 +46,29 @@ function Pricing() {
           <div className="col col--4">
             <div className="card shadow--md">
               <div className="card__header text--center">
-                <h3>Best value champion</h3>
-                Free for clusters with less than 5 nodes
+                <h3>Application Delivery Platform for Kubernetes</h3>
+                First 5 customer deployments included
                 <br />
-                <h4>Starting at $12k Platform fee per year</h4>
+                <h4>Starting at $18k Platform fee per year</h4>
               </div>
               <hr />
               <div className="card__body">
                 <p>
-                  Accelerate your company&apos;s DevOps workflows with private
-                  hosted packages and improved cloud security.
+                  Streamline how your software gets distributed into customer
+                  managed Kubernetes environments in private infrastructure,
+                  different cloud environments, and on-premises (even
+                  air-gapped).
                 </p>
                 <ul className={styles.pricingItemList}>
+                  <li>Integrated license management</li>
+                  <li>Insights and Reporting</li>
+                  <li>Comprehensive Compatibility Testing</li>
+                  <li>Resolve Technical Issues with Playbooks</li>
                   <li>
-                    Advanced GitOps Integration with pull request enhancement
-                    and change preview on a manifest level
+                    Installation Processes with configuration options via GUI or
+                    CLI
                   </li>
-                  <li>Backup and restore your installed packages</li>
-                  <li>
-                    Secrets management for Glasskube Packages and CI
-                    integrations
-                  </li>
-                  <li>
-                    Private hosted packages for secure package distribution
-                  </li>
-                  <li>
-                    Security alerts and update notifications in case of
-                    vulnerabilities in your Kubernetes packages for improved
-                    software supply chain security
-                  </li>
-                  <li>Secure cloud access with RBAC for team members</li>
+                  <li>BYOC</li>
                 </ul>
               </div>
               <div className="card__footer">
@@ -90,7 +83,7 @@ function Pricing() {
           <div className="col">
             <div className="card col--4 margin-top--lg shadow--md">
               <div className="card__header text--center">
-                <h3>Enterprise mode</h3>
+                <h3>Enterprise hardened Kubernetes Packages</h3>
                 <h4>Custom quote</h4>
               </div>
               <hr />
@@ -99,7 +92,7 @@ function Pricing() {
                   Tailor-made solutions for the highest level of cloud security
                   and reliability and personal support.
                 </p>
-                <p>All Glasskube Cloud features and:</p>
+                <p>Glasskube offers:</p>
                 <ul className={styles.pricingItemList}>
                   <li>Free DevOps assessment call</li>
                   <li>SLAs and personal onboarding</li>

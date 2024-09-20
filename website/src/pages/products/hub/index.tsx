@@ -9,15 +9,9 @@ function HubHeader() {
   return (
     <section className="margin-top--lg margin-bottom--lg text--center">
       <Heading as="h1" className={styles.heroHeading}>
-        Glasskube Hub
+        Application Delivery Platform for Kubernetes
       </Heading>
-      <p>
-        <strong>
-          The easiest way to create, manage, and deliver your Cloud Native
-          applications.
-        </strong>
-      </p>
-      <DemoButton additionalClassNames={'light'} />
+      <DemoButton additionalClassNames={'light button--lg margin-top--lg'} />
     </section>
   );
 }
@@ -25,8 +19,9 @@ function HubHeader() {
 export default function Home(): JSX.Element {
   return (
     <Layout
-      title="Glasskube Hub"
-      description="The easiest way to create, manage, and deliver your Cloud Native applications.">
+      title="Application Delivery Platform"
+      description="Sell software to enterprises and deploy to private infrastructure, different cloud environments, and
+          on-premises.">
       <main className="margin-vert--lg">
         <HubHeader />
         <HubFeatures />

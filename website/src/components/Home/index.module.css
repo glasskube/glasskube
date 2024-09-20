@@ -13,6 +13,7 @@
 .heroTitle {
   text-align: center;
   margin-top: 6rem;
+  margin-bottom: 2rem;
   font-size: 4rem;
 }
 
@@ -45,11 +46,6 @@
     align-items: center;
     justify-content: center;
   }
-}
-
-.typewriter {
-  font-size: 1.5rem;
-  color: var(--glasskube-main-light);
 }
 
 .twitterButton,

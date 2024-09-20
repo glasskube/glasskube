@@ -6,7 +6,7 @@ import {EnumChangefreq} from 'sitemap';
 
 const config: Config = {
   title: 'Glasskube',
-  tagline: 'Open Source packaging ecosystem for Kubernetes',
+  tagline: 'Application Delivery Platform for Kubernetes',
   favicon: 'img/favicon.png',
   trailingSlash: true,
 
@@ -101,7 +101,7 @@ const config: Config = {
   themes: [
     [
       require.resolve('@getcanary/docusaurus-theme-search-pagefind'),
-      { 
+      {
         includeRoutes: ["**/*"],
         group: true,
         tabs: [
@@ -145,9 +145,9 @@ const config: Config = {
           label: 'Products',
           position: 'left',
           items: [
-            {to: '/products/package-manager', label: 'Glasskube Package Manager'},
+            {to: '/products/hub', label: 'Application Delivery Platform'},
             // {to: '/products/kcl', label: 'Glasskube Native Packages (coming soon)'},
-            {to: '/products/hub', label: 'Glasskube Hub (new)'},
+            {to: '/products/package-manager', label: 'Kubernetes Package Manager'},
             // {to: '/products/cloud', label: 'Glasskube Cloud (coming soon)'},
           ],
         },

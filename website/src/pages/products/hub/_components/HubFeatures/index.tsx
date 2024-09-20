@@ -1,4 +1,3 @@
-import Admonition from '@theme/Admonition';
 import clsx from 'clsx';
 import Heading from '@theme/Heading';
 import styles from './styles.module.css';
@@ -7,12 +6,11 @@ import {IconDefinition} from '@fortawesome/free-regular-svg-icons';
 import {
   faChartLine,
   faCheckDouble,
-  faCodeCompare,
   faComments,
   faCubes,
   faGears,
+  faKey,
 } from '@fortawesome/free-solid-svg-icons';
-import Link from '@docusaurus/Link';
 import React from 'react';
 
 type FeatureItem = {
@@ -36,14 +34,14 @@ const FeatureList: FeatureItem[] = [
     ),
   },
   {
-    title: 'Standardize Releases',
-    icon: faCodeCompare,
+    title: 'License Management',
+    icon: faKey,
     description: (
       <>
-        Standardize your release process with an automated approach. Efficiently
-        distribute new versions to various customer segments, ensuring each
-        receives the correct software with the appropriate features. Manage
-        releases effortlessly and maintain consistency across deployments.
+        Control access to your software with built-in license management and
+        validation. Easily configure, validate, and monitor licenses to ensure
+        only authorized users can access your software via a private repository
+        hosted by Glasskube.
       </>
     ),
   },
@@ -117,61 +115,12 @@ function Feature({title, icon, description}: FeatureItem) {
 export default function HubFeatures(): JSX.Element {
   return (
     <section className={styles.features}>
-      <div className="container margin-top--md">
-        <div className="row">
-          <div className="col col--6">
-            <div className="card shadow--md">
-              <div className="card__header text--center">
-                <Heading as="h2">Open Source Packages</Heading>
-              </div>
-              <div className="card__body">
-                <p>
-                  Access a comprehensive library of Open Source packages on
-                  Glasskube Hub. These packages are publicly available and can
-                  be easily installed with the{' '}
-                  <Link to="/products/package-manager">
-                    Glasskube Package Manager
-                  </Link>
-                  . Eliminate the need for directly installing Helm charts and
-                  manually applying manifests. With each update tested in our
-                  public CI/CD pipelines, you can deploy with confidence and
-                  upgrade seamlessly.
-                  <br />
-                  <br />
-                  Missing a package?{' '}
-                  <Link to="https://github.com/glasskube/glasskube/discussions/90">
-                    Submit it here.
-                  </Link>
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="col col--6">
-            <div className="card shadow--md">
-              <div className="card__header text--center">
-                <Heading as="h2">Private Packages</Heading>
-              </div>
-              <div className="card__body">
-                <Admonition type="tip" icon="💡" title="Limited Offer">
-                  The first 5 private repositories include free end-to-end
-                  setup!
-                </Admonition>
-                <p>
-                  Glasskube Hub offers secure private repositories to deploy
-                  your application into your customers` infrastructure. Together
-                  we create a Glasskube package for your application, host it in
-                  a private secure repository, and configure it according to
-                  your customers` Kubernetes-based infrastructure requirements.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
+      <div className="container">
         <div className="row margin-top--xl">
           <div className="col text--center">
             <Heading as="h2">
-              Glasskube Hub Enterprise for Private Packages
+              Sell software to enterprises and deploy to private infrastructure,
+              different cloud environments, and on-premises.
             </Heading>
           </div>
         </div>
