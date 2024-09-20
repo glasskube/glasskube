@@ -9,7 +9,7 @@
     "prettier:write": "prettier -w web/ internal/**/*.html"
   },
   "dependencies": {
-    "@glasskube/theme": "0.1.1",
+    "@glasskube/theme": "0.1.2",
     "bootstrap": "5.3.3",
     "giscus": "^1.5.0",
     "htmx.org": "2.0.2",
