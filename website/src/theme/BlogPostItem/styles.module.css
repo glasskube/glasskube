@@ -30,3 +30,28 @@
     margin-left: auto;
     align-self: flex-end;
   }
+
+  .postImage {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    border-radius: 8px;
+  }
+  
+  .postImage {
+    aspect-ratio: 16 / 9;
+  }
+
+  @media (min-width: 1024px) {
+    .postImage {
+      aspect-ratio: 7/3;
+      object-fit: cover;
+    }
+  }
+
+  @media (max-width: 600px) {
+  .postImage {
+    aspect-ratio: 3/1;
+    object-fit: fill;
+  }
+}

@@ -30,11 +30,8 @@ export default function BlogPostItem({
         <article
           className={clsx('card', 'shadow--tl', className, styles.postCard)}>
           <img
+            className={styles.postImage}
             src={useBaseUrl(post.frontMatter.image)}
-            style={{
-              objectFit: 'cover',
-              height: '200px',
-            }}
             alt="article image"
           />
           <header className={styles.postCardHeader}>

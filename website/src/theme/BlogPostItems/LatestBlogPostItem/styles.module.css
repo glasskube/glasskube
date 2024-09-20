@@ -16,7 +16,7 @@
   
   .image {
     width: 50%;
-    object-fit:cover;
+    object-fit:contain;
     border-radius: var(--ifm-card-border-radius);
     flex-shrink: 0;
   }
@@ -37,5 +37,11 @@
     .image {
       height: 250px;
       width: 100%;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .image {
+      object-fit: contain;
     }
   }
