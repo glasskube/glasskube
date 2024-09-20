@@ -24,4 +24,5 @@ type KubernetesClientAdapter interface {
 type RepoAdapter interface {
 	GetVersions(name string) ([]string, error)
 	GetManifest(name string, version string) (*v1alpha1.PackageManifest, error)
+	GetManifestFromRepo(name string, version string, repositoryName string) (*v1alpha1.PackageManifest, error)
 }

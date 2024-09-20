@@ -53,5 +53,12 @@ func (a *defaultRepoAdapter) getRepoForPackage(name string) (*v1alpha1.PackageRe
 			fmt.Errorf("%v is available from %v repositories (currently unsupported)", name, len(repos)),
 		)
 	}
+}
 
+func (a *defaultRepoAdapter) GetManifestFromRepo(name string, version string, repositoryName string) (*v1alpha1.PackageManifest, error) {
+	var manifest v1alpha1.PackageManifest
+	if err := a.client.ForRepoWithName(repositoryName).FetchPackageManifest(name, version, &manifest); err != nil {
+		return nil, err
+	}
+	return &manifest, nil
 }
