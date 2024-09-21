@@ -161,7 +161,6 @@ const config: Config = {
             {to: '/blog', label: 'Blog'},
           ]
         },
-        {to: '/packages', label: 'Packages', position: 'left'},
         {to: '/pricing', label: 'Pricing', position: 'left'},
         {
           type: 'search',
