@@ -2,13 +2,13 @@ import clsx from 'clsx';
 import Heading from '@theme/Heading';
 import styles from './styles.module.css';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
+import {
+  faGitAlt,
+  faGithub,
+  faSkyatlas,
+} from '@fortawesome/free-brands-svg-icons';
 import {IconDefinition} from '@fortawesome/free-regular-svg-icons';
 import React from 'react';
-import {
-  faChartLine,
-  faCheckDouble,
-  faKey,
-} from '@fortawesome/free-solid-svg-icons';
 
 type FeatureItem = {
   title: string;
@@ -18,32 +18,35 @@ type FeatureItem = {
 
 const FeatureList: FeatureItem[] = [
   {
-    title: 'Manage Licensing',
-    icon: faKey,
+    title: 'Enterprise ready',
+    icon: faSkyatlas,
     description: (
       <>
-        Restrict and permit access to your software with built in license
-        management and validation.
+        Manage the Kubernetes packages your core application depends on or
+        distribute your Cloud Native application to your developers or customers
+        with Glasskube.
       </>
     ),
   },
   {
-    title: 'Compatibility testing',
-    icon: faCheckDouble,
+    title: 'Advanced GitOps Integration',
+    icon: faGitAlt,
     description: (
       <>
-        Ensure compatibility across different environments like AWS, GCP and
-        on-prem.
+        Glasskube integrates into your GitOps workflow you already have in
+        place. It integrates with Renovate and will provide resource level diffs
+        right into your pull request.
       </>
     ),
   },
   {
-    title: 'Insights',
-    icon: faChartLine,
+    title: 'Open Source',
+    icon: faGithub,
     description: (
       <>
-        Monitor uptime, usage, configuration, and issues of your enterprise
-        deployments
+        Glasskube is fully Open-Source, part of the CNCF landscape and is
+        Apache-2.0 licensed. Developed by dozens of contributors from all over
+        the world.
       </>
     ),
   },
@@ -65,15 +68,15 @@ function Feature({title, icon, description}: FeatureItem) {
   );
 }
 
-export default function HomepageFeatures(): JSX.Element {
+export default function PackageManagerFeatures(): JSX.Element {
   return (
     <section className={styles.features}>
-      <div className="container">
+      <div className="container margin-top--lg">
         <div className="row">
           <div className="col text--center">
             <Heading as="h2">
-              Sell software to enterprises and deploy to private infrastructure,
-              different cloud environments, and on-premises.
+              Deploy, Configure and Update Kubernetes packages 20x faster than
+              with Helm
             </Heading>
           </div>
         </div>

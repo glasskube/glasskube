@@ -148,7 +148,7 @@ export default function PackageManagerScreenshots(): JSX.Element {
         <div className="row">
           <div className="col text--center">
             <Heading as="h2">
-              A Package Manager built with Developer Experience in mind.
+              A Package Manager built with Developer Experience in mind
             </Heading>
           </div>
         </div>
