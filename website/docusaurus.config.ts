@@ -6,7 +6,7 @@ import {EnumChangefreq} from 'sitemap';
 
 const config: Config = {
   title: 'Glasskube',
-  tagline: 'Application Delivery Platform for Kubernetes',
+  tagline: 'Enabling private infra and on-prem deployments',
   favicon: 'img/favicon.png',
   trailingSlash: true,
 
@@ -128,7 +128,9 @@ const config: Config = {
     },
     announcementBar: {
       id: 'announcementBar-1', // Increment on change
-      content: `Launch Week #2: September 9-13 🧊 <a href="https://glasskube.dev/blog/launch-week-number-2/">See what's new!</a> 🌵`,
+      /* x-release-please-start-version */
+      content: `🎉 We just released v0.21.0 of our Open Source Kubernetes Package Manager on <a href="https://github.com/glasskube/glasskube/" target="_blank">⭐ GitHub ⭐</a>.`,
+      /* x-release-please-end */
       isCloseable: false,
     },
     image:

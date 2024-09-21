@@ -25,6 +25,12 @@ function PackageManagerHeader() {
         to="https://github.com/glasskube/glasskube/">
         Get started on GitHub
       </Link>
+      &nbsp;
+      <Link
+        className="button button--primary"
+        to="https://discord.gg/p7uYfnxZFd">
+        Join our Discord
+      </Link>
     </section>
   );
 }
