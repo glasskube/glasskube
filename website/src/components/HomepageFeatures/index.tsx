@@ -43,7 +43,7 @@ const FeatureList: FeatureItem[] = [
     description: (
       <>
         Monitor uptime, usage, configuration, and issues of your enterprise
-        deployments
+        deployments.
       </>
     ),
   },
