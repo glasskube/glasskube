@@ -127,12 +127,12 @@ The `ClusterIssuer` must be created as a Kubernetes custom resource. This can ea
 kubectl apply -f cluster-issuer.yaml
 ```
 
-Cert-manager creates an Ingress to validate the ACME challenge, if no Ingress controller is already installed in
+cert-manager creates an Ingress to validate the ACME challenge, if no Ingress controller is already installed in
 the cluster the [ingress-nginx controller](./02_ingress-nginx.mdx) can easily be installed with Glasskube.
 
 Further links about cert-manager:
 
- - Cert-manager docs: https://cert-manager.io/docs/
+ - cert-manager docs: https://cert-manager.io/docs/
  - Issuer configuration: https://cert-manager.io/docs/configuration/
  - Issuer list: https://cert-manager.io/docs/configuration/issuers/
 
