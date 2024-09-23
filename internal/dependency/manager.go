@@ -118,7 +118,7 @@ func (dm *DependendcyManager) NewGraph(ctx context.Context) (*graph.DependencyGr
 			// A package that is currently being deleted is added to the graph, but in a state representing
 			// "not installed"
 			installedVersion = ""
-		} else if mf, err := dm.getManifest(ctx, pkg); repoerror.IsComplete(err) {
+		} else if mf, err := dm.getManifestForInstalledPkg(ctx, pkg); repoerror.IsComplete(err) {
 			return nil, err
 		} else {
 			manifest = *mf
@@ -243,12 +243,12 @@ func (dm *DependendcyManager) getVersions(name string) ([]*semver.Version, error
 	return parsedVersions, repoErr
 }
 
-func (dm *DependendcyManager) getManifest(ctx context.Context, pkg ctrlpkg.Package) (*v1alpha1.PackageManifest, error) {
+func (dm *DependendcyManager) getManifestForInstalledPkg(ctx context.Context, pkg ctrlpkg.Package) (*v1alpha1.PackageManifest, error) {
 	if pi, err :=
 		dm.pkgClient.GetPackageInfo(ctx, names.PackageInfoName(pkg)); err != nil && !apierrors.IsNotFound(err) {
 		return nil, err
 	} else if apierrors.IsNotFound(err) || (err == nil && pi.Status.Manifest == nil) {
-		return dm.repoAdapter.GetManifest(pkg.GetSpec().PackageInfo.Name, pkg.GetSpec().PackageInfo.Version)
+		return dm.repoAdapter.GetManifestFromRepo(pkg.GetSpec().PackageInfo.Name, pkg.GetSpec().PackageInfo.Version, pkg.GetSpec().PackageInfo.RepositoryName)
 	} else {
 		return pi.Status.Manifest, nil
 	}
