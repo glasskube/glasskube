@@ -89,7 +89,7 @@ const FeatureList: FeatureItem[] = [
         Don`t reinvent the wheel. All open-source dependencies of your
         application can be sourced from the Glasskube Hub`s Open Source package
         library. These packages are fully tested, and your application can point
-        to a specific version or version range, such as for Cert Manager or
+        to a specific version or version range, such as for cert-manager or
         RabbitMQ.
       </>
     ),

@@ -117,7 +117,7 @@ Congratulations, you can now explore and install all our available packages! ðŸŽ
 Glasskube already supports a wide range of packages, including, but not limited to:
 
 - Kubernetes Dashboard [`kubernetes/dashboard`](https://github.com/kubernetes/dashboard)
-- Cert Manager [`cert-manager/cert-manager`](https://github.com/cert-manager/cert-manager)
+- cert-manager [`cert-manager/cert-manager`](https://github.com/cert-manager/cert-manager)
 - Ingress-NGINX Controller [`kubernetes/ingress-nginx`](https://github.com/kubernetes/ingress-nginx)
 - Kube Prometheus Stack [`prometheus-operator/kube-prometheus`](https://github.com/prometheus-operator/kube-prometheus)
 - Cloud Native PG [`cloudnative-pg/cloudnative-pg`](https://github.com/cloudnative-pg/cloudnative-pg)
