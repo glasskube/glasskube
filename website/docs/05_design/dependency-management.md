@@ -12,38 +12,67 @@ The following decision tree states how the Package Operator is handling dependen
   the components interacting with the user (CLI, UI) need to guide them through potential resolution. Consequently, the only time the operator does resolve an unfulfilled
   dependency, the "result" is denoted as `install`.
 
+<div style={{maxWidth: '100%', overflow: 'auto'}}>
+<div id="dep-diagram" style={{width: '1600px'}}>
+
+```mermaid
+%%{init: {'themeVariables': {'flowchart': {'useWidth': 10000} }}}%%
+flowchart LR
+
+Start --> A("Does P require a<br>version range of D?")
+
+%% Branch when P requires no version range of D
+
+A -->|No| B("Does D exist?")
+
+B -->|Yes| C("Are there other packages<br>dependent on D?")
+
+C -->|No| Fulfilled["P -> D is fulfilled"]
+
+C -->|Yes| E("Do X and Y require<br>no version range of D?")
+
+E ---->|Yes| Fulfilled
+
+E ---->|No| Fulfilled
+
+B ----->|No| F["Install D pinned in latest(D)"]
+
+%% Branch when P requires D to be in version range PDV
+
+A -->|Yes| G("Does D exist?")
+
+G -->|Yes| H("Are there other<br>existing packages<br>dependent on D<br>requiringa version range?")
+
+H -->|No| I("Is DV inside PDV?")
+
+I ---->|Yes| Fulfilled
+
+I ---->|No| K("Is DV < PDV?")
+
+K --->|Yes| L["P -> D not fulfilled<br><b>Dependency Conflict</b><br>Resolvable by updating D to max_available(PDV)"]
+
+K --->|No| M["P -> D not fulfilled<br><b>Dependency Conflict</b><br>Not resolvable because P does not support D in DV yet"]
+
+H -->|Yes| N("Is DV inside PDV?")
+
+N -------->|Yes| Fulfilled
+
+N ---->|No| P("Is DV < PDV?")
+
+P --->|Yes| Q["P -> D not fulfilled<br><b>Dependency Conflict</b><br>Might be resolvable if XDV, YDV, and PDV overlap"]
+
+P --->|No| R["P -> D not fulfilled<br><b>Dependency Conflict</b><br>Not resolvable because P does not support D in DV yet"]
+
+G --------->|No| S["Install D pinned in max_available(PDV)"]
+
+style Fulfilled fill:#006400
+style F fill:#B8860B
+style S fill:#B8860B
+style L fill:#8B0000
+style M fill:#8B0000
+style Q fill:#8B0000
+style R fill:#8B0000
 ```
-if P requires no version range of D
-  if D exists (trivially P -> D is fulfilled anyway)
-    if no other package dependent on D
-      * P -> D is fulfilled
-    if other existing packages X, Y dependent on D
-      if X and Y require no version range of D
-        * P -> D is fulfilled
-      if X requires D to be in version range XDV, or Y requires D to be in version range YDV
-        * P -> D is fulfilled
-  if D does not exist
-    * install D pinned in latest(D)
-if P requires D to be in version range PDV
-  if D exists (let DV be the version of D)
-    if no other existing package dependent on D requires a version range of D
-      if DV inside PDV
-        * P -> D is fulfilled
-      if DV < PDV
-        * P -> D not fulfilled – Dependency Conflict
-        * resolvable by updating D to max_available(PDV)
-      if DV > PDV
-        * P -> D not fulfilled – Dependency Conflict
-        * not resolvable because P does not support using D in DV yet
-    if other existing packages X, Y dependent on D, with X requiring XDV, Y requiring YDV
-      if DV inside PDV
-        * P -> D is fulfilled
-      if DV < PDV
-        * P -> D not fulfilled – Dependency Conflict
-        * might be resolvable if XDV, YDV and PDV overlap
-      if DV > PDV
-        * P -> D not fulfilled – Dependency Conflict
-        * not resolvable because P does not support using D in DV yet
-  if D does not exist
-    * install D pinned in max_available(PDV)
-```
+
+</div>
+</div>
