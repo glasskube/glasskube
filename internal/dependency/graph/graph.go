@@ -155,12 +155,13 @@ func (g *DependencyGraph) Constraints(of, namespace string) []*semver.Constraint
 	return constraints
 }
 
-// Max returns the maximum element of versions that does not violate any constraint of this package
+// Max returns the maximum element of versions that does not violate any constraint of this package. Note that it
+// also interprets the metadata of the versions, just as in IsVersionUpgradable.
 func (g *DependencyGraph) Max(of, namespace string, versions []*semver.Version) (*semver.Version, error) {
 	var maxVersion *semver.Version
 outer:
 	for _, version := range versions {
-		if maxVersion == nil || maxVersion.LessThan(version) {
+		if maxVersion == nil || isemver.IsVersionUpgradable(maxVersion, version) {
 			for _, constraint := range g.Constraints(of, namespace) {
 				if isemver.ValidateVersionConstraint(version, constraint) != nil {
 					continue outer
