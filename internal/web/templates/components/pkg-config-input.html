@@ -8,7 +8,7 @@
       <li>
         <button
           class="dropdown-item btn btn-sm"
-          hx-get="{{ .PackageHref }}/configuration/{{ .ValueName }}?refKind=Secret&repositoryName={{ .RepositoryName }}&selectedVersion={{ .SelectedVersion | UrlEscape }}"
+          hx-get="{{ .PackageHref }}/configuration/{{ .ValueName }}?refKind=Secret&repositoryName={{ .RepositoryName }}&version={{ .SelectedVersion | UrlEscape }}"
           hx-target="#{{ .ContainerId }}"
           hx-select="#{{ .ContainerId }}"
           hx-swap="outerHTML">
@@ -18,7 +18,7 @@
       <li>
         <button
           class="dropdown-item btn btn-sm"
-          hx-get="{{ .PackageHref }}/configuration/{{ .ValueName }}?refKind=ConfigMap&repositoryName={{ .RepositoryName }}&selectedVersion={{ .SelectedVersion | UrlEscape }}"
+          hx-get="{{ .PackageHref }}/configuration/{{ .ValueName }}?refKind=ConfigMap&repositoryName={{ .RepositoryName }}&version={{ .SelectedVersion | UrlEscape }}"
           hx-target="#{{ .ContainerId }}"
           hx-select="#{{ .ContainerId }}"
           hx-swap="outerHTML">
@@ -28,7 +28,7 @@
       <li>
         <button
           class="dropdown-item btn btn-sm"
-          hx-get="{{ .PackageHref }}/configuration/{{ .ValueName }}?refKind=Package&repositoryName={{ .RepositoryName }}&selectedVersion={{ .SelectedVersion | UrlEscape }}"
+          hx-get="{{ .PackageHref }}/configuration/{{ .ValueName }}?refKind=Package&repositoryName={{ .RepositoryName }}&version={{ .SelectedVersion | UrlEscape }}"
           hx-target="#{{ .ContainerId }}"
           hx-select="#{{ .ContainerId }}"
           hx-swap="outerHTML">
@@ -40,7 +40,7 @@
         <li>
           <button
             class="dropdown-item btn btn-sm"
-            hx-get="{{ .PackageHref }}/configuration/{{ .ValueName }}?repositoryName={{ .RepositoryName }}&selectedVersion={{ .SelectedVersion | UrlEscape }}"
+            hx-get="{{ .PackageHref }}/configuration/{{ .ValueName }}?repositoryName={{ .RepositoryName }}&version={{ .SelectedVersion | UrlEscape }}"
             hx-target="#{{ .ContainerId }}"
             hx-select="#{{ .ContainerId }}"
             hx-swap="outerHTML">
@@ -56,14 +56,14 @@
 <!-- template used to display and input reference information -->
 {{ define "pkg-config-input-reference" }}
   <span class="input-group-text bg-transparent">Value from {{ .ValueReferenceKind }}</span>
-  <input type="hidden" name="{{ .ValueName }}[refKind]" value="{{ .ValueReferenceKind }}" />
+  <input type="hidden" name="{{ .FormValueName }}[refKind]" value="{{ .ValueReferenceKind }}" />
   {{ if or (eq .ValueReferenceKind "ConfigMap") (eq .ValueReferenceKind "Secret") }}
     <input
       type="text"
       autocomplete="off"
       {{ if .Autofocus }}autofocus{{ end }}
       id="input-{{ .ValueName }}-namespace"
-      name="{{ .ValueName }}[namespace]"
+      name="{{ .FormValueName }}[namespace]"
       {{ if (ne .ValueReference.ConfigMapRef nil) }}
         value="{{ .ValueReference.ConfigMapRef.Namespace }}"
       {{ else if (ne .ValueReference.SecretRef nil) }}
@@ -77,7 +77,7 @@
     <input
       type="text"
       autocomplete="off"
-      name="{{ .ValueName }}[name]"
+      name="{{ .FormValueName }}[name]"
       {{ if ne .ValueReference.ConfigMapRef nil }}
         value="{{ .ValueReference.ConfigMapRef.Name }}"
       {{ else if (ne .ValueReference.SecretRef nil) }}
@@ -98,7 +98,7 @@
     <input
       type="text"
       autocomplete="off"
-      name="{{ .ValueName }}[key]"
+      name="{{ .FormValueName }}[key]"
       {{ if ne .ValueReference.ConfigMapRef nil }}
         value="{{ .ValueReference.ConfigMapRef.Key }}"
       {{ else if (ne .ValueReference.SecretRef nil) }}
@@ -120,7 +120,7 @@
       type="text"
       autocomplete="off"
       {{ if .Autofocus }}autofocus{{ end }}
-      name="{{ .ValueName }}[package]"
+      name="{{ .FormValueName }}[package]"
       id="input-{{ .ValueName }}-name"
       {{ if ne .ValueReference.PackageRef nil }}value="{{ .ValueReference.PackageRef.Name }}"{{ end }}
       list="{{ .ValueName }}-names"
@@ -131,7 +131,7 @@
     <input
       type="text"
       autocomplete="off"
-      name="{{ .ValueName }}[value]"
+      name="{{ .FormValueName }}[value]"
       {{ if ne .ValueReference.PackageRef nil }}value="{{ .ValueReference.PackageRef.Value }}"{{ end }}
       class="form-control"
       list="{{ .ValueName }}-keys"
@@ -152,7 +152,7 @@
     type="text"
     autocomplete="off"
     {{ if .Autofocus }}autofocus{{ end }}
-    name="{{ .ValueName }}"
+    name="{{ .FormValueName }}"
     value="{{ .StringValue }}"
     class="form-control"
     id="{{ .FormId }}"
@@ -177,7 +177,7 @@
     {{ if .ValueDefinition.Constraints.Required }}required{{ end }}
     {{ if ne .ValueDefinition.Constraints.Min nil }}min="{{ .ValueDefinition.Constraints.Min }}"{{ end }}
     {{ if ne .ValueDefinition.Constraints.Max nil }}max="{{ .ValueDefinition.Constraints.Max }}"{{ end }}
-    name="{{ .ValueName }}"
+    name="{{ .FormValueName }}"
     value="{{ .StringValue }}"
     class="form-control"
     id="{{ .FormId }}"
@@ -189,7 +189,7 @@
     class="form-select"
     {{ if .Autofocus }}autofocus{{ end }}
     id="{{ .FormId }}"
-    name="{{ .ValueName }}"
+    name="{{ .FormValueName }}"
     {{ if .ValueDefinition.Constraints.Required }}required{{ end }}>
     <option value="" {{ if eq "" .StringValue }}selected{{ end }}></option>
     {{ range .ValueDefinition.Options }}
@@ -204,7 +204,7 @@
       class="form-check-input"
       {{ if .Autofocus }}autofocus{{ end }}
       type="checkbox"
-      name="{{ .ValueName }}"
+      name="{{ .FormValueName }}"
       id="{{ .FormId }}"
       {{ if .BoolValue }}checked{{ end }} />
     <label class="form-check-label me-1" for="{{ .FormId }}">{{ .FormLabel }}</label>(<code>{{ .ValueName }}</code>)
@@ -227,7 +227,7 @@
 {{ end }}
 
 {{ define "pkg-config-input-required-label" }}
-  <label for="{{ .FormId }}" class="form-label">
+  <label for="{{ .FormId }}" class="form-label mb-0">
     {{ .FormLabel }}
     {{ if .ValueDefinition.Constraints.Required }}
       <span class="text-danger">*</span>

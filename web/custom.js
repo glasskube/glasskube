@@ -23,10 +23,6 @@
     });
 })();
 
-window.advancedOptions = function (currentContext) {
-  return localStorage.getItem('advancedOptions_' + currentContext) === 'true';
-};
-
 function setSSEDisconnected() {
   const elem = document.getElementById('disconnected-toast');
   if (elem && !elem.classList.contains('show')) {

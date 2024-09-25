@@ -1,5 +1,12 @@
 {{ define "content" }}
-  <div class="container-lg mt-2" id="settings">
+  <div
+    class="container-lg mt-2"
+    id="settings"
+    hx-trigger="htmx:historyRestore from:body"
+    hx-get="/settings"
+    hx-select="main"
+    hx-target="main"
+    hx-swap="outerHTML">
     <div class="row p-3 col-lg-10 offset-lg-1">
       <div>
         <h2 class="text-reset">Package Repositories</h2>
@@ -46,10 +53,13 @@
         <div class="alert alert-warning" role="alert">
           <div class="form-switch mb-2">
             <input
+              hx-post="/settings"
+              hx-swap="none"
               class="form-check-input"
               type="checkbox"
               role="switch"
-              name="enableAdvancedOptions"
+              name="advancedOptions"
+              {{ if .AdvancedOptions }}checked{{ end }}
               id="enableAdvancedOptions" />
             <label class="form-check-label mx-1 fw-semibold" for="enableAdvancedOptions">Advanced Options</label>
           </div>
@@ -62,18 +72,4 @@
       </div>
     </div>
   </div>
-
-  <script type="text/javascript">
-    (() => {
-      const enableAdvancedOptions = document.querySelector('#enableAdvancedOptions');
-      const key = 'advancedOptions_{{ .CurrentContext }}';
-      const advancedOptions = localStorage.getItem(key) === 'true'
-      if (advancedOptions) {
-        enableAdvancedOptions.checked = true;
-      }
-      document.querySelector('#enableAdvancedOptions').addEventListener('change', (evt) => {
-        localStorage.setItem(key, evt.target.checked);
-      });
-    })();
-  </script>
 {{ end }}
