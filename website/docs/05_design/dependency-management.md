@@ -12,6 +12,16 @@ The following decision tree states how the Package Operator is handling dependen
   the components interacting with the user (CLI, UI) need to guide them through potential resolution. Consequently, the only time the operator does resolve an unfulfilled
   dependency, the "result" is denoted as `install`.
 
+### Visualisation:
+
+**Abbreviations:**
+
+- **P** Package that is going to be installed
+- **D** Dependency that a package require
+- **DV** Dependency version of an already installed packaged
+- **PDV** Desired Dependency version of package *P*
+- **XDV** / **YDV** Already existing packages *X* / *Y* that also have a dependency on *D*
+
 <div style={{maxWidth: '100%', overflow: 'auto'}}>
 <div id="dep-diagram" style={{width: '1600px'}}>
 
