@@ -25,15 +25,7 @@ Start --> A("Does P require a<br>version range of D?")
 
 A -->|No| B("Does D exist?")
 
-B -->|Yes| C("Are there other packages<br>dependent on D?")
-
-C -->|No| Fulfilled["P -> D is fulfilled"]
-
-C -->|Yes| E("Do X and Y require<br>no version range of D?")
-
-E ---->|Yes| Fulfilled
-
-E ---->|No| Fulfilled
+B -->|Yes| Fulfilled["P -> D is fulfilled"]
 
 B ----->|No| F["Install D pinned in latest(D)"]
 
