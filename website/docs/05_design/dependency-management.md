@@ -18,10 +18,10 @@ The following decision tree states how the Package Operator is handling dependen
 **Abbreviations:**
 
 - **P** Package that is going to be installed
-- **D** Dependency that a package require
-- **DV** Dependency version of an already installed packaged
-- **PDV** Desired Dependency version of package *P*
-- **XDV** / **YDV** Already existing packages *X* / *Y* that also have a dependency on *D*
+- **D** Dependency that package *P* requires
+- **DV** Installed version of package *D*
+- **PDV** Version constraint for package *D* as defined in the dependency relation of package *P*
+- **XDV** / **YDV** Version constraint for package *D* as defined in the dependency relation of already installed package *X* / *Y* that also have a dependency on *D*
 
 ```mermaid
 flowchart TD
