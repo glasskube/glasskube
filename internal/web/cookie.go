@@ -26,7 +26,7 @@ func setAdvancedOptionsCookie(w http.ResponseWriter, advancedOptionsEnabled bool
 		MaxAge:   60 * 60 * 24 * 365,
 		Secure:   true,
 		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteStrictMode,
 	}
 	http.SetCookie(w, &cookie)
 }
