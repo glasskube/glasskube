@@ -6,6 +6,8 @@ import (
 	"path"
 	"reflect"
 
+	depUtil "github.com/glasskube/glasskube/internal/dependency/util"
+
 	webutil "github.com/glasskube/glasskube/internal/web/sse/refresh"
 
 	"github.com/fsnotify/fsnotify"
@@ -142,6 +144,7 @@ func (t *templates) parseTemplates() {
 		"PackageDetailHeaderRefreshId":    webutil.PackageRefreshDetailHeaderId,
 		"PackageOverviewRefreshId":        webutil.PackageOverviewRefreshId,
 		"ClusterPackageOverviewRefreshId": webutil.ClusterPackageOverviewRefreshId,
+		"ComponentName":                   depUtil.ComponentName,
 	}
 
 	t.baseTemplate = template.Must(template.New("base.html").
