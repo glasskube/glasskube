@@ -2,10 +2,11 @@ package web
 
 import (
 	"bytes"
-	depUtil "github.com/glasskube/glasskube/internal/dependency/util"
 	"html/template"
 	"path"
 	"reflect"
+
+	depUtil "github.com/glasskube/glasskube/internal/dependency/util"
 
 	webutil "github.com/glasskube/glasskube/internal/web/sse/refresh"
 
