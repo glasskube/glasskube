@@ -171,6 +171,12 @@ var describeCmd = &cobra.Command{
 				printDependencies(manifest)
 			}
 
+			if len(manifest.Components) > 0 {
+				fmt.Println()
+				fmt.Println(bold("Components:"))
+				printComponents(manifest)
+			}
+
 			fmt.Println()
 			fmt.Println(bold("Package repositories:"))
 			printRepositories(pkg, repos)
@@ -227,6 +233,16 @@ func printDependencies(manifest *v1alpha1.PackageManifest) {
 		fmt.Printf(" * %v", dep.Name)
 		if len(dep.Version) > 0 {
 			fmt.Printf(" (%v)", dep.Version)
+		}
+		fmt.Println()
+	}
+}
+
+func printComponents(manifest *v1alpha1.PackageManifest) {
+	for _, cmp := range manifest.Components {
+		fmt.Printf(" * %v", cmp.Name)
+		if len(cmp.Version) > 0 {
+			fmt.Printf(" (%v)", cmp.Version)
 		}
 		fmt.Println()
 	}
@@ -392,6 +408,7 @@ func createOutputStructure(
 		"status":           "Not Installed",
 		"entrypoints":      manifest.Entrypoints,
 		"dependencies":     manifest.Dependencies,
+		"components":       manifest.Components,
 		"longDescription":  strings.TrimSpace(manifest.LongDescription),
 		"repositories":     repositoriesAsMap(pkg, repos),
 		"references":       referencesAsMap(ctx, pkg, manifest),
