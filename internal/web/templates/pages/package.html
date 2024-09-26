@@ -18,29 +18,16 @@
         hx-target="#pkg-detail-container-swapped">
         <div id="pkg-detail-container-swapped">
           {{ template "pkg-detail-header" . }}
-          <div class="mt-3">
-            <!--<h2 class="text-reset">Package Details</h2>-->
 
-            {{ if  .Manifest.LongDescription }}
+          {{ if  .Manifest.LongDescription }}
+            <div class="mt-3">
               {{ .Manifest.LongDescription | Markdown }}
-            {{ else }}
-              <!--<i>
-                This package has no detailed description yet.
-                {{ if PackageManifestUrl .Package }}
-                You can request to change this here:
-                <a class="icon-link text-reset me-2" href="{{ PackageManifestUrl .Package }}" target="_blank">
-                  <span class="bi bi-box-arrow-up-right"></span>
-                  Glasskube Package Manifest
-                </a>
-              {{ end }}
-              </i>-->
-            {{ end }}
-          </div>
+            </div>
+          {{ end }}
 
           {{ if or (ne (len .Manifest.Dependencies) 0) (ne (len .Manifest.Components) 0) }}
-            <div>
+            <div class="mt-2">
               <strong>This package uses</strong>
-              <!--<h2 class="text-reset">Package Dependencies</h2>-->
               <ul>
                 {{ range .Manifest.Dependencies }}
                   <li>
@@ -98,70 +85,68 @@
             </h2>
 
             <form hx-post="{{ .PackageHref }}" hx-swap="none">
-              <div class="mb-2">
-                <div>
-                  <div class="input-group ">
-                    <label for="pkg-install-repository" class="input-group-text bg-transparent"
-                      >Repository <span class="text-danger">*</span></label
-                    >
-                    <select
-                      class="form-select"
-                      id="pkg-install-repository"
-                      name="repositoryName"
-                      required
-                      {{ if (and .Status (not .AdvancedOptions)) }}disabled{{ end }}
-                      hx-select="main"
-                      hx-swap="main"
-                      hx-target="main"
-                      hx-get="{{ .PackageHref }}"
-                      hx-include="#pkg-install-version">
-                      {{ range .Repositories }}
-                        <option value="{{ .Name }}" {{ if eq .Name $.RepositoryName }}selected{{ end }}>
-                          {{ .Name }}
+              <div class="row">
+                <div class="col-md-6">
+                  <label for="pkg-install-repository" class="form-label"
+                    >Repository <span class="text-danger">*</span></label
+                  >
+                  <select
+                    class="form-select"
+                    id="pkg-install-repository"
+                    name="repositoryName"
+                    required
+                    {{ if (and .Status (not .AdvancedOptions)) }}disabled{{ end }}
+                    hx-select="main"
+                    hx-swap="main"
+                    hx-target="main"
+                    hx-get="{{ .PackageHref }}"
+                    hx-include="#pkg-install-version">
+                    {{ range .Repositories }}
+                      <option value="{{ .Name }}" {{ if eq .Name $.RepositoryName }}selected{{ end }}>
+                        {{ .Name }}
+                      </option>
+                    {{ end }}
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label for="pkg-install-version" class="form-label">Version <span class="text-danger">*</span></label>
+                  <select
+                    class="form-select"
+                    id="pkg-install-version"
+                    name="version"
+                    required
+                    {{ if (and .Status (not .AdvancedOptions)) }}disabled{{ end }}
+                    hx-select="main"
+                    hx-swap="main"
+                    hx-target="main"
+                    hx-get="{{ .PackageHref }}"
+                    hx-include="#pkg-install-repository">
+                    {{ with $idx := .PackageIndex }}
+                      {{ range $idx.Versions | Reversed }}
+                        <option value="{{ .Version }}" {{ if eq .Version $.SelectedVersion }}selected{{ end }}>
+                          {{ .Version }}
+                          {{ if eq .Version $idx.LatestVersion }}(latest){{ end }}
                         </option>
                       {{ end }}
-                    </select>
-
-                    <label for="pkg-install-version" class="input-group-text bg-transparent"
-                      >Version <span class="text-danger">*</span></label
-                    >
-                    <select
-                      class="form-select"
-                      id="pkg-install-version"
-                      name="version"
-                      required
-                      {{ if (and .Status (not .AdvancedOptions)) }}disabled{{ end }}
-                      hx-select="main"
-                      hx-swap="main"
-                      hx-target="main"
-                      hx-get="{{ .PackageHref }}"
-                      hx-include="#pkg-install-repository">
-                      {{ with $idx := .PackageIndex }}
-                        {{ range $idx.Versions | Reversed }}
-                          <option value="{{ .Version }}" {{ if eq .Version $.SelectedVersion }}selected{{ end }}>
-                            {{ .Version }}
-                            {{ if eq .Version $idx.LatestVersion }}(latest){{ end }}
-                          </option>
-                        {{ end }}
-                      {{ end }}
-                    </select>
-                  </div>
-
-                  {{ if (and .Status .AdvancedOptions) }}
-                    <div class="form-text">
-                      <div class="alert alert-warning small p-1 my-1" role="alert">
-                        <i class="bi bi-exclamation-triangle-fill me-1"></i><b>Use at your own risk!</b>
-                        Changing repository and/or downgrading could lead to data loss and a broken cluster!
-                      </div>
-                    </div>
-                  {{ end }}
+                    {{ end }}
+                  </select>
                 </div>
+
+                {{ if (and .Status .AdvancedOptions) }}
+                  <div class="form-text m-0">
+                    <div class="alert alert-warning small p-1 my-1" role="alert">
+                      <i class="bi bi-exclamation-triangle-fill me-1"></i><b>Use at your own risk!</b>
+                      Changing repository and/or downgrading could lead to data loss and a broken cluster!
+                    </div>
+                  </div>
+                {{ end }}
+
               </div>
 
               {{ if .Manifest.Scope.IsNamespaced }}
-                <div class="mb-2">
-                  <div class="input-group ">
-                    <span class="input-group-text bg-transparent">Namespace <span class="text-danger">*</span></span>
+                <div class="row mt-1">
+                  <div class="col-md-6">
+                    <span class="form-label">Namespace <span class="text-danger">*</span></span>
                     <input
                       class="form-control"
                       type="text"
@@ -172,9 +157,9 @@
                       {{ if .Status }}value="{{ .Package.Namespace }}" disabled{{ end }}
                       required />
                     {{ template "datalist" ForDatalist "namespaces" "" (index $.DatalistOptions "").Namespaces }}
-
-
-                    <span class="input-group-text bg-transparent">Name <span class="text-danger">*</span></span>
+                  </div>
+                  <div class="col-md-6">
+                    <span class="form-label">Name <span class="text-danger">*</span></span>
                     <input
                       class="form-control"
                       type="text"
@@ -184,6 +169,7 @@
                       autocomplete="off"
                       required />
                   </div>
+
                   {{ if not .Status }}
                     <div class="form-text">Namespace will be created if necessary</div>
                   {{ end }}
