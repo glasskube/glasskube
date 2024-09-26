@@ -2,6 +2,7 @@ package web
 
 import (
 	"bytes"
+	depUtil "github.com/glasskube/glasskube/internal/dependency/util"
 	"html/template"
 	"path"
 	"reflect"
@@ -142,6 +143,7 @@ func (t *templates) parseTemplates() {
 		"PackageDetailHeaderRefreshId":    webutil.PackageRefreshDetailHeaderId,
 		"PackageOverviewRefreshId":        webutil.PackageOverviewRefreshId,
 		"ClusterPackageOverviewRefreshId": webutil.ClusterPackageOverviewRefreshId,
+		"ComponentName":                   depUtil.ComponentName,
 	}
 
 	t.baseTemplate = template.Must(template.New("base.html").
