@@ -34,21 +34,49 @@
               {{ end }}
             </tbody>
           </table>
+          {{ if or .ConflictItems }}
+            <div class="alert alert-danger m-0 mb-2" role="alert">
+              <span>Cannot Update due to dependency conflicts:</span>
+              <ul class="mb-0 mt-1">
+                {{ range  .ConflictItems }}
+                  {{ range .Conflicts }}
+                    <li>{{ .Actual.Name }} (required: {{ .Required.Version }}, actual: {{ .Actual.Version }})</li>
+                  {{ end }}
+                {{ end }}
+              </ul>
+            </div>
+          {{ end }}
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-primary btn-sm" data-bs-dismiss="modal">Cancel</button>
-          <button
-            type="submit"
-            name="dryRun"
-            value="{{ .GitopsMode }}"
-            {{ if not .GitopsMode }}data-bs-dismiss="modal"{{ end }}
-            class="btn btn-primary btn-sm">
-            {{ if .GitopsMode }}
-              Show YAML
-            {{ else }}
-              Update
-            {{ end }}
-          </button>
+          {{ if or .ConflictItems }}
+            <button
+              type="submit"
+              name="dryRun"
+              value="{{ .GitopsMode }}"
+              {{ if not .GitopsMode }}data-bs-dismiss="modal"{{ end }}
+              class="btn btn-primary btn-sm"
+              disabled>
+              {{ if .GitopsMode }}
+                Show YAML
+              {{ else }}
+                Update
+              {{ end }}
+            </button>
+          {{ else }}
+            <button
+              type="submit"
+              name="dryRun"
+              value="{{ .GitopsMode }}"
+              {{ if not .GitopsMode }}data-bs-dismiss="modal"{{ end }}
+              class="btn btn-primary btn-sm">
+              {{ if .GitopsMode }}
+                Show YAML
+              {{ else }}
+                Update
+              {{ end }}
+            </button>
+          {{ end }}
         </div>
       </form>
     </div>
