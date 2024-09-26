@@ -2,8 +2,6 @@ package client
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"slices"
 
 	repoerror "github.com/glasskube/glasskube/internal/repo/error"
@@ -90,7 +88,6 @@ func (d metaclient) GetLatestVersion(pkgName string) (string, error) {
 
 // GetReposForPackage implements RepoMetaclient.
 func (d metaclient) GetReposForPackage(name string) ([]v1alpha1.PackageRepository, error) {
-	fmt.Fprintf(os.Stderr, ">>> GetReposForPackage '%v'\n", name)
 	if repoList, err := d.clientset.client.ListPackageRepositories(context.TODO()); err != nil {
 		return nil, err
 	} else {
