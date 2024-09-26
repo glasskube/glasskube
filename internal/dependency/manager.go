@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"slices"
 	"strings"
 
@@ -168,7 +167,6 @@ func (dm *DependendcyManager) addDependencies(
 ) ([]Requirement, error) {
 	var allAdded []Requirement
 	for _, dep := range g.Dependencies(name, namespace) {
-		fmt.Fprintf(os.Stderr, ">>> addDependencies \"%v/%v\": \"%v\" (\"%v\")\n", namespace, name, dep.Name, dep.PackageName)
 		if g.Version(dep.Name, dep.Namespace) == nil {
 			if versions, err := dm.getVersions(dep.PackageName); repoerror.IsComplete(err) {
 				return nil, fmt.Errorf("failed to get version of dep package \"%v\": %w", dep.PackageName, err)
