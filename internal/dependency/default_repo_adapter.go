@@ -45,7 +45,7 @@ func (a *defaultRepoAdapter) getRepoForPackage(name string) (*v1alpha1.PackageRe
 	repos, err := a.client.Meta().GetReposForPackage(name)
 	switch len(repos) {
 	case 0:
-		return nil, multierr.Append(fmt.Errorf("%v is not available in any repository", name), err)
+		return nil, multierr.Append(fmt.Errorf("\"%v\" is not available in any repository", name), err)
 	case 1:
 		return &repos[0], err
 	default:
