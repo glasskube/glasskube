@@ -133,21 +133,21 @@ title: glasskube install [package]
 flowchart BT
   UI([UI])-- via local server<br>http://localhost:8580 ---Client(Client)
   CLI([CLI])-- cobra cli ---Client
-  Client-- 1. validate package -->Repo[(Package Repo)]
-  Client-- 2. create<br>`Package` CR -->Kubernetes(((Kubernetes API)))
+  Client-- (1) validate package -->Repo[(Package Repo)]
+  Client-- (2) create<br>`Package` CR -->Kubernetes(((Kubernetes API)))
   subgraph Cluster
-    Kubernetes-- 3. reconcile<br>`Package` -->PackageController
-    PackageController-- 4. create `PackageInfo`<br>if not present-->Kubernetes
-    Kubernetes-- 5. reconcile<br>`PackageInfo`-->PackageInfoController
+    Kubernetes-- (3) reconcile<br>`Package` -->PackageController
+    PackageController-- (4) create `PackageInfo`<br>if not present-->Kubernetes
+    Kubernetes-- (5) reconcile<br>`PackageInfo`-->PackageInfoController
     end
-  PackageInfoController<-- 6. update package manifest -->Repo
+  PackageInfoController<-- (6) update package manifest -->Repo
   subgraph Cluster
-    PackageInfoController-- 7. update manifest<br>in `PackageInfo` -->Kubernetes
-    Kubernetes-- 8. reconcile<br>`PackageInfo` -->PackageController
-    PackageController-- 9. deploy package -->Kubernetes
+    PackageInfoController-- (7) update manifest<br>in `PackageInfo` -->Kubernetes
+    Kubernetes-- (8) reconcile<br>`PackageInfo` -->PackageController
+    PackageController-- (9) deploy package -->Kubernetes
   end
 
-  Kubernetes-- 10. package status -->Client 
+  Kubernetes-- (10) package status -->Client 
 ```
 
 ## ☝️ Need Help or Want to Provide Feedback?
