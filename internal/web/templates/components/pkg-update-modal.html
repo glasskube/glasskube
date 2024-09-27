@@ -49,7 +49,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-primary btn-sm" data-bs-dismiss="modal">Cancel</button>
-          {{ if or .ConflictItems }}
+          {{ if .ConflictItems }}
             <button
               type="submit"
               name="dryRun"
