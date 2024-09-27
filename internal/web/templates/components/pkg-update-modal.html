@@ -34,7 +34,7 @@
               {{ end }}
             </tbody>
           </table>
-          {{ if or .ConflictItems }}
+          {{ if .ConflictItems }}
             <div class="alert alert-danger m-0 mb-2" role="alert">
               <span>Cannot Update due to dependency conflicts:</span>
               <ul class="mb-0 mt-1">
