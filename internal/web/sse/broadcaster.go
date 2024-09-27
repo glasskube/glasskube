@@ -59,10 +59,10 @@ func (b *Broadcaster) UpdatesAvailableForPackage(oldPkg ctrlpkg.Package, newPkg 
 	if oldPkg != nil && !oldPkg.IsNil() && newPkg != nil && !newPkg.IsNil() {
 		if !reflect.DeepEqual(oldPkg.GetSpec(), newPkg.GetSpec()) {
 			b.UpdatesAvailable(refresh.RefreshTriggerAll, newPkg)
-		} else if !reflect.DeepEqual(oldPkg.GetStatus(), newPkg.GetStatus()) {
-			b.UpdatesAvailable(refresh.RefreshTriggerHeader, newPkg)
 		} else if !reflect.DeepEqual(oldPkg.GetAnnotations(), newPkg.GetAnnotations()) ||
 			!reflect.DeepEqual(oldPkg.GetLabels(), newPkg.GetLabels()) {
+			b.UpdatesAvailable(refresh.RefreshTriggerAll, newPkg)
+		} else if !reflect.DeepEqual(oldPkg.GetStatus(), newPkg.GetStatus()) {
 			b.UpdatesAvailable(refresh.RefreshTriggerHeader, newPkg)
 		} else if !newPkg.GetDeletionTimestamp().IsZero() {
 			b.UpdatesAvailable(refresh.RefreshTriggerAll, newPkg)

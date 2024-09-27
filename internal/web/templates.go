@@ -145,6 +145,12 @@ func (t *templates) parseTemplates() {
 		"PackageOverviewRefreshId":        webutil.PackageOverviewRefreshId,
 		"ClusterPackageOverviewRefreshId": webutil.ClusterPackageOverviewRefreshId,
 		"ComponentName":                   depUtil.ComponentName,
+		"AutoUpdateEnabled": func(pkg ctrlpkg.Package) bool {
+			if pkg != nil && !pkg.IsNil() {
+				return pkg.AutoUpdatesEnabled()
+			}
+			return false
+		},
 	}
 
 	t.baseTemplate = template.Must(template.New("base.html").
