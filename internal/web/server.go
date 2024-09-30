@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
@@ -93,7 +92,6 @@ func NewServer(options ServerOptions) *server {
 		ServerOptions:           options,
 		configLoader:            &defaultConfigLoader{options.Kubeconfig},
 		forwarders:              make(map[string]*open.OpenResult),
-		updateTransactions:      make(map[int]update.UpdateTransaction),
 		templates:               templates{},
 		stopCh:                  make(chan struct{}, 1),
 		httpServerHasShutdownCh: make(chan struct{}, 1),
@@ -118,8 +116,6 @@ type server struct {
 	forwarders              map[string]*open.OpenResult
 	forwardersMutex         sync.Mutex
 	dependencyMgr           *dependency.DependendcyManager
-	updateMutex             sync.Mutex
-	updateTransactions      map[int]update.UpdateTransaction
 	valueResolver           *manifestvalues.Resolver
 	isBootstrapped          bool
 	templates               templates
@@ -299,44 +295,59 @@ func (s *server) update(w http.ResponseWriter, r *http.Request) {
 	name := mux.Vars(r)["name"]
 	dryRun, _ := strconv.ParseBool(r.FormValue("dryRun"))
 
+	updater := update.NewUpdater(ctx)
+
 	if r.Method == http.MethodPost {
-		updater := update.NewUpdater(ctx)
-		s.updateMutex.Lock()
-		defer s.updateMutex.Unlock()
-		utIdStr := r.FormValue("updateTransactionId")
-		if utId, err := strconv.Atoi(utIdStr); err != nil {
-			s.sendToast(w,
-				toast.WithErr(fmt.Errorf("failed to parse updateTransactionId %v: %w", utIdStr, err)),
-				toast.WithStatusCode(http.StatusBadRequest))
-			return
-		} else if ut, ok := s.updateTransactions[utId]; !ok {
-			s.sendToast(w,
-				toast.WithErr(fmt.Errorf("failed to find updateTransactionId %v", utId)),
-				toast.WithStatusCode(http.StatusNotFound))
-			return
-		} else if pkgs, err := updater.Apply(
-			ctx,
-			&ut,
-			update.ApplyUpdateOptions{
-				Blocking: dryRun,
-				DryRun:   dryRun,
-			}); err != nil {
-			delete(s.updateTransactions, utId)
-			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to apply update: %w", err)))
-			return
-		} else {
-			delete(s.updateTransactions, utId)
-			if dryRun {
-				if yamlOutput, err := clientutils.Format(clientutils.OutputFormatYAML, false, pkgs...); err != nil {
-					s.sendToast(w, toast.WithErr(fmt.Errorf("failed to render yaml: %w", err)))
+		acceptedUpdates := make(map[string]string)
+		updateGetters := make([]update.PackagesGetter, 0)
+		for key := range r.Form {
+			if pkgKey, found := strings.CutPrefix(key, "items."); found {
+				acceptedUpdates[pkgKey] = r.Form.Get(key)
+				if objName, err := cache.ParseObjectName(pkgKey); err != nil {
+					s.sendToast(w, toast.WithErr(fmt.Errorf("failed to parse form value of %v: %w", key, err)))
+					return
+				} else if objName.Namespace != "" {
+					updateGetters = append(updateGetters, update.GetPackageWithName(objName.Namespace, objName.Name))
 				} else {
-					s.sendYamlModal(w, yamlOutput, nil)
+					updateGetters = append(updateGetters, update.GetClusterPackageWithName(objName.Name))
 				}
 			}
 		}
+		if updateTx, err := updater.Prepare(ctx, updateGetters...); err != nil {
+			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to prepare update: %w", err)))
+			return
+		} else {
+			for _, item := range updateTx.Items {
+				if acceptedVersion, ok := acceptedUpdates[cache.MetaObjectToName(item.Package).String()]; !ok || acceptedVersion != item.Version {
+					s.sendToast(w,
+						toast.WithStatusCode(http.StatusConflict),
+						toast.WithCssClass("warning"),
+						toast.WithMessage(fmt.Sprintf("A newer version of %s is available – Please try again.", item.Package.GetName())))
+					return
+				}
+			}
+			if pkgs, err := updater.Apply(
+				ctx,
+				updateTx,
+				update.ApplyUpdateOptions{
+					Blocking: dryRun,
+					DryRun:   dryRun,
+				}); err != nil {
+				s.sendToast(w, toast.WithErr(fmt.Errorf("failed to apply update: %w", err)))
+				return
+			} else {
+				if dryRun {
+					if yamlOutput, err := clientutils.Format(clientutils.OutputFormatYAML, false, pkgs...); err != nil {
+						s.sendToast(w, toast.WithErr(fmt.Errorf("failed to render yaml: %w", err)))
+					} else {
+						s.sendYamlModal(w, yamlOutput, nil)
+					}
+				}
+			}
+		}
+
 	} else {
 		packageHref := ""
-		updates := make([]map[string]any, 0)
 		updateGetters := make([]update.PackagesGetter, 0, 1)
 		if pkgName != "" {
 			packageHref = "/clusterpackages/" + pkgName
@@ -360,40 +371,16 @@ func (s *server) update(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		updater := update.NewUpdater(ctx)
 		updateTx, err := updater.Prepare(ctx, updateGetters...)
 		if err != nil {
 			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to prepare update: %w", err)))
 			return
 		}
-		utId := rand.Int()
-		s.updateMutex.Lock()
-		s.updateTransactions[utId] = *updateTx
-		s.updateMutex.Unlock()
-
-		for _, u := range updateTx.Items {
-			if u.UpdateRequired() {
-				updates = append(updates, map[string]any{
-					"Package":        u.Package,
-					"CurrentVersion": u.Package.GetSpec().PackageInfo.Version,
-					"LatestVersion":  u.Version,
-				})
-			}
-		}
-		for _, req := range updateTx.Requirements {
-			updates = append(updates, map[string]any{
-				"Package":        req,
-				"CurrentVersion": "-",
-				"LatestVersion":  req.Version,
-			})
-		}
 
 		err = s.templates.pkgUpdateModalTmpl.Execute(w, map[string]any{
-			"GitopsMode":          s.isGitopsModeEnabled(),
-			"UpdateTransactionId": utId,
-			"Updates":             updates,
-			"PackageHref":         packageHref,
-			"ConflictItems":       updateTx.ConflictItems,
+			"GitopsMode":        s.isGitopsModeEnabled(),
+			"UpdateTransaction": updateTx,
+			"PackageHref":       packageHref,
 		})
 		util.CheckTmplError(err, "pkgUpdateModalTmpl")
 	}

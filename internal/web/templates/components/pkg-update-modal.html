@@ -2,17 +2,16 @@
   <div class="modal-dialog modal-dialog-centered" id="pkg-update-modal">
     <div class="modal-content">
       <form hx-post="{{ .PackageHref }}/update">
-        <input type="hidden" name="updateTransactionId" value="{{ .UpdateTransactionId }}" />
         <div class="modal-header">
           <h1 class="modal-title fs-5">Available Updates</h1>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body" id="pkg-update-modal-body">
-          {{ if .ConflictItems }}
+          {{ if .UpdateTransaction.ConflictItems }}
             <div class="alert alert-danger m-0 mb-2" role="alert">
               <span>Cannot Update due to dependency conflicts:</span>
               <ul class="mb-0 mt-1">
-                {{ range  .ConflictItems }}
+                {{ range .UpdateTransaction.ConflictItems }}
                   {{ range .Conflicts }}
                     <li>{{ .Actual.Name }} (required: {{ .Required.Version }}, actual: {{ .Actual.Version }})</li>
                   {{ end }}
@@ -29,19 +28,37 @@
                 </tr>
               </thead>
               <tbody>
-                {{ range .Updates }}
+                {{ range .UpdateTransaction.Items }}
+                  {{ if .UpdateRequired }}
+                    <tr>
+                      <td>
+                        <b
+                          >{{ if not .Package.IsNamespaceScoped }}
+                            <input type="hidden" name="items.{{ .Package.Name }}" value="{{ .Version }}" />
+                            {{ .Package.Name }}
+                          {{ else }}
+                            <input
+                              type="hidden"
+                              name="items.{{ .Package.Namespace }}/{{ .Package.Name }}"
+                              value="{{ .Version }}" />
+                            {{ .Package.Namespace }}/{{ .Package.Name }}
+                          {{ end }}</b
+                        >
+                      </td>
+                      <td>{{ .Package.GetSpec.PackageInfo.Version }}</td>
+                      <td>{{ .Version }}</td>
+                    </tr>
+                  {{ end }}
+                {{ end }}
+                {{ range .UpdateTransaction.Requirements }}
                   <tr>
                     <td>
-                      <b
-                        >{{ if not .Package.IsNamespaceScoped }}
-                          {{ .Package.Name }}
-                        {{ else }}
-                          {{ .Package.Namespace }}/{{ .Package.Name }}
-                        {{ end }}</b
-                      >
+                      <b>
+                        {{ .Name }}
+                      </b>
                     </td>
-                    <td>{{ .CurrentVersion }}</td>
-                    <td>{{ .LatestVersion }}</td>
+                    <td>–</td>
+                    <td>{{ .Version }}</td>
                   </tr>
                 {{ end }}
               </tbody>
@@ -56,7 +73,7 @@
             value="{{ .GitopsMode }}"
             {{ if not .GitopsMode }}data-bs-dismiss="modal"{{ end }}
             class="btn btn-primary btn-sm"
-            {{ if.ConflictItems }}disabled{{ end }}>
+            {{ if .ConflictItems }}disabled{{ end }}>
             {{ if .GitopsMode }}
               Show YAML
             {{ else }}
