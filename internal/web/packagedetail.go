@@ -224,6 +224,9 @@ func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to get advanced options from cookie: %v\n", err)
 	}
+
+	// TODO when there is a version update, invoke updater and prepare the update!
+
 	templateData := map[string]any{
 		"Package":              p.pkg,
 		"Status":               client.GetStatusOrPending(p.pkg),

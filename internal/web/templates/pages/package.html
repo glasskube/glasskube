@@ -115,19 +115,25 @@
                     id="pkg-install-version"
                     name="version"
                     required
-                    {{ if (and .Status (not .AdvancedOptions)) }}disabled{{ end }}
+                    {{ if (and .Status (not .AdvancedOptions) (not .UpdateAvailable)) }}disabled{{ end }}
                     hx-select="main"
                     hx-swap="main"
                     hx-target="main"
                     hx-get="{{ .PackageHref }}"
                     hx-include="#pkg-install-repository">
-                    {{ with $idx := .PackageIndex }}
-                      {{ range $idx.Versions | Reversed }}
-                        <option value="{{ .Version }}" {{ if eq .Version $.SelectedVersion }}selected{{ end }}>
-                          {{ .Version }}
-                          {{ if eq .Version $idx.LatestVersion }}(latest){{ end }}
-                        </option>
+                    {{ $idx := .PackageIndex }}
+                    {{ $currentVersionIdx := len $idx.Versions }}
+                    {{ range $versIdx, $version := $idx.Versions | Reversed }}
+                      {{ if and $.Status (eq $version.Version $.Package.Spec.PackageInfo.Version) }}
+                        {{ $currentVersionIdx = $versIdx }}
                       {{ end }}
+                      <option
+                        value="{{ $version.Version }}"
+                        {{ if eq $version.Version $.SelectedVersion }}selected{{ end }}
+                        {{ if and (gt $versIdx $currentVersionIdx) (not $.AdvancedOptions) }}disabled{{ end }}>
+                        {{ .Version }}
+                        {{ if eq $version.Version $idx.LatestVersion }}(latest){{ end }}
+                      </option>
                     {{ end }}
                   </select>
                 </div>
@@ -234,9 +240,12 @@
                 </div>
               {{ end }}
               {{ if or (not .Status) (and .Package .Package.DeletionTimestamp.IsZero) }}
+                {{ $isUpdate := IsUpgradable .Package.Spec.PackageInfo.Version .SelectedVersion }}
                 <button
                   type="submit"
-                  class="btn btn-primary d-flex ms-auto {{ if .ShowConflicts }}disabled{{ end }}"
+                  class="btn btn-primary d-flex ms-auto {{ if .ShowConflicts }}disabled{{ end }} {{ if $isUpdate }}
+                    btn-warning
+                  {{ end }}"
                   name="dryRun"
                   value="{{ .GitopsMode }}"
                   {{ if .GitopsMode }}
@@ -247,6 +256,9 @@
                     Show YAML
                   {{ else if eq .Status nil }}
                     Install
+                  {{ else if $isUpdate }}
+                    Update to
+                    {{ .SelectedVersion }}
                   {{ else }}
                     Save Configuration
                   {{ end }}
