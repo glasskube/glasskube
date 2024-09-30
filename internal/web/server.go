@@ -393,6 +393,7 @@ func (s *server) update(w http.ResponseWriter, r *http.Request) {
 			"UpdateTransactionId": utId,
 			"Updates":             updates,
 			"PackageHref":         packageHref,
+			"ConflictItems":       updateTx.ConflictItems,
 		})
 		util.CheckTmplError(err, "pkgUpdateModalTmpl")
 	}
@@ -1273,6 +1274,8 @@ func (s *server) isUpdateAvailable(ctx context.Context, pkgs []ctrlpkg.Package) 
 	if tx, err := update.NewUpdater(ctx).Prepare(ctx, update.GetExact(pkgs)); err != nil {
 		fmt.Fprintf(os.Stderr, "Error checking for updates: %v\n", err)
 		return false
+	} else if len(tx.ConflictItems) > 0 {
+		return true
 	} else {
 		return !tx.IsEmpty()
 	}
