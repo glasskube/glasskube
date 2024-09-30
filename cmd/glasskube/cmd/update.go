@@ -112,9 +112,9 @@ var updateCmd = &cobra.Command{
 			if len(tx.ConflictItems) > 0 {
 				for _, conflictItem := range tx.ConflictItems {
 					for _, conflict := range conflictItem.Conflicts {
-						fmt.Fprintf(os.Stderr, "❌ Cannot Update due to dependency conflicts: %s\n"+
+						fmt.Fprintf(os.Stderr, "❌ Cannot Update %s due to dependency conflicts: %s\n"+
 							" (required: %s, actual: %s)\n",
-							conflict.Actual.Name, conflict.Required.Version, conflict.Actual.Version)
+							conflictItem.Package.GetName(), conflict.Actual.Name, conflict.Required.Version, conflict.Actual.Version)
 					}
 				}
 				cliutils.ExitWithError()

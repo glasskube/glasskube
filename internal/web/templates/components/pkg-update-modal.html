@@ -8,32 +8,6 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body" id="pkg-update-modal-body">
-          <table class="table table-striped">
-            <thead>
-              <tr>
-                <td></td>
-                <td><b>Current Version</b></td>
-                <td><b>Latest Version</b></td>
-              </tr>
-            </thead>
-            <tbody>
-              {{ range .Updates }}
-                <tr>
-                  <td>
-                    <b
-                      >{{ if not .Package.IsNamespaceScoped }}
-                        {{ .Package.Name }}
-                      {{ else }}
-                        {{ .Package.Namespace }}/{{ .Package.Name }}
-                      {{ end }}</b
-                    >
-                  </td>
-                  <td>{{ .CurrentVersion }}</td>
-                  <td>{{ .LatestVersion }}</td>
-                </tr>
-              {{ end }}
-            </tbody>
-          </table>
           {{ if .ConflictItems }}
             <div class="alert alert-danger m-0 mb-2" role="alert">
               <span>Cannot Update due to dependency conflicts:</span>
@@ -45,38 +19,50 @@
                 {{ end }}
               </ul>
             </div>
+          {{ else }}
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <td></td>
+                  <td><b>Current Version</b></td>
+                  <td><b>Latest Version</b></td>
+                </tr>
+              </thead>
+              <tbody>
+                {{ range .Updates }}
+                  <tr>
+                    <td>
+                      <b
+                        >{{ if not .Package.IsNamespaceScoped }}
+                          {{ .Package.Name }}
+                        {{ else }}
+                          {{ .Package.Namespace }}/{{ .Package.Name }}
+                        {{ end }}</b
+                      >
+                    </td>
+                    <td>{{ .CurrentVersion }}</td>
+                    <td>{{ .LatestVersion }}</td>
+                  </tr>
+                {{ end }}
+              </tbody>
+            </table>
           {{ end }}
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-primary btn-sm" data-bs-dismiss="modal">Cancel</button>
-          {{ if .ConflictItems }}
-            <button
-              type="submit"
-              name="dryRun"
-              value="{{ .GitopsMode }}"
-              {{ if not .GitopsMode }}data-bs-dismiss="modal"{{ end }}
-              class="btn btn-primary btn-sm"
-              disabled>
-              {{ if .GitopsMode }}
-                Show YAML
-              {{ else }}
-                Update
-              {{ end }}
-            </button>
-          {{ else }}
-            <button
-              type="submit"
-              name="dryRun"
-              value="{{ .GitopsMode }}"
-              {{ if not .GitopsMode }}data-bs-dismiss="modal"{{ end }}
-              class="btn btn-primary btn-sm">
-              {{ if .GitopsMode }}
-                Show YAML
-              {{ else }}
-                Update
-              {{ end }}
-            </button>
-          {{ end }}
+          <button
+            type="submit"
+            name="dryRun"
+            value="{{ .GitopsMode }}"
+            {{ if not .GitopsMode }}data-bs-dismiss="modal"{{ end }}
+            class="btn btn-primary btn-sm"
+            {{ if.ConflictItems }}disabled{{ end }}>
+            {{ if .GitopsMode }}
+              Show YAML
+            {{ else }}
+              Update
+            {{ end }}
+          </button>
         </div>
       </form>
     </div>
