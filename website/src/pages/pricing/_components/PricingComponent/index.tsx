@@ -23,7 +23,7 @@ function Pricing() {
                   deploy across clusters.
                 </p>
                 <ul className={styles.pricingItemList}>
-                  <li>Never maintain a Helm charts every again</li>
+                  <li>Never maintain Helm charts ever again</li>
                   <li>
                     Compatibility across different Kubernetes environments
                   </li>
