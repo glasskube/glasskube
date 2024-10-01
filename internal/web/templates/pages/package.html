@@ -115,7 +115,6 @@
                     id="pkg-install-version"
                     name="version"
                     required
-                    {{ if (and .Status (not .AdvancedOptions) (not .UpdateAvailable)) }}disabled{{ end }}
                     hx-select="main"
                     hx-swap="main"
                     hx-target="main"
@@ -229,6 +228,7 @@
                   </ul>
                 </div>
               {{ else if eq .Status nil }}
+                <!-- TODO not only on install, but also on version change -->
                 <div class="alert alert-success m-0 mb-2" role="alert">
                   <span>The following packages will be installed:</span>
                   <ul class="mb-0 mt-1">
@@ -240,12 +240,19 @@
                 </div>
               {{ end }}
               {{ if or (not .Status) (and .Package .Package.DeletionTimestamp.IsZero) }}
-                {{ $isUpdate := IsUpgradable .Package.Spec.PackageInfo.Version .SelectedVersion }}
+                {{ $isUpdate := and .Status (IsUpgradable .Package.Spec.PackageInfo.Version .SelectedVersion) }}
+                {{ $isDowngrade := and .Status (not $isUpdate) (ne .Package.Spec.PackageInfo.Version .SelectedVersion) }}
+                {{ $warningClass := "" }}
+                {{ if or $isUpdate $isDowngrade }}
+                  {{ $warningClass = "btn-warning" }}
+                {{ end }}
+                {{ $disabledStr := "" }}
+                {{ if .ShowConflicts }}
+                  {{ $disabledStr = "disabled" }}
+                {{ end }}
                 <button
                   type="submit"
-                  class="btn btn-primary d-flex ms-auto {{ if .ShowConflicts }}disabled{{ end }} {{ if $isUpdate }}
-                    btn-warning
-                  {{ end }}"
+                  class="btn btn-primary {{ $warningClass }} d-flex ms-auto {{ $disabledStr }}"
                   name="dryRun"
                   value="{{ .GitopsMode }}"
                   {{ if .GitopsMode }}
@@ -258,6 +265,9 @@
                     Install
                   {{ else if $isUpdate }}
                     Update to
+                    {{ .SelectedVersion }}
+                  {{ else if $isDowngrade }}
+                    Downgrade to
                     {{ .SelectedVersion }}
                   {{ else }}
                     Save Configuration
