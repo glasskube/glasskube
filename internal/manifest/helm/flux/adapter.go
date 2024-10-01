@@ -16,6 +16,7 @@ import (
 	"github.com/glasskube/glasskube/internal/manifest"
 	"github.com/glasskube/glasskube/internal/manifest/result"
 	"github.com/glasskube/glasskube/internal/names"
+	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	"github.com/glasskube/glasskube/internal/resourcepatch"
 	corev1 "k8s.io/api/core/v1"
 	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -38,7 +39,12 @@ func NewAdapter() manifest.ManifestAdapter {
 	return &FluxHelmAdapter{}
 }
 
-func (a *FluxHelmAdapter) ControllerInit(buildr *builder.Builder, client client.Client, scheme *runtime.Scheme) error {
+func (a *FluxHelmAdapter) ControllerInit(
+	buildr *builder.Builder,
+	client client.Client,
+	repo repoclient.RepoClientset,
+	scheme *runtime.Scheme,
+) error {
 	if err := sourcev1.AddToScheme(scheme); err != nil {
 		return err
 	}

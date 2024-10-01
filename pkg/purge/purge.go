@@ -70,7 +70,7 @@ func (c *Purger) Purge(ctx context.Context) error {
 		operatorVersion, "slim")
 
 	c.status.SetStatus("Fetching Glasskube manifest from " + manifestUrl)
-	manifests, err := clientutils.FetchResources(manifestUrl)
+	manifests, err := clientutils.FetchResourcesFromUrl(manifestUrl)
 	if err != nil {
 		return fmt.Errorf("Couldn't fetch Glasskube manifests: %w", err)
 	}
