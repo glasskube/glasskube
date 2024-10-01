@@ -1,5 +1,9 @@
 {{ define "content" }}
   {{ if .Manifest }}
+    {{ $isUpdate := and .Status (IsUpgradable .Package.Spec.PackageInfo.Version .SelectedVersion) }}
+    {{ $isDowngrade := and .Status (not $isUpdate) (ne .Package.Spec.PackageInfo.Version .SelectedVersion) }}
+
+
     <div
       class="container-lg mt-2"
       hx-trigger="htmx:historyRestore from:body"
@@ -110,34 +114,54 @@
                 </div>
                 <div class="col-md-6">
                   <label for="pkg-install-version" class="form-label">Version <span class="text-danger">*</span></label>
-                  <select
-                    class="form-select"
-                    id="pkg-install-version"
-                    name="version"
-                    required
-                    hx-select="main"
-                    hx-swap="main"
-                    hx-target="main"
-                    hx-get="{{ .PackageHref }}"
-                    hx-include="#pkg-install-repository">
-                    {{ $idx := .PackageIndex }}
-                    {{ $currentVersionIdx := len $idx.Versions }}
-                    {{ range $versIdx, $version := $idx.Versions | Reversed }}
-                      {{ if and $.Status (eq $version.Version $.Package.Spec.PackageInfo.Version) }}
-                        {{ $currentVersionIdx = $versIdx }}
+                  <div class="input-group">
+                    <select
+                      class="form-select"
+                      id="pkg-install-version"
+                      name="version"
+                      required
+                      hx-select="main"
+                      hx-swap="main"
+                      hx-target="main"
+                      hx-get="{{ .PackageHref }}"
+                      hx-include="#pkg-install-repository">
+                      {{ $idx := .PackageIndex }}
+                      {{ $currentVersionIdx := len $idx.Versions }}
+                      {{ $latestVersionEnabled := true }}
+                      {{ range $versIdx, $version := $idx.Versions | Reversed }}
+                        {{ if and $.Status (eq $version.Version $.Package.Spec.PackageInfo.Version) }}
+                          {{ $currentVersionIdx = $versIdx }}
+                        {{ end }}
+                        <option
+                          value="{{ $version.Version }}"
+                          {{ if eq $version.Version $.SelectedVersion }}selected{{ end }}
+                          {{ if and (gt $versIdx $currentVersionIdx) (not $.AdvancedOptions) }}
+                            disabled
+                            {{ $latestVersionEnabled = false }}
+                          {{ end }}>
+                          {{ .Version }}
+                          {{ if eq $version.Version $idx.LatestVersion }}(latest){{ end }}
+                        </option>
                       {{ end }}
-                      <option
-                        value="{{ $version.Version }}"
-                        {{ if eq $version.Version $.SelectedVersion }}selected{{ end }}
-                        {{ if and (gt $versIdx $currentVersionIdx) (not $.AdvancedOptions) }}disabled{{ end }}>
-                        {{ .Version }}
-                        {{ if eq $version.Version $idx.LatestVersion }}(latest){{ end }}
-                      </option>
+                    </select>
+                    {{ if and .Status (ne .SelectedVersion $idx.LatestVersion) $latestVersionEnabled }}
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-warning"
+                        name="version"
+                        value="{{ $idx.LatestVersion }}"
+                        hx-select="main"
+                        hx-swap="main"
+                        hx-target="main"
+                        hx-get="{{ .PackageHref }}"
+                        hx-include="#pkg-install-repository">
+                        <i class="bi bi-arrow-bar-up me-1"></i>Set Latest
+                      </button>
                     {{ end }}
-                  </select>
+                  </div>
                 </div>
 
-                {{ if (and .Status .AdvancedOptions) }}
+                {{ if or $isDowngrade (and .Status (ne .RepositoryName .Package.Spec.PackageInfo.RepositoryName)) }}
                   <div class="form-text m-0">
                     <div class="alert alert-warning small p-1 my-1" role="alert">
                       <i class="bi bi-exclamation-triangle-fill me-1"></i><b>Use at your own risk!</b>
@@ -227,8 +251,7 @@
                     {{ end }}
                   </ul>
                 </div>
-              {{ else if eq .Status nil }}
-                <!-- TODO not only on install, but also on version change -->
+              {{ else if or (not .Status) .ValidationResult.Requirements }}
                 <div class="alert alert-success m-0 mb-2" role="alert">
                   <span>The following packages will be installed:</span>
                   <ul class="mb-0 mt-1">
@@ -240,11 +263,9 @@
                 </div>
               {{ end }}
               {{ if or (not .Status) (and .Package .Package.DeletionTimestamp.IsZero) }}
-                {{ $isUpdate := and .Status (IsUpgradable .Package.Spec.PackageInfo.Version .SelectedVersion) }}
-                {{ $isDowngrade := and .Status (not $isUpdate) (ne .Package.Spec.PackageInfo.Version .SelectedVersion) }}
-                {{ $warningClass := "" }}
+                {{ $extraClasses := "" }}
                 {{ if or $isUpdate $isDowngrade }}
-                  {{ $warningClass = "btn-warning" }}
+                  {{ $extraClasses = "btn-warning sticky-bottom" }}
                 {{ end }}
                 {{ $disabledStr := "" }}
                 {{ if .ShowConflicts }}
@@ -252,13 +273,13 @@
                 {{ end }}
                 <button
                   type="submit"
-                  class="btn btn-primary {{ $warningClass }} d-flex ms-auto {{ $disabledStr }}"
+                  class="btn btn-primary {{ $extraClasses }} d-flex ms-auto {{ $disabledStr }}"
                   name="dryRun"
                   value="{{ .GitopsMode }}"
                   {{ if .GitopsMode }}
                     data-bs-toggle="modal" data-bs-target="#modal-container"
                   {{ end }}
-                  {{ if .ShowConflicts }}disabled{{ end }}>
+                  {{ if $disabledStr }}disabled{{ end }}>
                   {{ if .GitopsMode }}
                     Show YAML
                   {{ else if eq .Status nil }}
