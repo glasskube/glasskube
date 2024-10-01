@@ -20,10 +20,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-var fakeRepoClient = fakerepo.FakeClient{
-	PackageRepositories: []v1alpha1.PackageRepository{{}},
-}
-var fakeRepoClientset = fakerepo.FakeClientset{Client: &fakeRepoClient}
+var fakeRepoClient = fakerepo.EmptyClient()
+var fakeRepoClientset = fakerepo.ClientsetWithClient(fakeRepoClient)
 
 func newPackageValidatingWebhook(objects ...client.Object) *PackageValidatingWebhook {
 	fakeClient := fake.NewClientBuilder().
@@ -36,9 +34,9 @@ func newPackageValidatingWebhook(objects ...client.Object) *PackageValidatingWeb
 		OwnerManager: ownerManager,
 		DependendcyManager: dependency.NewDependencyManager(
 			ctrladapter.NewPackageClientAdapter(fakeClient),
-			&fakeRepoClientset,
+			fakeRepoClientset,
 		),
-		RepoClient: &fakeRepoClientset,
+		RepoClient: fakeRepoClientset,
 	}
 }
 
