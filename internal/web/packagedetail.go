@@ -224,13 +224,17 @@ func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to get advanced options from cookie: %v\n", err)
 	}
+
+	autoUpdaterInstalled, err := clientutils.IsAutoUpdaterInstalled(r.Context())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to check whether auto updater is installed: %v\n", err)
+	}
 	templateData := map[string]any{
 		"Package":              p.pkg,
 		"Status":               client.GetStatusOrPending(p.pkg),
 		"Manifest":             p.manifest,
 		"LatestVersion":        latestVersion,
 		"UpdateAvailable":      s.isUpdateAvailableForPkg(r.Context(), p.pkg),
-		"AutoUpdate":           clientutils.AutoUpdateString(p.pkg, "Disabled"),
 		"ValidationResult":     validationResult,
 		"ShowConflicts":        validationResult.Status == dependency.ValidationResultStatusConflict,
 		"SelectedVersion":      p.request.version,
@@ -244,6 +248,7 @@ func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w
 		"PackageHref":          webutil.GetPackageHrefWithFallback(p.pkg, p.manifest),
 		"AdvancedOptions":      advancedOptions,
 		"LostValueDefinitions": lostValueDefinitions,
+		"AutoUpdaterInstalled": autoUpdaterInstalled,
 	}
 
 	if p.request.component == "header" {
@@ -307,7 +312,7 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 	ctx := r.Context()
 	namespace := r.FormValue("namespace")
 	name := r.FormValue("name")
-	enableAutoUpdate := r.FormValue("enableAutoUpdate")
+	autoUpdate := strings.ToLower(r.FormValue("autoUpdate")) == "on"
 	dryRun, _ := strconv.ParseBool(r.FormValue("dryRun"))
 
 	var err error
@@ -361,7 +366,7 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 		pkg = client.PackageBuilder(p.manifestName).
 			WithVersion(p.version).
 			WithRepositoryName(p.repositoryName).
-			WithAutoUpdates(strings.ToLower(enableAutoUpdate) == "on").
+			WithAutoUpdates(autoUpdate).
 			WithValues(values).
 			WithNamespace(namespace).
 			WithName(name).
@@ -383,6 +388,7 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 		pkg.Spec.PackageInfo.Version = p.version
 		pkg.Spec.PackageInfo.RepositoryName = p.repositoryName
 		pkg.Spec.Values = values
+		pkg.SetAutoUpdatesEnabled(autoUpdate)
 		opts := v1.UpdateOptions{}
 		if dryRun {
 			opts.DryRun = []string{v1.DryRunAll}
@@ -415,7 +421,7 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 // being set in the packages spec.
 func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http.Request, p *packageContextRequest) {
 	ctx := r.Context()
-	enableAutoUpdate := r.FormValue("enableAutoUpdate")
+	autoUpdate := strings.ToLower(r.FormValue("autoUpdate")) == "on"
 	dryRun, _ := strconv.ParseBool(r.FormValue("dryRun"))
 
 	var err error
@@ -451,7 +457,7 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 		pkg = client.PackageBuilder(p.manifestName).
 			WithVersion(p.version).
 			WithRepositoryName(p.repositoryName).
-			WithAutoUpdates(strings.ToLower(enableAutoUpdate) == "on").
+			WithAutoUpdates(autoUpdate).
 			WithValues(values).
 			BuildClusterPackage()
 		opts := v1.CreateOptions{}
@@ -473,6 +479,7 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 		pkg.Spec.PackageInfo.Version = p.version
 		pkg.Spec.PackageInfo.RepositoryName = p.repositoryName
 		pkg.Spec.Values = values
+		pkg.SetAutoUpdatesEnabled(autoUpdate)
 		opts := v1.UpdateOptions{}
 		if dryRun {
 			opts.DryRun = []string{v1.DryRunAll}

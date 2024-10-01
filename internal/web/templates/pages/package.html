@@ -179,8 +179,13 @@
 
               <div class="mt-1 mb-2">
                 <div class="form-check ">
-                  <input class="form-check-input" type="checkbox" name="enableAutoUpdate" id="enable-auto-update" />
-                  <label class="form-check-label ms-1" for="enable-auto-update">Automatically keep up-to-date</label>
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    name="autoUpdate"
+                    id="pkg-auto-update"
+                    {{ if AutoUpdateEnabled .Package }}checked{{ end }} />
+                  <label class="form-check-label ms-1" for="pkg-auto-update">Automatically keep up-to-date</label>
                 </div>
               </div>
 

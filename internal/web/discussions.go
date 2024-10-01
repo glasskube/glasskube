@@ -5,9 +5,10 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/glasskube/glasskube/internal/clientutils"
+
 	"github.com/glasskube/glasskube/internal/web/components/toast"
 
-	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/web/util"
 
 	"github.com/glasskube/glasskube/internal/giscus"
@@ -100,17 +101,21 @@ func (s *server) handlePackageDiscussionPage(w http.ResponseWriter, r *http.Requ
 
 	pkgHref := util.GetPackageHrefWithFallback(d.pkg, d.manifest)
 
-	err := s.templates.pkgDiscussionPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
-		"Giscus":             giscus.Client().Config,
-		"Package":            d.pkg,
-		"Status":             client.GetStatusOrPending(d.pkg),
-		"Manifest":           d.manifest,
-		"LatestVersion":      idx.LatestVersion,
-		"UpdateAvailable":    s.isUpdateAvailableForPkg(r.Context(), d.pkg),
-		"ShowDiscussionLink": true,
-		"PackageHref":        pkgHref,
-		"DiscussionHref":     fmt.Sprintf("%s/discussion", pkgHref),
-		"AutoUpdate":         clientutils.AutoUpdateString(d.pkg, "Disabled"),
+	autoUpdaterInstalled, err := clientutils.IsAutoUpdaterInstalled(r.Context())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to check whether auto updater is installed: %v\n", err)
+	}
+	err = s.templates.pkgDiscussionPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
+		"Giscus":               giscus.Client().Config,
+		"Package":              d.pkg,
+		"Status":               client.GetStatusOrPending(d.pkg),
+		"Manifest":             d.manifest,
+		"LatestVersion":        idx.LatestVersion,
+		"UpdateAvailable":      s.isUpdateAvailableForPkg(r.Context(), d.pkg),
+		"ShowDiscussionLink":   true,
+		"PackageHref":          pkgHref,
+		"DiscussionHref":       fmt.Sprintf("%s/discussion", pkgHref),
+		"AutoUpdaterInstalled": autoUpdaterInstalled,
 	}, nil))
 	util.CheckTmplError(err, fmt.Sprintf("package-discussion (%s)", d.request.manifestName))
 }

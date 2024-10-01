@@ -112,7 +112,7 @@
           </span>
           <span class="badge bg-body-secondary text-primary-emphasis border-primary border border-1 p-1 fw-normal">
             Auto-Update:
-            <strong>{{ .AutoUpdate }}</strong>
+            <strong>{{ if AutoUpdateEnabled .Package }}Enabled{{ else }}Disabled{{ end }}</strong>
           </span>
           {{ if eq .Status.Status "Failed" }}
             {{ template "failed-badge" . }}
@@ -123,6 +123,22 @@
         {{ if eq .Status.Status "Failed" }}
           <div class="mt-2 alert alert-danger">
             <div>{{ .Status.Message }}</div>
+          </div>
+        {{ end }}
+        {{ if and (AutoUpdateEnabled .Package) (not .AutoUpdaterInstalled) }}
+          <div class="mt-2 alert alert-warning">
+            <div>
+              Please install
+              <a
+                href="/clusterpackages/glasskube-autoupdater"
+                hx-boost="true"
+                hx-target="main"
+                hx-select="main"
+                class="text-reset"
+                ><code>glasskube-autoupdater</code></a
+              >
+              for automatic updates to be applied.
+            </div>
           </div>
         {{ end }}
       {{ end }}
