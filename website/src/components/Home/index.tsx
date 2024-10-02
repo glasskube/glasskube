@@ -114,27 +114,24 @@ function LogoSlider() {
   return (
     <div className={styles.sliderWrap}>
       <div className={styles.sliderContainer}>
-        <div className={styles.sliderGrid}>
-          <img src="https://tmb001.vercel.app/images/partners/logo-pointsmaker.png" />
-          <img src="https://tmb001.vercel.app/images/partners/logo-buyersforpoints.png" />
-          <img src="https://tmb001.vercel.app/images/partners/logo-dealandrunner.png" />
-          <img src="https://tmb001.vercel.app/images/partners/logo-buyformeretail.png" />
-          <img src="https://tmb001.vercel.app/images/partners/logo-buygetrewards.png" />
-          <img src="https://tmb001.vercel.app/images/partners/logo-maxoutdeals.png" />
-          <img src="https://tmb001.vercel.app/images/partners/logo-mysbuyinggroup.png" />
-          <img src="https://tmb001.vercel.app/images/partners/logo-closeoutnj.png" />
-        </div>
-        <div className={styles.sliderGrid}>
-          <img src="https://tmb001.vercel.app/images/partners/logo-pointsmaker.png" />
-          <img src="https://tmb001.vercel.app/images/partners/logo-buyersforpoints.png" />
-          <img src="https://tmb001.vercel.app/images/partners/logo-dealandrunner.png" />
-          <img src="https://tmb001.vercel.app/images/partners/logo-buyformeretail.png" />
-          <img src="https://tmb001.vercel.app/images/partners/logo-buygetrewards.png" />
-          <img src="https://tmb001.vercel.app/images/partners/logo-maxoutdeals.png" />
-          <img src="https://tmb001.vercel.app/images/partners/logo-mysbuyinggroup.png" />
-          <img src="https://tmb001.vercel.app/images/partners/logo-closeoutnj.png" />
-        </div>
+        <LogoGrid />
+        <LogoGrid />
       </div>
+    </div>
+  );
+}
+
+function LogoGrid() {
+  return (
+    <div className={styles.sliderGrid}>
+      <img src="https://tmb001.vercel.app/images/partners/logo-pointsmaker.png" />
+      <img src="https://tmb001.vercel.app/images/partners/logo-buyersforpoints.png" />
+      <img src="https://tmb001.vercel.app/images/partners/logo-dealandrunner.png" />
+      <img src="https://tmb001.vercel.app/images/partners/logo-buyformeretail.png" />
+      <img src="https://tmb001.vercel.app/images/partners/logo-buygetrewards.png" />
+      <img src="https://tmb001.vercel.app/images/partners/logo-maxoutdeals.png" />
+      <img src="https://tmb001.vercel.app/images/partners/logo-mysbuyinggroup.png" />
+      <img src="https://tmb001.vercel.app/images/partners/logo-closeoutnj.png" />
     </div>
   );
 }
