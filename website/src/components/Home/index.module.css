@@ -175,13 +175,12 @@
 }
 
 .sliderGrid{
-  animation: 5s slide infinite linear;
-  width: calc(250px * 8);
+  animation: 50s slide infinite linear;
 }
 
 .sliderGrid img{
-  width: 200px;
   height: auto;
+  max-width: unset;
   object-fit: contain;
   margin-left: 50px;
 }
