@@ -110,6 +110,35 @@ function HomepageVideo() {
   );
 }
 
+function LogoSlider() {
+  return (
+    <div className={styles.sliderWrap}>
+      <div className={styles.sliderContainer}>
+        <div className={styles.sliderGrid}>
+          <img src="https://tmb001.vercel.app/images/partners/logo-pointsmaker.png" />
+          <img src="https://tmb001.vercel.app/images/partners/logo-buyersforpoints.png" />
+          <img src="https://tmb001.vercel.app/images/partners/logo-dealandrunner.png" />
+          <img src="https://tmb001.vercel.app/images/partners/logo-buyformeretail.png" />
+          <img src="https://tmb001.vercel.app/images/partners/logo-buygetrewards.png" />
+          <img src="https://tmb001.vercel.app/images/partners/logo-maxoutdeals.png" />
+          <img src="https://tmb001.vercel.app/images/partners/logo-mysbuyinggroup.png" />
+          <img src="https://tmb001.vercel.app/images/partners/logo-closeoutnj.png" />
+        </div>
+        <div className={styles.sliderGrid}>
+          <img src="https://tmb001.vercel.app/images/partners/logo-pointsmaker.png" />
+          <img src="https://tmb001.vercel.app/images/partners/logo-buyersforpoints.png" />
+          <img src="https://tmb001.vercel.app/images/partners/logo-dealandrunner.png" />
+          <img src="https://tmb001.vercel.app/images/partners/logo-buyformeretail.png" />
+          <img src="https://tmb001.vercel.app/images/partners/logo-buygetrewards.png" />
+          <img src="https://tmb001.vercel.app/images/partners/logo-maxoutdeals.png" />
+          <img src="https://tmb001.vercel.app/images/partners/logo-mysbuyinggroup.png" />
+          <img src="https://tmb001.vercel.app/images/partners/logo-closeoutnj.png" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function loadScript() {
   if (typeof window === 'undefined') {
     return null;
@@ -229,6 +258,7 @@ export default function Home({
       description="Featuring a GUI and a CLI. Glasskube packages are dependency aware, GitOps ready and get automatic updates via a central public package repository.">
       <HomepageHeader />
       <main>
+        <LogoSlider />
         <HomepageFeatures />
         <HomepageProducts />
         <HomepageVideo />
