@@ -159,12 +159,12 @@
   }
 
   to {
-    transform: translateX(0);
+    transform: translateX(0%);
   }
 }
 
 .sliderContainer{
-  display: ruby;
+  display: inline-flex;
   overflow:hidden;
   white-space:nowrap;
   position:relative;
@@ -175,7 +175,7 @@
 }
 
 .sliderGrid{
-  animation: 50s slide infinite linear;
+  animation: 5s slide infinite linear;
   width: calc(250px * 8);
 }
 
