@@ -208,9 +208,6 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle(pkgBasePath+"/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
 	router.Handle(installedPkgBasePath+"/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
 	router.Handle(clpkgBasePath+"/configuration/{valueName}", s.requireReady(s.clusterPackageConfigurationInput))
-	// update endpoints
-	router.Handle(installedPkgBasePath+"/update", s.requireReady(s.update))
-	router.Handle(clpkgBasePath+"/update", s.requireReady(s.update))
 	// open endpoints
 	router.Handle(installedPkgBasePath+"/open", s.requireReady(s.open))
 	router.Handle(clpkgBasePath+"/open", s.requireReady(s.open))
@@ -284,106 +281,6 @@ func (s *server) shutdown() {
 		fmt.Fprintf(os.Stderr, "Failed to shutdown server: %v\n", err)
 	}
 	close(s.httpServerHasShutdownCh)
-}
-
-// uninstall is an endpoint, which returns the modal html for GET requests, and performs the update for POST
-func (s *server) update(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	pkgName := mux.Vars(r)["pkgName"]
-	manifestName := mux.Vars(r)["manifestName"]
-	namespace := mux.Vars(r)["namespace"]
-	name := mux.Vars(r)["name"]
-	dryRun, _ := strconv.ParseBool(r.FormValue("dryRun"))
-
-	updater := update.NewUpdater(ctx)
-
-	if r.Method == http.MethodPost {
-		acceptedUpdates := make(map[string]string)
-		updateGetters := make([]update.PackagesGetter, 0)
-		for key := range r.Form {
-			if pkgKey, found := strings.CutPrefix(key, "items."); found {
-				acceptedUpdates[pkgKey] = r.Form.Get(key)
-				if objName, err := cache.ParseObjectName(pkgKey); err != nil {
-					s.sendToast(w, toast.WithErr(fmt.Errorf("failed to parse form value of %v: %w", key, err)))
-					return
-				} else if objName.Namespace != "" {
-					updateGetters = append(updateGetters, update.GetPackageWithName(objName.Namespace, objName.Name))
-				} else {
-					updateGetters = append(updateGetters, update.GetClusterPackageWithName(objName.Name))
-				}
-			}
-		}
-		if updateTx, err := updater.Prepare(ctx, updateGetters...); err != nil {
-			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to prepare update: %w", err)))
-			return
-		} else {
-			for _, item := range updateTx.Items {
-				if acceptedVersion, ok := acceptedUpdates[cache.MetaObjectToName(item.Package).String()]; !ok || acceptedVersion != item.Version {
-					s.sendToast(w,
-						toast.WithStatusCode(http.StatusConflict),
-						toast.WithCssClass("warning"),
-						toast.WithMessage(fmt.Sprintf("A newer version of %s is available – Please try again.", item.Package.GetName())))
-					return
-				}
-			}
-			if pkgs, err := updater.Apply(
-				ctx,
-				updateTx,
-				update.ApplyUpdateOptions{
-					Blocking: dryRun,
-					DryRun:   dryRun,
-				}); err != nil {
-				s.sendToast(w, toast.WithErr(fmt.Errorf("failed to apply update: %w", err)))
-				return
-			} else {
-				if dryRun {
-					if yamlOutput, err := clientutils.Format(clientutils.OutputFormatYAML, false, pkgs...); err != nil {
-						s.sendToast(w, toast.WithErr(fmt.Errorf("failed to render yaml: %w", err)))
-					} else {
-						s.sendYamlModal(w, yamlOutput, nil)
-					}
-				}
-			}
-		}
-
-	} else {
-		packageHref := ""
-		updateGetters := make([]update.PackagesGetter, 0, 1)
-		if pkgName != "" {
-			packageHref = "/clusterpackages/" + pkgName
-			// update concerns cluster packages
-			if pkgName == "-" {
-				// prepare updates for all installed packages
-				updateGetters = append(updateGetters, update.GetAllClusterPackages())
-			} else {
-				// prepare update for a specific package
-				updateGetters = append(updateGetters, update.GetClusterPackageWithName(pkgName))
-			}
-		} else {
-			// update concerns namespaced packages
-			packageHref = util.GetNamespacedPkgHref(manifestName, namespace, name)
-			if manifestName == "-" {
-				// prepare updates for all installed namespaced packages
-				updateGetters = append(updateGetters, update.GetAllPackages(""))
-			} else {
-				// prepare update for a specific namespaced package
-				updateGetters = append(updateGetters, update.GetPackageWithName(namespace, name))
-			}
-		}
-
-		updateTx, err := updater.Prepare(ctx, updateGetters...)
-		if err != nil {
-			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to prepare update: %w", err)))
-			return
-		}
-
-		err = s.templates.pkgUpdateModalTmpl.Execute(w, map[string]any{
-			"GitopsMode":        s.isGitopsModeEnabled(),
-			"UpdateTransaction": updateTx,
-			"PackageHref":       packageHref,
-		})
-		util.CheckTmplError(err, "pkgUpdateModalTmpl")
-	}
 }
 
 // uninstall is an endpoint, which returns the modal html for GET requests, and performs the uninstallation for POST
