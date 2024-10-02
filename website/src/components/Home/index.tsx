@@ -124,14 +124,30 @@ function LogoSlider() {
 function LogoGrid() {
   return (
     <div className={styles.sliderGrid}>
-      <img src="https://tmb001.vercel.app/images/partners/logo-pointsmaker.png" />
-      <img src="https://tmb001.vercel.app/images/partners/logo-buyersforpoints.png" />
-      <img src="https://tmb001.vercel.app/images/partners/logo-dealandrunner.png" />
-      <img src="https://tmb001.vercel.app/images/partners/logo-buyformeretail.png" />
-      <img src="https://tmb001.vercel.app/images/partners/logo-buygetrewards.png" />
-      <img src="https://tmb001.vercel.app/images/partners/logo-maxoutdeals.png" />
-      <img src="https://tmb001.vercel.app/images/partners/logo-mysbuyinggroup.png" />
-      <img src="https://tmb001.vercel.app/images/partners/logo-closeoutnj.png" />
+      <img
+        src="https://cdn.dribbble.com/users/181873/screenshots/4645696/toyyoda_green2_dribbble.jpg"
+        width={200}
+      />
+      <img
+        src="https://cdn.dribbble.com/users/393983/screenshots/3460103/butts_enamel_pin_by_junk-o.jpg"
+        width={200}
+      />
+      <img
+        src="https://www.codeitbro.in/wp-content/uploads/2024/09/official-CSS-Modules-Logo-608x608.webp"
+        width={200}
+      />
+      <img
+        src="https://www.codeitbro.in/wp-content/uploads/2024/09/Is-it-vaild-608x700.webp"
+        width={200}
+      />
+      <img
+        src="https://www.codeitbro.in/wp-content/uploads/2024/09/bad-phone-selector.gif"
+        width={200}
+      />
+      <img
+        src="https://cdn.dribbble.com/users/4212149/screenshots/9784014/subway-sticker-by-rahalarts-5_4x.jpg?resize=800x600"
+        width={200}
+      />
     </div>
   );
 }
