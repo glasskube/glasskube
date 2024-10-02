@@ -11,13 +11,26 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
-func FetchResources(url string) ([]unstructured.Unstructured, error) {
+func FetchResourcesFromUrl(url string) ([]unstructured.Unstructured, error) {
+	if request, err := NewResourcesRequest(url); err != nil {
+		return nil, err
+	} else {
+		return FetchResources(request)
+	}
+}
+
+func NewResourcesRequest(url string) (*http.Request, error) {
 	request, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
 	request.Header.Add("Accept", contenttype.MediaTypeJSON)
 	request.Header.Add("Accept", contenttype.MediaTypeYAML)
+	return request, nil
+}
+
+func FetchResources(request *http.Request) ([]unstructured.Unstructured, error) {
+	url := request.URL.Redacted()
 	response, err := httperror.CheckResponse(http.DefaultClient.Do(request))
 	if err != nil {
 		switch {

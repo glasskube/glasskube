@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.23.0](https://github.com/glasskube/glasskube/compare/v0.22.0...v0.23.0) (2024-10-01)
+
+
+### Features
+
+* make auto update changeable on UI and show hint ([#1291](https://github.com/glasskube/glasskube/issues/1291)) ([69fe287](https://github.com/glasskube/glasskube/commit/69fe28722b80ec656efcc01f2d08d8a239ed0b4a))
+* show conflicts at package update ([#1282](https://github.com/glasskube/glasskube/issues/1282)) ([13e35c7](https://github.com/glasskube/glasskube/commit/13e35c71d38fe1db12f68d2c064b25b61ca6c6f9))
+* show package components ([#1283](https://github.com/glasskube/glasskube/issues/1283)) ([4525ce8](https://github.com/glasskube/glasskube/commit/4525ce897b0674193408c41a804d22f43ded6232))
+
+
+### Bug Fixes
+
+* avoid dependency errors during uninstallation ([#1284](https://github.com/glasskube/glasskube/issues/1284)) ([e0a09a8](https://github.com/glasskube/glasskube/commit/e0a09a8c0b0594616f16625c45f227d67a813bf6))
+* **deps:** update module github.com/fluxcd/helm-controller/api to v1.1.0 ([#1287](https://github.com/glasskube/glasskube/issues/1287)) ([3ed128c](https://github.com/glasskube/glasskube/commit/3ed128c83951fd1ca8ac3aefad41988830077893))
+* **deps:** update module github.com/fluxcd/source-controller/api to v1.4.1 ([#1281](https://github.com/glasskube/glasskube/issues/1281)) ([9621cce](https://github.com/glasskube/glasskube/commit/9621cce0c9899b015a5f4227a8b68c28e202a2b2))
+* **package-operator:** add auth support for relative manifest urls in package.yaml ([#1295](https://github.com/glasskube/glasskube/issues/1295)) ([bbd685a](https://github.com/glasskube/glasskube/commit/bbd685ad7ed586dc57a9c8fb2ac079c021f65805))
+
+
+### Other
+
+* **deps:** update dependency eslint-plugin-react to v7.37.0 ([#1288](https://github.com/glasskube/glasskube/issues/1288)) ([200a8fa](https://github.com/glasskube/glasskube/commit/200a8fa16267fa350806121da2eba27d224d6cd3))
+* **deps:** update dependency typescript-eslint to v8.8.0 ([#1293](https://github.com/glasskube/glasskube/issues/1293)) ([ded7312](https://github.com/glasskube/glasskube/commit/ded7312fe4e9af4412dcd0d32a8713cdc2893875))
+* **docs:** fix architecture diagram in readme ([#1289](https://github.com/glasskube/glasskube/issues/1289)) ([2dd9890](https://github.com/glasskube/glasskube/commit/2dd9890b8fc1e8989d1e3ccb797a6fb1440d3c52))
+
+
+### Docs
+
+* **website:** fix typo in website ([#1290](https://github.com/glasskube/glasskube/issues/1290)) ([5484e98](https://github.com/glasskube/glasskube/commit/5484e98322be7162b1d55fef18bdcf58bae5b549))
+
 ## [0.22.0](https://github.com/glasskube/glasskube/compare/v0.21.0...v0.22.0) (2024-09-25)
 
 

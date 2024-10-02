@@ -13,13 +13,14 @@ import (
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/contenttype"
 	"github.com/glasskube/glasskube/internal/httperror"
+	"github.com/glasskube/glasskube/internal/repo/client/auth"
 	"github.com/glasskube/glasskube/internal/repo/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
 type defaultClient struct {
+	auth.Authenticator
 	url         string
-	headers     http.Header
 	maxCacheAge time.Duration
 	cache       sync.Map
 	debug       bool
@@ -31,12 +32,12 @@ type cacheItem struct {
 	mutex   sync.Mutex
 }
 
-func New(url string, headers http.Header, maxCacheAge time.Duration) *defaultClient {
-	return &defaultClient{url: url, headers: headers, maxCacheAge: maxCacheAge}
+func New(url string, authenticator auth.Authenticator, maxCacheAge time.Duration) *defaultClient {
+	return &defaultClient{url: url, Authenticator: authenticator, maxCacheAge: maxCacheAge}
 }
 
-func NewDebug(url string, headers http.Header, maxCacheAge time.Duration) *defaultClient {
-	c := New(url, headers, maxCacheAge)
+func NewDebug(url string, authenticator auth.Authenticator, maxCacheAge time.Duration) *defaultClient {
+	c := New(url, authenticator, maxCacheAge)
 	c.debug = true
 	return c
 }
@@ -125,16 +126,12 @@ func (c *defaultClient) fetchYAMLOrJSON(url string, target any) error {
 	}
 
 	request, err := http.NewRequest(http.MethodGet, url, nil)
-	request.Header.Add("Accept", contenttype.MediaTypeJSON)
-	request.Header.Add("Accept", contenttype.MediaTypeYAML)
 	if err != nil {
 		return err
 	}
-	for k, v := range c.headers {
-		for _, s := range v {
-			request.Header.Add(k, s)
-		}
-	}
+	c.Authenticate(request)
+	request.Header.Add("Accept", contenttype.MediaTypeJSON)
+	request.Header.Add("Accept", contenttype.MediaTypeYAML)
 	resp, err := httperror.CheckResponse(http.DefaultClient.Do(request))
 	if err != nil {
 		return fmt.Errorf("failed to fetch %v: %w", url, err)

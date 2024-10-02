@@ -132,7 +132,7 @@ func (c *BootstrapClient) Bootstrap(
 	}
 
 	statusMessage("Fetching Glasskube manifest from "+parsedUrl.Redacted(), true, options.NoProgress)
-	manifests, err := clientutils.FetchResources(options.Url)
+	manifests, err := clientutils.FetchResourcesFromUrl(options.Url)
 	if err != nil {
 		statusMessage("Couldn't fetch Glasskube manifests", false, false)
 		telemetry.BootstrapFailure(time.Since(start))

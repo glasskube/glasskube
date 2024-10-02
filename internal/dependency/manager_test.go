@@ -14,11 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-var fakeRepo = &fake.FakeClient{
-	PackageRepositories: []v1alpha1.PackageRepository{
-		{},
-	},
-}
+var fakeRepo = fake.EmptyClient()
 
 type testClientAdapter struct {
 	clusterPackages []v1alpha1.ClusterPackage
@@ -66,7 +62,7 @@ func (a *testClientAdapter) ListPackageRepositories(ctx context.Context) (*v1alp
 
 func createDependencyManager() *DependendcyManager {
 	testClient = &testClientAdapter{}
-	return NewDependencyManager(testClient, &fake.FakeClientset{Client: fakeRepo})
+	return NewDependencyManager(testClient, fake.ClientsetWithClient(fakeRepo))
 }
 
 var testClient *testClientAdapter

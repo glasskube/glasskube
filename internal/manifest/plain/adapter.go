@@ -13,6 +13,7 @@ import (
 	ownerutils "github.com/glasskube/glasskube/internal/controller/owners/utils"
 	"github.com/glasskube/glasskube/internal/manifest"
 	"github.com/glasskube/glasskube/internal/manifest/result"
+	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	"github.com/glasskube/glasskube/internal/resourcepatch"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -29,6 +30,7 @@ var fieldOwner = client.FieldOwner("packages.glasskube.dev/package-controller")
 
 type Adapter struct {
 	client.Client
+	repo repoclient.RepoClientset
 	*owners.OwnerManager
 	namespaceGVK schema.GroupVersionKind
 }
@@ -38,11 +40,17 @@ func NewAdapter() manifest.ManifestAdapter {
 }
 
 // ControllerInit implements manifest.ManifestAdapter.
-func (a *Adapter) ControllerInit(builder *builder.Builder, client client.Client, scheme *runtime.Scheme) error {
+func (a *Adapter) ControllerInit(
+	builder *builder.Builder,
+	client client.Client,
+	repo repoclient.RepoClientset,
+	scheme *runtime.Scheme,
+) error {
 	if a.OwnerManager == nil {
 		a.OwnerManager = owners.NewOwnerManager(scheme)
 	}
 	a.Client = client
+	a.repo = repo
 	if nsGVK, err := client.GroupVersionKindFor(&corev1.Namespace{}); err != nil {
 		return err
 	} else {
@@ -115,9 +123,9 @@ func (r *Adapter) reconcilePlainManifest(
 ) ([]packagesv1alpha1.OwnedResourceRef, error) {
 	log := ctrl.LoggerFrom(ctx)
 	var objectsToApply []client.Object
-	if url, err := getActualManifestUrl(pi, manifest.Url); err != nil {
+	if request, err := r.newManifestRequest(pi, manifest.Url); err != nil {
 		return nil, err
-	} else if unstructured, err := clientutils.FetchResources(url); err != nil {
+	} else if unstructured, err := clientutils.FetchResources(request); err != nil {
 		return nil, err
 	} else {
 		// Unstructured implements client.Object but we need it as a reference so the interface is fulfilled.
@@ -125,7 +133,9 @@ func (r *Adapter) reconcilePlainManifest(
 		for i := range unstructured {
 			objectsToApply[i] = &unstructured[i]
 		}
-		log.V(1).Info("fetched "+url, "objectCount", len(objectsToApply))
+		log.V(1).Info("fetched manifest resources",
+			"url", request.URL.Redacted(),
+			"objectCount", len(objectsToApply))
 	}
 
 	if pkg.IsNamespaceScoped() {

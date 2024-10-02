@@ -119,7 +119,7 @@ var bootstrapGitCmd = &cobra.Command{
 		argocdPath := baseURL.JoinPath("packages", "argo-cd", "clusterpackage.yaml").String()
 		argocdVersion := "v2.11.7+1"
 		argocdRepo := "glasskube"
-		if objs, err := clientutils.FetchResources(argocdPath); err != nil {
+		if objs, err := clientutils.FetchResourcesFromUrl(argocdPath); err != nil {
 			fmt.Fprintf(os.Stderr, "\nAn error occurred fetching argo-cd clusterpackage "+
 				"(will use %v from repo %v instead): %v\n", argocdVersion, argocdRepo, err)
 		} else if len(objs) != 1 {
@@ -184,7 +184,7 @@ var bootstrapGitCmd = &cobra.Command{
 		// apply bootstrap/glasskube-application.yaml into the cluster
 		// appPath := fmt.Sprintf("%v/bootstrap/glasskube-application.yaml", baseURL.String())
 		appPath := baseURL.JoinPath("bootstrap", "glasskube-application.yaml").String()
-		if objs, err := clientutils.FetchResources(appPath); err != nil {
+		if objs, err := clientutils.FetchResourcesFromUrl(appPath); err != nil {
 			fmt.Fprintf(os.Stderr, "\nAn error occurred fetching the bootstrap application:\n%v\n", err)
 			cliutils.ExitWithError()
 		} else {

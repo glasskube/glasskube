@@ -2,12 +2,14 @@ package client
 
 import (
 	"github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/repo/client/auth"
 	"github.com/glasskube/glasskube/internal/repo/types"
 )
 
 // errorclient is a no-op implementation of RepoClient that defers returning an error to the method call.
 // This is done to improve ergonomics of the RepoClientset, such that the ForRepo function does not return an error.
 type errorclient struct {
+	auth.NoopAuthenticator
 	err error
 }
 
