@@ -132,15 +132,18 @@
                         {{ if and $.Status (eq $version.Version $.Package.Spec.PackageInfo.Version) }}
                           {{ $currentVersionIdx = $versIdx }}
                         {{ end }}
+                        {{ $isLatestVersion := (eq $version.Version $idx.LatestVersion) }}
                         <option
                           value="{{ $version.Version }}"
                           {{ if eq $version.Version $.SelectedVersion }}selected{{ end }}
                           {{ if and (gt $versIdx $currentVersionIdx) (not $.AdvancedOptions) }}
                             disabled
-                            {{ $latestVersionEnabled = false }}
+                            {{ if $isLatestVersion }}
+                              {{ $latestVersionEnabled = false }}
+                            {{ end }}
                           {{ end }}>
                           {{ .Version }}
-                          {{ if eq $version.Version $idx.LatestVersion }}(latest){{ end }}
+                          {{ if $isLatestVersion }}(latest){{ end }}
                         </option>
                       {{ end }}
                     </select>
@@ -255,7 +258,9 @@
                 <div class="alert alert-success m-0 mb-2" role="alert">
                   <span>The following packages will be installed:</span>
                   <ul class="mb-0 mt-1">
-                    <li>{{ $.Manifest.Name }} ({{ $.SelectedVersion }})</li>
+                    {{ if not .Status }}
+                      <li>{{ $.Manifest.Name }} ({{ $.SelectedVersion }})</li>
+                    {{ end }}
                     {{ range .ValidationResult.Requirements }}
                       <li>{{ .Name }} ({{ .Version }})</li>
                     {{ end }}
