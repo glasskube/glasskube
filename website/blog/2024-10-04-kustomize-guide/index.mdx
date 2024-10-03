@@ -1,0 +1,438 @@
+---
+slug: patching-with-kustomize
+title: Patching with Kustomize. An in-depth guide
+description: A guide to modifying Kubernetes resource configurations using strategic and JSON patches, with tips for managing resources across environments.
+authors: [ jpage, pmig ]
+tags: [ glasskube, kustomize]
+image: https://github.com/user-attachments/assets/6ad23c50-ca8b-45f2-93ff-83bbaa9f8749
+---
+![thumbnail-kustomize](https://github.com/user-attachments/assets/6ad23c50-ca8b-45f2-93ff-83bbaa9f8749)
+
+## **What is Kustomize in the first place?**
+
+[Kustomize](https://kustomize.io/) is an open-source tool designed to customize and manage Kubernetes resource configurations in a declarative and reusable way. Apart from being template-free one of its standout features is the ability to dynamically apply patches to resources. GitOps-friendly, Kustomize integrates well with version control systems, making it ideal for environments where changes need to be tracked. Patches allow resource modifications without altering the base files, enabling a cleaner separation of concerns and simplifying long-term maintenance.
+
+## **Getting Started with Kustomize**
+
+### **How do I install Kustomize on my system?**
+
+Kustomize is conveniently integrated into `kubectl` starting from version 1.14, allowing you to run Kustomize commands like `kubectl apply -k` to apply configurations without needing to install Kustomize separately.If direct Kustomize installation is desired, here are the multiple [installation methods](https://kubectl.docs.kubernetes.io/installation/kustomize/).
+
+For Homebrew users, run:
+```
+brew install kustomize
+```
+
+### **Directory structure**
+
+The standard directory structure for Kustomize typically consists of two main directories: **base** and **overlays**.
+
+-   **base**: Kubernetes resource definitions, like ingress.yaml, deployment.yaml, and kustomization.yaml are located here. These files define the reusable, unchanging default configurations for the application. 
+-   **overlays**: This is where the environment-specific patches and configurations, like `prod` and `dev` are located. Each environment (e.g., `prod`, `dev`) has its own set of patches and a `kustomization.yaml` file to modify the base resources as needed. For example, an `ingress-patch.yaml` in `prod` might update the base `ingress.yaml` for production-specific settings. This will be explored in more depth below.   
+
+```
+|-- base
+    ingress.yaml
+    deployment.yaml
+    kustomization.yaml
+|-- overlays
+    |-- prod
+        ingress-patch.yaml
+        kustomization.yaml
+    |-- dev
+        ingress-patch.yaml
+        kustomization.yaml
+```
+
+## **Understanding Kustomize Patches**
+
+Before diving into how to use Kustomize, it’s important to first understand the two main types of patches it can apply: **strategic** and **JSON patches**. Each is suited for different use cases and plays a specific role in customizing Kubernetes configurations.
+
+![kustomize-patch-types](https://github.com/user-attachments/assets/0e7393c0-7707-4081-b81e-19278cfcb39e) 
+
+### **Strategic patching**
+
+Strategic patching is used to modify or add fields in base Kubernetes resource configurations by following JSON/YAML merge semantics. This approach merges the patch with the existing resource, preserving the original configuration while introducing changes from the patch.
+
+**Patch Logic**
+
+When Kustomize applies a strategic merge patch, it starts with the base resource configuration and combines it with the patch. Any existing fields in the base that are not addressed by the patch remain untouched. If a field in the patch is new, it gets added to the base configuration. If a field already exists, the patch's value overwrites the base value.
+
+**Use Case and Benefits**
+
+Strategic merging is ideal when you need to preserve most of the base configuration while only adjusting specific parts. This approach is particularly useful for handling complex Kubernetes resources like Deployments, where you may want to update only the container image or replica count without affecting other settings.
+
+An example deployment-patch.yaml:
+
+```
+# deployment-patch.yaml 
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-strategic-patch-app
+  labels:
+    environment: production
+spec:
+  template:
+    spec:
+      containers:
+        - name: my-strategic-patch-container
+          image: new-image:2.0.0
+          env:
+            - name: NEW_VAR
+              value: "new value"
+```
+
+Which is then applied via the Kustomization.yaml file
+
+```
+resources:
+- ../base  # Inherit resources from the base directory
+
+# Apply the strategic merge patch
+patchesStrategicMerge:
+- deployment-patch.yaml
+```
+
+The strategic merge patch will update the container image, add a new environment variable, and label the deployment as `environment: production` while leaving any other fields in the base unchanged.
+
+### **JSON patch**
+
+JSON patching, based on the [JSON Patch specification](https://jsonpatch.com/), is a more granular way to modify Kubernetes resource configurations by applying a set of explicit changes defined in JSON format. Unlike strategic patching, which merges configurations, JSON patching directly specifies additions, deletions, or replacements of fields.
+
+**Patch syntax:**
+
+JSON patch files consist of an array of patch operations, each represented as an operation object. The object contains the following fields:
+
+-   `op`: The operation to perform (add, remove, replace, move, copy, or test).   
+-   `path`: The JSON path to the field that needs to be modified.    
+-   `value`: (for add, replace, and move operations): The new value to be set or moved.
+    
+Here’s an example of a JSON patch file (patch.json) that modifies a Deployment resource:
+
+```
+# patch.json
+[
+  { "op": "replace", "path": "/spec/replicas", "value": 5 },
+  { "op": "add", "path": "/metadata/annotations/app-version", "value": "v2.0" }
+]
+```
+
+Deployment.yaml:
+
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-json-patch-app
+spec:
+  replicas: 3
+  template:
+    spec:
+      containers:
+        - name: my-json-patch-container 
+```
+
+Kustomization.yaml:
+
+```
+# overlays/production/kustomization.yaml
+resources:
+- ../base  # Inherit resources from the base directory
+
+# Apply the JSON patch
+patchesJson6902:
+- target:
+    group: apps
+    version: v1
+    kind: Deployment
+    name: my-json-patch-app
+  path: json-patch.yaml
+```
+
+JSON patch will generate a deployment object configured to have 5 replicas and a new annotation called `app-version` with the value `v2.0` under the `/metadata/annotations` path which didn’t exist before the patch.
+
+**Use Case and Benefits**
+
+JSON patching is well-suited for scenarios where you need precise, fine-grained control over your modifications. It's especially useful for making specific changes like updating individual fields, removing unnecessary entries, or adding new ones without affecting the rest of the configuration.
+
+## **How to use Kustomize**
+
+Kustomize enables the management of Kubernetes resource configurations in a reusable and scalable manner. Patching applications, adding resources, modifying existing ones, and creating and patching ConfigMaps, Secrets, labels, and annotations, all to come.
+
+### **Patching Applications**
+
+Kustomize enables you to patch existing Kubernetes resources, making targeted changes without altering the base configuration.
+
+**Adding Resources**
+
+You can add new resources to your deployment by modifying the kustomization.yaml file in your overlay.
+
+Example: Adding a new ConfigMap to an existing deployment.
+
+```
+# base/kustomization.yaml
+resources:
+  - deployment.yaml
+
+# overlays/dev/kustomization.yaml
+resources:
+  - ../base
+  - configmap.yaml
+```
+
+The configmap.yaml file contains the new resource you're adding:
+
+```
+# overlays/dev/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-added-config
+data:
+  configKey: configValue
+```
+
+In this example, the new ConfigMap resource is added to the existing deployment without modifying the base files.
+
+**Modifying Resources**
+
+Kustomize allows you to modify existing resources like Deployments by patching specific fields.
+
+Example: Updating the image of an existing deployment.
+
+```
+# overlays/prod/kustomization.yaml
+resources:
+  - ../base
+
+patchesStrategicMerge:
+  - deployment-patch.yaml
+```
+
+The deployment-patch.yaml file could look like this:
+
+```
+# overlays/prod/deployment-patch.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+spec:
+  template:
+    spec:
+      containers:
+      - name: my-modified-container
+        image: my-app:v2.0
+```
+
+This patch updates the image of the container app-container to `version v2.0`, without changing other aspects of the base deployment.
+
+**Creating ConfigMaps and Secrets**
+
+Kustomize makes it easy to create ConfigMaps and Secrets and inject them through the kustomization.yaml file.
+
+Creating the configMap using `configMapGenerator` and a secret with `secretGenerator` like so:
+
+```
+resources:
+  - ../../base  # Include the base resources
+
+configMapGenerator:
+  - name: my-test-config
+    literals:
+      - setting1=value1
+      - setting2=value2
+
+secretGenerator:
+  - name: my-test-secret
+    literals:
+      - username=admin
+      - password=secretpassword
+
+patchesStrategicMerge:
+  - deployment-patch.yaml  # Apply the patch to inject ConfigMap and Secret
+```
+
+`configMapGenerator` automatically generates a ConfigMap named `my-test-config` with the specified key-value pairs and the Secret called `my-test-secret` using which can reference other existing files, `.env` files, or literal values (like in this example). To update it, just modify the literals in the kustomization.yaml file.
+
+This is the example deployment-patch.yaml that references the newly generated configMap and Secret.
+
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app  # Name of the existing deployment
+spec:
+  template:
+    spec:
+      containers:
+      - name: my-container  # Name of the container in the deployment
+        envFrom:
+          - configMapRef:
+              name: my-config  # Reference to the ConfigMap
+          - secretRef:
+              name: my-secret  # Reference to the Secret
+```
+
+**Set or modify labels and annotations across resources.**
+
+Example: Adding labels and annotations.
+
+```
+# overlays/dev/kustomization.yaml
+resources:
+  - ../base
+
+commonLabels:
+  app: my-test-app
+  environment: dev
+
+commonAnnotations:
+  author: "Jake"
+  purpose: "Testing"
+```
+
+This adds the labels `app=my-test-app` and `environment=dev` as well as the annotations `author=Jake` and `purpose=Testing` to all resources in the overlay.
+
+### How does Kustomize manage configurations for different environments?
+Overlays allow you to customize the base configuration for specific environments by adding, removing, or modifying fields.
+
+Example structure:
+
+```
+|-- overlays
+    |-- dev
+        |-- kustomization.yaml
+        |-- deployment-patch.yaml
+    |-- prod
+        |-- kustomization.yaml
+        |-- deployment-patch.yaml
+```
+
+Dev environment overlay (overlays/dev/kustomization.yaml):
+
+```
+# overlays/dev/kustomization.yaml
+resources:
+  - ../../base
+
+patchesStrategicMerge:
+  - deployment-patch.yaml
+
+commonLabels:
+  environment: dev
+```
+
+In deployment-patch.yaml, you can make changes specific to the development environment:
+
+```
+# overlays/dev/deployment-patch.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+spec:
+  replicas: 2
+  template:
+    spec:
+      containers:
+      - name: my-container
+        image: my-app:dev
+```
+
+#### **Prod environment overlay (overlays/prod/kustomization.yaml):**
+
+```
+# overlays/prod/kustomization.yaml
+resources:
+  - ../../base
+
+patchesStrategicMerge:
+  - deployment-patch.yaml
+
+commonLabels:
+  environment: prod
+```
+
+In the production overlay, the `deployment-patch.yaml` can have different values:
+
+```
+# overlays/prod/deployment-patch.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+spec:
+  replicas: 5
+  template:
+    spec:
+      containers:
+      - name: my-container
+        image: my-app:latest
+```
+
+### **Applying patches**
+
+To apply the configuration for a specific environment, simply point `kubectl` to the relevant overlay directory.
+
+```
+kubectl apply -k overlays/dev
+kubectl apply -k overlays/prod
+```
+
+### **Can Kustomize and Helm be used together?**
+
+While both tools [serve different purposes](https://itnext.io/helm-is-not-enough-you-also-need-kustomize-82bae896816e), they can complement each other in certain workflows. It’s safe to say that Kustomize is the second most popular Kubernetes configuration tool after Helm in large part due to how kustomize extends Helm environment configuration capabilities.
+
+For example, you can use Helm to generate the base resources and then use Kustomize to apply further customizations on top of those base resource files.
+
+> An upcoming blog post with explore the differences between Kustomize and Helm and how the two tools can be used together.
+
+## **Best Practices and Testing**
+
+### **Testing patches**
+
+Always be sure to test Kustomize patches before applying them. Two useful commands for this are `kustomize build` and `kubectl diff`.
+
+Example usage:
+
+```
+kustomize build overlays/dev
+# If using kubectl run:
+kubectl kustomize overlays/dev
+```
+
+Both commands will take the base resources and apply the patches defined in the `overlays/dev` directory, outputting the final YAML. Inspect it to make sure the patch was applied correctly.
+
+Use `kubectl diff` to compare the changes between your live cluster resources and the new configurations generated by Kustomize.
+
+Example usage:
+
+```
+kubectl diff -k overlays/dev
+```
+
+This will compare the current state of your cluster with the resources that Kustomize _would_ apply and show a diff of the differences.
+
+### **Best practices**
+
+When working with Kustomize, following best practices can help maintain clarity, efficiency, and scalability across your Kubernetes configurations. Here are some key tips to keep in mind:
+
+1.  Use strategic merge patches for simple modifications  
+2.  Use JSON patches for complex changes   
+3.  Name patch files descriptively  
+    Use clear and descriptive names for your patch files that indicate what resource the patch targets.  
+4.  Test patches thoroughly 
+5.  Organize overlays by environment 
+6.  Securely manage secrets  
+    Use secretGenerator in Kustomize to handle sensitive information like passwords or API keys. Avoid hardcoding sensitive data in plain YAML files.   
+7.  Use common labels and annotations  
+    Utilize `commonLabels` and `commonAnnotations` in Kustomize to automatically apply environment-specific labels or annotations to all resources, enabling easy tracking and organization.  
+8.  Keep resources DRY (don't repeat yourself)  
+    Use the base-and-overlay pattern to avoid duplicating resources across environments.
+    
+
+## Conclusion
+
+Kustomize was [born](https://itnext.io/generating-transforming-and-patching-kubernetes-configuration-with-kustomize-fb7b02476a1b) out of a need to evolve Kubernetes resource configuration tools, offering a fresh, template-free approach to managing configurations across different environments. It was designed to build upon existing Kubernetes API practices, avoiding complex configuration generators, while introducing a powerful yet intuitive way to handle parameters. By embracing declarative resource specifications, Kustomize enables composable and reusable configurations and has emerged as a robust Kubernetes-native solution that conveniently extends the capabilities of `kubectl` yet leaving the complexities of packaging to other tools.
