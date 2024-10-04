@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
@@ -38,10 +37,16 @@ func (obj *uninstaller) UninstallBlocking(ctx context.Context, pkg ctrlpkg.Packa
 	obj.status.Start()
 	defer obj.status.Stop()
 	var validateDeletion bool
+	var err error
 	if deletenamespace {
-		validateDeletion = validateNamespaceDeletion(ctx, pkg)
+		validateDeletion, err = validateNamespaceDeletion(ctx, pkg)
+		if err != nil {
+			return err
+		}
+	} else {
+		cliutils.ExitWithError()
 	}
-	err := obj.delete(ctx, pkg, isDryRun)
+	err = obj.delete(ctx, pkg, isDryRun)
 	if err != nil {
 		return err
 	}
@@ -53,13 +58,16 @@ func (obj *uninstaller) UninstallBlocking(ctx context.Context, pkg ctrlpkg.Packa
 		return err
 	} else {
 		if validateDeletion && deletenamespace {
-			obj.deleteNamespace(ctx, pkg.GetNamespace())
-			fmt.Printf("\nDeleting namespace %s ...\n", pkg.GetNamespace())
+			err = obj.deleteNamespace(ctx, pkg.GetNamespace())
+			if err != nil {
+				return err
+			}
+			obj.status.SetStatus(fmt.Sprintf("Deleting namespace %s ...", pkg.GetNamespace()))
 			err = obj.awaitNamespaceRemoval(ctx, pkg.GetNamespace())
 			if err != nil {
 				return err
 			}
-			fmt.Printf("\nNamespace %s has been deleted.", pkg.GetNamespace())
+
 		}
 	}
 	return nil
@@ -136,22 +144,21 @@ func (obj *uninstaller) createWatcher(ctx context.Context, pkg ctrlpkg.Package) 
 	}
 }
 
-func (uninstaller *uninstaller) deleteNamespace(ctx context.Context, namespace string) {
+func (uninstaller *uninstaller) deleteNamespace(ctx context.Context, namespace string) error {
 	clientset := cliutils.KubernetesClient(ctx)
 	err := clientset.CoreV1().Namespaces().Delete(ctx, namespace, metav1.DeleteOptions{})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "❌ error deleting namespace: %v\n", err)
-		cliutils.ExitWithError()
+		return fmt.Errorf("❌ error deleting namespace: %v", err)
 	}
+	return err
 }
 
-func validateNamespaceDeletion(ctx context.Context, pkg ctrlpkg.Package) bool {
+func validateNamespaceDeletion(ctx context.Context, pkg ctrlpkg.Package) (bool, error) {
 	client := cliutils.PackageClient(ctx)
 	namespace := pkg.GetNamespace()
 	var pkgs v1alpha1.PackageList
 	if err := client.Packages(namespace).GetAll(ctx, &pkgs); err != nil {
-		fmt.Fprintf(os.Stderr, "❌ error listing packages in namespace: %v\n", err)
-		cliutils.ExitWithError()
+		return false, fmt.Errorf("❌ error listing packages in namespace: %v", err)
 	}
 
 	var namespacePackages = make([]string, 0, len(pkgs.Items))
@@ -160,10 +167,9 @@ func validateNamespaceDeletion(ctx context.Context, pkg ctrlpkg.Package) bool {
 	}
 
 	if len(namespacePackages) > 1 {
-		fmt.Printf("\n❌ Namespace %s cannot be deleted because it contains other packages: %v\n",
+		err := fmt.Errorf("\n❌ Namespace %s cannot be deleted because it contains other packages: %v",
 			namespace, strings.Join(namespacePackages, ", "))
-		return false
+		return false, err
 	}
-
-	return true
+	return true, nil
 }

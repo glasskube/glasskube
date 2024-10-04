@@ -83,6 +83,9 @@ var uninstallCmd = &cobra.Command{
 				fmt.Fprintf(os.Stderr, "\n❌ An error occurred during uninstallation:\n\n%v\n", err)
 				cliutils.ExitWithError()
 			}
+			if uninstallCmdOptions.DeleteNamespace {
+				fmt.Printf("Namespace %v has been deleted.\n", color.New(color.Bold).Sprint(pkg.GetNamespace()))
+			}
 			fmt.Fprintf(os.Stderr, "🗑️  %v uninstalled successfully.\n", pkgName)
 		}
 	},
@@ -97,7 +100,7 @@ func showUninstallDetails(context, name string, pruned []graph.PackageRef, names
 	for _, dep := range pruned {
 		fmt.Fprintf(os.Stderr, " * %+v (no longer needed)\n", dep)
 	}
-	if namespace != "" {
+	if namespace != "" && uninstallCmdOptions.DeleteNamespace {
 		fmt.Fprintf(os.Stderr, "Namespace %v will also be deleted.\n", color.New(color.Bold).Sprint(namespace))
 	}
 }
