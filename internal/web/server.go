@@ -221,6 +221,11 @@ func (s *server) Start(ctx context.Context) error {
 	// uninstall endpoints
 	router.Handle(installedPkgBasePath+"/uninstall", s.requireReady(s.uninstall))
 	router.Handle(clpkgBasePath+"/uninstall", s.requireReady(s.uninstall))
+	// suspend endpoints
+	router.Handle(clpkgBasePath+"/suspend", s.requireReady(s.handleSuspend))
+	router.Handle(clpkgBasePath+"/resume", s.requireReady(s.handleResume))
+	router.Handle(installedPkgBasePath+"/suspend", s.requireReady(s.handleSuspend))
+	router.Handle(installedPkgBasePath+"/resume", s.requireReady(s.handleResume))
 
 	// configuration datalist endpoints
 	router.Handle("/datalists/{valueName}/names", s.requireReady(s.namesDatalist))

@@ -119,6 +119,14 @@
           {{ else }}
             {{ template "badge" . }}
           {{ end }}
+          {{ if .Package.Spec.Suspend }}
+            <span
+              class="badge bg-warning-subtle text-warning border border-warning border-1 p-1 fw-normal"
+              title="Go to 'Actions' to resume reconciliation">
+              <i class="bi bi-pause-circle"></i>
+              Suspended
+            </span>
+          {{ end }}
         </div>
         {{ if eq .Status.Status "Failed" }}
           <div class="mt-2 alert alert-danger">
