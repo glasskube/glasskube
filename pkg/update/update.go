@@ -126,7 +126,7 @@ func (c *updater) prepare(
 	c.status.SetStatus("Updating package index")
 
 	requirementsSet := make(map[dependency.Requirement]struct{})
-	prunedSet := make(map[dependency.Requirement]struct{})
+	var prunedSet *map[dependency.Requirement]struct{} // contains packages that should be pruned in all packagesToUpdate
 	var tx UpdateTransaction
 
 outer:
@@ -158,9 +158,29 @@ outer:
 						for _, req := range result.Requirements {
 							requirementsSet[req] = struct{}{}
 						}
-						for _, req := range result.Pruned {
-							prunedSet[req] = struct{}{}
+						if prunedSet == nil {
+							// initialize on first iteration, in all other iterations it can at most shrink
+							p := make(map[dependency.Requirement]struct{})
+							prunedSet = &p
+							for _, req := range result.Pruned {
+								(*prunedSet)[req] = struct{}{}
+							}
+						} else {
+							// all other iterations can at most delete stuff from prunedSet
+							for req, _ := range *prunedSet {
+								prunedInCurrentIteration := false
+								for _, prunedLocal := range result.Pruned {
+									if prunedLocal == req {
+										prunedInCurrentIteration = true
+										break
+									}
+								}
+								if !prunedInCurrentIteration {
+									delete(*prunedSet, req)
+								}
+							}
 						}
+
 						// this package should be updated
 						tx.Items = append(tx.Items, item)
 					}
@@ -178,8 +198,10 @@ outer:
 	for req := range requirementsSet {
 		tx.Requirements = append(tx.Requirements, req)
 	}
-	for req := range prunedSet {
-		tx.Pruned = append(tx.Pruned, req)
+	if prunedSet != nil {
+		for req := range *prunedSet {
+			tx.Pruned = append(tx.Pruned, req)
+		}
 	}
 
 	return &tx, nil
