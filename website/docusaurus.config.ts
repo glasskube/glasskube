@@ -6,7 +6,7 @@ import {EnumChangefreq} from 'sitemap';
 
 const config: Config = {
   title: 'Glasskube',
-  tagline: 'Open Source packaging ecosystem for Kubernetes',
+  tagline: 'Enabling private infra and on-prem deployments',
   favicon: 'img/favicon.png',
   trailingSlash: true,
 
@@ -101,7 +101,7 @@ const config: Config = {
   themes: [
     [
       require.resolve('@getcanary/docusaurus-theme-search-pagefind'),
-      { 
+      {
         includeRoutes: ["**/*"],
         group: true,
         tabs: [
@@ -128,7 +128,9 @@ const config: Config = {
     },
     announcementBar: {
       id: 'announcementBar-1', // Increment on change
-      content: `Launch Week #2: September 9-13 🧊 <a href="https://glasskube.dev/blog/launch-week-number-2/">See what's new!</a> 🌵`,
+      /* x-release-please-start-version */
+      content: `🎉 We just released v0.24.0 of our Open Source Kubernetes Package Manager on <a href="https://github.com/glasskube/glasskube/" target="_blank">⭐ GitHub ⭐</a>.`,
+      /* x-release-please-end */
       isCloseable: false,
     },
     image:
@@ -145,9 +147,9 @@ const config: Config = {
           label: 'Products',
           position: 'left',
           items: [
-            {to: '/products/package-manager', label: 'Glasskube Package Manager'},
+            {to: '/products/hub', label: 'Application Delivery Platform'},
             // {to: '/products/kcl', label: 'Glasskube Native Packages (coming soon)'},
-            {to: '/products/hub', label: 'Glasskube Hub (new)'},
+            {to: '/products/package-manager', label: 'Kubernetes Package Manager'},
             // {to: '/products/cloud', label: 'Glasskube Cloud (coming soon)'},
           ],
         },
@@ -161,7 +163,6 @@ const config: Config = {
             {to: '/blog', label: 'Blog'},
           ]
         },
-        {to: '/packages', label: 'Packages', position: 'left'},
         {to: '/pricing', label: 'Pricing', position: 'left'},
         {
           type: 'search',

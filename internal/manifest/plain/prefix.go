@@ -11,7 +11,17 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	kstypes "sigs.k8s.io/kustomize/api/types"
+	"sigs.k8s.io/kustomize/kyaml/resid"
 )
+
+var wellKnownLabelFieldSpecs = kstypes.FsSlice{
+	// Reference: https://www.keycloak.org/operator/advanced-configuration#_pod_template
+	{
+		Gvk:                resid.Gvk{Group: "k8s.keycloak.org", Version: "v2alpha1", Kind: "Keycloak"},
+		Path:               "/spec/unsupported/podTemplate/metadata/labels",
+		CreateIfNotPresent: true,
+	},
+}
 
 func prefixAndUpdateReferences(
 	pkg ctrlpkg.Package,
@@ -45,6 +55,7 @@ func createKustomization(pkg ctrlpkg.Package) kstypes.Kustomization {
 					v1alpha1.LabelPackageName:         pkg.GetSpec().PackageInfo.Name,
 					v1alpha1.LabelPackageInstanceName: pkg.GetName(),
 				},
+				FieldSpecs:       wellKnownLabelFieldSpecs,
 				IncludeSelectors: true,
 				IncludeTemplates: true,
 			},

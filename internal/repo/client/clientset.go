@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"net/http"
 	"reflect"
 	"sync"
 	"time"
@@ -13,6 +12,7 @@ import (
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/adapter"
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
+	"github.com/glasskube/glasskube/internal/repo/client/auth"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -75,7 +75,7 @@ func (d *defaultClientset) ForRepoWithName(name string) RepoClient {
 	}
 	if len(name) > 0 {
 		if repo, err := d.client.GetPackageRepository(context.TODO(), name); err != nil {
-			return &errorclient{err}
+			return &errorclient{err: err}
 		} else {
 			return d.ForRepo(*repo)
 		}
@@ -87,14 +87,14 @@ func (d *defaultClientset) ForRepoWithName(name string) RepoClient {
 // Default implements RepoClientset.
 func (d *defaultClientset) Default() RepoClient {
 	if repos, err := d.client.ListPackageRepositories(context.TODO()); err != nil {
-		return &errorclient{err}
+		return &errorclient{err: err}
 	} else {
 		for _, repo := range repos.Items {
 			if repo.IsDefaultRepository() {
 				return d.ForRepo(repo)
 			}
 		}
-		return &errorclient{errors.New("default repository not found")}
+		return &errorclient{err: errors.New("default repository not found")}
 	}
 }
 
@@ -106,10 +106,10 @@ func (d *defaultClientset) ForRepo(repo v1alpha1.PackageRepository) RepoClient {
 		clientState.lastCheckedRepoSpec = time.Now()
 		return clientState.client
 	} else {
-		if headers, err := d.getAuthHeaders(repo); err != nil {
-			return &errorclient{fmt.Errorf("invalid auth config: %w", err)}
+		if auth, err := d.newAuthenticator(repo); err != nil {
+			return &errorclient{err: fmt.Errorf("invalid auth config: %w", err)}
 		} else {
-			client := New(repo.Spec.Url, headers, d.maxCacheAge)
+			client := New(repo.Spec.Url, auth, d.maxCacheAge)
 			d.clients[repo.Name] = repoClientWithState{
 				client:              client,
 				lastCheckedRepoSpec: time.Now(),
@@ -120,8 +120,7 @@ func (d *defaultClientset) ForRepo(repo v1alpha1.PackageRepository) RepoClient {
 	}
 }
 
-func (d *defaultClientset) getAuthHeaders(repo v1alpha1.PackageRepository) (http.Header, error) {
-	headers := http.Header{}
+func (d *defaultClientset) newAuthenticator(repo v1alpha1.PackageRepository) (auth.Authenticator, error) {
 	if repo.Spec.Auth != nil {
 		if repo.Spec.Auth.Basic != nil {
 			var user, pass string
@@ -159,9 +158,7 @@ func (d *defaultClientset) getAuthHeaders(repo v1alpha1.PackageRepository) (http
 					}
 				}
 			}
-			userpass := fmt.Sprintf("%v:%v", user, pass)
-			userpassEncoded := base64.StdEncoding.EncodeToString([]byte(userpass))
-			headers.Set("Authorization", fmt.Sprintf("Basic %v", userpassEncoded))
+			return auth.Basic(user, pass), nil
 		} else if repo.Spec.Auth.Bearer != nil {
 			var token string
 			if repo.Spec.Auth.Bearer.Token != nil {
@@ -176,10 +173,10 @@ func (d *defaultClientset) getAuthHeaders(repo v1alpha1.PackageRepository) (http
 					token = t
 				}
 			}
-			headers.Set("Authorization", fmt.Sprintf("Bearer %v", token))
+			return auth.Bearer(token), nil
 		}
 	}
-	return headers, nil
+	return auth.Noop(), nil
 }
 
 // Meta implements RepoClientset.

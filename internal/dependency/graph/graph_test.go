@@ -179,6 +179,30 @@ var _ = Describe("DependencyGraph", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(v).To(Equal(semver.MustParse("1.1.0")))
 		})
+
+		It("should consider version metadata for comparison", func() {
+			fooManifest := v1alpha1.PackageManifest{Name: foo, Dependencies: []v1alpha1.Dependency{{Name: bar, Version: ">= 1.0.0, < 1.1.1"}}}
+			bazManifest := v1alpha1.PackageManifest{Name: baz, Dependencies: []v1alpha1.Dependency{{Name: bar, Version: ">= 1.1.0"}}}
+			Expect(graph.AddCluster(fooManifest, "v1.0.0", true)).NotTo(HaveOccurred())
+			Expect(graph.AddCluster(bazManifest, "v1.0.0", true)).NotTo(HaveOccurred())
+			versions := []*semver.Version{semver.MustParse("1.0.0"), semver.MustParse("1.1.0+1"), semver.MustParse("1.1.0+2"),
+				semver.MustParse("1.1.1"), semver.MustParse("1.2.0"), semver.MustParse("2.0.0")}
+			v, err := graph.Max(bar, "", versions)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(v).To(Equal(semver.MustParse("1.1.0+2")))
+		})
+
+		It("should not consider version metadata for constraints", func() {
+			fooManifest := v1alpha1.PackageManifest{Name: foo, Dependencies: []v1alpha1.Dependency{{Name: bar, Version: ">= 1.0.0, < 1.1.1"}}}
+			bazManifest := v1alpha1.PackageManifest{Name: baz, Dependencies: []v1alpha1.Dependency{{Name: bar, Version: "<= 1.1.0+1"}}}
+			Expect(graph.AddCluster(fooManifest, "v1.0.0", true)).NotTo(HaveOccurred())
+			Expect(graph.AddCluster(bazManifest, "v1.0.0", true)).NotTo(HaveOccurred())
+			versions := []*semver.Version{semver.MustParse("1.0.0"), semver.MustParse("1.1.0+1"), semver.MustParse("1.1.0+2"),
+				semver.MustParse("1.1.1"), semver.MustParse("1.2.0"), semver.MustParse("2.0.0")}
+			v, err := graph.Max(bar, "", versions)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(v).To(Equal(semver.MustParse("1.1.0+2"))) // of baz's <= 1.1.0+1 constraint, the metadata +1 is ignored!
+		})
 	})
 
 	Describe("Dependencies", func() {

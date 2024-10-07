@@ -193,6 +193,15 @@ var installCmd = &cobra.Command{
 				installCmdOptions.EnableAutoUpdates = true
 			}
 		}
+		if installCmdOptions.EnableAutoUpdates {
+			ok, err := clientutils.IsAutoUpdaterInstalled(ctx)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "! Error: Could not check whether glasskube-autoupdater is installed: %v\n", err)
+			}
+			if !ok {
+				fmt.Fprintf(os.Stderr, "Please install glasskube-autoupdater for automatic updates to be applied.\n")
+			}
+		}
 
 		pkgBuilder.WithAutoUpdates(installCmdOptions.EnableAutoUpdates)
 

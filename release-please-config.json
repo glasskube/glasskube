@@ -12,6 +12,7 @@
         "README.md",
         "config/autoupdater/kustomization.yaml",
         "config/default/kustomization.yaml",
+        "website/docusaurus.config.ts",
         "website/src/partials/_install.mdx",
         {
           "type": "json",

@@ -6,57 +6,81 @@ import (
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/repo/client"
+	"github.com/glasskube/glasskube/internal/repo/client/auth"
 	"github.com/glasskube/glasskube/internal/repo/types"
 )
 
-type FakeClientset struct {
-	Client *FakeClient
+func ClientsetWithClient(client *fakeClient) *fakeClientset {
+	return &fakeClientset{Client: client}
+}
+
+func EmptyClientset() *fakeClientset {
+	return ClientsetWithClient(EmptyClient())
+}
+
+type fakeClientset struct {
+	Client *fakeClient
 }
 
 // Default implements client.RepoClientset.
-func (f *FakeClientset) Default() client.RepoClient {
+func (f *fakeClientset) Default() client.RepoClient {
 	return f.Client
 }
 
 // Meta implements client.RepoClientset.
-func (f *FakeClientset) Meta() client.RepoMetaclient {
+func (f *fakeClientset) Meta() client.RepoMetaclient {
 	return f.Client
 }
 
 // ForRepo implements client.RepoClientset.
-func (f *FakeClientset) ForRepo(repo v1alpha1.PackageRepository) client.RepoClient {
+func (f *fakeClientset) ForRepo(repo v1alpha1.PackageRepository) client.RepoClient {
 	return f.Client
 }
 
 // ForRepoWithName implements client.RepoClientset.
-func (f *FakeClientset) ForRepoWithName(name string) client.RepoClient {
+func (f *fakeClientset) ForRepoWithName(name string) client.RepoClient {
 	return f.Client
 }
 
 // ForPackage implements client.RepoClientset.
-func (f *FakeClientset) ForPackage(pkg ctrlpkg.Package) client.RepoClient {
+func (f *fakeClientset) ForPackage(pkg ctrlpkg.Package) client.RepoClient {
 	return f.Client
 }
 
-var _ client.RepoClientset = &FakeClientset{}
+var _ client.RepoClientset = &fakeClientset{}
 
-// FakeClient is a mock implementation of RepoClient for use in tests
-type FakeClient struct {
+// fakeClient is a mock implementation of RepoClient for use in tests
+type fakeClient struct {
+	auth.Authenticator
 	Packages            map[string]map[string]*v1alpha1.PackageManifest
 	PackageRepositories []v1alpha1.PackageRepository
 }
 
+func EmptyClient() *fakeClient {
+	return &fakeClient{
+		Authenticator:       auth.Noop(),
+		PackageRepositories: []v1alpha1.PackageRepository{{}},
+	}
+}
+
+func EmptyClientWithAuth(auth auth.Authenticator) *fakeClient {
+	return &fakeClient{
+		Authenticator:       auth,
+		PackageRepositories: []v1alpha1.PackageRepository{{}},
+	}
+}
+
 // FetchMetaIndex implements client.RepoMetaclient.
-func (f *FakeClient) FetchMetaIndex(target *types.MetaIndex) error {
+func (f *fakeClient) FetchMetaIndex(target *types.MetaIndex) error {
 	panic("unimplemented")
 }
 
 // GetReposForPackage implements client.RepoAggregator.
-func (f *FakeClient) GetReposForPackage(name string) ([]v1alpha1.PackageRepository, error) {
+func (f *fakeClient) GetReposForPackage(name string) ([]v1alpha1.PackageRepository, error) {
 	return f.PackageRepositories, nil
 }
 
-func (f *FakeClient) AddPackage(name, version string, manifest *v1alpha1.PackageManifest) {
+func (f *fakeClient) AddPackage(name, version string, manifest *v1alpha1.PackageManifest) {
 	if f.Packages == nil {
 		f.Clear()
 	}
@@ -66,14 +90,14 @@ func (f *FakeClient) AddPackage(name, version string, manifest *v1alpha1.Package
 	f.Packages[name][version] = manifest
 }
 
-func (f *FakeClient) Clear() {
+func (f *fakeClient) Clear() {
 	f.Packages = map[string]map[string]*v1alpha1.PackageManifest{}
 }
 
-var _ client.RepoClient = &FakeClient{}
+var _ client.RepoClient = &fakeClient{}
 
 // FetchLatestPackageManifest implements client.RepoClient.
-func (f *FakeClient) FetchLatestPackageManifest(name string, target *v1alpha1.PackageManifest) (
+func (f *fakeClient) FetchLatestPackageManifest(name string, target *v1alpha1.PackageManifest) (
 	version string, err error,
 ) {
 	if versions, ok := f.Packages[name]; ok {
@@ -86,7 +110,7 @@ func (f *FakeClient) FetchLatestPackageManifest(name string, target *v1alpha1.Pa
 }
 
 // FetchPackageIndex implements client.RepoClient.
-func (f *FakeClient) FetchPackageIndex(name string, target *types.PackageIndex) error {
+func (f *fakeClient) FetchPackageIndex(name string, target *types.PackageIndex) error {
 	if versions, ok := f.Packages[name]; ok {
 		var result types.PackageIndex
 		for v := range versions {
@@ -100,7 +124,7 @@ func (f *FakeClient) FetchPackageIndex(name string, target *types.PackageIndex) 
 }
 
 // FetchPackageManifest implements client.RepoClient.
-func (f *FakeClient) FetchPackageManifest(name string, version string, target *v1alpha1.PackageManifest) error {
+func (f *fakeClient) FetchPackageManifest(name string, version string, target *v1alpha1.PackageManifest) error {
 	if versions, ok := f.Packages[name]; ok {
 		if manifest, ok := versions[version]; ok {
 			*target = *manifest
@@ -111,7 +135,7 @@ func (f *FakeClient) FetchPackageManifest(name string, version string, target *v
 }
 
 // FetchPackageRepoIndex implements client.RepoClient.
-func (f *FakeClient) FetchPackageRepoIndex(target *types.PackageRepoIndex) error {
+func (f *fakeClient) FetchPackageRepoIndex(target *types.PackageRepoIndex) error {
 	var result types.PackageRepoIndex
 	for pkg, versions := range f.Packages {
 		item := types.PackageRepoIndexItem{Name: pkg}
@@ -125,7 +149,7 @@ func (f *FakeClient) FetchPackageRepoIndex(target *types.PackageRepoIndex) error
 }
 
 // GetLatestVersion implements client.RepoClient.
-func (f *FakeClient) GetLatestVersion(pkgName string) (string, error) {
+func (f *fakeClient) GetLatestVersion(pkgName string) (string, error) {
 	if versions, ok := f.Packages[pkgName]; ok {
 		for v := range versions {
 			return v, nil
@@ -135,6 +159,6 @@ func (f *FakeClient) GetLatestVersion(pkgName string) (string, error) {
 }
 
 // GetPackageManifestURL implements client.RepoClient.
-func (f *FakeClient) GetPackageManifestURL(name string, version string) (string, error) {
+func (f *fakeClient) GetPackageManifestURL(name string, version string) (string, error) {
 	return "fake url", nil
 }

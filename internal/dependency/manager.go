@@ -3,6 +3,7 @@ package dependency
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 	"strings"
 
@@ -118,7 +119,9 @@ func (dm *DependendcyManager) NewGraph(ctx context.Context) (*graph.DependencyGr
 			// A package that is currently being deleted is added to the graph, but in a state representing
 			// "not installed"
 			installedVersion = ""
-		} else if mf, err := dm.getManifest(ctx, pkg); repoerror.IsComplete(err) {
+			// we need a fake manifest with the name, in order to know the packageName of the vertex
+			manifest.Name = pkg.GetSpec().PackageInfo.Name
+		} else if mf, err := dm.getManifestForInstalledPkg(ctx, pkg); repoerror.IsComplete(err) {
 			return nil, err
 		} else {
 			manifest = *mf
@@ -166,13 +169,13 @@ func (dm *DependendcyManager) addDependencies(
 	for _, dep := range g.Dependencies(name, namespace) {
 		if g.Version(dep.Name, dep.Namespace) == nil {
 			if versions, err := dm.getVersions(dep.PackageName); repoerror.IsComplete(err) {
-				return nil, err
+				return nil, fmt.Errorf("failed to get version of dep package \"%v\": %w", dep.PackageName, err)
 			} else if maxVersion, err := g.Max(dep.Name, dep.Namespace, versions); err != nil {
 				// This error occurs when no suitable version exists.
 				// In this case, the dependency is not added to the graph and a validation error detects this later.
 				continue
 			} else if depManifest, err := dm.repoAdapter.GetManifest(dep.PackageName, maxVersion.Original()); repoerror.IsComplete(err) {
-				return nil, err
+				return nil, fmt.Errorf("failed to get manifest of dep package \"%v\" in version %v: %w", dep.PackageName, maxVersion.Original(), err)
 			} else if err := dm.add(g, dep.Name, dep.Namespace, *depManifest, maxVersion.Original()); err != nil {
 				return nil, err
 			} else if added, err := dm.addDependencies(g, dep.Name, dep.Namespace, true); err != nil {
@@ -243,12 +246,12 @@ func (dm *DependendcyManager) getVersions(name string) ([]*semver.Version, error
 	return parsedVersions, repoErr
 }
 
-func (dm *DependendcyManager) getManifest(ctx context.Context, pkg ctrlpkg.Package) (*v1alpha1.PackageManifest, error) {
+func (dm *DependendcyManager) getManifestForInstalledPkg(ctx context.Context, pkg ctrlpkg.Package) (*v1alpha1.PackageManifest, error) {
 	if pi, err :=
 		dm.pkgClient.GetPackageInfo(ctx, names.PackageInfoName(pkg)); err != nil && !apierrors.IsNotFound(err) {
 		return nil, err
 	} else if apierrors.IsNotFound(err) || (err == nil && pi.Status.Manifest == nil) {
-		return dm.repoAdapter.GetManifest(pkg.GetSpec().PackageInfo.Name, pkg.GetSpec().PackageInfo.Version)
+		return dm.repoAdapter.GetManifestFromRepo(pkg.GetSpec().PackageInfo.Name, pkg.GetSpec().PackageInfo.Version, pkg.GetSpec().PackageInfo.RepositoryName)
 	} else {
 		return pi.Status.Manifest, nil
 	}

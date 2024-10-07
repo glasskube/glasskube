@@ -92,7 +92,7 @@ func (r *PackageReconcilerCommon) baseSetup(
 func (r *PackageReconcilerCommon) InitAdapters(builder *builder.Builder) error {
 	for _, adapter := range []manifest.ManifestAdapter{r.HelmAdapter, r.KustomizeAdapter, r.ManifestAdapter} {
 		if adapter != nil {
-			if err := adapter.ControllerInit(builder, r.Client, r.Scheme); err != nil {
+			if err := adapter.ControllerInit(builder, r.Client, r.RepoClientset, r.Scheme); err != nil {
 				return err
 			}
 		}

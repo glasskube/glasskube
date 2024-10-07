@@ -26,6 +26,7 @@ import (
 )
 
 const (
+	formValuePrefix  = "values"
 	namespaceKey     = "namespace"
 	nameKey          = "name"
 	keyKey           = "key"
@@ -38,16 +39,18 @@ const (
 )
 
 func formKey(valueName string, key string) string {
-	return fmt.Sprintf("%s[%s]", valueName, key)
+	return fmt.Sprintf("%s.%s[%s]", formValuePrefix, valueName, key)
 }
 
+// extractValues extracts dynamic package configuration values from the form of the given request, such that installation
+// or configuration can be done with the provided values
 func extractValues(r *http.Request, manifest *v1alpha1.PackageManifest) (map[string]v1alpha1.ValueConfiguration, error) {
 	values := make(map[string]v1alpha1.ValueConfiguration)
 	if err := r.ParseForm(); err != nil {
 		return nil, err
 	}
 	for valueName, valueDef := range manifest.ValueDefinitions {
-		if refKindVal := r.Form.Get(fmt.Sprintf("%s[%s]", valueName, refKindKey)); refKindVal == refKindConfigMap {
+		if refKindVal := r.Form.Get(fmt.Sprintf("%s.%s[%s]", formValuePrefix, valueName, refKindKey)); refKindVal == refKindConfigMap {
 			values[valueName] = v1alpha1.ValueConfiguration{
 				ValueFrom: &v1alpha1.ValueReference{
 					ConfigMapRef: extractObjectKeyValueSource(r, valueName),
@@ -66,7 +69,7 @@ func extractValues(r *http.Request, manifest *v1alpha1.PackageManifest) (map[str
 				},
 			}
 		} else if refKindVal == "" {
-			formVal := r.Form.Get(valueName)
+			formVal := r.Form.Get(fmt.Sprintf("%v.%v", formValuePrefix, valueName))
 			if valueDef.Type == v1alpha1.ValueTypeBoolean {
 				boolStr := strconv.FormatBool(false)
 				if strings.ToLower(formVal) == "on" {
@@ -108,8 +111,8 @@ func (s *server) packageConfigurationInput(w http.ResponseWriter, r *http.Reques
 	manifestName := mux.Vars(r)["manifestName"]
 	namespace := mux.Vars(r)["namespace"]
 	name := mux.Vars(r)["name"]
-	selectedVersion := r.FormValue("selectedVersion")
-	repositoryName := r.FormValue("repositoryName")
+	selectedVersion := r.FormValue("version")
+	repository := r.FormValue("repositoryName")
 	pkg, manifest, err := describe.DescribeInstalledPackage(r.Context(), namespace, name)
 	if err != nil && !errors.IsNotFound(err) {
 		err = fmt.Errorf("an error occurred fetching package details of %v: %w", manifestName, err)
@@ -117,12 +120,14 @@ func (s *server) packageConfigurationInput(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	s.handleConfigurationInput(w, r, &packageDetailPageContext{
-		repositoryName:  repositoryName,
-		selectedVersion: selectedVersion,
-		manifestName:    manifestName,
-		pkg:             pkg,
-		manifest:        manifest,
+	s.handleConfigurationInput(w, r, &packageContext{
+		request: packageContextRequest{
+			repositoryName: repository,
+			version:        selectedVersion,
+			manifestName:   manifestName,
+		},
+		pkg:      pkg,
+		manifest: manifest,
 	})
 }
 
@@ -135,7 +140,7 @@ func (s *server) packageConfigurationInput(w http.ResponseWriter, r *http.Reques
 // reference, and the actual input field(s).
 func (s *server) clusterPackageConfigurationInput(w http.ResponseWriter, r *http.Request) {
 	pkgName := mux.Vars(r)["pkgName"]
-	selectedVersion := r.FormValue("selectedVersion")
+	selectedVersion := r.FormValue("version")
 	repositoryName := r.FormValue("repositoryName")
 	pkg, manifest, err := describe.DescribeInstalledClusterPackage(r.Context(), pkgName)
 	if err != nil && !errors.IsNotFound(err) {
@@ -144,22 +149,25 @@ func (s *server) clusterPackageConfigurationInput(w http.ResponseWriter, r *http
 		return
 	}
 
-	s.handleConfigurationInput(w, r, &packageDetailPageContext{
-		repositoryName:  repositoryName,
-		selectedVersion: selectedVersion,
-		manifestName:    pkgName,
-		pkg:             pkg,
-		manifest:        manifest,
+	s.handleConfigurationInput(w, r, &packageContext{
+		request: packageContextRequest{
+			repositoryName: repositoryName,
+			version:        selectedVersion,
+			manifestName:   pkgName,
+		},
+		pkg:      pkg,
+		manifest: manifest,
 	})
 }
 
-func (s *server) handleConfigurationInput(w http.ResponseWriter, r *http.Request, d *packageDetailPageContext) {
+func (s *server) handleConfigurationInput(w http.ResponseWriter, r *http.Request, d *packageContext) {
 	if d.manifest == nil {
 		d.manifest = &v1alpha1.PackageManifest{}
-		if err := s.repoClientset.ForRepoWithName(d.repositoryName).
-			FetchPackageManifest(d.manifestName, d.selectedVersion, d.manifest); err != nil {
+		if err := s.repoClientset.ForRepoWithName(d.request.repositoryName).
+			FetchPackageManifest(d.request.manifestName, d.request.version, d.manifest); err != nil {
 			s.sendToast(w,
-				toast.WithErr(fmt.Errorf("failed to fetch manifest of %v in version %v: %w", d.manifestName, d.selectedVersion, err)))
+				toast.WithErr(fmt.Errorf("failed to fetch manifest of %v in version %v: %w",
+					d.request.manifestName, d.request.version, err)))
 			return
 		}
 	}
@@ -182,13 +190,13 @@ func (s *server) handleConfigurationInput(w http.ResponseWriter, r *http.Request
 			}
 		}
 		input := pkg_config_input.ForPkgConfigInput(
-			d.pkg, d.repositoryName, d.selectedVersion, d.manifest, valueName, valueDefinition, nil, &options,
+			d.pkg, d.request.repositoryName, d.request.version, d.manifest, valueName, valueDefinition, nil, &options,
 			&pkg_config_input.PkgConfigInputRenderOptions{
 				Autofocus:      true,
 				DesiredRefKind: &refKind,
 			})
 		err := s.templates.pkgConfigInput.Execute(w, input)
-		util.CheckTmplError(err, fmt.Sprintf("package config input (%s, %s)", d.manifestName, valueName))
+		util.CheckTmplError(err, fmt.Sprintf("package config input (%s, %s)", d.request.manifestName, valueName))
 	}
 }
 

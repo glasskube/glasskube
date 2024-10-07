@@ -6,6 +6,8 @@ import (
 	"path"
 	"reflect"
 
+	depUtil "github.com/glasskube/glasskube/internal/dependency/util"
+
 	webutil "github.com/glasskube/glasskube/internal/web/sse/refresh"
 
 	"github.com/fsnotify/fsnotify"
@@ -45,7 +47,6 @@ type templates struct {
 	pkgDetailHeaderTmpl     *template.Template
 	pkgUpdateModalTmpl      *template.Template
 	pkgConfigInput          *template.Template
-	pkgConfigAdvancedTmpl   *template.Template
 	pkgUninstallModalTmpl   *template.Template
 	toastTmpl               *template.Template
 	datalistTmpl            *template.Template
@@ -143,6 +144,13 @@ func (t *templates) parseTemplates() {
 		"PackageDetailHeaderRefreshId":    webutil.PackageRefreshDetailHeaderId,
 		"PackageOverviewRefreshId":        webutil.PackageOverviewRefreshId,
 		"ClusterPackageOverviewRefreshId": webutil.ClusterPackageOverviewRefreshId,
+		"ComponentName":                   depUtil.ComponentName,
+		"AutoUpdateEnabled": func(pkg ctrlpkg.Package) bool {
+			if pkg != nil && !pkg.IsNil() {
+				return pkg.AutoUpdatesEnabled()
+			}
+			return false
+		},
 	}
 
 	t.baseTemplate = template.Must(template.New("base.html").
@@ -160,7 +168,6 @@ func (t *templates) parseTemplates() {
 	t.pkgDetailHeaderTmpl = t.componentTmpl("pkg-detail-header", "pkg-detail-btns")
 	t.pkgUpdateModalTmpl = t.componentTmpl("pkg-update-modal")
 	t.pkgConfigInput = t.componentTmpl("pkg-config-input", "datalist")
-	t.pkgConfigAdvancedTmpl = t.componentTmpl("pkg-config-advanced")
 	t.pkgUninstallModalTmpl = t.componentTmpl("pkg-uninstall-modal")
 	t.toastTmpl = t.componentTmpl("toast")
 	t.datalistTmpl = t.componentTmpl("datalist")

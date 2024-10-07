@@ -9,17 +9,17 @@
     "prettier:write": "prettier -w web/ internal/**/*.html"
   },
   "dependencies": {
-    "@glasskube/theme": "0.1.1",
+    "@glasskube/theme": "0.1.2",
     "bootstrap": "5.3.3",
     "giscus": "^1.5.0",
-    "htmx.org": "2.0.2",
+    "htmx.org": "2.0.3",
     "htmx-ext-sse": "2.2.2",
     "htmx-ext-response-targets": "2.0.1"
   },
   "devDependencies": {
     "@commitlint/cli": "19.5.0",
     "@commitlint/config-conventional": "19.5.0",
-    "esbuild": "0.23.1",
+    "esbuild": "0.24.0",
     "prettier": "3.3.3",
     "prettier-plugin-go-template": "0.0.15"
   },

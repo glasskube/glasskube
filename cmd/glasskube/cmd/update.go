@@ -109,6 +109,16 @@ var updateCmd = &cobra.Command{
 				fmt.Fprintf(os.Stderr, "❌ update preparation failed: %v\n", err)
 				cliutils.ExitWithError()
 			}
+			if len(tx.ConflictItems) > 0 {
+				for _, conflictItem := range tx.ConflictItems {
+					for _, conflict := range conflictItem.Conflicts {
+						fmt.Fprintf(os.Stderr, "❌ Cannot Update %s due to dependency conflicts: %s\n"+
+							" (required: %s, actual: %s)\n",
+							conflictItem.Package.GetName(), conflict.Actual.Name, conflict.Required.Version, conflict.Actual.Version)
+					}
+				}
+				cliutils.ExitWithError()
+			}
 		}
 
 		if tx != nil && !tx.IsEmpty() {

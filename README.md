@@ -117,7 +117,7 @@ Congratulations, you can now explore and install all our available packages! �
 Glasskube already supports a wide range of packages, including, but not limited to:
 
 - Kubernetes Dashboard [`kubernetes/dashboard`](https://github.com/kubernetes/dashboard)
-- Cert Manager [`cert-manager/cert-manager`](https://github.com/cert-manager/cert-manager)
+- cert-manager [`cert-manager/cert-manager`](https://github.com/cert-manager/cert-manager)
 - Ingress-NGINX Controller [`kubernetes/ingress-nginx`](https://github.com/kubernetes/ingress-nginx)
 - Kube Prometheus Stack [`prometheus-operator/kube-prometheus`](https://github.com/prometheus-operator/kube-prometheus)
 - Cloud Native PG [`cloudnative-pg/cloudnative-pg`](https://github.com/cloudnative-pg/cloudnative-pg)
@@ -133,21 +133,21 @@ title: glasskube install [package]
 flowchart BT
   UI([UI])-- via local server<br>http://localhost:8580 ---Client(Client)
   CLI([CLI])-- cobra cli ---Client
-  Client-- 1. validate package -->Repo[(Package Repo)]
-  Client-- 2. create<br>`Package` CR -->Kubernetes(((Kubernetes API)))
+  Client-- (1) validate package -->Repo[(Package Repo)]
+  Client-- (2) create<br>`Package` CR -->Kubernetes(((Kubernetes API)))
   subgraph Cluster
-    Kubernetes-- 3. reconcile<br>`Package` -->PackageController
-    PackageController-- 4. create `PackageInfo`<br>if not present-->Kubernetes
-    Kubernetes-- 5. reconcile<br>`PackageInfo`-->PackageInfoController
+    Kubernetes-- (3) reconcile<br>`Package` -->PackageController
+    PackageController-- (4) create `PackageInfo`<br>if not present-->Kubernetes
+    Kubernetes-- (5) reconcile<br>`PackageInfo`-->PackageInfoController
     end
-  PackageInfoController<-- 6. update package manifest -->Repo
+  PackageInfoController<-- (6) update package manifest -->Repo
   subgraph Cluster
-    PackageInfoController-- 7. update manifest<br>in `PackageInfo` -->Kubernetes
-    Kubernetes-- 8. reconcile<br>`PackageInfo` -->PackageController
-    PackageController-- 9. deploy package -->Kubernetes
+    PackageInfoController-- (7) update manifest<br>in `PackageInfo` -->Kubernetes
+    Kubernetes-- (8) reconcile<br>`PackageInfo` -->PackageController
+    PackageController-- (9) deploy package -->Kubernetes
   end
 
-  Kubernetes-- 10. package status -->Client 
+  Kubernetes-- (10) package status -->Client 
 ```
 
 ## ☝️ Need Help or Want to Provide Feedback?

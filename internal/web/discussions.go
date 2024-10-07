@@ -5,9 +5,10 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/glasskube/glasskube/internal/clientutils"
+
 	"github.com/glasskube/glasskube/internal/web/components/toast"
 
-	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/web/util"
 
 	"github.com/glasskube/glasskube/internal/giscus"
@@ -39,13 +40,14 @@ func (s *server) packageDiscussion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.handlePackageDiscussionPage(w, r, &packageDetailPageContext{
-		repositoryName: repositoryName,
-		manifestName:   manifestName,
-		pkg:            pkg,
-		manifest:       manifest,
+	s.handlePackageDiscussionPage(w, r, &packageContext{
+		request: packageContextRequest{
+			repositoryName: repositoryName,
+			manifestName:   manifestName,
+		},
+		pkg:      pkg,
+		manifest: manifest,
 	})
-
 }
 
 // clusterPackageDiscussion is a full page for showing various discussions, reactions, etc.
@@ -63,11 +65,13 @@ func (s *server) clusterPackageDiscussion(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	s.handlePackageDiscussionPage(w, r, &packageDetailPageContext{
-		repositoryName: repositoryName,
-		manifestName:   pkgName,
-		pkg:            pkg,
-		manifest:       manifest,
+	s.handlePackageDiscussionPage(w, r, &packageContext{
+		request: packageContextRequest{
+			repositoryName: repositoryName,
+			manifestName:   pkgName,
+		},
+		pkg:      pkg,
+		manifest: manifest,
 	})
 }
 
@@ -76,39 +80,44 @@ func (s *server) handleGiscus(r *http.Request) {
 	telemetry.SetUserProperty("github_url", githubUrl)
 }
 
-func (s *server) handlePackageDiscussionPage(w http.ResponseWriter, r *http.Request, d *packageDetailPageContext) {
+func (s *server) handlePackageDiscussionPage(w http.ResponseWriter, r *http.Request, d *packageContext) {
 	var idx repo.PackageIndex
-	if err := s.repoClientset.ForRepoWithName(d.repositoryName).FetchPackageIndex(d.manifestName, &idx); err != nil {
+	if err := s.repoClientset.ForRepoWithName(d.request.repositoryName).FetchPackageIndex(d.request.manifestName, &idx); err != nil {
 		s.sendToast(w,
-			toast.WithErr(fmt.Errorf("failed to fetch package index of %v in repo %v: %w", d.manifestName, d.repositoryName, err)))
+			toast.WithErr(fmt.Errorf("failed to fetch package index of %v in repo %v: %w",
+				d.request.manifestName, d.request.repositoryName, err)))
 		return
 	}
 
 	if d.manifest == nil {
 		d.manifest = &v1alpha1.PackageManifest{}
-		if err := s.repoClientset.ForRepoWithName(d.repositoryName).
-			FetchPackageManifest(d.manifestName, idx.LatestVersion, d.manifest); err != nil {
+		if err := s.repoClientset.ForRepoWithName(d.request.repositoryName).
+			FetchPackageManifest(d.request.manifestName, idx.LatestVersion, d.manifest); err != nil {
 			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch manifest of %v (%v) in repo %v: %w",
-				d.manifestName, idx.LatestVersion, d.repositoryName, err)))
+				d.request.manifestName, idx.LatestVersion, d.request.repositoryName, err)))
 			return
 		}
 	}
 
 	pkgHref := util.GetPackageHrefWithFallback(d.pkg, d.manifest)
 
-	err := s.templates.pkgDiscussionPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
-		"Giscus":             giscus.Client().Config,
-		"Package":            d.pkg,
-		"Status":             client.GetStatusOrPending(d.pkg),
-		"Manifest":           d.manifest,
-		"LatestVersion":      idx.LatestVersion,
-		"UpdateAvailable":    s.isUpdateAvailableForPkg(r.Context(), d.pkg),
-		"ShowDiscussionLink": true,
-		"PackageHref":        pkgHref,
-		"DiscussionHref":     fmt.Sprintf("%s/discussion", pkgHref),
-		"AutoUpdate":         clientutils.AutoUpdateString(d.pkg, "Disabled"),
+	autoUpdaterInstalled, err := clientutils.IsAutoUpdaterInstalled(r.Context())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to check whether auto updater is installed: %v\n", err)
+	}
+	err = s.templates.pkgDiscussionPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
+		"Giscus":               giscus.Client().Config,
+		"Package":              d.pkg,
+		"Status":               client.GetStatusOrPending(d.pkg),
+		"Manifest":             d.manifest,
+		"LatestVersion":        idx.LatestVersion,
+		"UpdateAvailable":      s.isUpdateAvailableForPkg(r.Context(), d.pkg),
+		"ShowDiscussionLink":   true,
+		"PackageHref":          pkgHref,
+		"DiscussionHref":       fmt.Sprintf("%s/discussion", pkgHref),
+		"AutoUpdaterInstalled": autoUpdaterInstalled,
 	}, nil))
-	util.CheckTmplError(err, fmt.Sprintf("package-discussion (%s)", d.manifestName))
+	util.CheckTmplError(err, fmt.Sprintf("package-discussion (%s)", d.request.manifestName))
 }
 
 func (s *server) discussionBadge(w http.ResponseWriter, r *http.Request) {
