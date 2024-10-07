@@ -107,7 +107,7 @@ func createClusterPackageAndInfo(
 }
 
 func createPackageAndInfo(
-	name, installedName, namespace, version string, installed bool) (*v1alpha1.Package, *v1alpha1.PackageInfo) {
+	name, installedName, namespace, version string, installed bool, installedAsDep bool) (*v1alpha1.Package, *v1alpha1.PackageInfo) {
 
 	manifest := v1alpha1.PackageManifest{
 		Name: name,
@@ -118,6 +118,7 @@ func createPackageAndInfo(
 		Spec:       v1alpha1.PackageSpec{PackageInfo: v1alpha1.PackageInfoTemplate{Name: name, Version: version}},
 		Status:     v1alpha1.PackageStatus{OwnedPackageInfos: []v1alpha1.OwnedResourceRef{{Name: name}}},
 	}
+	pkg.SetInstalledAsDependency(installedAsDep)
 	pkgi := v1alpha1.PackageInfo{
 		ObjectMeta: metav1.ObjectMeta{Name: names.PackageInfoName(&pkg)},
 		Spec:       v1alpha1.PackageInfoSpec{Name: name, Version: version},
@@ -164,6 +165,7 @@ var _ = Describe("Dependency Manager", func() {
 				Expect(res.Status).Should(Equal(ValidationResultStatusOk))
 				Expect(res.Requirements).Should(BeEmpty())
 				Expect(res.Conflicts).Should(BeEmpty())
+				Expect(res.Pruned).Should(BeEmpty())
 			})
 		})
 
@@ -191,6 +193,7 @@ var _ = Describe("Dependency Manager", func() {
 							Expect(res.Status).Should(Equal(ValidationResultStatusOk))
 							Expect(res.Requirements).Should(BeEmpty())
 							Expect(res.Conflicts).Should(BeEmpty())
+							Expect(res.Pruned).Should(BeEmpty())
 						})
 					})
 
@@ -215,6 +218,7 @@ var _ = Describe("Dependency Manager", func() {
 								Expect(res.Status).Should(Equal(ValidationResultStatusOk))
 								Expect(res.Requirements).Should(BeEmpty())
 								Expect(res.Conflicts).Should(BeEmpty())
+								Expect(res.Pruned).Should(BeEmpty())
 							})
 						})
 
@@ -227,6 +231,7 @@ var _ = Describe("Dependency Manager", func() {
 								Expect(res.Status).Should(Equal(ValidationResultStatusOk))
 								Expect(res.Requirements).Should(BeEmpty())
 								Expect(res.Conflicts).Should(BeEmpty())
+								Expect(res.Pruned).Should(BeEmpty())
 							})
 						})
 
@@ -239,6 +244,7 @@ var _ = Describe("Dependency Manager", func() {
 								Expect(res.Status).Should(Equal(ValidationResultStatusOk))
 								Expect(res.Requirements).Should(BeEmpty())
 								Expect(res.Conflicts).Should(BeEmpty())
+								Expect(res.Pruned).Should(BeEmpty())
 							})
 						})
 
@@ -252,6 +258,7 @@ var _ = Describe("Dependency Manager", func() {
 								Expect(res.Status).Should(Equal(ValidationResultStatusOk))
 								Expect(res.Requirements).Should(BeEmpty())
 								Expect(res.Conflicts).Should(BeEmpty())
+								Expect(res.Pruned).Should(BeEmpty())
 							})
 						})
 					})
@@ -270,6 +277,7 @@ var _ = Describe("Dependency Manager", func() {
 						Expect(res.Requirements[0].Name).Should(Equal("D"))
 						Expect(res.Requirements[0].Version).Should(Equal("1.1.7"))
 						Expect(res.Conflicts).Should(BeEmpty())
+						Expect(res.Pruned).Should(BeEmpty())
 					})
 				})
 			})
@@ -461,6 +469,7 @@ var _ = Describe("Dependency Manager", func() {
 						Expect(res.Requirements[0].Name).Should(Equal("D"))
 						Expect(res.Requirements[0].Version).Should(Equal("1.7.4"))
 						Expect(res.Conflicts).Should(BeEmpty())
+						Expect(res.Pruned).Should(BeEmpty())
 					})
 				})
 			})
@@ -489,6 +498,7 @@ var _ = Describe("Dependency Manager", func() {
 						Expect(res.Status).Should(Equal(ValidationResultStatusOk))
 						Expect(res.Requirements).Should(BeEmpty())
 						Expect(res.Conflicts).Should(BeEmpty())
+						Expect(res.Pruned).Should(BeEmpty())
 					})
 				})
 
@@ -509,6 +519,7 @@ var _ = Describe("Dependency Manager", func() {
 						Expect(res.Requirements[1].Name).Should(Equal("E"))
 						Expect(res.Requirements[1].Version).Should(Equal("1.1.7"))
 						Expect(res.Conflicts).Should(BeEmpty())
+						Expect(res.Pruned).Should(BeEmpty())
 					})
 				})
 
@@ -525,7 +536,7 @@ var _ = Describe("Dependency Manager", func() {
 			})
 			When("there is a namespaced package N that depends on D", func() {
 				BeforeEach(func() {
-					n, ni = createPackageAndInfo("N", "N", "default", "1.0.0", true)
+					n, ni = createPackageAndInfo("N", "N", "default", "1.0.0", true, false)
 					ni.Status.Manifest.Dependencies = []v1alpha1.Dependency{{Name: d.Name}}
 				})
 				When("N depends on D with constraint", func() {
@@ -540,6 +551,7 @@ var _ = Describe("Dependency Manager", func() {
 						Expect(res.Status).Should(Equal(ValidationResultStatusConflict))
 						Expect(res.Requirements).Should(BeEmpty())
 						Expect(res.Conflicts).Should(HaveLen(1))
+						Expect(res.Pruned).Should(BeEmpty())
 					})
 					It("should allow legal update of D", func(ctx context.Context) {
 						d, di = createClusterPackageAndInfo("D", "1.2.0", false)
@@ -549,18 +561,7 @@ var _ = Describe("Dependency Manager", func() {
 						Expect(res.Status).Should(Equal(ValidationResultStatusOk))
 						Expect(res.Requirements).Should(BeEmpty())
 						Expect(res.Conflicts).Should(BeEmpty())
-					})
-				})
-				When("Updated N does not depend on D anymore", func() {
-					It("should list D as pruned", func(ctx context.Context) {
-						ni.Status.Manifest.Dependencies = []v1alpha1.Dependency{}
-						res, err := dm.Validate(ctx, n.Name, n.Namespace, ni.Status.Manifest, ni.Spec.Version)
-						Expect(err).ShouldNot(HaveOccurred())
-						Expect(res).ShouldNot(BeNil())
-						Expect(res.Status).Should(Equal(ValidationResultStatusOk))
-						Expect(res.Requirements).Should(BeEmpty())
-						Expect(res.Conflicts).Should(BeEmpty())
-						Expect(res.Pruned).Should(HaveLen(0))
+						Expect(res.Pruned).Should(BeEmpty())
 					})
 				})
 			})
@@ -569,8 +570,8 @@ var _ = Describe("Dependency Manager", func() {
 		When("Package N has component C", func() {
 			When("C is not installed", func() {
 				BeforeEach(func() {
-					n, ni = createPackageAndInfo("N", "N", "default", "1.0.0", false)
-					createPackageAndInfo("C", "N-foo", "default", "1.0.0", false)
+					n, ni = createPackageAndInfo("N", "N", "default", "1.0.0", false, false)
+					createPackageAndInfo("C", "N-foo", "default", "1.0.0", false, false)
 					ni.Status.Manifest.Components = []v1alpha1.Component{
 						{Name: "C", Version: "1.0.0", InstalledName: "foo"},
 					}
@@ -589,13 +590,14 @@ var _ = Describe("Dependency Manager", func() {
 						},
 					))
 					Expect(res.Conflicts).To(BeEmpty())
+					Expect(res.Pruned).Should(BeEmpty())
 				})
 			})
 
 			When("C is installed", func() {
 				BeforeEach(func() {
-					n, ni = createPackageAndInfo("N", "N", "default", "1.0.0", true)
-					createPackageAndInfo("C", "N-foo", "default", "1.1.0", true)
+					n, ni = createPackageAndInfo("N", "N", "default", "1.0.0", true, false)
+					createPackageAndInfo("C", "N-foo", "default", "1.1.0", true, false)
 					ni.Status.Manifest.Components = []v1alpha1.Component{
 						{Name: "C", Version: ">=1.0.0", InstalledName: "foo"},
 					}
@@ -611,6 +613,7 @@ var _ = Describe("Dependency Manager", func() {
 						Expect(res.Status).To(Equal(ValidationResultStatusOk))
 						Expect(res.Requirements).To(BeEmpty())
 						Expect(res.Conflicts).To(BeEmpty())
+						Expect(res.Pruned).Should(BeEmpty())
 					})
 				})
 
@@ -625,6 +628,7 @@ var _ = Describe("Dependency Manager", func() {
 						Expect(res.Status).To(Equal(ValidationResultStatusConflict))
 						Expect(res.Requirements).To(BeEmpty())
 						Expect(res.Conflicts).To(HaveLen(1))
+						Expect(res.Pruned).Should(BeEmpty())
 					})
 				})
 			})
@@ -633,7 +637,7 @@ var _ = Describe("Dependency Manager", func() {
 		When("ClusterPackage P has component C", func() {
 			BeforeEach(func() {
 				_, pi = createClusterPackageAndInfo("P", "1.0.0", false)
-				createPackageAndInfo("C", "P-foo", "p-system", "1.0.0", false)
+				createPackageAndInfo("C", "P-foo", "p-system", "1.0.0", false, false)
 				pi.Status.Manifest.Components = []v1alpha1.Component{
 					{Name: "C", Version: "1.0.0", InstalledName: "foo"},
 				}
@@ -653,18 +657,36 @@ var _ = Describe("Dependency Manager", func() {
 					},
 				))
 				Expect(res.Conflicts).To(BeEmpty())
+				Expect(res.Pruned).Should(BeEmpty())
 			})
 		})
 
-		When("Package P is installed but unused", func() {
+		When("ClusterPackage P is updated", func() {
 			BeforeEach(func() {
-				_, pi = createPackageAndInfo("P", "p", "p-system", "1.0.0", true)
-				_, pi = createClusterPackageAndInfo("P", "1.0.0", false)
-				createPackageAndInfo("C", "P-foo", "p-system", "1.0.0", false)
+				_, pi = createClusterPackageAndInfo("P", "1.0.0", true)
+				createPackageAndInfo("C", "P-foo", "p-system", "1.0.0", true, true)
 				pi.Status.Manifest.Components = []v1alpha1.Component{
 					{Name: "C", Version: "1.0.0", InstalledName: "foo"},
 				}
 				pi.Status.Manifest.DefaultNamespace = "p-system"
+			})
+
+			It("should return RESOLVABLE with requirement C", func(ctx context.Context) {
+				updatedManifest := pi.Status.Manifest.DeepCopy()
+				updatedManifest.Components = []v1alpha1.Component{}
+				res, err := dm.Validate(ctx, p.Name, p.Namespace, updatedManifest, "2.0.0")
+				Expect(err).NotTo(HaveOccurred())
+				Expect(res).NotTo(BeNil())
+				Expect(res.Status).To(Equal(ValidationResultStatusOk))
+				Expect(res.Requirements).To(BeEmpty())
+				Expect(res.Conflicts).To(BeEmpty())
+				Expect(res.Pruned).Should(ConsistOf(
+					Requirement{
+						PackageWithVersion: PackageWithVersion{Name: "C", Version: ""},
+						ComponentMetadata:  &ComponentMetadata{Name: "P-foo", Namespace: "p-system"},
+						Transitive:         false,
+					},
+				))
 			})
 		})
 	})

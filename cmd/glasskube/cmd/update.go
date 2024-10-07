@@ -123,7 +123,7 @@ var updateCmd = &cobra.Command{
 				cliutils.ExitWithError()
 			} else if !tx.IsEmpty() {
 				printTransaction(*tx)
-				if !updateCmdOptions.Yes && !cliutils.YesNoPrompt("Do you want to apply these updates?", false) {
+				if !updateCmdOptions.Yes && !cliutils.YesNoPrompt("Do you want to apply these changes?", false) {
 					fmt.Fprintf(os.Stderr, "⛔ Update cancelled. No changes were made.\n")
 					cliutils.ExitSuccess()
 				}
@@ -166,16 +166,19 @@ var updateCmd = &cobra.Command{
 
 func printTransaction(tx update.UpdateTransaction) {
 	w := tabwriter.NewWriter(os.Stderr, 0, 0, 1, ' ', 0)
+	if len(tx.Items) > 0 {
+		fmt.Fprintf(os.Stderr, "The following packages will be updated:\n")
+	}
 	for _, item := range tx.Items {
 		if item.UpdateRequired() {
-			util.Must(fmt.Fprintf(w, "%v\t%v:\t%v\t-> %v\n",
+			util.Must(fmt.Fprintf(w, " * %v\t%v:\t%v\t-> %v\n",
 				item.Package.GetSpec().PackageInfo.Name,
 				cache.MetaObjectToName(item.Package),
 				item.Package.GetSpec().PackageInfo.Version,
 				item.Version,
 			))
 		} else {
-			util.Must(fmt.Fprintf(w, "%v\t%v:\t%v\t(up-to-date)\n",
+			util.Must(fmt.Fprintf(w, " * %v\t%v:\t%v\t(up-to-date)\n",
 				item.Package.GetSpec().PackageInfo.Name,
 				cache.MetaObjectToName(item.Package),
 				item.Package.GetSpec().PackageInfo.Version,
@@ -183,9 +186,15 @@ func printTransaction(tx update.UpdateTransaction) {
 		}
 	}
 	for _, req := range tx.Requirements {
-		util.Must(fmt.Fprintf(w, "%v:\t-\t-> %v\n", req.Name, req.Version))
+		util.Must(fmt.Fprintf(w, " * %v:\t-\t-> %v\n", req.Name, req.Version))
 	}
 	_ = w.Flush()
+	if len(tx.Pruned) > 0 {
+		fmt.Fprintf(os.Stderr, "The following packages will be removed:\n")
+	}
+	for _, req := range tx.Pruned {
+		fmt.Fprintf(os.Stderr, " * %v (no longer needed)\n", req.Name)
+	}
 }
 
 func completeInstalledPackageNames(

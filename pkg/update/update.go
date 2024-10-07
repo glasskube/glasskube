@@ -26,6 +26,7 @@ type UpdateTransaction struct {
 	Items         []updateTransactionItem
 	ConflictItems []updateTransactionItemConflict
 	Requirements  []dependency.Requirement
+	Pruned        []dependency.Requirement
 }
 
 func (tx UpdateTransaction) IsEmpty() bool {
@@ -125,6 +126,7 @@ func (c *updater) prepare(
 	c.status.SetStatus("Updating package index")
 
 	requirementsSet := make(map[dependency.Requirement]struct{})
+	prunedSet := make(map[dependency.Requirement]struct{})
 	var tx UpdateTransaction
 
 outer:
@@ -156,6 +158,9 @@ outer:
 						for _, req := range result.Requirements {
 							requirementsSet[req] = struct{}{}
 						}
+						for _, req := range result.Pruned {
+							prunedSet[req] = struct{}{}
+						}
 						// this package should be updated
 						tx.Items = append(tx.Items, item)
 					}
@@ -172,6 +177,9 @@ outer:
 
 	for req := range requirementsSet {
 		tx.Requirements = append(tx.Requirements, req)
+	}
+	for req := range prunedSet {
+		tx.Pruned = append(tx.Pruned, req)
 	}
 
 	return &tx, nil
