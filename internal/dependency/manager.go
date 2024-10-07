@@ -85,10 +85,24 @@ func (dm *DependendcyManager) Validate(
 	if len(conflicts) > 0 {
 		status = ValidationResultStatusConflict
 	}
+
+	var pruned []Requirement
+	for _, pkgRef := range g.Prune() {
+		pruned = append(pruned, Requirement{
+			PackageWithVersion: PackageWithVersion{
+				Name: pkgRef.PackageName,
+			},
+			ComponentMetadata: &ComponentMetadata{
+				Name:      pkgRef.Name,
+				Namespace: pkgRef.Namespace,
+			},
+		})
+	}
 	return &ValidationResult{
 		Status:       status,
 		Requirements: requirements,
 		Conflicts:    conflicts,
+		Pruned:       pruned,
 	}, nil
 }
 

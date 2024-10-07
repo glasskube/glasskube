@@ -551,6 +551,18 @@ var _ = Describe("Dependency Manager", func() {
 						Expect(res.Conflicts).Should(BeEmpty())
 					})
 				})
+				When("Updated N does not depend on D anymore", func() {
+					It("should list D as pruned", func(ctx context.Context) {
+						ni.Status.Manifest.Dependencies = []v1alpha1.Dependency{}
+						res, err := dm.Validate(ctx, n.Name, n.Namespace, ni.Status.Manifest, ni.Spec.Version)
+						Expect(err).ShouldNot(HaveOccurred())
+						Expect(res).ShouldNot(BeNil())
+						Expect(res.Status).Should(Equal(ValidationResultStatusOk))
+						Expect(res.Requirements).Should(BeEmpty())
+						Expect(res.Conflicts).Should(BeEmpty())
+						Expect(res.Pruned).Should(HaveLen(0))
+					})
+				})
 			})
 		})
 
@@ -641,6 +653,18 @@ var _ = Describe("Dependency Manager", func() {
 					},
 				))
 				Expect(res.Conflicts).To(BeEmpty())
+			})
+		})
+
+		When("Package P is installed but unused", func() {
+			BeforeEach(func() {
+				_, pi = createPackageAndInfo("P", "p", "p-system", "1.0.0", true)
+				_, pi = createClusterPackageAndInfo("P", "1.0.0", false)
+				createPackageAndInfo("C", "P-foo", "p-system", "1.0.0", false)
+				pi.Status.Manifest.Components = []v1alpha1.Component{
+					{Name: "C", Version: "1.0.0", InstalledName: "foo"},
+				}
+				pi.Status.Manifest.DefaultNamespace = "p-system"
 			})
 		})
 	})
