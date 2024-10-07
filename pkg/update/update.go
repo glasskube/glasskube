@@ -97,6 +97,7 @@ func (c *updater) PrepareForVersion(
 	} else if len(result.Conflicts) > 0 {
 		tx.ConflictItems = append(tx.ConflictItems, updateTransactionItemConflict{item, result.Conflicts})
 	} else {
+		tx.Pruned = result.Pruned
 		tx.Items = append(tx.Items, item)
 	}
 
@@ -167,7 +168,7 @@ outer:
 							}
 						} else {
 							// all other iterations can at most delete stuff from prunedSet
-							for req, _ := range *prunedSet {
+							for req := range *prunedSet {
 								prunedInCurrentIteration := false
 								for _, prunedLocal := range result.Pruned {
 									if prunedLocal == req {
