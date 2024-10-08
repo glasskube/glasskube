@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.24.0](https://github.com/glasskube/glasskube/compare/v0.23.0...v0.24.0) (2024-10-04)
+
+
+### Features
+
+* **package-operator:** add "well-known" label field specs ([#1305](https://github.com/glasskube/glasskube/issues/1305)) ([da321eb](https://github.com/glasskube/glasskube/commit/da321ebff4e7e396e5b4272066e2971a3db2c226))
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/schollz/progressbar/v3 to v3.16.1 ([#1304](https://github.com/glasskube/glasskube/issues/1304)) ([50ef834](https://github.com/glasskube/glasskube/commit/50ef83454c36956d36728a8d2a201486572c340e))
+* **ui:** clear previous modal content ([#1292](https://github.com/glasskube/glasskube/issues/1292)) ([675135c](https://github.com/glasskube/glasskube/commit/675135cf8d24d09e213bd28200b7b608b0dac2c4))
+
+
+### Other
+
+* **deps:** update dependency eslint-plugin-import to v2.31.0 ([#1301](https://github.com/glasskube/glasskube/issues/1301)) ([6b44fec](https://github.com/glasskube/glasskube/commit/6b44fece05b5f6e7d97f3cdc16039843d3ef1ee5))
+* **deps:** update dependency eslint-plugin-react to v7.37.1 ([#1296](https://github.com/glasskube/glasskube/issues/1296)) ([3f26859](https://github.com/glasskube/glasskube/commit/3f26859f069695993b1e85997b5a84c23c872cbd))
+* **deps:** update dependency globals to v15.10.0 ([#1297](https://github.com/glasskube/glasskube/issues/1297)) ([47c3419](https://github.com/glasskube/glasskube/commit/47c3419bfa3e5c170d77a7fa19be14e7fb582361))
+
 ## [0.23.0](https://github.com/glasskube/glasskube/compare/v0.22.0...v0.23.0) (2024-10-01)
 
 
