@@ -42,18 +42,6 @@
 
 {{ define "pkg-detail-update" }}
   {{ if .UpdateAvailable }}
-    <button
-      hx-get="{{ .PackageHref }}/update"
-      hx-target="#modal-container"
-      hx-swap="innerHTML"
-      hx-select="#pkg-update-modal"
-      name="packageName"
-      value="{{ .PackageName }}"
-      class="btn btn-warning btn-sm"
-      data-bs-toggle="modal"
-      data-bs-target="#modal-container">
-      Update
-    </button>
   {{ end }}
 {{ end }}
 

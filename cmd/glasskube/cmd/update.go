@@ -108,6 +108,9 @@ var updateCmd = &cobra.Command{
 				fmt.Fprintf(os.Stderr, "❌ update preparation failed: %v\n", err)
 				cliutils.ExitWithError()
 			}
+		}
+
+		if tx != nil {
 			if len(tx.ConflictItems) > 0 {
 				for _, conflictItem := range tx.ConflictItems {
 					for _, conflict := range conflictItem.Conflicts {
@@ -117,43 +120,41 @@ var updateCmd = &cobra.Command{
 					}
 				}
 				cliutils.ExitWithError()
-			}
-		}
+			} else if !tx.IsEmpty() {
+				printTransaction(*tx)
+				if !updateCmdOptions.Yes && !cliutils.YesNoPrompt("Do you want to apply these updates?", false) {
+					fmt.Fprintf(os.Stderr, "⛔ Update cancelled. No changes were made.\n")
+					cliutils.ExitSuccess()
+				}
 
-		if tx != nil && !tx.IsEmpty() {
-			printTransaction(*tx)
-			if !updateCmdOptions.Yes && !cliutils.YesNoPrompt("Do you want to apply these updates?", false) {
-				fmt.Fprintf(os.Stderr, "⛔ Update cancelled. No changes were made.\n")
-				cliutils.ExitSuccess()
-			}
-
-			for _, item := range tx.Items {
-				if item.UpdateRequired() {
-					if err := updateConfigurationIfNeeded(ctx, item.Package, item.Version); err != nil {
-						fmt.Fprintf(os.Stderr, "❌ error updating configuration for %s: %v\n", item.Package.GetName(), err)
-						cliutils.ExitWithError()
+				for _, item := range tx.Items {
+					if item.UpdateRequired() {
+						if err := updateConfigurationIfNeeded(ctx, item.Package, item.Version); err != nil {
+							fmt.Fprintf(os.Stderr, "❌ error updating configuration for %s: %v\n", item.Package.GetName(), err)
+							cliutils.ExitWithError()
+						}
 					}
 				}
-			}
 
-			updatedPackages, err := updater.Apply(
-				ctx,
-				tx,
-				update.ApplyUpdateOptions{
-					Blocking: true,
-					DryRun:   updateCmdOptions.DryRun,
-				})
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "❌ update failed: %v\n", err)
-				cliutils.ExitWithError()
-			}
-			if updateCmdOptions.Output != "" {
-				if out, err := clientutils.Format(updateCmdOptions.Output.OutputFormat(),
-					updateCmdOptions.ShowAll, updatedPackages...); err != nil {
-					fmt.Fprintf(os.Stderr, "❌ failed to marshal output: %v\n", err)
+				updatedPackages, err := updater.Apply(
+					ctx,
+					tx,
+					update.ApplyUpdateOptions{
+						Blocking: true,
+						DryRun:   updateCmdOptions.DryRun,
+					})
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "❌ update failed: %v\n", err)
 					cliutils.ExitWithError()
-				} else {
-					fmt.Print(out)
+				}
+				if updateCmdOptions.Output != "" {
+					if out, err := clientutils.Format(updateCmdOptions.Output.OutputFormat(),
+						updateCmdOptions.ShowAll, updatedPackages...); err != nil {
+						fmt.Fprintf(os.Stderr, "❌ failed to marshal output: %v\n", err)
+						cliutils.ExitWithError()
+					} else {
+						fmt.Print(out)
+					}
 				}
 			}
 		}
