@@ -101,15 +101,18 @@ PruneLoop:
 				}
 			}
 		}
-		pruned = append(pruned, Requirement{
+		p := Requirement{
 			PackageWithVersion: PackageWithVersion{
 				Name: pkgRef.PackageName,
 			},
-			ComponentMetadata: &ComponentMetadata{
+		}
+		if pkgRef.Namespace != "" {
+			p.ComponentMetadata = &ComponentMetadata{
 				Name:      pkgRef.Name,
 				Namespace: pkgRef.Namespace,
-			},
-		})
+			}
+		}
+		pruned = append(pruned, p)
 	}
 	return &ValidationResult{
 		Status:       status,
