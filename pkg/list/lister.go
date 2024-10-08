@@ -25,14 +25,6 @@ type PackageWithStatus struct {
 	InstalledManifest *v1alpha1.PackageManifest `json:"installedmanifest,omitempty"`
 }
 
-// GetPackage returns either the ClusterPackage or Package depending on which is not nil
-func (obj *PackageWithStatus) GetPackage() ctrlpkg.Package {
-	if obj.ClusterPackage != nil {
-		return obj.ClusterPackage
-	}
-	return obj.Package
-}
-
 type PackagesWithStatus struct {
 	repotypes.MetaIndexItem
 	Packages []*PackageWithStatus
