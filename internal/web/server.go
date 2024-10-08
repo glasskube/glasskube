@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
@@ -93,7 +92,6 @@ func NewServer(options ServerOptions) *server {
 		ServerOptions:           options,
 		configLoader:            &defaultConfigLoader{options.Kubeconfig},
 		forwarders:              make(map[string]*open.OpenResult),
-		updateTransactions:      make(map[int]update.UpdateTransaction),
 		templates:               templates{},
 		stopCh:                  make(chan struct{}, 1),
 		httpServerHasShutdownCh: make(chan struct{}, 1),
@@ -118,8 +116,6 @@ type server struct {
 	forwarders              map[string]*open.OpenResult
 	forwardersMutex         sync.Mutex
 	dependencyMgr           *dependency.DependendcyManager
-	updateMutex             sync.Mutex
-	updateTransactions      map[int]update.UpdateTransaction
 	valueResolver           *manifestvalues.Resolver
 	isBootstrapped          bool
 	templates               templates
@@ -212,9 +208,6 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle(pkgBasePath+"/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
 	router.Handle(installedPkgBasePath+"/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
 	router.Handle(clpkgBasePath+"/configuration/{valueName}", s.requireReady(s.clusterPackageConfigurationInput))
-	// update endpoints
-	router.Handle(installedPkgBasePath+"/update", s.requireReady(s.update))
-	router.Handle(clpkgBasePath+"/update", s.requireReady(s.update))
 	// open endpoints
 	router.Handle(installedPkgBasePath+"/open", s.requireReady(s.open))
 	router.Handle(clpkgBasePath+"/open", s.requireReady(s.open))
@@ -288,115 +281,6 @@ func (s *server) shutdown() {
 		fmt.Fprintf(os.Stderr, "Failed to shutdown server: %v\n", err)
 	}
 	close(s.httpServerHasShutdownCh)
-}
-
-// uninstall is an endpoint, which returns the modal html for GET requests, and performs the update for POST
-func (s *server) update(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	pkgName := mux.Vars(r)["pkgName"]
-	manifestName := mux.Vars(r)["manifestName"]
-	namespace := mux.Vars(r)["namespace"]
-	name := mux.Vars(r)["name"]
-	dryRun, _ := strconv.ParseBool(r.FormValue("dryRun"))
-
-	if r.Method == http.MethodPost {
-		updater := update.NewUpdater(ctx)
-		s.updateMutex.Lock()
-		defer s.updateMutex.Unlock()
-		utIdStr := r.FormValue("updateTransactionId")
-		if utId, err := strconv.Atoi(utIdStr); err != nil {
-			s.sendToast(w,
-				toast.WithErr(fmt.Errorf("failed to parse updateTransactionId %v: %w", utIdStr, err)),
-				toast.WithStatusCode(http.StatusBadRequest))
-			return
-		} else if ut, ok := s.updateTransactions[utId]; !ok {
-			s.sendToast(w,
-				toast.WithErr(fmt.Errorf("failed to find updateTransactionId %v", utId)),
-				toast.WithStatusCode(http.StatusNotFound))
-			return
-		} else if pkgs, err := updater.Apply(
-			ctx,
-			&ut,
-			update.ApplyUpdateOptions{
-				Blocking: dryRun,
-				DryRun:   dryRun,
-			}); err != nil {
-			delete(s.updateTransactions, utId)
-			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to apply update: %w", err)))
-			return
-		} else {
-			delete(s.updateTransactions, utId)
-			if dryRun {
-				if yamlOutput, err := clientutils.Format(clientutils.OutputFormatYAML, false, pkgs...); err != nil {
-					s.sendToast(w, toast.WithErr(fmt.Errorf("failed to render yaml: %w", err)))
-				} else {
-					s.sendYamlModal(w, yamlOutput, nil)
-				}
-			}
-		}
-	} else {
-		packageHref := ""
-		updates := make([]map[string]any, 0)
-		updateGetters := make([]update.PackagesGetter, 0, 1)
-		if pkgName != "" {
-			packageHref = "/clusterpackages/" + pkgName
-			// update concerns cluster packages
-			if pkgName == "-" {
-				// prepare updates for all installed packages
-				updateGetters = append(updateGetters, update.GetAllClusterPackages())
-			} else {
-				// prepare update for a specific package
-				updateGetters = append(updateGetters, update.GetClusterPackageWithName(pkgName))
-			}
-		} else {
-			// update concerns namespaced packages
-			packageHref = util.GetNamespacedPkgHref(manifestName, namespace, name)
-			if manifestName == "-" {
-				// prepare updates for all installed namespaced packages
-				updateGetters = append(updateGetters, update.GetAllPackages(""))
-			} else {
-				// prepare update for a specific namespaced package
-				updateGetters = append(updateGetters, update.GetPackageWithName(namespace, name))
-			}
-		}
-
-		updater := update.NewUpdater(ctx)
-		updateTx, err := updater.Prepare(ctx, updateGetters...)
-		if err != nil {
-			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to prepare update: %w", err)))
-			return
-		}
-		utId := rand.Int()
-		s.updateMutex.Lock()
-		s.updateTransactions[utId] = *updateTx
-		s.updateMutex.Unlock()
-
-		for _, u := range updateTx.Items {
-			if u.UpdateRequired() {
-				updates = append(updates, map[string]any{
-					"Package":        u.Package,
-					"CurrentVersion": u.Package.GetSpec().PackageInfo.Version,
-					"LatestVersion":  u.Version,
-				})
-			}
-		}
-		for _, req := range updateTx.Requirements {
-			updates = append(updates, map[string]any{
-				"Package":        req,
-				"CurrentVersion": "-",
-				"LatestVersion":  req.Version,
-			})
-		}
-
-		err = s.templates.pkgUpdateModalTmpl.Execute(w, map[string]any{
-			"GitopsMode":          s.isGitopsModeEnabled(),
-			"UpdateTransactionId": utId,
-			"Updates":             updates,
-			"PackageHref":         packageHref,
-			"ConflictItems":       updateTx.ConflictItems,
-		})
-		util.CheckTmplError(err, "pkgUpdateModalTmpl")
-	}
 }
 
 // uninstall is an endpoint, which returns the modal html for GET requests, and performs the uninstallation for POST
