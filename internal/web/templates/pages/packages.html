@@ -72,6 +72,7 @@
                         <th scope="col" class="bg-body-secondary p-0">Namespace</th>
                         <th scope="col" class="bg-body-secondary p-0">Repository</th>
                         <th scope="col" class="bg-body-secondary p-0">Version</th>
+                        <th scope="col" class="bg-body-secondary p-0">Suspended</th>
                         <th scope="col" class="bg-body-secondary p-0">Status</th>
                         <th scope="col" class="bg-body-secondary p-0"></th>
                       </tr>
@@ -93,6 +94,13 @@
                           <td class="bg-body-secondary p-0">{{ .Package.Namespace }}</td>
                           <td class="bg-body-secondary p-0">{{ .Package.Spec.PackageInfo.RepositoryName }}</td>
                           <td class="bg-body-secondary p-0">{{ .Package.Spec.PackageInfo.Version }}</td>
+                          <td class="bg-body-secondary p-0">
+                            {{ if IsSuspended .Package }}
+                              Yes
+                            {{ else }}
+                              No
+                            {{ end }}
+                          </td>
                           <td class="bg-body-secondary p-0">{{ .Status.Status }}</td>
                           <td class="bg-body-secondary p-0 pe-2 text-end">
                             {{ if and (eq .Status.Status "Ready") .InstalledManifest .InstalledManifest.Entrypoints }}

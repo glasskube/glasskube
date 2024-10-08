@@ -151,6 +151,12 @@ func (t *templates) parseTemplates() {
 			}
 			return false
 		},
+		"IsSuspended": func(pkg ctrlpkg.Package) bool {
+			if pkg != nil && !pkg.IsNil() {
+				return pkg.GetSpec().Suspend
+			}
+			return false
+		},
 	}
 
 	t.baseTemplate = template.Must(template.New("base.html").
