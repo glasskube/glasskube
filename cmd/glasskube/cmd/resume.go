@@ -27,8 +27,8 @@ var resumeCmd = &cobra.Command{
 }
 
 func runResume(ctx context.Context, name string) {
-	pkg, err := getPackageOrClusterPackage(ctx, name, suspendCmdOptions.KindOptions,
-		suspendCmdOptions.NamespaceOptions)
+	pkg, err := getPackageOrClusterPackage(ctx, name, resumeCmdOptions.KindOptions,
+		resumeCmdOptions.NamespaceOptions)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "❌ %v\n", err)
 		cliutils.ExitWithError()
