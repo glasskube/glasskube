@@ -694,7 +694,6 @@ var _ = Describe("Dependency Manager", func() {
 				pi.Status.Manifest.Dependencies = []v1alpha1.Dependency{
 					{Name: "C", Version: "1.0.0"},
 				}
-				pi.Status.Manifest.DefaultNamespace = "p-system"
 				createPackageAndInfo("D", "P-D", "D", "1.0.0", true, true)
 				pi.Status.Manifest.Components = []v1alpha1.Component{
 					{Name: "D"},
