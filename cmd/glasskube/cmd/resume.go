@@ -30,25 +30,19 @@ func runResume(ctx context.Context, name string) {
 	pkg, err := getPackageOrClusterPackage(ctx, name, suspendCmdOptions.KindOptions,
 		suspendCmdOptions.NamespaceOptions)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintf(os.Stderr, "❌ %v\n", err)
 		cliutils.ExitWithError()
 	}
 
-	result, err := suspend.Resume(ctx, pkg)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+	if resumed, err := suspend.Resume(ctx, pkg); err != nil {
+		fmt.Fprintf(os.Stderr, "❌ %v\n", err)
 		cliutils.ExitWithError()
+	} else if resumed {
+		fmt.Fprintf(os.Stderr, "✅ %v is now resumed\n", pkg.GetName())
+	} else {
+		fmt.Fprintf(os.Stderr, "☑️  %v was not suspended\n", pkg.GetName())
 	}
 
-	switch result {
-	case suspend.Resumed:
-		fmt.Fprintf(os.Stderr, "%v has been resumed\n", pkg.GetName())
-	case suspend.UpToDate:
-		fmt.Fprintf(os.Stderr, "%v is already resumed\n", pkg.GetName())
-	default:
-		fmt.Fprintf(os.Stderr, "unexpected suspend result: %v\n", result)
-		cliutils.ExitWithError()
-	}
 	cliutils.ExitSuccess()
 }
 

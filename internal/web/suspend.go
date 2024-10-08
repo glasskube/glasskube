@@ -19,10 +19,14 @@ func (s *server) handleSuspend(w http.ResponseWriter, r *http.Request) {
 
 	if pkg, err := s.getPackageFromRequest(r); err != nil {
 		s.sendToast(w, toast.WithErr(err))
-	} else if result, err := suspend.Suspend(r.Context(), pkg); err != nil {
+	} else if suspended, err := suspend.Suspend(r.Context(), pkg); err != nil {
 		s.sendToast(w, toast.WithErr(err))
+	} else if suspended {
+		s.sendToast(w, toast.WithMessage(fmt.Sprintf("%v is now suspended", pkg.GetName())),
+			toast.WithSeverity(toast.Info))
 	} else {
-		s.sendToast(w, toast.WithMessage(fmt.Sprintf("suspend result: %v", result)))
+		s.sendToast(w, toast.WithMessage(fmt.Sprintf("%v was already suspended", pkg.GetName())),
+			toast.WithSeverity(toast.Info))
 	}
 }
 
@@ -34,10 +38,13 @@ func (s *server) handleResume(w http.ResponseWriter, r *http.Request) {
 
 	if pkg, err := s.getPackageFromRequest(r); err != nil {
 		s.sendToast(w, toast.WithErr(err))
-	} else if result, err := suspend.Resume(r.Context(), pkg); err != nil {
+	} else if resumed, err := suspend.Resume(r.Context(), pkg); err != nil {
 		s.sendToast(w, toast.WithErr(err))
+	} else if resumed {
+		s.sendToast(w, toast.WithMessage(fmt.Sprintf("%v has been resumed", pkg.GetName())))
 	} else {
-		s.sendToast(w, toast.WithMessage(fmt.Sprintf("resume result: %v", result)))
+		s.sendToast(w, toast.WithMessage(fmt.Sprintf("%v was not suspended", pkg.GetName())),
+			toast.WithSeverity(toast.Info))
 	}
 }
 

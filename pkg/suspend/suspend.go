@@ -10,24 +10,24 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func Suspend(ctx context.Context, pkg ctrlpkg.Package) (Result, error) {
+func Suspend(ctx context.Context, pkg ctrlpkg.Package) (bool, error) {
 	if setSuspend(pkg, true) {
 		if err := doUpdate(ctx, pkg); err != nil {
-			return Unknown, fmt.Errorf("suspend failed for %v %v: %w", pkg.GroupVersionKind().Kind, pkg.GetName(), err)
+			return false, fmt.Errorf("suspend failed for %v %v: %w", pkg.GroupVersionKind().Kind, pkg.GetName(), err)
 		}
-		return Suspended, nil
+		return true, nil
 	}
-	return UpToDate, nil
+	return false, nil
 }
 
-func Resume(ctx context.Context, pkg ctrlpkg.Package) (Result, error) {
+func Resume(ctx context.Context, pkg ctrlpkg.Package) (bool, error) {
 	if setSuspend(pkg, false) {
 		if err := doUpdate(ctx, pkg); err != nil {
-			return Unknown, fmt.Errorf("resume failed for %v %v: %w", pkg.GroupVersionKind().Kind, pkg.GetName(), err)
+			return false, fmt.Errorf("resume failed for %v %v: %w", pkg.GroupVersionKind().Kind, pkg.GetName(), err)
 		}
-		return Resumed, nil
+		return true, nil
 	}
-	return UpToDate, nil
+	return false, nil
 }
 
 func setSuspend(pkg ctrlpkg.Package, value bool) bool {
