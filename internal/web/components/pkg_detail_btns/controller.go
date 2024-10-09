@@ -21,6 +21,7 @@ type pkgDetailBtnsInput struct {
 	UpdateAvailable bool
 	Pkg             ctrlpkg.Package
 	PackageHref     string
+	GitopsMode      bool
 }
 
 func getId(pkgName string) string {
@@ -33,6 +34,7 @@ func ForPkgDetailBtns(
 	manifest *v1alpha1.PackageManifest,
 	pkg ctrlpkg.Package,
 	updateAvailable bool,
+	gitopsMode bool,
 ) *pkgDetailBtnsInput {
 	id := getId(pkgName)
 	return &pkgDetailBtnsInput{
@@ -43,5 +45,6 @@ func ForPkgDetailBtns(
 		UpdateAvailable: updateAvailable,
 		Pkg:             pkg,
 		PackageHref:     util.GetPackageHref(pkg, manifest),
+		GitopsMode:      gitopsMode,
 	}
 }
