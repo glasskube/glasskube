@@ -10,14 +10,24 @@
     <ul class="dropdown-menu">
       {{ if .Pkg.Spec.Suspend }}
         <li>
-          <button class="dropdown-item" hx-post="{{ .PackageHref }}/resume">
+          <button
+            class="dropdown-item"
+            hx-post="{{ .PackageHref }}/resume"
+            {{ if .GitopsMode }}
+              data-bs-toggle="modal" data-bs-target="#modal-container"
+            {{ end }}>
             <i class="bi bi-play-circle"></i>
             Resume
           </button>
         </li>
       {{ else }}
         <li>
-          <button class="dropdown-item" hx-post="{{ .PackageHref }}/suspend">
+          <button
+            class="dropdown-item"
+            hx-post="{{ .PackageHref }}/suspend"
+            {{ if .GitopsMode }}
+              data-bs-toggle="modal" data-bs-target="#modal-container"
+            {{ end }}>
             <i class="bi bi-pause-circle"></i>
             Suspend
           </button>

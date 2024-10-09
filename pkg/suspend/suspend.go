@@ -10,9 +10,36 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func Suspend(ctx context.Context, pkg ctrlpkg.Package) (bool, error) {
+type suspendOptions struct {
+	DryRun bool
+}
+
+func (opts suspendOptions) UpdateOptions() (result metav1.UpdateOptions) {
+	if opts.DryRun {
+		result.DryRun = []string{metav1.DryRunAll}
+	}
+	return
+}
+
+type Option func(opts *suspendOptions)
+
+func DryRun() Option {
+	return func(opts *suspendOptions) { opts.DryRun = true }
+}
+
+type Options []Option
+
+func (opts Options) Get() (result suspendOptions) {
+	for _, fn := range opts {
+		fn(&result)
+	}
+	return
+}
+
+func Suspend(ctx context.Context, pkg ctrlpkg.Package, opts ...Option) (bool, error) {
+	options := Options(opts).Get()
 	if setSuspend(pkg, true) {
-		if err := doUpdate(ctx, pkg); err != nil {
+		if err := doUpdate(ctx, pkg, options.UpdateOptions()); err != nil {
 			return false, fmt.Errorf("suspend failed for %v %v: %w", pkg.GroupVersionKind().Kind, pkg.GetName(), err)
 		}
 		return true, nil
@@ -20,9 +47,10 @@ func Suspend(ctx context.Context, pkg ctrlpkg.Package) (bool, error) {
 	return false, nil
 }
 
-func Resume(ctx context.Context, pkg ctrlpkg.Package) (bool, error) {
+func Resume(ctx context.Context, pkg ctrlpkg.Package, opts ...Option) (bool, error) {
+	options := Options(opts).Get()
 	if setSuspend(pkg, false) {
-		if err := doUpdate(ctx, pkg); err != nil {
+		if err := doUpdate(ctx, pkg, options.UpdateOptions()); err != nil {
 			return false, fmt.Errorf("resume failed for %v %v: %w", pkg.GroupVersionKind().Kind, pkg.GetName(), err)
 		}
 		return true, nil
@@ -38,13 +66,13 @@ func setSuspend(pkg ctrlpkg.Package, value bool) bool {
 	return false
 }
 
-func doUpdate(ctx context.Context, pkg ctrlpkg.Package) error {
+func doUpdate(ctx context.Context, pkg ctrlpkg.Package, opts metav1.UpdateOptions) error {
 	pkgClient := cliutils.PackageClient(ctx)
 	switch p := pkg.(type) {
 	case *v1alpha1.ClusterPackage:
-		return pkgClient.ClusterPackages().Update(ctx, p, metav1.UpdateOptions{})
+		return pkgClient.ClusterPackages().Update(ctx, p, opts)
 	case *v1alpha1.Package:
-		return pkgClient.Packages(pkg.GetNamespace()).Update(ctx, p, metav1.UpdateOptions{})
+		return pkgClient.Packages(pkg.GetNamespace()).Update(ctx, p, opts)
 	default:
 		return fmt.Errorf("unexpected type for ctrlpkg.Package: %T", pkg)
 	}
