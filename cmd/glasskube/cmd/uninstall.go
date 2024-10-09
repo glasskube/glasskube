@@ -14,8 +14,9 @@ import (
 )
 
 var uninstallCmdOptions = struct {
-	NoWait bool
-	Yes    bool
+	NoWait          bool
+	Yes             bool
+	DeleteNamespace bool
 	KindOptions
 	NamespaceOptions
 	DryRunOptions
@@ -80,11 +81,12 @@ var uninstallCmd = &cobra.Command{
 			}
 			fmt.Fprintln(os.Stderr, "Uninstallation started in background")
 		} else {
-			if err := uninstaller.UninstallBlocking(ctx, pkg, uninstallCmdOptions.DryRun); err != nil {
+			if err := uninstaller.UninstallBlocking(
+				ctx, pkg, uninstallCmdOptions.DryRun, uninstallCmdOptions.DeleteNamespace,
+			); err != nil {
 				fmt.Fprintf(os.Stderr, "\n❌ An error occurred during uninstallation:\n\n%v\n", err)
 				cliutils.ExitWithError()
 			}
-			fmt.Fprintf(os.Stderr, "🗑️  %v uninstalled successfully.\n", pkgName)
 		}
 	},
 }
@@ -103,6 +105,8 @@ func showUninstallDetails(context, name string, pruned []graph.PackageRef) {
 func init() {
 	uninstallCmdOptions.KindOptions.AddFlagsToCommand(uninstallCmd)
 	uninstallCmdOptions.NamespaceOptions.AddFlagsToCommand(uninstallCmd)
+	uninstallCmd.PersistentFlags().BoolVarP(&uninstallCmdOptions.DeleteNamespace, "delete-namespace", "d", false,
+		"Delete the namespace if it is empty after deleting the resources")
 	uninstallCmd.PersistentFlags().BoolVar(&uninstallCmdOptions.NoWait, "no-wait", false,
 		"Perform non-blocking uninstall")
 	uninstallCmd.PersistentFlags().BoolVarP(&uninstallCmdOptions.Yes, "yes", "y", false,
