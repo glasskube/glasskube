@@ -85,10 +85,40 @@ func (dm *DependendcyManager) Validate(
 	if len(conflicts) > 0 {
 		status = ValidationResultStatusConflict
 	}
+
+	var pruned []Requirement
+PruneLoop:
+	for _, pkgRef := range g.Prune() {
+		if pkgRef.PackageName == manifest.Name && pkgRef.Namespace == namespace && pkgRef.Name == name {
+			// the currently validated package (+ its requirements) might not exist yet in the graph, and would therefore always be pruned
+			continue
+		}
+		for _, req := range requirements {
+			if req.Name == pkgRef.PackageName {
+				if (req.ComponentMetadata != nil && req.ComponentMetadata.Name == pkgRef.Name &&
+					req.ComponentMetadata.Namespace == pkgRef.Namespace) || req.ComponentMetadata == nil {
+					continue PruneLoop
+				}
+			}
+		}
+		p := Requirement{
+			PackageWithVersion: PackageWithVersion{
+				Name: pkgRef.PackageName,
+			},
+		}
+		if pkgRef.Namespace != "" {
+			p.ComponentMetadata = &ComponentMetadata{
+				Name:      pkgRef.Name,
+				Namespace: pkgRef.Namespace,
+			}
+		}
+		pruned = append(pruned, p)
+	}
 	return &ValidationResult{
 		Status:       status,
 		Requirements: requirements,
 		Conflicts:    conflicts,
+		Pruned:       pruned,
 	}, nil
 }
 
@@ -154,7 +184,7 @@ func (dm *DependendcyManager) add(
 	if namespace == "" {
 		return g.AddCluster(manifest, version, g.Manual(manifest.Name, ""))
 	} else {
-		return g.AddNamespaced(name, namespace, manifest, version, g.Manual(manifest.Name, ""))
+		return g.AddNamespaced(name, namespace, manifest, version, g.Manual(name, namespace))
 	}
 }
 

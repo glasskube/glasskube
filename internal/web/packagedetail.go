@@ -170,6 +170,8 @@ func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w
 		}
 	}
 
+	// note: not using updater here since it doesn't support changing repository or downgrading (and it probably shouldn't)
+	// could maybe be refactored in the future (PackageChanger construct, which the "normal" updater is a special case of)
 	validationResult := &dependency.ValidationResult{}
 	var validationErr error
 	var lostValueDefinitions []string
