@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"github.com/glasskube/glasskube/internal/util"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"text/template"
+	"time"
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	helmv2 "github.com/fluxcd/helm-controller/api/v2"
@@ -84,6 +87,27 @@ func GenerateTargetPatch(target v1alpha1.ValueDefinitionTarget, value any) (*Tar
 			}
 		} else if target.ChartName != nil {
 			newResult.helmChart = target.ChartName
+		}
+		return &newResult, nil
+	}
+}
+
+func GenerateRestartPatch(obj client.Object) (*TargetPatch, error) {
+	if jsonPatch, err := generateJsonPatch(v1alpha1.PartialJsonPatch{
+		Op:   "add",
+		Path: "/spec/template/metadata/labels/kubectl.kubernetes.io//restartedAt",
+	}, time.Now().Format(time.RFC3339)); err != nil {
+		return nil, err
+	} else {
+		newResult := TargetPatch{patch: jsonPatch}
+		var ns *string
+		if obj.GetNamespace() != "" {
+			ns = util.Pointer(obj.GetNamespace())
+		}
+		newResult.resource = &targetResource{
+			GroupVersionKind: obj.GetObjectKind().GroupVersionKind(),
+			name:             obj.GetName(),
+			namespace:        ns,
 		}
 		return &newResult, nil
 	}

@@ -102,4 +102,5 @@ type PackageStatus struct {
 	OwnedResources    []OwnedResourceRef `json:"ownedResources,omitempty"`
 	OwnedPackageInfos []OwnedResourceRef `json:"ownedPackageInfos,omitempty"`
 	OwnedPackages     []OwnedResourceRef `json:"ownedPackages,omitempty"`
+	PreviousSpec      string             `json:"previousSpec,omitempty"`
 }

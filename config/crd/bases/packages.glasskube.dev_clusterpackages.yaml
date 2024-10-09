@@ -240,6 +240,8 @@ spec:
                   - version
                   type: object
                 type: array
+              previousSpec:
+                type: string
               version:
                 type: string
             type: object

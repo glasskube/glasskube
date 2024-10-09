@@ -195,6 +195,23 @@ func (r *Adapter) reconcilePlainManifest(
 
 	// TODO: check if namespace is terminating before applying
 
+	if changed, _, err := ctrlpkg.HasSpecChanged(pkg); err != nil {
+		log.Error(err, "cannot evaluate whether workloads should be restarted")
+	} else if changed {
+		log.Info("package spec has changed, generating restart patches")
+		// TODO move patch generation to util function usable from CLI too
+		for _, obj := range objectsToApply {
+			switch obj.GetObjectKind().GroupVersionKind().Kind {
+			case constants.Deployment:
+				if p, err := resourcepatch.GenerateRestartPatch(obj); err != nil {
+					// TODO
+				} else {
+					patches = append(patches, *p)
+				}
+			}
+		}
+	}
+
 	// Apply any modifications before changing anything on the cluster
 	for _, obj := range objectsToApply {
 		if err := r.SetOwnerIfManagedOrNotExists(r.Client, ctx, pkg, obj); err != nil {
