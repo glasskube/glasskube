@@ -255,7 +255,7 @@ func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w
 	}
 
 	if headerOnly {
-		repoErr = s.templates.pkgDetailHeaderTmpl.Execute(w, templateData)
+		repoErr = s.templates.pkgDetailHeaderTmpl.Execute(w, s.enrichPage(r, templateData, repoErr))
 		webutil.CheckTmplError(repoErr, fmt.Sprintf("package-detail-header (%s)", p.request.manifestName))
 	} else {
 		repoErr = s.templates.pkgPageTmpl.Execute(w, s.enrichPage(r, templateData, repoErr))
