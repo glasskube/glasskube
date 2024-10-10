@@ -196,16 +196,18 @@ func (r *Adapter) reconcilePlainManifest(
 
 	// TODO: check if namespace is terminating before applying
 
-	specHash, err := ctrlpkg.SpecHash(pkg)
-	if err != nil {
-		// TODO probably can't continue now? no idea
-		log.Error(err, "cannot evaluate whether workloads should be restarted")
+	specHash, specHashErr := ctrlpkg.SpecHash(pkg)
+	if specHashErr != nil {
+		log.Error(specHashErr, "failed to get spec hash for package – restarts might not happen", "package", pkg)
 	}
 
 	// Apply any modifications before changing anything on the cluster
 	for _, obj := range objectsToApply {
-		r.annotateWithSpecHash(obj, specHash)
-
+		if specHashErr == nil {
+			if err := r.annotateWithSpecHash(obj, specHash); err != nil {
+				log.Error(err, "could not annotate object with spec hash", "package", pkg, "object", obj)
+			}
+		}
 		if err := r.SetOwnerIfManagedOrNotExists(r.Client, ctx, pkg, obj); err != nil {
 			return nil, err
 		}
@@ -234,21 +236,30 @@ func (r *Adapter) reconcilePlainManifest(
 	return ownedResources, nil
 }
 
-func (r *Adapter) annotateWithSpecHash(obj client.Object, specHash string) {
+func (r *Adapter) annotateWithSpecHash(obj client.Object, specHash string) error {
 	// TODO make usable from CLI too
 	switch obj.GetObjectKind().GroupVersionKind().Kind {
-	case constants.Deployment:
+	case constants.Deployment, constants.StatefulSet:
+		path := []string{"spec", "template", "metadata", "annotations"}
 		// TODO there has to be a better way to do this
-		if depl, ok := obj.(runtime.Unstructured); ok {
-			deplContent := depl.UnstructuredContent()
-			annotations, ok, err := unstructured.NestedStringMap(deplContent, "spec", "template", "metadata", "annotations")
-			if !ok || err != nil {
-				annotations = make(map[string]string)
+		if unstructuredObj, ok := obj.(runtime.Unstructured); ok {
+			objContent := unstructuredObj.UnstructuredContent()
+			if annotations, ok, err := unstructured.NestedStringMap(objContent, path...); err != nil {
+				return err
+			} else {
+				if !ok {
+					annotations = make(map[string]string)
+				}
+				annotations[packagesv1alpha1.AnnotationSpecHash] = specHash
+				err = unstructured.SetNestedStringMap(objContent, annotations, path...)
+				if err != nil {
+					return err
+				}
+				unstructuredObj.SetUnstructuredContent(objContent)
+				return nil
 			}
-			annotations[packagesv1alpha1.AnnotationSpecHash] = specHash
-			_ = unstructured.SetNestedStringMap(deplContent, annotations, "spec", "template", "metadata", "annotations")
-			depl.SetUnstructuredContent(deplContent)
 		}
 		// TODO what else needs to be restarted?
 	}
+	return nil
 }
