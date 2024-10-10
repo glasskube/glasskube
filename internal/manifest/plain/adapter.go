@@ -3,6 +3,8 @@ package plain
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/constants"
@@ -23,7 +25,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 )
 
 var fieldOwner = client.FieldOwner("packages.glasskube.dev/package-controller")

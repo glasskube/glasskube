@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"text/template"
+
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	helmv2 "github.com/fluxcd/helm-controller/api/v2"
 	"github.com/glasskube/glasskube/api/v1alpha1"
@@ -13,7 +15,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"text/template"
 )
 
 // object combines the runtime and metav1 object interfaces.
