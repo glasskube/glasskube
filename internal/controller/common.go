@@ -140,7 +140,6 @@ type PackageReconcilationContext struct {
 	pkg                   ctrlpkg.Package
 	pi                    *v1alpha1.PackageInfo
 	isSuccess             bool
-	adaptersDone          bool // TODO more fancy with phases or something
 	shouldUpdateStatus    bool
 	shouldUpdateResource  bool
 	currentOwnedResources []v1alpha1.OwnedResourceRef
@@ -235,8 +234,6 @@ func (r *PackageReconcilationContext) reconcilePackageInfoReady(ctx context.Cont
 			ownerutils.Add(&r.currentOwnedResources, result.OwnedResources...)
 		}
 	}
-
-	r.adaptersDone = true
 
 	if errs != nil {
 		r.setShouldUpdate(
@@ -611,17 +608,6 @@ func (r *PackageReconcilationContext) actualFinalize(ctx context.Context) error 
 	r.setShouldUpdate(ownerutils.Add(&r.pkg.GetStatus().OwnedPackages, r.currentOwnedPackages...))
 
 	var errs error
-
-	if r.adaptersDone {
-		if changed, newHash, err := ctrlpkg.HasSpecChanged(r.pkg); err != nil {
-			log.Error(err, "cannot update package's previous spec hash")
-			errs = multierr.Append(errs, err)
-		} else if changed {
-			r.pkg.GetStatus().PreviousSpec = newHash
-			r.setShouldUpdate(true)
-		}
-	}
-
 	if r.isSuccess {
 		if err := r.cleanup(ctx); err != nil {
 			r.setShouldUpdate(

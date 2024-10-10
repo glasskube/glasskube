@@ -3,8 +3,6 @@ package plain
 import (
 	"context"
 	"fmt"
-	"strings"
-
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/constants"
@@ -18,12 +16,14 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"strings"
 )
 
 var fieldOwner = client.FieldOwner("packages.glasskube.dev/package-controller")
@@ -195,25 +195,31 @@ func (r *Adapter) reconcilePlainManifest(
 
 	// TODO: check if namespace is terminating before applying
 
-	if changed, _, err := ctrlpkg.HasSpecChanged(pkg); err != nil {
+	specHash, err := ctrlpkg.SpecHash(pkg)
+	if err != nil {
+		// TODO probably can't continue now? no idea
 		log.Error(err, "cannot evaluate whether workloads should be restarted")
-	} else if changed {
-		log.Info("package spec has changed, generating restart patches")
-		// TODO move patch generation to util function usable from CLI too
-		for _, obj := range objectsToApply {
-			switch obj.GetObjectKind().GroupVersionKind().Kind {
-			case constants.Deployment:
-				if p, err := resourcepatch.GenerateRestartPatch(obj); err != nil {
-					// TODO
-				} else {
-					patches = append(patches, *p)
-				}
-			}
-		}
 	}
 
 	// Apply any modifications before changing anything on the cluster
 	for _, obj := range objectsToApply {
+		// TODO make usable from CLI too
+		switch obj.GetObjectKind().GroupVersionKind().Kind {
+		case constants.Deployment:
+			// TODO there has to be a better way to do this
+			if depl, ok := obj.(runtime.Unstructured); ok {
+				deplContent := depl.UnstructuredContent()
+				annotations, ok, err := unstructured.NestedStringMap(deplContent, "spec", "template", "metadata", "annotations")
+				if !ok || err != nil {
+					annotations = make(map[string]string)
+				}
+				annotations[packagesv1alpha1.AnnotationSpecHash] = specHash
+				_ = unstructured.SetNestedStringMap(deplContent, annotations, "spec", "template", "metadata", "annotations")
+				depl.SetUnstructuredContent(deplContent)
+			}
+			// TODO what else needs to be restarted?
+		}
+
 		if err := r.SetOwnerIfManagedOrNotExists(r.Client, ctx, pkg, obj); err != nil {
 			return nil, err
 		}
@@ -240,4 +246,15 @@ func (r *Adapter) reconcilePlainManifest(
 		}
 	}
 	return ownedResources, nil
+}
+
+const AnnotationRestartedAt = "kubectl.kubernetes.io/restartedAt"
+
+func setRestartedAt(obj client.Object, value string) {
+	annotations := obj.GetAnnotations()
+	if annotations == nil {
+		annotations = make(map[string]string)
+	}
+	annotations[AnnotationRestartedAt] = value
+	obj.SetAnnotations(annotations)
 }

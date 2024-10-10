@@ -95,7 +95,7 @@ func GenerateTargetPatch(target v1alpha1.ValueDefinitionTarget, value any) (*Tar
 func GenerateRestartPatch(obj client.Object) (*TargetPatch, error) {
 	if jsonPatch, err := generateJsonPatch(v1alpha1.PartialJsonPatch{
 		Op:   "add",
-		Path: "/spec/template/metadata/labels/kubectl.kubernetes.io//restartedAt",
+		Path: "/spec/template/metadata/annotations/restart",
 	}, time.Now().Format(time.RFC3339)); err != nil {
 		return nil, err
 	} else {
