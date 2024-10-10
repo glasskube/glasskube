@@ -247,14 +247,3 @@ func (r *Adapter) reconcilePlainManifest(
 	}
 	return ownedResources, nil
 }
-
-const AnnotationRestartedAt = "kubectl.kubernetes.io/restartedAt"
-
-func setRestartedAt(obj client.Object, value string) {
-	annotations := obj.GetAnnotations()
-	if annotations == nil {
-		annotations = make(map[string]string)
-	}
-	annotations[AnnotationRestartedAt] = value
-	obj.SetAnnotations(annotations)
-}
