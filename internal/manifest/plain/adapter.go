@@ -194,13 +194,12 @@ func (r *Adapter) reconcilePlainManifest(
 		}
 	}
 
-	// TODO: check if namespace is terminating before applying
-
 	specHash, specHashErr := ctrlpkg.SpecHash(pkg)
 	if specHashErr != nil {
 		log.Error(specHashErr, "failed to get spec hash for package – restarts might not happen", "package", pkg)
 	}
 
+	// TODO: check if namespace is terminating before applying
 	// Apply any modifications before changing anything on the cluster
 	for _, obj := range objectsToApply {
 		if specHashErr == nil {
@@ -236,18 +235,20 @@ func (r *Adapter) reconcilePlainManifest(
 	return ownedResources, nil
 }
 
+// if the obj kind is Deployment or StatefulSet annotateWithSpecHash sets the AnnotationSpecHash annotation of the
+// template to the given specHash. For any other kind it does nothing. Updating the template's annotation to a
+// different value than the existing one, will trigger a rolling restart of the resource. When the value stays the same,
+// the resource will not be restarted.
 func (r *Adapter) annotateWithSpecHash(obj client.Object, specHash string) error {
-	// TODO make usable from CLI too
 	switch obj.GetObjectKind().GroupVersionKind().Kind {
 	case constants.Deployment, constants.StatefulSet:
 		path := []string{"spec", "template", "metadata", "annotations"}
-		// TODO there has to be a better way to do this
 		if unstructuredObj, ok := obj.(runtime.Unstructured); ok {
 			objContent := unstructuredObj.UnstructuredContent()
-			if annotations, ok, err := unstructured.NestedStringMap(objContent, path...); err != nil {
+			if annotations, exists, err := unstructured.NestedStringMap(objContent, path...); err != nil {
 				return err
 			} else {
-				if !ok {
+				if !exists {
 					annotations = make(map[string]string)
 				}
 				annotations[packagesv1alpha1.AnnotationSpecHash] = specHash
@@ -259,7 +260,6 @@ func (r *Adapter) annotateWithSpecHash(obj client.Object, specHash string) error
 				return nil
 			}
 		}
-		// TODO what else needs to be restarted?
 	}
 	return nil
 }
