@@ -93,6 +93,11 @@ type ValueConfiguration struct {
 type PackageSpec struct {
 	PackageInfo PackageInfoTemplate           `json:"packageInfo"`
 	Values      map[string]ValueConfiguration `json:"values,omitempty"`
+
+	// Suspend indicates that reconciliation of this resource should be suspended.
+	//
+	// +kubebuilder:validation:Optional
+	Suspend bool `json:"suspend"`
 }
 
 // PackageStatus defines the observed state

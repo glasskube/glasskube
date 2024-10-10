@@ -64,6 +64,10 @@ spec:
                 - name
                 - version
                 type: object
+              suspend:
+                description: Suspend indicates that reconciliation of this resource
+                  should be suspended.
+                type: boolean
               values:
                 additionalProperties:
                   maxProperties: 1

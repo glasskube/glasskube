@@ -28,12 +28,15 @@ var configureCmdOptions = struct {
 }
 
 var configureCmd = &cobra.Command{
-	Use:               "configure <package-name>",
-	Short:             "Configure a package",
-	Args:              cobra.ExactArgs(1),
-	PreRun:            cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
-	Run:               runConfigure,
-	ValidArgsFunction: completeInstalledPackageNames,
+	Use:    "configure <package-name>",
+	Short:  "Configure a package",
+	Args:   cobra.ExactArgs(1),
+	PreRun: cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
+	Run:    runConfigure,
+	ValidArgsFunction: installedPackagesCompletionFunc(
+		&configureCmdOptions.NamespaceOptions,
+		&configureCmdOptions.KindOptions,
+	),
 }
 
 func runConfigure(cmd *cobra.Command, args []string) {
