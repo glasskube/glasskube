@@ -204,22 +204,7 @@ func (r *Adapter) reconcilePlainManifest(
 
 	// Apply any modifications before changing anything on the cluster
 	for _, obj := range objectsToApply {
-		// TODO make usable from CLI too
-		switch obj.GetObjectKind().GroupVersionKind().Kind {
-		case constants.Deployment:
-			// TODO there has to be a better way to do this
-			if depl, ok := obj.(runtime.Unstructured); ok {
-				deplContent := depl.UnstructuredContent()
-				annotations, ok, err := unstructured.NestedStringMap(deplContent, "spec", "template", "metadata", "annotations")
-				if !ok || err != nil {
-					annotations = make(map[string]string)
-				}
-				annotations[packagesv1alpha1.AnnotationSpecHash] = specHash
-				_ = unstructured.SetNestedStringMap(deplContent, annotations, "spec", "template", "metadata", "annotations")
-				depl.SetUnstructuredContent(deplContent)
-			}
-			// TODO what else needs to be restarted?
-		}
+		r.annotateWithSpecHash(obj, specHash)
 
 		if err := r.SetOwnerIfManagedOrNotExists(r.Client, ctx, pkg, obj); err != nil {
 			return nil, err
@@ -247,4 +232,23 @@ func (r *Adapter) reconcilePlainManifest(
 		}
 	}
 	return ownedResources, nil
+}
+
+func (r *Adapter) annotateWithSpecHash(obj client.Object, specHash string) {
+	// TODO make usable from CLI too
+	switch obj.GetObjectKind().GroupVersionKind().Kind {
+	case constants.Deployment:
+		// TODO there has to be a better way to do this
+		if depl, ok := obj.(runtime.Unstructured); ok {
+			deplContent := depl.UnstructuredContent()
+			annotations, ok, err := unstructured.NestedStringMap(deplContent, "spec", "template", "metadata", "annotations")
+			if !ok || err != nil {
+				annotations = make(map[string]string)
+			}
+			annotations[packagesv1alpha1.AnnotationSpecHash] = specHash
+			_ = unstructured.SetNestedStringMap(deplContent, annotations, "spec", "template", "metadata", "annotations")
+			depl.SetUnstructuredContent(deplContent)
+		}
+		// TODO what else needs to be restarted?
+	}
 }
