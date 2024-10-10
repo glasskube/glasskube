@@ -18,6 +18,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -193,10 +194,19 @@ func (r *Adapter) reconcilePlainManifest(
 		}
 	}
 
-	// TODO: check if namespace is terminating before applying
+	specHash, specHashErr := ctrlpkg.SpecHash(pkg)
+	if specHashErr != nil {
+		log.Error(specHashErr, "failed to get spec hash for package – restarts might not happen", "package", pkg)
+	}
 
+	// TODO: check if namespace is terminating before applying
 	// Apply any modifications before changing anything on the cluster
 	for _, obj := range objectsToApply {
+		if specHashErr == nil {
+			if err := r.annotateWithSpecHash(obj, specHash); err != nil {
+				log.Error(err, "could not annotate object with spec hash", "package", pkg, "object", obj)
+			}
+		}
 		if err := r.SetOwnerIfManagedOrNotExists(r.Client, ctx, pkg, obj); err != nil {
 			return nil, err
 		}
@@ -223,4 +233,33 @@ func (r *Adapter) reconcilePlainManifest(
 		}
 	}
 	return ownedResources, nil
+}
+
+// if the obj kind is Deployment or StatefulSet annotateWithSpecHash sets the AnnotationSpecHash annotation of the
+// template to the given specHash. For any other kind it does nothing. Updating the template's annotation to a
+// different value than the existing one, will trigger a rolling restart of the resource. When the value stays the same,
+// the resource will not be restarted.
+func (r *Adapter) annotateWithSpecHash(obj client.Object, specHash string) error {
+	switch obj.GetObjectKind().GroupVersionKind().Kind {
+	case constants.Deployment, constants.StatefulSet:
+		path := []string{"spec", "template", "metadata", "annotations"}
+		if unstructuredObj, ok := obj.(runtime.Unstructured); ok {
+			objContent := unstructuredObj.UnstructuredContent()
+			if annotations, exists, err := unstructured.NestedStringMap(objContent, path...); err != nil {
+				return err
+			} else {
+				if !exists {
+					annotations = make(map[string]string)
+				}
+				annotations[packagesv1alpha1.AnnotationSpecHash] = specHash
+				err = unstructured.SetNestedStringMap(objContent, annotations, path...)
+				if err != nil {
+					return err
+				}
+				unstructuredObj.SetUnstructuredContent(objContent)
+				return nil
+			}
+		}
+	}
+	return nil
 }
