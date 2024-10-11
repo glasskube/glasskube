@@ -12,15 +12,25 @@ type Response struct {
 
 type ResponseOption func(options *Response)
 
+type severity string
+
+const (
+	Auto    severity = ""
+	Success severity = "success"
+	Info    severity = "info"
+	Warning severity = "warning"
+	Danger  severity = "danger"
+)
+
 func WithStatusCode(statusCode int) ResponseOption {
 	return func(options *Response) {
 		options.StatusCode = statusCode
 	}
 }
 
-func WithCssClass(cssClass string) ResponseOption {
+func WithSeverity(severity severity) ResponseOption {
 	return func(options *Response) {
-		options.CssClass = cssClass
+		options.Severity = severity
 	}
 }
 
@@ -59,11 +69,11 @@ func (r *Response) Apply() {
 		r.StatusCode = http.StatusOK
 	}
 
-	if r.CssClass == "" {
+	if r.Severity == Auto {
 		if r.StatusCode < 200 || r.StatusCode >= 300 {
-			r.CssClass = "danger"
+			r.Severity = Danger
 		} else {
-			r.CssClass = "success"
+			r.Severity = Success
 		}
 	}
 }

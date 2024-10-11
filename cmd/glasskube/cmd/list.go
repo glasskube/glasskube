@@ -162,7 +162,7 @@ func allPkgs(clpkgs []*list.PackageWithStatus, pkgs []*list.PackagesWithStatus) 
 }
 
 func printClusterPackageTable(packages []*list.PackageWithStatus) {
-	header := []string{"NAME", "VERSION", "AUTO-UPDATE"}
+	header := []string{"NAME", "VERSION", "AUTO-UPDATE", "SUSPENDED"}
 	if listCmdOptions.ShowLatestVersion {
 		header = append(header, "LATEST VERSION")
 	}
@@ -172,7 +172,7 @@ func printClusterPackageTable(packages []*list.PackageWithStatus) {
 	}
 	header = append(header, "STATUS")
 	if listCmdOptions.ShowMessage {
-		header = append(header, "Message")
+		header = append(header, "MESSAGE")
 	}
 
 	err := cliutils.PrintTable(os.Stdout,
@@ -181,6 +181,11 @@ func printClusterPackageTable(packages []*list.PackageWithStatus) {
 		func(pkg *list.PackageWithStatus) []string {
 			row := []string{pkg.Name, versionString(*pkg),
 				clientutils.AutoUpdateString(pkg.ClusterPackage, "")}
+			if pkg.ClusterPackage != nil {
+				row = append(row, boolYesNo(pkg.ClusterPackage.Spec.Suspend))
+			} else {
+				row = append(row, "")
+			}
 			if listCmdOptions.ShowLatestVersion {
 				row = append(row, pkg.LatestVersion)
 			}
@@ -213,7 +218,7 @@ func printClusterPackageTable(packages []*list.PackageWithStatus) {
 }
 
 func printPackageTable(packages []*list.PackagesWithStatus) {
-	header := []string{"PACKAGENAME", "NAMESPACE", "NAME", "VERSION", "AUTO-UPDATE"}
+	header := []string{"PACKAGENAME", "NAMESPACE", "NAME", "VERSION", "AUTO-UPDATE", "SUSPENDED"}
 	if listCmdOptions.ShowLatestVersion {
 		header = append(header, "LATEST VERSION")
 	}
@@ -243,6 +248,11 @@ func printPackageTable(packages []*list.PackagesWithStatus) {
 		func(pkg *list.PackageWithStatus) []string {
 			row := []string{pkg.Name, pkgNamespaceString(*pkg), pkgNameString(*pkg), versionString(*pkg),
 				clientutils.AutoUpdateString(pkg.Package, "")}
+			if pkg.Package != nil {
+				row = append(row, boolYesNo(pkg.Package.Spec.Suspend))
+			} else {
+				row = append(row, "")
+			}
 			if listCmdOptions.ShowLatestVersion {
 				row = append(row, pkg.LatestVersion)
 			}

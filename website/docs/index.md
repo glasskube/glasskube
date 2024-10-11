@@ -151,6 +151,14 @@ Shows additional information about the given package.
 Opens the default entrypoint of the given package.
 Use `glasskube open <package> <entrypoint>` to open a specific entrypoint.
 
+### `glasskube suspend`
+
+Instruct the package-operator to suspend reconciliation of the given package
+
+### `glasskube resume`
+
+Resume reconciliation of a suspended package
+
 ### `glasskube auto-update`
 
 Update autopilot for packages where automatic updates are enabled.

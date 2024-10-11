@@ -19,7 +19,6 @@ import (
 	"github.com/glasskube/glasskube/internal/manifestvalues/cli"
 	"github.com/glasskube/glasskube/internal/repo"
 	"github.com/glasskube/glasskube/internal/semver"
-	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/kubeconfig"
 	"github.com/glasskube/glasskube/pkg/manifest"
 	"github.com/glasskube/glasskube/pkg/statuswriter"
@@ -44,7 +43,7 @@ var updateCmd = &cobra.Command{
 	Use:               "update [<package-name>...]",
 	Short:             "Update some or all packages in your cluster",
 	PreRun:            cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
-	ValidArgsFunction: completeInstalledPackageNames,
+	ValidArgsFunction: installedPackagesCompletionFunc(&updateCmdOptions.NamespaceOptions, &updateCmdOptions.KindOptions),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 
@@ -109,6 +108,9 @@ var updateCmd = &cobra.Command{
 				fmt.Fprintf(os.Stderr, "❌ update preparation failed: %v\n", err)
 				cliutils.ExitWithError()
 			}
+		}
+
+		if tx != nil {
 			if len(tx.ConflictItems) > 0 {
 				for _, conflictItem := range tx.ConflictItems {
 					for _, conflict := range conflictItem.Conflicts {
@@ -118,43 +120,41 @@ var updateCmd = &cobra.Command{
 					}
 				}
 				cliutils.ExitWithError()
-			}
-		}
+			} else if !tx.IsEmpty() {
+				printTransaction(*tx)
+				if !updateCmdOptions.Yes && !cliutils.YesNoPrompt("Do you want to apply these updates?", false) {
+					fmt.Fprintf(os.Stderr, "⛔ Update cancelled. No changes were made.\n")
+					cliutils.ExitSuccess()
+				}
 
-		if tx != nil && !tx.IsEmpty() {
-			printTransaction(*tx)
-			if !updateCmdOptions.Yes && !cliutils.YesNoPrompt("Do you want to apply these updates?", false) {
-				fmt.Fprintf(os.Stderr, "⛔ Update cancelled. No changes were made.\n")
-				cliutils.ExitSuccess()
-			}
-
-			for _, item := range tx.Items {
-				if item.UpdateRequired() {
-					if err := updateConfigurationIfNeeded(ctx, item.Package, item.Version); err != nil {
-						fmt.Fprintf(os.Stderr, "❌ error updating configuration for %s: %v\n", item.Package.GetName(), err)
-						cliutils.ExitWithError()
+				for _, item := range tx.Items {
+					if item.UpdateRequired() {
+						if err := updateConfigurationIfNeeded(ctx, item.Package, item.Version); err != nil {
+							fmt.Fprintf(os.Stderr, "❌ error updating configuration for %s: %v\n", item.Package.GetName(), err)
+							cliutils.ExitWithError()
+						}
 					}
 				}
-			}
 
-			updatedPackages, err := updater.Apply(
-				ctx,
-				tx,
-				update.ApplyUpdateOptions{
-					Blocking: true,
-					DryRun:   updateCmdOptions.DryRun,
-				})
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "❌ update failed: %v\n", err)
-				cliutils.ExitWithError()
-			}
-			if updateCmdOptions.Output != "" {
-				if out, err := clientutils.Format(updateCmdOptions.Output.OutputFormat(),
-					updateCmdOptions.ShowAll, updatedPackages...); err != nil {
-					fmt.Fprintf(os.Stderr, "❌ failed to marshal output: %v\n", err)
+				updatedPackages, err := updater.Apply(
+					ctx,
+					tx,
+					update.ApplyUpdateOptions{
+						Blocking: true,
+						DryRun:   updateCmdOptions.DryRun,
+					})
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "❌ update failed: %v\n", err)
 					cliutils.ExitWithError()
-				} else {
-					fmt.Print(out)
+				}
+				if updateCmdOptions.Output != "" {
+					if out, err := clientutils.Format(updateCmdOptions.Output.OutputFormat(),
+						updateCmdOptions.ShowAll, updatedPackages...); err != nil {
+						fmt.Fprintf(os.Stderr, "❌ failed to marshal output: %v\n", err)
+						cliutils.ExitWithError()
+					} else {
+						fmt.Print(out)
+					}
 				}
 			}
 		}
@@ -187,33 +187,60 @@ func printTransaction(tx update.UpdateTransaction) {
 	_ = w.Flush()
 }
 
-func completeInstalledPackageNames(
-	cmd *cobra.Command,
-	args []string,
-	toComplete string,
-) (packages []string, dir cobra.ShellCompDirective) {
-	dir = cobra.ShellCompDirectiveNoFileComp
-	config, _, err := kubeconfig.New(config.Kubeconfig)
-	if err != nil {
-		dir &= cobra.ShellCompDirectiveError
-		return
-	}
-	client, err := client.New(config)
-	if err != nil {
-		dir &= cobra.ShellCompDirectiveError
-		return
-	}
-	var packageList v1alpha1.ClusterPackageList
-	if err := client.ClusterPackages().GetAll(cmd.Context(), &packageList); err != nil {
-		dir &= cobra.ShellCompDirectiveError
-		return
-	}
-	for _, pkg := range packageList.Items {
-		if (toComplete == "" || strings.HasPrefix(pkg.GetName(), toComplete)) && !slices.Contains(args, pkg.GetName()) {
-			packages = append(packages, pkg.GetName())
+func installedPackagesCompletionFunc(
+	nsOpts *NamespaceOptions,
+	kindOpts *KindOptions,
+) func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		dir := cobra.ShellCompDirectiveNoFileComp
+		var packages []string
+
+		config, rawConfig, err := kubeconfig.New(config.Kubeconfig)
+		if err != nil {
+			dir |= cobra.ShellCompDirectiveError
+			return nil, dir
 		}
+
+		ctx, err := clicontext.SetupContext(cmd.Context(), config, rawConfig)
+		if err != nil {
+			dir |= cobra.ShellCompDirectiveError
+			return nil, dir
+		}
+
+		client := cliutils.PackageClient(ctx)
+
+		if (nsOpts == nil || nsOpts.Namespace == "") && (kindOpts == nil || kindOpts.Kind != KindPackage) {
+			var list v1alpha1.ClusterPackageList
+			if err := client.ClusterPackages().GetAll(ctx, &list); err != nil {
+				dir |= cobra.ShellCompDirectiveError
+				return nil, dir
+			}
+			for _, pkg := range list.Items {
+				if (toComplete == "" || strings.HasPrefix(pkg.GetName(), toComplete)) && !slices.Contains(args, pkg.GetName()) {
+					packages = append(packages, pkg.GetName())
+				}
+			}
+		}
+
+		if kindOpts == nil || kindOpts.Kind != KindClusterPackage {
+			ns := ""
+			if nsOpts != nil {
+				ns = nsOpts.GetActualNamespace(ctx)
+			}
+			var list v1alpha1.PackageList
+			if err := client.Packages(ns).GetAll(ctx, &list); err != nil {
+				dir &= cobra.ShellCompDirectiveError
+				return nil, dir
+			}
+			for _, pkg := range list.Items {
+				if (toComplete == "" || strings.HasPrefix(pkg.GetName(), toComplete)) && !slices.Contains(args, pkg.GetName()) {
+					packages = append(packages, pkg.GetName())
+				}
+			}
+		}
+
+		return packages, dir
 	}
-	return
 }
 
 func completeUpgradablePackageVersions(
@@ -229,12 +256,12 @@ func completeUpgradablePackageVersions(
 
 	config, rawConfig, err := kubeconfig.New(config.Kubeconfig)
 	if err != nil {
-		dir &= cobra.ShellCompDirectiveError
+		dir |= cobra.ShellCompDirectiveError
 		return nil, dir
 	}
 	ctx, err := clicontext.SetupContext(cmd.Context(), config, rawConfig)
 	if err != nil {
-		dir &= cobra.ShellCompDirectiveError
+		dir |= cobra.ShellCompDirectiveError
 		return nil, dir
 	}
 	client := cliutils.PackageClient(ctx)
@@ -242,12 +269,13 @@ func completeUpgradablePackageVersions(
 
 	var pkg v1alpha1.ClusterPackage
 	if err := client.ClusterPackages().Get(cmd.Context(), packageName, &pkg); err != nil {
-		dir &= cobra.ShellCompDirectiveError
+		dir |= cobra.ShellCompDirectiveError
 		return nil, dir
 	}
 	var packageIndex repo.PackageIndex
 	if err := repoClient.ForPackage(&pkg).FetchPackageIndex(packageName, &packageIndex); err != nil {
-		return nil, cobra.ShellCompDirectiveError
+		dir |= cobra.ShellCompDirectiveError
+		return nil, dir
 	}
 	versions := make([]string, 0, len(packageIndex.Versions))
 	for _, version := range packageIndex.Versions {
@@ -297,6 +325,6 @@ func init() {
 	updateCmdOptions.KindOptions.AddFlagsToCommand(updateCmd)
 	updateCmdOptions.NamespaceOptions.AddFlagsToCommand(updateCmd)
 	updateCmdOptions.ValuesOptions.AddFlagsToCommand(updateCmd)
-	RootCmd.AddCommand(updateCmd)
 	updateCmdOptions.DryRunOptions.AddFlagsToCommand(updateCmd)
+	RootCmd.AddCommand(updateCmd)
 }
