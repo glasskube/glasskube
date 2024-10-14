@@ -1,6 +1,10 @@
 package v1alpha1
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
 	"strconv"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -98,6 +102,15 @@ type PackageSpec struct {
 	//
 	// +kubebuilder:validation:Optional
 	Suspend bool `json:"suspend"`
+}
+
+func (spec *PackageSpec) Hashed() (string, error) {
+	h := sha256.New()
+	if err := json.NewEncoder(h).Encode(spec); err != nil {
+		return "", fmt.Errorf("failed to encode package spec: %w", err)
+	} else {
+		return hex.EncodeToString(h.Sum(nil)), nil
+	}
 }
 
 // PackageStatus defines the observed state

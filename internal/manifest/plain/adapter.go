@@ -194,7 +194,7 @@ func (r *Adapter) reconcilePlainManifest(
 		}
 	}
 
-	specHash, specHashErr := ctrlpkg.SpecHash(pkg)
+	specHash, specHashErr := pkg.GetSpec().Hashed()
 	if specHashErr != nil {
 		log.Error(specHashErr, "failed to get spec hash for package – restarts might not happen", "package", pkg)
 	}
@@ -235,7 +235,7 @@ func (r *Adapter) reconcilePlainManifest(
 	return ownedResources, nil
 }
 
-// if the obj kind is Deployment or StatefulSet annotateWithSpecHash sets the AnnotationSpecHash annotation of the
+// if the obj kind is Deployment or StatefulSet annotateWithSpecHash sets the AnnotationPackageSpecHashed annotation of the
 // template to the given specHash. For any other kind it does nothing. Updating the template's annotation to a
 // different value than the existing one, will trigger a rolling restart of the resource. When the value stays the same,
 // the resource will not be restarted.
@@ -251,7 +251,7 @@ func (r *Adapter) annotateWithSpecHash(obj client.Object, specHash string) error
 				if !exists {
 					annotations = make(map[string]string)
 				}
-				annotations[packagesv1alpha1.AnnotationSpecHash] = specHash
+				annotations[packagesv1alpha1.AnnotationPackageSpecHashed] = specHash
 				err = unstructured.SetNestedStringMap(objContent, annotations, path...)
 				if err != nil {
 					return err
