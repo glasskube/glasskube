@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"fmt"
+	"github.com/glasskube/glasskube/internal/web/cookie"
 	"net/http"
 	"os"
 	"slices"
@@ -62,7 +63,7 @@ func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	p := packageContext{
 		request: packageContextRequest{
-			manifestName:   mux.Vars(r)["manifestName"],
+			manifestName:   r.PathValue("manifestName"),
 			namespace:      mux.Vars(r)["namespace"],
 			name:           mux.Vars(r)["name"],
 			repositoryName: r.FormValue("repositoryName"),
@@ -223,7 +224,7 @@ func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w
 		datalistOptions[""] = &pkg_config_input.PkgConfigInputDatalistOptions{Namespaces: nsOptions}
 	}
 
-	advancedOptions, err := getAdvancedOptionsFromCookie(r)
+	advancedOptions, err := cookie.getAdvancedOptionsFromCookie(r)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to get advanced options from cookie: %v\n", err)
 	}
@@ -255,10 +256,10 @@ func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w
 	}
 
 	if headerOnly {
-		repoErr = s.templates.pkgDetailHeaderTmpl.Execute(w, templateData)
+		repoErr = s.templates.PkgDetailHeaderTmpl.Execute(w, templateData)
 		webutil.CheckTmplError(repoErr, fmt.Sprintf("package-detail-header (%s)", p.request.manifestName))
 	} else {
-		repoErr = s.templates.pkgPageTmpl.Execute(w, s.enrichPage(r, templateData, repoErr))
+		repoErr = s.templates.PkgPageTmpl.Execute(w, s.enrichPage(r, templateData, repoErr))
 		webutil.CheckTmplError(repoErr, fmt.Sprintf("package-detail (%s)", p.request.manifestName))
 	}
 }

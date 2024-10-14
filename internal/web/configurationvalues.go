@@ -195,7 +195,7 @@ func (s *server) handleConfigurationInput(w http.ResponseWriter, r *http.Request
 				Autofocus:      true,
 				DesiredRefKind: &refKind,
 			})
-		err := s.templates.pkgConfigInput.Execute(w, input)
+		err := s.templates.PkgConfigInput.Execute(w, input)
 		util.CheckTmplError(err, fmt.Sprintf("package config input (%s, %s)", d.request.manifestName, valueName))
 	}
 }
@@ -225,7 +225,7 @@ func (s *server) namesDatalist(w http.ResponseWriter, r *http.Request) {
 			options = opts
 		}
 	}
-	tmplErr := s.templates.datalistTmpl.Execute(w, map[string]any{
+	tmplErr := s.templates.DatalistTmpl.Execute(w, map[string]any{
 		"Options": options,
 		"Id":      id,
 	})
@@ -256,7 +256,7 @@ func (s *server) keysDatalist(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(os.Stderr, "Failed to get package value options of %v: %v\n", pkg, err)
 		}
 	}
-	tmplErr := s.templates.datalistTmpl.Execute(w, map[string]any{
+	tmplErr := s.templates.DatalistTmpl.Execute(w, map[string]any{
 		"Options": options,
 		"Id":      r.FormValue("id"),
 	})

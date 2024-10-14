@@ -26,7 +26,7 @@ func (s *server) sendToast(w http.ResponseWriter, options ...toast.ResponseOptio
 
 	w.WriteHeader(response.StatusCode)
 
-	err := s.templates.toastTmpl.Execute(w, response.ToastInput)
+	err := s.templates.ToastTmpl.Execute(w, response.ToastInput)
 	util.CheckTmplError(err, "toast")
 
 	if response.Err != nil {
@@ -55,7 +55,7 @@ func (s *server) sendYamlModal(w http.ResponseWriter, obj string, alertContent a
 
 	w.WriteHeader(http.StatusOK)
 
-	e := s.templates.yamlModalTmpl.Execute(w, map[string]any{
+	e := s.templates.YamlModalTmpl.Execute(w, map[string]any{
 		"AlertContent": alertContent,
 		"Object":       obj,
 	})

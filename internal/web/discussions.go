@@ -105,7 +105,7 @@ func (s *server) handlePackageDiscussionPage(w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to check whether auto updater is installed: %v\n", err)
 	}
-	err = s.templates.pkgDiscussionPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
+	err = s.templates.PkgDiscussionPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
 		"Giscus":               giscus.Client().Config,
 		"Package":              d.pkg,
 		"Status":               client.GetStatusOrPending(d.pkg),
@@ -136,7 +136,7 @@ func (s *server) discussionBadge(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var err error
-	err = s.templates.pkgDiscussionBadgeTmpl.Execute(w, s.enrichPage(r, map[string]any{
+	err = s.templates.PkgDiscussionBadgeTmpl.Execute(w, s.enrichPage(r, map[string]any{
 		"TotalCount": totalCount,
 	}, err))
 	util.CheckTmplError(err, fmt.Sprintf("discussion-badge (%s)", pkgName))

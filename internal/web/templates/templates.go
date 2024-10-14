@@ -1,8 +1,9 @@
-package web
+package templates
 
 import (
 	"bytes"
 	"html/template"
+	"io/fs"
 	"path"
 	"reflect"
 
@@ -35,58 +36,61 @@ import (
 type templates struct {
 	templateFuncs           template.FuncMap
 	baseTemplate            *template.Template
-	clusterPkgsPageTemplate *template.Template
-	pkgsPageTmpl            *template.Template
-	pkgPageTmpl             *template.Template
-	pkgDiscussionPageTmpl   *template.Template
-	supportPageTmpl         *template.Template
-	bootstrapPageTmpl       *template.Template
-	kubeconfigPageTmpl      *template.Template
-	settingsPageTmpl        *template.Template
-	repositoryPageTmpl      *template.Template
-	pkgDetailHeaderTmpl     *template.Template
-	pkgConfigInput          *template.Template
-	pkgUninstallModalTmpl   *template.Template
-	toastTmpl               *template.Template
-	datalistTmpl            *template.Template
-	pkgDiscussionBadgeTmpl  *template.Template
-	yamlModalTmpl           *template.Template
-	repoClientset           repoclient.RepoClientset
+	ClusterPkgsPageTemplate *template.Template
+	PkgsPageTmpl            *template.Template
+	PkgPageTmpl             *template.Template
+	PkgDiscussionPageTmpl   *template.Template
+	SupportPageTmpl         *template.Template
+	BootstrapPageTmpl       *template.Template
+	KubeconfigPageTmpl      *template.Template
+	SettingsPageTmpl        *template.Template
+	RepositoryPageTmpl      *template.Template
+	PkgDetailHeaderTmpl     *template.Template
+	PkgConfigInput          *template.Template
+	PkgUninstallModalTmpl   *template.Template
+	ToastTmpl               *template.Template
+	DatalistTmpl            *template.Template
+	PkgDiscussionBadgeTmpl  *template.Template
+	YamlModalTmpl           *template.Template
+	RepoClientset           repoclient.RepoClientset
+	fs                      fs.FS
 }
 
 var (
-	templatesBaseDir = "internal/web"
-	templatesDir     = "templates"
-	componentsDir    = path.Join(templatesDir, "components")
-	pagesDir         = path.Join(templatesDir, "pages")
+	BaseDir       = "internal/web"
+	templatesDir  = "templates"
+	componentsDir = path.Join(templatesDir, "components")
+	pagesDir      = path.Join(templatesDir, "pages")
+	Templates     = &templates{}
 )
 
-func (t *templates) watchTemplates() error {
+func (t *templates) WatchTemplates() error {
 	watcher, err := fsnotify.NewWatcher()
 	err = multierr.Combine(
 		err,
-		watcher.Add(path.Join(templatesBaseDir, componentsDir)),
-		watcher.Add(path.Join(templatesBaseDir, templatesDir, "layout")),
-		watcher.Add(path.Join(templatesBaseDir, pagesDir)),
+		watcher.Add(path.Join(BaseDir, componentsDir)),
+		watcher.Add(path.Join(BaseDir, templatesDir, "layout")),
+		watcher.Add(path.Join(BaseDir, pagesDir)),
 	)
 	if err == nil {
 		go func() {
 			for range watcher.Events {
-				t.parseTemplates()
+				t.ParseTemplates(t.fs)
 			}
 		}()
 	}
 	return err
 }
 
-func (t *templates) parseTemplates() {
+func (t *templates) ParseTemplates(webFs fs.FS) {
+	t.fs = webFs
 	t.templateFuncs = template.FuncMap{
 		"ForClPkgOverviewBtn": pkg_overview_btn.ForClPkgOverviewBtn,
 		"ForPkgDetailBtns":    pkg_detail_btns.ForPkgDetailBtns,
 		"ForPkgUpdateAlert":   pkg_update_alert.ForPkgUpdateAlert,
 		"PackageManifestUrl": func(pkg ctrlpkg.Package) string {
 			if !pkg.IsNil() {
-				url, err := t.repoClientset.ForPackage(pkg).
+				url, err := t.RepoClientset.ForPackage(pkg).
 					GetPackageManifestURL(pkg.GetSpec().PackageInfo.Name, pkg.GetSpec().PackageInfo.Version)
 				if err == nil {
 					return url
@@ -161,28 +165,28 @@ func (t *templates) parseTemplates() {
 	t.baseTemplate = template.Must(template.New("base.html").
 		Funcs(t.templateFuncs).
 		ParseFS(webFs, path.Join(templatesDir, "layout", "base.html")))
-	t.clusterPkgsPageTemplate = t.pageTmpl("clusterpackages.html")
-	t.pkgsPageTmpl = t.pageTmpl("packages.html")
-	t.pkgPageTmpl = t.pageTmpl("package.html")
-	t.pkgDiscussionPageTmpl = t.pageTmpl("discussion.html")
-	t.supportPageTmpl = t.pageTmpl("support.html")
-	t.bootstrapPageTmpl = t.pageTmpl("bootstrap.html")
-	t.kubeconfigPageTmpl = t.pageTmpl("kubeconfig.html")
-	t.settingsPageTmpl = t.pageTmpl("settings.html")
-	t.repositoryPageTmpl = t.pageTmpl("repository.html")
-	t.pkgDetailHeaderTmpl = t.componentTmpl("pkg-detail-header", "pkg-detail-btns")
-	t.pkgConfigInput = t.componentTmpl("pkg-config-input", "datalist")
-	t.pkgUninstallModalTmpl = t.componentTmpl("pkg-uninstall-modal")
-	t.toastTmpl = t.componentTmpl("toast")
-	t.datalistTmpl = t.componentTmpl("datalist")
-	t.pkgDiscussionBadgeTmpl = t.componentTmpl("discussion-badge")
-	t.yamlModalTmpl = t.componentTmpl("yaml-modal")
+	t.ClusterPkgsPageTemplate = t.pageTmpl("clusterpackages.html")
+	t.PkgsPageTmpl = t.pageTmpl("packages.html")
+	t.PkgPageTmpl = t.pageTmpl("package.html")
+	t.PkgDiscussionPageTmpl = t.pageTmpl("discussion.html")
+	t.SupportPageTmpl = t.pageTmpl("support.html")
+	t.BootstrapPageTmpl = t.pageTmpl("bootstrap.html")
+	t.KubeconfigPageTmpl = t.pageTmpl("kubeconfig.html")
+	t.SettingsPageTmpl = t.pageTmpl("settings.html")
+	t.RepositoryPageTmpl = t.pageTmpl("repository.html")
+	t.PkgDetailHeaderTmpl = t.componentTmpl("pkg-detail-header", "pkg-detail-btns")
+	t.PkgConfigInput = t.componentTmpl("pkg-config-input", "datalist")
+	t.PkgUninstallModalTmpl = t.componentTmpl("pkg-uninstall-modal")
+	t.ToastTmpl = t.componentTmpl("toast")
+	t.DatalistTmpl = t.componentTmpl("datalist")
+	t.PkgDiscussionBadgeTmpl = t.componentTmpl("discussion-badge")
+	t.YamlModalTmpl = t.componentTmpl("yaml-modal")
 }
 
 func (t *templates) pageTmpl(fileName string) *template.Template {
 	return template.Must(
 		template.Must(t.baseTemplate.Clone()).ParseFS(
-			webFs,
+			t.fs,
 			path.Join(pagesDir, fileName),
 			path.Join(componentsDir, "*.html")))
 }
@@ -195,7 +199,7 @@ func (t *templates) componentTmpl(id string, requiredTemplates ...string) *templ
 	tpls = append(tpls, path.Join(componentsDir, id+".html"))
 	return template.Must(
 		template.New(id).Funcs(t.templateFuncs).ParseFS(
-			webFs,
+			t.fs,
 			tpls...))
 }
 

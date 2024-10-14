@@ -6,11 +6,12 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/glasskube/glasskube/internal/web/settings"
+	"github.com/glasskube/glasskube/internal/web/templates"
 	"io"
 	"io/fs"
 	"net"
 	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
 	"strconv"
@@ -73,8 +74,8 @@ var webFs fs.FS = embeddedFs
 
 func init() {
 	if config.IsDevBuild() {
-		if _, err := os.Lstat(templatesBaseDir); err == nil {
-			webFs = os.DirFS(templatesBaseDir)
+		if _, err := os.Lstat(templates.BaseDir); err == nil {
+			webFs = os.DirFS(templates.BaseDir)
 		}
 	}
 }
@@ -92,7 +93,6 @@ func NewServer(options ServerOptions) *server {
 		ServerOptions:           options,
 		configLoader:            &defaultConfigLoader{options.Kubeconfig},
 		forwarders:              make(map[string]*open.OpenResult),
-		templates:               templates{},
 		stopCh:                  make(chan struct{}, 1),
 		httpServerHasShutdownCh: make(chan struct{}, 1),
 	}
@@ -118,7 +118,6 @@ type server struct {
 	dependencyMgr           *dependency.DependendcyManager
 	valueResolver           *manifestvalues.Resolver
 	isBootstrapped          bool
-	templates               templates
 	httpServer              *http.Server
 	httpServerHasShutdownCh chan struct{}
 	stopCh                  chan struct{}
@@ -161,9 +160,9 @@ func (s *server) Start(ctx context.Context) error {
 		initLogging(5)
 	}
 
-	s.templates.parseTemplates()
+	templates.Templates.ParseTemplates(webFs)
 	if config.IsDevBuild() {
-		if err := s.templates.watchTemplates(); err != nil {
+		if err := templates.Templates.WatchTemplates(); err != nil {
 			fmt.Fprintf(os.Stderr, "templates will not be parsed after changes: %v\n", err)
 		}
 	}
@@ -177,9 +176,17 @@ func (s *server) Start(ctx context.Context) error {
 
 	fileServer := http.FileServer(http.FS(root))
 
+	rootMux := http.NewServeMux()
+	rootMux.Handle("GET /static/", fileServer)
+	rootMux.Handle("GET /favicon.ico", fileServer)
+
+	rootMux.Handle("/settings", s.requireReady(settings.Handler()))
+
+	http.Handle("/", s.enrichContext(rootMux))
+
 	router := mux.NewRouter()
 	router.Use(telemetry.HttpMiddleware(telemetry.WithPathRedactor(packagesPathRedactor)))
-	router.PathPrefix("/static/").Handler(fileServer)
+	/*router.PathPrefix("/static/").Handler(fileServer)
 	router.Handle("/favicon.ico", fileServer)
 	router.HandleFunc("/events", s.broadcaster.Handler)
 	router.HandleFunc("/support", s.supportPage)
@@ -228,8 +235,8 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle("/settings/repository/{repoName}", s.requireReady(s.repositoryConfig))
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/clusterpackages", http.StatusFound)
-	})
-	http.Handle("/", s.enrichContext(router))
+	})*/
+	// http.Handle("/", s.enrichContext(rootMux))
 
 	s.listener, err = net.Listen("tcp", net.JoinHostPort(s.Host, s.Port))
 	if err != nil {
@@ -332,7 +339,7 @@ func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
 					err = fmt.Errorf("%v cannot be uninstalled: %w", pkgName, err1)
 				}
 			}
-			err = s.templates.pkgUninstallModalTmpl.Execute(w, map[string]any{
+			err = templates.Templates.PkgUninstallModalTmpl.Execute(w, map[string]any{
 				"PackageName": pkgName,
 				"Pruned":      pruned,
 				"Err":         err,
@@ -353,7 +360,7 @@ func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
 					err = fmt.Errorf("%v cannot be uninstalled: %w", pkgName, err1)
 				}
 			}
-			err = s.templates.pkgUninstallModalTmpl.Execute(w, map[string]any{
+			err = templates.Templates.PkgUninstallModalTmpl.Execute(w, map[string]any{
 				"Namespace":   namespace,
 				"Name":        name,
 				"Pruned":      pruned,
@@ -489,7 +496,7 @@ func (s *server) clusterPackages(w http.ResponseWriter, r *http.Request) {
 		overallUpdatesAvailable = s.isUpdateAvailable(r.Context(), installedClpkgs)
 	}
 
-	tmplErr := s.templates.clusterPkgsPageTemplate.Execute(w, s.enrichPage(r, map[string]any{
+	tmplErr := templates.Templates.ClusterPkgsPageTemplate.Execute(w, s.enrichPage(r, map[string]any{
 		"ClusterPackages":               clpkgs,
 		"ClusterPackageUpdateAvailable": clpkgUpdateAvailable,
 		"UpdatesAvailable":              overallUpdatesAvailable,
@@ -533,7 +540,7 @@ func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 		overallUpdatesAvailable = s.isUpdateAvailable(r.Context(), installedPkgs)
 	}
 
-	tmplErr := s.templates.pkgsPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
+	tmplErr := templates.Templates.PkgsPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
 		"InstalledPackages":      installed,
 		"AvailablePackages":      available,
 		"PackageUpdateAvailable": packageUpdateAvailable,
@@ -558,7 +565,7 @@ func (s *server) supportPage(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/bootstrap", http.StatusFound)
 			return
 		}
-		err := s.templates.supportPageTmpl.Execute(w, &map[string]any{
+		err := templates.Templates.SupportPageTmpl.Execute(w, &map[string]any{
 			"CurrentContext":            "",
 			"KubeconfigDefaultLocation": clientcmd.RecommendedHomeFile,
 			"Err":                       err,
@@ -575,10 +582,10 @@ func (s *server) bootstrapPage(w http.ResponseWriter, r *http.Request) {
 		client := bootstrap.NewBootstrapClient(s.restConfig)
 		if _, err := client.Bootstrap(ctx, bootstrap.DefaultOptions()); err != nil {
 			fmt.Fprintf(os.Stderr, "\nAn error occurred during bootstrap:\n%v\n", err)
-			err := s.templates.bootstrapPageTmpl.ExecuteTemplate(w, "bootstrap-failure", nil)
+			err := templates.Templates.BootstrapPageTmpl.ExecuteTemplate(w, "bootstrap-failure", nil)
 			util.CheckTmplError(err, "bootstrap-failure")
 		} else {
-			err := s.templates.bootstrapPageTmpl.ExecuteTemplate(w, "bootstrap-success", nil)
+			err := templates.Templates.BootstrapPageTmpl.ExecuteTemplate(w, "bootstrap-success", nil)
 			util.CheckTmplError(err, "bootstrap-success")
 		}
 	} else {
@@ -589,7 +596,7 @@ func (s *server) bootstrapPage(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}
-		tplErr := s.templates.bootstrapPageTmpl.Execute(w, &map[string]any{
+		tplErr := templates.Templates.BootstrapPageTmpl.Execute(w, &map[string]any{
 			"CloudId":        telemetry.GetMachineId(),
 			"CurrentContext": s.rawConfig.CurrentContext,
 			"Err":            err,
@@ -623,7 +630,7 @@ func (s *server) kubeconfigPage(w http.ResponseWriter, r *http.Request) {
 	if s.rawConfig != nil {
 		currentContext = s.rawConfig.CurrentContext
 	}
-	tplErr := s.templates.kubeconfigPageTmpl.Execute(w, map[string]any{
+	tplErr := templates.Templates.KubeconfigPageTmpl.Execute(w, map[string]any{
 		"CloudId":                   telemetry.GetMachineId(),
 		"CurrentContext":            currentContext,
 		"ConfigErr":                 configErr,
@@ -631,108 +638,6 @@ func (s *server) kubeconfigPage(w http.ResponseWriter, r *http.Request) {
 		"DefaultKubeconfigExists":   defaultKubeconfigExists(),
 	})
 	util.CheckTmplError(tplErr, "kubeconfig")
-}
-
-func (s *server) settingsPage(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodPost {
-		formVal := r.FormValue(advancedOptionsKey)
-		setAdvancedOptionsCookie(w, formVal == "on")
-	} else if r.Method == http.MethodGet {
-		var repos v1alpha1.PackageRepositoryList
-		if err := s.pkgClient.PackageRepositories().GetAll(r.Context(), &repos); err != nil {
-			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch repositories: %w", err)))
-			return
-		}
-
-		advancedOptions, err := getAdvancedOptionsFromCookie(r)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed to get advanced options from cookie: %v\n", err)
-		}
-		tmplErr := s.templates.settingsPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
-			"Repositories":    repos.Items,
-			"AdvancedOptions": advancedOptions,
-		}, nil))
-		util.CheckTmplError(tmplErr, "settings")
-	}
-}
-
-func (s *server) repositoryConfig(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		s.getHandleRepositoryConfig(w, r)
-	case http.MethodPost:
-		s.getUpdateRepositoryConfig(w, r)
-	}
-
-}
-
-func (s *server) getHandleRepositoryConfig(w http.ResponseWriter, r *http.Request) {
-	repoName := mux.Vars(r)["repoName"]
-	var repo v1alpha1.PackageRepository
-	if err := s.pkgClient.PackageRepositories().Get(r.Context(), repoName, &repo); err != nil {
-		// error handling
-		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch repositories: %w", err)))
-		return
-	}
-	tmplErr := s.templates.repositoryPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
-		"Repository": repo,
-	}, nil))
-	util.CheckTmplError(tmplErr, "repository")
-
-}
-
-func (s *server) getUpdateRepositoryConfig(w http.ResponseWriter, r *http.Request) {
-	repoName := mux.Vars(r)["repoName"]
-	repoUrl := r.FormValue("url")
-	checkDefault := r.FormValue("default")
-	opts := metav1.UpdateOptions{}
-	var repo v1alpha1.PackageRepository
-	var defaultRepo *v1alpha1.PackageRepository
-	var err error
-
-	if err := s.pkgClient.PackageRepositories().Get(r.Context(), repoName, &repo); err != nil {
-		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch repositories: %w", err)))
-		return
-	}
-
-	if repoUrl != "" {
-		if _, err := url.ParseRequestURI(repoUrl); err != nil {
-			s.sendToast(w, toast.WithErr(fmt.Errorf("use a valid URL for the package repository (got %v)", err)))
-			return
-		}
-		repo.Spec.Url = repoUrl
-	}
-
-	repo.Spec.Auth = nil
-
-	if checkDefault == "on" {
-		defaultRepo, err = cliutils.GetDefaultRepo(r.Context())
-		if errors.Is(err, cliutils.NoDefaultRepo) {
-			repo.SetDefaultRepository()
-		} else if err != nil {
-			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch repositories: %w", err)))
-			return
-		} else if defaultRepo.Name != repoName {
-			defaultRepo.SetDefaultRepositoryBool(false)
-			if err := s.pkgClient.PackageRepositories().Update(r.Context(), defaultRepo, opts); err != nil {
-				s.sendToast(w, toast.WithErr(fmt.Errorf(" error updating current default package repository: %v", err)))
-				return
-			}
-			repo.SetDefaultRepository()
-		}
-	}
-
-	if err := s.pkgClient.PackageRepositories().Update(r.Context(), &repo, opts); err != nil {
-		s.sendToast(w, toast.WithErr(fmt.Errorf(" error updating the package repository: %v", err)))
-		if checkDefault == "on" && defaultRepo != nil && defaultRepo.Name != repoName {
-			defaultRepo.SetDefaultRepositoryBool(true)
-			if err := s.pkgClient.PackageRepositories().Update(r.Context(), defaultRepo, opts); err != nil {
-				s.sendToast(w, toast.WithErr(fmt.Errorf(" error rolling back to default package repository: %v", err)))
-			}
-		}
-		return
-	}
-	s.swappingRedirect(w, "/settings", "main", "main")
 }
 
 func (s *server) enrichPage(r *http.Request, data map[string]any, err error) map[string]any {
@@ -877,7 +782,7 @@ func (server *server) initClientDependentComponents() {
 		clientadapter.NewPackageClientAdapter(server.pkgClient),
 		clientadapter.NewKubernetesClientAdapter(server.k8sClient),
 	)
-	server.templates.repoClientset = server.repoClientset
+	templates.Templates.RepoClientset = server.repoClientset
 	server.dependencyMgr = dependency.NewDependencyManager(
 		clientadapter.NewPackageClientAdapter(server.pkgClient),
 		server.repoClientset,
@@ -985,7 +890,7 @@ func (s *server) enrichContext(h http.Handler) http.Handler {
 	return &handler.ContextEnrichingHandler{Source: s, Handler: h}
 }
 
-func (s *server) requireReady(h http.HandlerFunc) http.Handler {
+func (s *server) requireReady(h http.Handler) http.Handler {
 	return &handler.PreconditionHandler{
 		Precondition: func(r *http.Request) error {
 			err := s.ensureBootstrapped(r.Context())
@@ -999,7 +904,7 @@ func (s *server) requireReady(h http.HandlerFunc) http.Handler {
 	}
 }
 
-func (s *server) requireKubeconfig(h http.HandlerFunc) http.Handler {
+func (s *server) requireKubeconfig(h http.Handler) http.Handler {
 	return &handler.PreconditionHandler{
 		Precondition:  func(r *http.Request) error { return s.checkKubeconfig() },
 		Handler:       h,
