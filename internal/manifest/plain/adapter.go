@@ -242,23 +242,14 @@ func (r *Adapter) reconcilePlainManifest(
 func (r *Adapter) annotateWithSpecHash(obj client.Object, specHash string) error {
 	switch obj.GetObjectKind().GroupVersionKind().Kind {
 	case constants.Deployment, constants.StatefulSet:
-		path := []string{"spec", "template", "metadata", "annotations"}
 		if unstructuredObj, ok := obj.(runtime.Unstructured); ok {
 			objContent := unstructuredObj.UnstructuredContent()
-			if annotations, exists, err := unstructured.NestedStringMap(objContent, path...); err != nil {
+			err := unstructured.SetNestedField(objContent, specHash,
+				"spec", "template", "metadata", "annotations", packagesv1alpha1.AnnotationPackageSpecHashed)
+			if err != nil {
 				return err
-			} else {
-				if !exists {
-					annotations = make(map[string]string)
-				}
-				annotations[packagesv1alpha1.AnnotationPackageSpecHashed] = specHash
-				err = unstructured.SetNestedStringMap(objContent, annotations, path...)
-				if err != nil {
-					return err
-				}
-				unstructuredObj.SetUnstructuredContent(objContent)
-				return nil
 			}
+			unstructuredObj.SetUnstructuredContent(objContent)
 		}
 	}
 	return nil
