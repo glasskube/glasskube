@@ -52,4 +52,5 @@ type ValidationResult struct {
 	Status       ValidationResultStatus
 	Requirements []Requirement
 	Conflicts    Conflicts
+	Pruned       []Requirement
 }
