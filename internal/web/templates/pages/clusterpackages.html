@@ -40,7 +40,12 @@
                     {{ end }}
                   </div>
                   <div class="flex-grow-1 align-self-start">
-                    <h6 class="text-reset m-0">{{ .Name }}</h6>
+                    <h6 class="text-reset m-0">
+                      {{ .Name }}
+                      {{ if IsSuspended .ClusterPackage }}
+                        <i class="bi bi-pause-circle text-warning" title="Suspended"></i>
+                      {{ end }}
+                    </h6>
                     <span
                       class="lh-sm overflow-hidden"
                       style="

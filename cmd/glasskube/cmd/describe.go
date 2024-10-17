@@ -144,6 +144,7 @@ var describeCmd = &cobra.Command{
 				fmt.Println(bold("Status:     "), status(pkgStatus))
 				fmt.Println(bold("Message:    "), message(pkgStatus))
 				fmt.Println(bold("Auto-Update:"), clientutils.AutoUpdateString(pkg, "Disabled"))
+				fmt.Println(bold("Suspended:  "), boolYesNo(pkg.GetSpec().Suspend))
 			} else if len(pkgs) > 0 {
 				fmt.Println()
 				fmt.Println(bold("Instances:"))
@@ -156,6 +157,7 @@ var describeCmd = &cobra.Command{
 					fmt.Println(bold("    Status:     "), status(pkgStatus))
 					fmt.Println(bold("    Message:    "), message(pkgStatus))
 					fmt.Println(bold("    Auto-Update:"), clientutils.AutoUpdateString(&pkg, "Disabled"))
+					fmt.Println(bold("    Suspended:  "), boolYesNo(pkg.Spec.Suspend))
 				}
 			}
 
@@ -339,6 +341,13 @@ func printMarkdown(w io.Writer, text string) {
 	}
 }
 
+func boolYesNo(value bool) string {
+	if value {
+		return "Yes"
+	}
+	return "No"
+}
+
 func status(pkgStatus *client.PackageStatus) string {
 	if pkgStatus != nil {
 		switch pkgStatus.Status {
@@ -420,6 +429,7 @@ func createOutputStructure(
 		data["autoUpdate"] = pkg.AutoUpdatesEnabled()
 		data["isUpgradable"] = semver.IsUpgradable(pkg.GetSpec().PackageInfo.Version, latestVersion)
 		data["status"] = client.GetStatusOrPending(pkg).Status
+		data["suspend"] = pkg.GetSpec().Suspend
 	}
 	if len(instances) > 0 {
 		data["instances"] = instances
