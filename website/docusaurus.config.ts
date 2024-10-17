@@ -100,17 +100,39 @@ const config: Config = {
   ],
   themes: [
     [
-      require.resolve('@getcanary/docusaurus-theme-search-pagefind'),
+      require.resolve('@trieve/docusaurus-search-theme'),
       {
-        includeRoutes: ["**/*"],
-        group: true,
-        tabs: [
-          { name: "All", pattern: "**/*" },
-          { name: "Docs", pattern: "/docs/**" },
-          { name: "Guides", pattern: "/guides/**" },
-          { name: "Blog", pattern: "/blog/**" },
+        apiKey: "tr-wSPKOWp63V42oepLRWQqOfg8lWo0QCAR",
+        datasetId: "d5d098bd-fe59-4a16-86e7-7085add427f4",
+        defaultSearchQueries: [
+          "RabbitMQ installation",
+          "Glasskube Gitops Template",
+          "Difference between helm?"
         ],
-       },
+        defaultAiQuestions: [
+          "How to make custom Glasskube Package?",
+          "How to install cert-manager on Glasskube",
+          "How to install Glasskube cli"
+        ],
+        brandLogoImgSrcUrl: "https://glasskube.dev/img/glasskube-logo.svg",
+        brandName: "Glasskube",
+        brandColor: "#3c8dcc",
+        responsive: true,
+        tags: [
+          {
+            tag: "docs",
+            label: "Docs"
+          },
+          {
+            tag: "guides",
+            label: "Guides"
+          },
+          {
+            tag: "blog",
+            label: "Blog",
+          }
+        ]
+      },
     ],
   ],
   markdown: {
