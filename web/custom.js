@@ -23,6 +23,15 @@
     });
 })();
 
+(() => {
+  const modal = document.getElementById('modal-container');
+  modal.addEventListener('show.bs.modal', (evt) => {
+    // https://getbootstrap.com/docs/5.3/components/modal/#events
+    // "hidden.bs.modal" is too early to clear innerHTML – the form submission from inside the modal would be cancelled
+    modal.innerHTML = '';
+  });
+})();
+
 function setSSEDisconnected() {
   const elem = document.getElementById('disconnected-toast');
   if (elem && !elem.classList.contains('show')) {

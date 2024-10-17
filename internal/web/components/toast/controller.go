@@ -3,13 +3,13 @@ package toast
 type ToastInput struct {
 	Message     string
 	Dismissible bool
-	CssClass    string
+	Severity    severity
 }
 
-func ForToast(err error, cssClass string, dismissible bool) ToastInput {
+func ForToast(err error, severity severity, dismissible bool) ToastInput {
 	return ToastInput{
 		Message:     err.Error(),
 		Dismissible: dismissible,
-		CssClass:    cssClass,
+		Severity:    severity,
 	}
 }

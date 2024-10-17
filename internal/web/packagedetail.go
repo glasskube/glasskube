@@ -124,6 +124,8 @@ func (s *server) clusterPackageDetail(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w http.ResponseWriter, p *packageContext) {
 	migrateManifest := false
+	headerOnly := p.request.component == "header"
+
 	if !p.pkg.IsNil() {
 		// for installed packages, the installed repo + version is the fallback, if they are not requested explicitly
 		if p.request.repositoryName == "" {
@@ -168,57 +170,58 @@ func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w
 		}
 	}
 
-	// TODO check if dependency validation is even needed if the package is already installed??
-	// probably not if the repo/version did not change, also not if only header component is rendered
-	var validationResult *dependency.ValidationResult
+	validationResult := &dependency.ValidationResult{}
 	var validationErr error
-	if p.pkg.IsNil() {
-		if p.manifest.Scope.IsCluster() {
-			validationResult, validationErr =
-				s.dependencyMgr.Validate(r.Context(), p.request.manifestName, "", p.manifest, p.request.version)
-		} else {
-			// In this case we don't know the actual namespace, but we can assume the default
-			// TODO: make name and namespace depend on user input
-			validationResult, validationErr =
-				s.dependencyMgr.Validate(r.Context(), p.request.manifestName, p.manifest.DefaultNamespace, p.manifest, p.request.version)
-		}
-	} else {
-		validationResult, validationErr =
-			s.dependencyMgr.Validate(r.Context(), p.pkg.GetName(), p.pkg.GetNamespace(), p.manifest, p.request.version)
-	}
-
-	if validationErr != nil {
-		s.sendToast(w,
-			toast.WithErr(fmt.Errorf("failed to validate dependencies of %v (%v): %w",
-				p.request.manifestName, p.request.version, validationErr)))
-		return
-	}
-
 	var lostValueDefinitions []string
 	valueErrors := make(map[string]error)
 	datalistOptions := make(map[string]*pkg_config_input.PkgConfigInputDatalistOptions)
-	nsOptions, _ := s.getNamespaceOptions()
-	if !p.pkg.IsNil() {
-		pkgsOptions, _ := s.getPackagesOptions(r.Context())
-		for key, v := range p.pkg.GetSpec().Values {
-			if resolved, err := s.valueResolver.ResolveValue(r.Context(), v); err != nil {
-				valueErrors[key] = util.GetRootCause(err)
-			} else if valDef, exists := p.manifest.ValueDefinitions[key]; !exists {
-				// can happen when a different repo/version of the pkg is requested (advanced options)
-				lostValueDefinitions = append(lostValueDefinitions, key)
-			} else if err := manifestvalues.ValidateSingle(key, valDef, resolved); err != nil {
-				valueErrors[key] = err
+
+	if !headerOnly {
+		// TODO properly componentize header away and use view model objects
+		if p.pkg.IsNil() {
+			if p.manifest.Scope.IsCluster() {
+				validationResult, validationErr =
+					s.dependencyMgr.Validate(r.Context(), p.request.manifestName, "", p.manifest, p.request.version)
+			} else {
+				// In this case we don't know the actual namespace, but we can assume the default
+				// TODO: make name and namespace depend on user input
+				validationResult, validationErr =
+					s.dependencyMgr.Validate(r.Context(), p.request.manifestName, p.manifest.DefaultNamespace, p.manifest, p.request.version)
 			}
-			if v.ValueFrom != nil {
-				options, err := s.getDatalistOptions(r.Context(), v.ValueFrom, nsOptions, pkgsOptions)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "%v\n", err)
+		} else if migrateManifest {
+			validationResult, validationErr =
+				s.dependencyMgr.Validate(r.Context(), p.pkg.GetName(), p.pkg.GetNamespace(), p.manifest, p.request.version)
+		}
+		if validationErr != nil {
+			s.sendToast(w,
+				toast.WithErr(fmt.Errorf("failed to validate dependencies of %v (%v): %w",
+					p.request.manifestName, p.request.version, validationErr)))
+			return
+		}
+
+		nsOptions, _ := s.getNamespaceOptions()
+		if !p.pkg.IsNil() {
+			pkgsOptions, _ := s.getPackagesOptions(r.Context())
+			for key, v := range p.pkg.GetSpec().Values {
+				if resolved, err := s.valueResolver.ResolveValue(r.Context(), v); err != nil {
+					valueErrors[key] = util.GetRootCause(err)
+				} else if valDef, exists := p.manifest.ValueDefinitions[key]; !exists {
+					// can happen when a different repo/version of the pkg is requested (advanced options)
+					lostValueDefinitions = append(lostValueDefinitions, key)
+				} else if err := manifestvalues.ValidateSingle(key, valDef, resolved); err != nil {
+					valueErrors[key] = err
 				}
-				datalistOptions[key] = options
+				if v.ValueFrom != nil {
+					options, err := s.getDatalistOptions(r.Context(), v.ValueFrom, nsOptions, pkgsOptions)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "%v\n", err)
+					}
+					datalistOptions[key] = options
+				}
 			}
 		}
+		datalistOptions[""] = &pkg_config_input.PkgConfigInputDatalistOptions{Namespaces: nsOptions}
 	}
-	datalistOptions[""] = &pkg_config_input.PkgConfigInputDatalistOptions{Namespaces: nsOptions}
 
 	advancedOptions, err := getAdvancedOptionsFromCookie(r)
 	if err != nil {
@@ -251,8 +254,8 @@ func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w
 		"AutoUpdaterInstalled": autoUpdaterInstalled,
 	}
 
-	if p.request.component == "header" {
-		repoErr = s.templates.pkgDetailHeaderTmpl.Execute(w, templateData)
+	if headerOnly {
+		repoErr = s.templates.pkgDetailHeaderTmpl.Execute(w, s.enrichPage(r, templateData, repoErr))
 		webutil.CheckTmplError(repoErr, fmt.Sprintf("package-detail-header (%s)", p.request.manifestName))
 	} else {
 		repoErr = s.templates.pkgPageTmpl.Execute(w, s.enrichPage(r, templateData, repoErr))
@@ -407,7 +410,7 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 		} else if resolveErr != nil {
 			s.sendToast(w,
 				toast.WithErr(fmt.Errorf("some values could not be resolved: %w", resolveErr)),
-				toast.WithCssClass("warning"),
+				toast.WithSeverity(toast.Warning),
 				toast.WithStatusCode(http.StatusAccepted))
 		} else {
 			s.sendToast(w, toast.WithMessage("Configuration updated successfully"))
@@ -498,7 +501,7 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 		} else if resolveErr != nil {
 			s.sendToast(w,
 				toast.WithErr(fmt.Errorf("some values could not be resolved: %w", resolveErr)),
-				toast.WithCssClass("warning"),
+				toast.WithSeverity(toast.Warning),
 				toast.WithStatusCode(http.StatusAccepted))
 		} else {
 			s.sendToast(w, toast.WithMessage("Configuration updated successfully"))
