@@ -102,36 +102,37 @@ const config: Config = {
     [
       require.resolve('@trieve/docusaurus-search-theme'),
       {
-        apiKey: "tr-wSPKOWp63V42oepLRWQqOfg8lWo0QCAR",
-        datasetId: "d5d098bd-fe59-4a16-86e7-7085add427f4",
+        apiKey: 'tr-wSPKOWp63V42oepLRWQqOfg8lWo0QCAR',
+        datasetId: 'd5d098bd-fe59-4a16-86e7-7085add427f4',
         defaultSearchQueries: [
-          "RabbitMQ installation",
-          "Glasskube Gitops Template",
-          "Difference between helm?"
+          'RabbitMQ installation',
+          'Glasskube Gitops Template',
+          'Difference between helm?',
         ],
         defaultAiQuestions: [
-          "How to make custom Glasskube Package?",
-          "How to install cert-manager on Glasskube",
-          "How to install Glasskube cli"
+          'How to make custom Glasskube Package?',
+          'How to install cert-manager on Glasskube',
+          'How to install Glasskube cli',
         ],
-        brandLogoImgSrcUrl: "https://glasskube.dev/img/glasskube-logo.svg",
-        brandName: "Glasskube",
-        brandColor: "#3c8dcc",
+        brandLogoImgSrcUrl: 'https://glasskube.dev/img/glasskube-logo.svg',
+        brandName: 'Glasskube',
+        brandColor: '#3c8dcc',
         responsive: true,
         tags: [
           {
-            tag: "docs",
-            label: "Docs"
+            tag: 'docs',
+            label: 'Docs',
           },
           {
-            tag: "guides",
-            label: "Guides"
+            tag: 'guides',
+            label: 'Guides',
           },
           {
-            tag: "blog",
-            label: "Blog",
-          }
-        ]
+            tag: 'blog',
+            label: 'Blog',
+          },
+        ],
+        debounceMs: 350,
       },
     ],
   ],
