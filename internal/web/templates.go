@@ -24,6 +24,7 @@ import (
 	"github.com/glasskube/glasskube/pkg/condition"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/ast"
+	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/text"
 	"github.com/yuin/goldmark/util"
@@ -102,6 +103,9 @@ func (t *templates) parseTemplates() {
 			var buf bytes.Buffer
 
 			converter := goldmark.New(
+				goldmark.WithExtensions(
+					extension.Linkify,
+				),
 				goldmark.WithParserOptions(
 					parser.WithASTTransformers(
 						util.Prioritized(&ASTTransformer{}, 1000),

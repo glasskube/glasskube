@@ -190,11 +190,12 @@ func (*markdownRenderer) renderThematicBreak(
 
 func (*markdownRenderer) renderAutoLink(
 	writer util.BufWriter, source []byte, n ast.Node, entering bool) (ast.WalkStatus, error) {
-	if _, err := fmt.Fprint(writer, n.Text(source)); err != nil {
-		return ast.WalkStop, err
-	}
+	al := n.(*ast.AutoLink)
 	if entering {
 		underline.SetWriter(writer)
+		if _, err := writer.Write(al.URL(source)); err != nil {
+			return ast.WalkStop, err
+		}
 	} else {
 		underline.UnsetWriter(writer)
 	}
