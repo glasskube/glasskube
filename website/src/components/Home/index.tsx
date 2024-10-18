@@ -14,6 +14,7 @@ import DemoButton from '@site/src/components/buttons/DemoButton';
 import Link from '@docusaurus/Link';
 import BrowserOnly from '@docusaurus/BrowserOnly';
 import HomepageProducts from '@site/src/components/HomepageProducts';
+import HomepageTestimonials from '@site/src/components/HomepageTestimonials';
 
 function HomepageHeader() {
   const {siteConfig} = useDocusaurusContext();
@@ -305,6 +306,7 @@ export default function Home({
           homePageBlogMetadata={homePageBlogMetadata}
           recentPosts={recentPosts}
         />
+        <HomepageTestimonials />
         <HomepageNewsletter />
       </main>
     </Layout>
