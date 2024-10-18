@@ -129,7 +129,7 @@ const config: Config = {
     announcementBar: {
       id: 'announcementBar-1', // Increment on change
       /* x-release-please-start-version */
-      content: `🎉 We just released v0.24.0 of our Open Source Kubernetes Package Manager on <a href="https://github.com/glasskube/glasskube/" target="_blank">⭐ GitHub ⭐</a>.`,
+      content: `🎉 We just released v0.25.0 of our Open Source Kubernetes Package Manager on <a href="https://github.com/glasskube/glasskube/" target="_blank">⭐ GitHub ⭐</a>.`,
       /* x-release-please-end */
       isCloseable: false,
     },
