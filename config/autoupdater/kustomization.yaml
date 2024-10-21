@@ -7,4 +7,4 @@ commonLabels:
   app.kubernetes.io/name: glasskube-autoupdate
 images:
   - name: ghcr.io/glasskube/glasskube
-    newTag: v0.24.0 # x-release-please-version
+    newTag: v0.25.0 # x-release-please-version
