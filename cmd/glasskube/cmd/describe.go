@@ -25,6 +25,7 @@ import (
 	"github.com/glasskube/glasskube/pkg/describe"
 	"github.com/spf13/cobra"
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/renderer"
 	goldmarkutil "github.com/yuin/goldmark/util"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -327,6 +328,9 @@ func printValueConfigurations(w io.Writer, values map[string]v1alpha1.ValueConfi
 
 func printMarkdown(w io.Writer, text string) {
 	md := goldmark.New(
+		goldmark.WithExtensions(
+			extension.Linkify,
+		),
 		goldmark.WithRenderer(renderer.NewRenderer(
 			renderer.WithNodeRenderers(
 				goldmarkutil.Prioritized(cliutils.MarkdownRenderer(), 1000),

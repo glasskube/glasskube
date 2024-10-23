@@ -14,6 +14,7 @@ import (
 	"github.com/glasskube/glasskube/internal/maputils"
 	"github.com/glasskube/glasskube/internal/util"
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/renderer"
 	goldmarkutil "github.com/yuin/goldmark/util"
 )
@@ -168,6 +169,9 @@ func printHeader(name string, def v1alpha1.ValueDefinition) {
 
 func printMarkdown(w io.Writer, text string) {
 	md := goldmark.New(
+		goldmark.WithExtensions(
+			extension.Linkify,
+		),
 		goldmark.WithRenderer(renderer.NewRenderer(
 			renderer.WithNodeRenderers(
 				goldmarkutil.Prioritized(cliutils.MarkdownRenderer(), 1000),
