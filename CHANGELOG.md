@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.25.1](https://github.com/glasskube/glasskube/compare/v0.25.0...v0.25.1) (2024-10-23)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @mdx-js/react to v3.1.0 ([#1349](https://github.com/glasskube/glasskube/issues/1349)) ([3c36e9f](https://github.com/glasskube/glasskube/commit/3c36e9fb1549d37b88ebfe1245b8589cf668bbbd))
+* **deps:** update module github.com/fatih/color to v1.18.0 ([#1352](https://github.com/glasskube/glasskube/issues/1352)) ([190748c](https://github.com/glasskube/glasskube/commit/190748cbb53ac78fb29ffbda42011b34afab8b7f))
+
+
+### Other
+
+* **deps:** bump http-proxy-middleware from 2.0.6 to 2.0.7 in /website ([#1357](https://github.com/glasskube/glasskube/issues/1357)) ([e97f2c4](https://github.com/glasskube/glasskube/commit/e97f2c44785bc933b41c6530144b92725ad7f145))
+* **deps:** bump mermaid from 10.9.1 to 10.9.3 in /website ([#1355](https://github.com/glasskube/glasskube/issues/1355)) ([d5a420c](https://github.com/glasskube/glasskube/commit/d5a420c1debb117ce2f4079288a982c43289082b))
+* **deps:** update actions/cache action to v4.1.2 ([#1353](https://github.com/glasskube/glasskube/issues/1353)) ([6e023d9](https://github.com/glasskube/glasskube/commit/6e023d91ddd435820f9ca2583a0cf6a6f42b13d5))
+* **deps:** update dependency eslint-plugin-react to v7.37.2 ([#1356](https://github.com/glasskube/glasskube/issues/1356)) ([287d0e7](https://github.com/glasskube/glasskube/commit/287d0e72b89f154fe8a85b3ceac640fb3ee75e41))
+
+
+### Docs
+
+* **website:** switch to trieve ai based search and rag ([#1346](https://github.com/glasskube/glasskube/issues/1346)) ([65c025d](https://github.com/glasskube/glasskube/commit/65c025d2bcbdab85ce08191d81f39226f47af848))
+
 ## [0.25.0](https://github.com/glasskube/glasskube/compare/v0.24.0...v0.25.0) (2024-10-21)
 
 
