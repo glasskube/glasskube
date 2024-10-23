@@ -19,7 +19,7 @@ require (
 	github.com/posthog/posthog-go v1.2.24
 	github.com/schollz/progressbar/v3 v3.16.1
 	github.com/spf13/cobra v1.8.1
-	github.com/yuin/goldmark v1.7.6
+	github.com/yuin/goldmark v1.7.8
 	go.uber.org/multierr v1.11.0
 	golang.org/x/term v0.25.0
 	k8s.io/api v0.31.1
