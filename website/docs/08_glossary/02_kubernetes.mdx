@@ -1,6 +1,85 @@
 ---
 title: Kubernetes
-description: Definition and explanation
 ---
 
-## Placeholder
+## What is Kubernetes? Definition and explanation
+
+### Kubernetes Definition
+
+> Kubernetes is an open-source container orchestration platform that automates the deployment, scaling, and management of containerized applications. It helps ensure that applications run reliably across different environments, providing self-healing, load balancing, and rolling updates.
+
+[Kubernetes](https://kubernetes.io/), often referred to as “K8s”, is a powerful open-source container orchestration platform designed to deploy, scale, and manage containerized applications across different environments, whether on-premises, in the cloud, or in hybrid settings. It was created by engineers at Google, drawing heavily from Google's internal system called Borg, which managed applications at massive scale.
+
+As Google engineer [Kelsey Hightower](https://x.com/kelseyhightower/status/935252923721793536?lang=en) aptly describes, “Kubernetes is a platform for creating platforms.” This means it’s not just a solution for running containers, but a foundational system that allows you to build more complex, tailored platforms on top of it, which is what makes it so versatile.
+
+One of Kubernetes' most influential milestones is its graduation as the first project from the Cloud Native Computing Foundation ([CNCF](https://www.cncf.io/)). This milestone not only reflected its maturity and reliability but also positioned it as a core piece of infrastructure for a wide range of other CNCF projects. These projects build on Kubernetes to expand its capabilities in areas like monitoring, security, service mesh, and more, making it the backbone of the cloud-native ecosystem.
+
+At its core, Kubernetes is built around a set of basic objects, such as Pods, Services, and Deployments, designed to manage applications. Beyond this, it introduces the concept of Custom Resource Definitions ([CRDs](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)), which allow developers to extend the platform to meet their unique needs. This flexibility makes Kubernetes adaptable to countless use cases, enabling teams to craft custom workflows and operations.
+
+## Kubernetes architecture
+
+Structurally, Kubernetes follows a master-worker architecture, where the control plane manages the cluster, and nodes (workers) run the applications. The control plane handles scheduling, state management, and communication, ensuring that desired states for applications are met.
+
+![kubernetes-cluster-architecture](https://github.com/user-attachments/assets/f589dc1a-d548-4875-b96b-848f69d67308)
+
+Kubernetes uses object abstraction to manage workloads, networking, storage, and more. The platform’s complexity stems from the large number of objects and the steep learning curve involved in configuring and using them effectively.
+
+Below is a non-exhaustive list of key Kubernetes objects:
+
+### Workloads
+- Pod
+- ReplicaSet
+- Deployment
+- StatefulSet
+- DaemonSet
+- Job
+- CronJob
+
+### Service Discovery & Networking
+- Service
+- Ingress
+- Endpoint
+- NetworkPolicy
+
+### Configuration & Storage
+- ConfigMap
+- Secret
+- PersistentVolume (PV)
+- PersistentVolumeClaim (PVC)
+- StorageClass
+
+### Metadata
+- Namespace
+- Labels
+- Annotations
+
+### Cluster Resources
+- Node
+- ResourceQuota
+- LimitRange
+
+### Security
+- ServiceAccount
+- Role
+- RoleBinding
+- ClusterRole
+- ClusterRoleBinding
+
+### Custom Resources
+- CustomResourceDefinition (CRD)
+
+## Kubectl
+
+`kubectl` is the command-line tool used to interact with Kubernetes clusters. It serves as the primary interface for administrators and developers to manage and control Kubernetes resources. With `kubectl`, users can perform a wide range of tasks, such as deploying applications, inspecting and troubleshooting workloads, managing configurations, and scaling services.
+
+> For a more detailed explanation of kubectl, be sure to check out our [kubectl guide](/guides/kubectl/).
+
+### How `kubectl` is applied to Kubernetes administration:
+
+-   **Deploy and Manage Applications**: `kubectl` allows users to create, update, and delete resources like Pods, Deployments, and Services.
+-   **Monitor Cluster Resources**: Administrators can check the status of the cluster and its components by using commands like `kubectl get` or `kubectl describe`.
+-   **Modify Configurations**: `kubectl` provides ways to interact with ConfigMaps, Secrets, and other configuration resources to manage environment variables and sensitive data.
+-   **Scale Applications**: With commands like `kubectl scale`, users can increase or decrease the number of instances for a deployment to handle changes in traffic or resource needs.  
+-   **Troubleshoot Issues**: Commands such as `kubectl logs` and `kubectl exec` help in diagnosing problems with running applications by inspecting logs or interacting with containers directly.
+    
+Finally, what truly sets Kubernetes apart is its vibrant ecosystem of contributors, users, and it’s thorough and rich [documentation](https://kubernetes.io/docs/home/). With an active open-source community, Kubernetes benefits from constant innovation, contributions from thousands of developers, and a rich set of documentation. Its widespread adoption across industries has led to a flourishing ecosystem of tools, services, and best practices, cementing its place as the go-to platform for modern application deployment and management.

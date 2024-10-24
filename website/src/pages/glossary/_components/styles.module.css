@@ -1,23 +1,34 @@
-.glossaryItem {
-    display: block;
-    margin-bottom: 1rem;
-    text-decoration: none;
+.glossaryGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
   }
   
-  .glossaryItemInner {
+.glossaryItem {
     background-color: var(--ifm-card-background-color);
     border: 1px solid var(--ifm-color-emphasis-300);
     border-radius: var(--ifm-card-border-radius);
     box-shadow: var(--ifm-global-shadow-lw);
     padding: 1rem;
     transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 130px;
   }
   
-  .glossaryItemInner:hover {
+.glossaryItem:hover {
     box-shadow: var(--ifm-global-shadow-md);
     transform: translateY(-2px);
   }
   
-  .glossaryItemInner h3 {
+.glossaryItemInner {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  
+.glossaryItemInner h3 {
     margin-bottom: 0;
   }
