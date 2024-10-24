@@ -211,6 +211,16 @@ const config: Config = {
               label: 'Getting started',
               to: '/docs/getting-started/install',
             },
+            {
+              label: 'Glossary',
+              to: 'glossary',
+              customFields: {
+                glossaryItems: [
+                  { term: 'DevOps', fileName: 'devops' },
+                  { term: 'Kubernetes', fileName: 'kubernetes' },
+                ],
+              },
+            },
           ],
         },
         {
