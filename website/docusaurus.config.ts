@@ -136,6 +136,18 @@ const config: Config = {
       },
     ],
   ],
+  customFields: {
+    glossaryItems: [
+      { term: 'DevOps', fileName: 'devops' },
+      { term: 'Kubernetes', fileName: 'kubernetes' },
+      { term: 'Kubernetes operator', fileName: 'kubernetes-operator' },
+      { term: 'Kustomize', fileName: 'kustomize'},
+      { term: 'Kubernetes Package Management', fileName: 'k8s-package-mgmt'},
+      { term: 'Kubernetes Deployment Methods', fileName: 'k8s-deployment-methods'},
+      { term: 'Kubernetes configuration Management', fileName: 'k8s-configuration-mgmt'},
+      { term: 'Helm', fileName: 'helm'},
+    ],
+  },
   markdown: {
     mermaid: true,
   },
@@ -210,6 +222,10 @@ const config: Config = {
             {
               label: 'Getting started',
               to: '/docs/getting-started/install',
+            },
+            {
+              label: 'Glossary',
+              to: 'glossary',
             },
           ],
         },

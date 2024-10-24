@@ -1,0 +1,25 @@
+---
+title: Kuztomize
+---
+
+## What is Kustomize? Definition and explanation
+
+### Kustomize definition
+
+> [Kustomize](https://kustomize.io/) is a native Kubernetes configuration management tool that allows you to customize and manage Kubernetes resource configurations in a declarative, reusable manner. Unlike templating tools, Kustomize doesn't rely on injecting values into predefined templates, instead, it works directly with standard Kubernetes manifests, preserving their original structure and keeping them human-readable.
+
+## Kustomize explained
+
+One of Kustomize's key strengths is its ability to dynamically create variations of Kubernetes resources through layering overlay file onto base kubernetes manifests. It enables you to apply patches, transformers, and generators to existing base configurations, generating environment-specific manifests while maintaining clean and separate base files. This is particularly useful in environments where maintaining a clean separation of concerns is critical, and changes to resources should not require modification of base files, simplifying long-term maintenance.
+
+### GitOps Integration
+
+Kustomize's fully declarative approach also makes it very GitOps-friendly. By storing configurations as code and applying them through version control, teams can easily manage changes, review diffs, and enforce consistency across environments.
+
+While other tools like [Helm](/blog/what-is-helm-in-kubernetes/) use a templating system to dynamically generate these manifests by injecting values from external data sources, Kustomize opts for a more direct un-templated approach. Kustomize ensures that configurations remain human-readable, portable, and easy to maintain.
+
+A useful characteristic of Kustomize is that from Kubectl version 1.14, Kustomize is integrated into the Kubectl cli tool, meaning that no additional installations are needed.
+
+> For a more detailed explanation of Kustomize, be sure to check out our [complete Kutomise tutorial](/blog/patching-with-kustomize/).
+
+In essence, Kustomize provides a lightweight and powerful way to manage complex Kubernetes configurations, making it ideal for teams looking to scale their Kubernetes deployments while maintaining clarity and separation of concerns.
