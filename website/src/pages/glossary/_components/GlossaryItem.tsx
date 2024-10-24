@@ -20,7 +20,6 @@ export default function GlossaryItem({ term }: GlossaryItemProps): JSX.Element {
         <h3>{term}</h3>
         <p className={styles.description}>
           {/* Add a brief description here if available */}
-
         </p>
         <Link to={link} className={styles.moreButton}>
           More

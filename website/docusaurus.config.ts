@@ -136,6 +136,12 @@ const config: Config = {
       },
     ],
   ],
+  customFields: {
+    glossaryItems: [
+      { term: 'DevOps', fileName: 'devops' },
+      { term: 'Kubernetes', fileName: 'kubernetes' },
+    ],
+  },
   markdown: {
     mermaid: true,
   },
@@ -214,12 +220,6 @@ const config: Config = {
             {
               label: 'Glossary',
               to: 'glossary',
-              customFields: {
-                glossaryItems: [
-                  { term: 'DevOps', fileName: 'devops' },
-                  { term: 'Kubernetes', fileName: 'kubernetes' },
-                ],
-              },
             },
           ],
         },
