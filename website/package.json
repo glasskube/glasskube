@@ -31,8 +31,6 @@
     "@fortawesome/free-regular-svg-icons": "^6.5.1",
     "@fortawesome/free-solid-svg-icons": "^6.5.1",
     "@fortawesome/react-fontawesome": "^0.2.0",
-    "@getcanary/docusaurus-theme-search-pagefind": "^1.0.2",
-    "@getcanary/web": "^1.0.0",
     "@giscus/react": "^3.0.0",
     "@lottiefiles/react-lottie-player": "^3.5.3",
     "@mdx-js/react": "^3.0.0",
