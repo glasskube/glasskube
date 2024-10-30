@@ -12,6 +12,8 @@ import TabItem from '@theme/TabItem';
 In this article, I would like to introduce to you Kubeflow: A complete and cloud-native platform that simplifies AI operations.
 Join me in setting up Kubeflow on GKE for your organization and get started with cloud-native AI **today**.
 
+{/* truncate */}
+
 ## Prerequisites
 
 - Up-to-date version of `git`, `kubectl` and `kustomize` installed
@@ -47,7 +49,7 @@ It also helps researches to reify their machine-learning workflows using "pipeli
 ### Kubeflow Platform Architecture
 
 If all of that sounds to you like a very complex system with a lot of moving parts, for better of for worse, you are right.
-Kubeflow is composed of several components and is built on a base of several third-party pojects:
+Kubeflow is composed of several components and is built on a base of quite a few third-party pojects:
 
 - cert-manager (generating TLS certificates for admission webhooks)
 - Istio (internal routing, authorization)
@@ -123,7 +125,15 @@ Verify that the configuration works, by running any command such as `kubectl get
 
 Although Kubeflow is a very complex system, they provide a Kustomize manifest that contains everything required.
 You can find it [here](https://github.com/kubeflow/manifests).
-To use this manifest, you need to clone the repository locally, by running `git clone git@github.com:kubeflow/manifests.git`.
+To use this manifest, you need to clone the repository locally.
+Additionally, make sure to check out a tagged release of the repository.
+At the time of writing this article, the latest release is `v1.9.1`, so let's use that version.
+
+```sh
+git clone git@github.com:kubeflow/manifests.git
+cd manifests
+git checkout v1.9.1
+```
 
 Since this manifest contains several Custom Resource Definitions (CRDs), related controllers, webhook configurations and Custom Resources (CRs),
 simply applying it usually does not work, because once a webhook configuration exists for a CRD, the appropriate controller must be running before a CR can be created.
@@ -164,7 +174,7 @@ Sign in with username `user@example.com` and password `12341234`.
 
 If you just want to see what Kubeflow looks like or experiment a little bit, you can already stop here.
 Kubeflow is usable behind `kubectl port-forward`.
-However, you probably intend other users to join the platform and expecting everyone to do this is not reasonable.
+However, you probably intend other users to join the platform and expecting everyone to install `kubectl` and have access to the cluster API would be unreasonable.
 Fortunately, exposing Kubeflow is pretty straight-forward with an `Ingress`, we just need to jump through some extra hoops to make everything work in GCP.
 Specifically, we will also need:
 
@@ -282,8 +292,8 @@ It will take some time for GCP to register all LoadBalancer as healthy and reque
 Once everything is done, enter the domain in your browser and you will be able to log in, just like before.
 :::
 
-But since this service is now reachable for the public, you will probably want to set up a more robust authentication flow.
-Of course, you can do this by extending the `staticPasswords` list located in the Dex configuration, but where Dex really shines at is delegating authentication to an external Identity Provider (IDP), such as Google, GitHub, Microsoft or basically any provider that implements the OIDC protocol.
+Since our Kubeflow deployment is now reachable for the public, you will probably want to set up a more robust authentication flow than the built-in default username and password.
+Of course, you can do this by extending the `staticPasswords` list located in the Dex configuration, but where Dex really shines at is delegating authentication to an external Identity Provider IdP), such as Google, GitHub, Microsoft or basically any provider that implements the OIDC protocol.
 So let's do that!
 
 ### Configuring External Authentication
@@ -300,7 +310,7 @@ Note down the client secret _value_.
 
 Now we just need to configure Dex to act as this app registration. To do so, create the following file:
 
-```yaml name="custom/microsoft-auth/kustomization.yaml"
+```yaml title="custom/microsoft-auth/kustomization.yaml"
 kind: Component
 patches:
   - path: config-map.yaml
@@ -312,7 +322,7 @@ In your copy, make the following changes:
 - Change `issuer` to `https://kf.example-company.com/dex`
 - Change `enablePasswordDB` to `false`
 - Remove the `staticPasswords`
-- Add the `microsoft` connector, as seen below (replace the client ID, tenant ID and client secret with the ones you noted down before)
+- Add the `microsoft` connector, as seen below (replace the client ID, tenant ID and client secret with the ones you noted down before), or add your own connector if you chose to use a different IdP
 
 ```yaml
 connectors:
@@ -326,9 +336,11 @@ connectors:
       redirectURI: https://kf.example-company.com/dex/callback
 ```
 
-This is enough for Dex to work with the Microsoft IDP, but it now identifies as a different issuer internally, so we have to update the `oauth2-proxy` configuration to accept this issuer name. For this, update the file you created before, adding a patch for the `RequestAuthentication` resource:
+This is enough for Dex to work with the Microsoft IdP, but because we changed the `issuer` field in the Dex configuration, it now identifies as a different issuer internally.
+So, we have to update the `oauth2-proxy` configuration to accept the new issuer name.
+For this, update the file you created before, adding a patch for the `RequestAuthentication` resource:
 
-```yaml name="custom/microsoft-auth/kustomization.yaml"
+```yaml title="custom/microsoft-auth/kustomization.yaml"
 kind: Component
 patches:
   - path: config-map.yaml
@@ -350,9 +362,11 @@ resources:
   - ../example
   - ingress
 components:
+  # import the dex config we just created as a *component*
   - microsoft-auth
 patches:
   - path: istio-ingressgateway-service-patch.yaml
+# make sure to specify the *merge* behavior here, otherwise Kustomize will report a name conflict error
 configMapGenerator:
   - name: oauth2-proxy
     namespace: oauth2-proxy
