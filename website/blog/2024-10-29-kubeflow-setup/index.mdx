@@ -1,8 +1,11 @@
 ---
-slug: wip-kubeflow-setup
-title: 'WIP: Kubeflow Setup Guide'
-description: TODO
-authors: [kosmoz]
+slug: kubeflow-setup-guide
+title: Getting Started with Cloud-native AI using Kubeflow
+description: |
+  In this article, I would like to introduce to you Kubeflow: A complete and cloud-native platform that simplifies AI operations.
+  Join me in setting up Kubeflow on GKE for your organization and get started with cloud-native AI today.
+authors:
+  - kosmoz
 tags: [guide, ai, mlops, kubernetes, eks, gcp, azure]
 ---
 
@@ -383,11 +386,10 @@ configMapGenerator:
 ```
 
 Again, apply the changes by running `kustomize build custom | kubectl apply -f -`.
-Then restart the `dex` and `oauth2-proxy` deployments:
+Finally, restart the `dex` deployments:
 
 ```sh
 kubectl rollout restart -n auth deployment dex
-kubectl rollout restart -n oauth2-proxy deployment oauth2-proxy
 ```
 
 :::tip[Try it out]
@@ -395,7 +397,58 @@ Open the site in your browser (make sure to clear your cookies if you have signe
 On first try, you will be prompted to authorize Dex to access personal information stored in your microsoft account, which you must agree to.
 :::
 
+### Enabling Registration Flow
+
+You should now be able to log in to Kubeflow with you Microsoft account, but as you will quickly realize, you can't access any namespaces!
+RBAC in Kubeflow is an evolving topic and one solution likely won't work for every use-case, but the simplest way to give users access to a namespace is by enabling the “Registration Flow” feature on the `centraldashboard` component.
+To do this, add the following file:
+
+```yaml title="custom/centraldashboard-deployment-patch.yaml"
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: centraldashboard
+  namespace: kubeflow
+spec:
+  template:
+    spec:
+      containers:
+        - name: centraldashboard
+          env:
+            - name: REGISTRATION_FLOW
+              value: 'true'
+```
+
+Don't forget to add this patch to your `kustomization.yaml`:
+
+```yaml title="custom/kustomization.yaml (final version)"
+resources:
+  - ../example
+  - ingress
+components:
+  - microsoft-auth
+patches:
+  - path: istio-ingressgateway-service-patch.yaml
+  # here we enable the registration flow feature
+  - path: centraldashboard-deployment-patch.yaml
+configMapGenerator:
+  - name: oauth2-proxy
+    namespace: oauth2-proxy
+    files:
+      - oauth2_proxy.cfg
+    behavior: merge
+```
+
+And apply the changes by running `kustomize build custom | kubectl apply -f -`.
+
+Once the command has completed, reload the page in your browser and you should be presented with the Kubeflow registration flow.
+Complete it and you will see that you are now “owner” of a namespace!
+
 ## Final Thoughts
 
-- Logout button does not work
-- Set `CD_REGISTRATION_FLOW` to true in `apps/centraldashboard/upstream/base/params.env`
+This concludes our guide on how to setup vanilla Kubeflow on GCP.
+If you followed along, you now have a complete and functional Kubeflow installation running on a Kubernetes cluster that automatically scales up or down to accomodate your users CPU and GPU requirements.
+We exposed the deployment using a GCP load balancer and secured it using Microsoft as our IdP.
+
+While the instance we created might be opinionated in some respects, I believe that it should serve as a reasonable foundation on which you can build your own variant.
+If you want to learn more about Kubeflow, why not check out one of the official user-guides: https://www.kubeflow.org/docs/started/introduction/
