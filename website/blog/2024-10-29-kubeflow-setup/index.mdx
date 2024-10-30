@@ -17,7 +17,7 @@ Join me in setting up Kubeflow on GKE for your organization and get started with
 ## Prerequisites
 
 - Up-to-date version of `git`, `kubectl` and `kustomize` installed
-- Up-to-date version of `gcloud` installed and initialized
+- Up-to-date version of `gcloud` and the `gke-gcloud-auth-plugin` component installed and initialized
 - A Google Cloud project with sufficient funds to host the GKE cluster
 - A domain name and the capabilities to create DNS records for that domain
 
@@ -83,8 +83,9 @@ Google cloud makes it very easy to create Kubernetes cluster with the Google Kub
 To create your cluster using the Google Cloud Console UI, go to https://console.cloud.google.com/kubernetes/add and make sure the correct project is selected in the top left.
 Then, choose a name and region and configure your node pools:
 
-1. The first node pool (let's call it `default-pool`, because that's the default) should be configured with
+1. The first node pool (let's call it `default`) should be configured with
 
+   - “Number of nodes (per zone)” set to 4 (12 nodes total is a good start for a Kubeflow installation)
    - “Enable cluster autoscaler” checked
    - “Size limit type” set to “Total limits”
    - “Minimum number of nodes” set to 0
@@ -92,8 +93,9 @@ Then, choose a name and region and configure your node pools:
    - Machine type `e2-medium` (or use a different one if desired)
    - “Enable nodes on spot VMs” checked (recommended)
 
-2. Add a second node pool using the button in the top bar (let's call this one `gpu-pool`) and configure it with
+2. Add a second node pool using the button in the top bar (let's call this one `gpu`) and configure it with
 
+   - “Number of nodes (per zone)” set to 0 (nodes in this group should only be provisioned on-demand)
    - “Enable cluster autoscaler” checked
    - “Size limit type” set to “Total limits”
    - “Minimum number of nodes” set to 0
@@ -106,6 +108,11 @@ Then, choose a name and region and configure your node pools:
    - Under “Security” on the left navigation, select “Set access for each API” and change “Storage” to “Read Write”.
 
 To provision your cluster, click “Create” on the bottom of the page and wait for your cluster to be ready.
+
+:::note
+If you get an error like “accelerator l4 is not available in region X”, go back to the “Cluster basics” page and check “Specify default node locations”.
+Then check all the regions except for the one mentionen in the error message and try creating the cluster again.
+:::
 
 ### Connect to Your Cluster
 
