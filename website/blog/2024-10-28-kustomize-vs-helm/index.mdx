@@ -1,7 +1,7 @@
 ---
 slug: kustomize-vs-helm
 title: Kustomize vs Helm
-description: Kubernetes package manangement and kuberentes configuration management go hand in hand, Helm in one and Kustomize in the other. In this piece we explore both tools side by side. 
+description: Kubernetes package management and kuberentes configuration management go hand in hand, Helm in one and Kustomize in the other. In this piece we explore both tools side by side. 
 authors: [ jpage, pmig ]
 tags: [ helm, guide, kustomize ]
 image: https://github.com/user-attachments/assets/d7ed78dd-5ac1-446b-a437-89513848fe1f
@@ -16,7 +16,7 @@ In this post, we’ll explore their key features, compare their strengths and we
 
 ## What is Helm?
 
-[Helm](https://helm.sh/) is a cloud native CLI tool, which has risen to be the most widely used package manager for Kubernetes to date. It allows users to define, install, and manage applications as [Helm charts](/blog/what-is-helm-in-kubernetes/#what-is-a-helm-chart). Helm uses a templating engine based on Go templating to generate Kubernetes manifests based on user-defined templates and configuration values. Helm charts encapsulate all the necessary resources and configurations needed to generate the manifests that define the application which is to be deployed, making it easy to share and reuse configurations across different projects. Helm also supports versioning, rollbacks, and dependency management, making it a powerful tool for managing complex applications in Kubernetes.
+[Helm](https://helm.sh/) is a cloud native CLI tool, which has risen to be the most widely used package manager for Kubernetes to date. It allows users to define, install, and manage applications as [Helm charts](/blog/what-is-helm-in-kubernetes/#what-is-a-helm-chart). Helm uses a temple engine based on Go templating to generate Kubernetes manifests based on user-defined templates and configuration values. Helm charts encapsulate all the necessary resources and configurations needed to generate the manifests that define the application which is to be deployed, making it easy to share and reuse configurations across different projects. Helm also supports versioning, rollbacks, and dependency management, making it a powerful tool for managing complex applications in Kubernetes.
 
 :::info
 We recently published an [in-depth Helm guide](/blog/what-is-helm-in-kubernetes/), sharing key commands, common errors, best practices and a comprehensive live of FAQs covering many Helm related queries. Check it out.
@@ -77,7 +77,7 @@ Kustomize allows you to manage and customize Kubernetes configurations by layeri
 
 ![How to use Kustomize](https://github.com/user-attachments/assets/1844cdcb-507d-43e6-b5f1-8daaef4e9dd0)
 
-### Kustomise project structure
+### Kustomize project structure
 
 The `base/` directory contains a [kustomization.yaml](/blog/patching-with-kustomize/#the-role-of-the-kustomizeyaml-file) file along with manifest files for common resources shared across environments. The `kustomization.yaml` file defines the core resources, like `Deployments` and `Services`, that apply to all environments.
 
@@ -122,7 +122,7 @@ Helm uses a templating engine, allowing users to pass values into predefined tem
 
 Kustomize, in contrast, focuses on declarative configurations with plain Kubernetes manifests, making it more intuitive and readable. While Kustomize simplifies configuration management, it lacks some of Helm’s imperative features, like state management, which can be useful in more complex scenarios.
 
-### Kustomize vs Helm:  Ease of use
+### Kustomize vs Helm: Ease of use
 
 Helm is often considered easier for packaging entire applications, thanks to its extensive ecosystem of pre-built charts. However, Kustomize isn’t necessarily harder to use, it’s just built for a different purpose. Kustomize shines when making small, targeted modifications to existing resource definition files, making it ideal for managing configurations across multiple environments, rather than packaging whole applications like Helm.
 
@@ -141,7 +141,7 @@ Install `kubectl` and run:
 kubectl apply -k <kustomization directory>
 ```
 
-Helm on the other hand is custom built to be used in Kubernetes environmnets but it is not integrated into `kubectl`.
+Helm on the other hand is custom-built to be used in Kubernetes environments but it is not integrated into `kubectl`.
 
 ### Declarative vs. Imperative
 
@@ -190,6 +190,6 @@ There are three approaches to combining Helm and Kustomize, though not all are e
 
 Helm excels at packaging applications, it offers rich features like rollback, versioning, and dependency management. However, its use of templates reduce it to the limitations of the Go templating framework and can become quite complicated, especially when maintaining large and intricate deployments.
 
-On the other hand, Kustomize takes a simpler, template-free approach, focusing on patch-based configuration management. It's particularly useful for managing different environments (development, staging, production) without leaning on complicated templating logic. This makes Kustomize the obvious option when you need to apply variations to a common set of base configurations in an elegant and straighforward way.
+On the other hand, Kustomize takes a simpler, template-free approach, focusing on patch-based configuration management. It's particularly useful for managing different environments (development, staging, production) without leaning on complicated templating logic. This makes Kustomize the obvious option when you need to apply variations to a common set of base configurations in an elegant and straightforward way.
 
 In practice, combining Helm’s packaging capabilities with Kustomize’s flexible overlay system offers the best of both worlds. Together, they enable robust, maintainable, and adaptable Kubernetes deployments, where Helm handles application releases, and Kustomize manages environment-specific customizations quite well. While some may find using two separate tools for Kubernetes package management less convenient, until a more comprehensive, all-in-one solution emerges, this combination remains one of the most effective approaches available.
