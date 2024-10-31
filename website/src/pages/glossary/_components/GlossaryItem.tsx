@@ -12,7 +12,7 @@ export default function GlossaryItem({ term }: GlossaryItemProps): JSX.Element {
   const glossaryItems = siteConfig.customFields.glossaryItems as Array<{term: string, fileName: string}>;
   
   const item = glossaryItems.find(item => item.term === term);
-  const link = item ? `/docs/glossary/${item.fileName}` : '#';
+  const link = item ? `/glossary/${item.fileName}` : '#';
 
   return (
     <div className={styles.glossaryItem}>
