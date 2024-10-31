@@ -36,7 +36,7 @@ While containerization, workload scheduling, horizontal scaling and the general 
 Kubernetes was designed first and foremost with web applications in mind, and not machine learning tasks and inference serving.
 For this reason, the primitives Kubernetes provides for users to manage workloads have turned out to be unintuitive for individuals tasked with managing AI workloads if they don't already have a deep understanding of the system.
 Furthermore, AI workloads have very different performance characteristics compared to the web servers and database servers we are used to.
-They are, generally, very resource demanding, tightly coupled and often short lived.
+They are, generally, very resource demanding, tightly coupled and often short-lived.
 
 While advanced techniques, like cluster autoscaling, can help with some of these challenges, there is a clear need for Kubernetes primitives representing higher level concepts that AI researchers and data scientists are more familiar with.
 
@@ -75,9 +75,9 @@ Please make sure you are familiar with the costs involved and ensure that you ar
 But before we can install anything in a Kubernetes cluster, we will need, well, a cluster!
 So, let's head over to the Google Cloud Console and create one.
 
-Google cloud makes it very easy to create Kubernetes cluster with the Google Kubernetes Engine (GKE), but our installation has some special requirements that need to be taken care of. Here are our considerations:
+Google cloud makes it very easy to create Kubernetes clusters with the Google Kubernetes Engine (GKE), but our installation has some special requirements that need to be taken care of. Here are our considerations:
 
-- **Resource requirements:** Kubeflow itself is quite resource heavy and the specific requirements will change over time, because workloads will be created and deleted as your users work with it.
+- **Resource requirements:** Kubeflow itself is quite resource heavy, and the specific requirements will change over time, because workloads will be created and deleted as your users work with it.
 - **Accelerators:** You will probably need to expose one or more GPUs or TPUs in your cluster, but you probably don't want one on all of your general-purpose nodes.
 - **Permissions:** In order to store model artifacts in Google Cloud Storage (GCS), at least some of your nodes need the WRITE permission for GCS.
 
@@ -182,13 +182,13 @@ Sign in with username `user@example.com` and password `12341234`.
 
 ### Exposing Via Ingress
 
-If you just want to see what Kubeflow looks like or experiment a little bit, you can already stop here.
+If you just want to see what Kubeflow looks like or experiment a little, you can already stop here.
 Kubeflow is usable behind `kubectl port-forward`.
 However, you probably intend other users to join the platform and expecting everyone to install `kubectl` and have access to the cluster API would be unreasonable.
 Fortunately, exposing Kubeflow is pretty straight-forward with an `Ingress`, we just need to jump through some extra hoops to make everything work in GCP.
 Specifically, we will also need:
 
-- a `BackendConfig` that tells GCP how to health-check the service,
+- A `BackendConfig` that tells GCP how to health-check the service,
 - a `ManagedCertificate` to provide a TLS certificate signed by a trusted Certificate Authority (CA) and
 - a `FrontendConfig` to configure the load balancer to automatically redirect HTTP to HTTPS.
 
@@ -299,16 +299,16 @@ kf.example-company.com. 60 IN A <your ingress IP address>
 It will take some time for GCP to register all LoadBalancer as healthy and request the TLS certificate from the CA.
 
 :::tip[Try it out]
-Once everything is done, enter the domain in your browser and you will be able to log in, just like before.
+Once everything is done, enter the domain in your browser, and you will be able to log in, just like before.
 :::
 
 Since our Kubeflow deployment is now reachable for the public, you will probably want to set up a more robust authentication flow than the built-in default username and password.
-Of course, you can do this by extending the `staticPasswords` list located in the Dex configuration, but where Dex really shines at is delegating authentication to an external Identity Provider IdP), such as Google, GitHub, Microsoft or basically any provider that implements the OIDC protocol.
+Of course, you can do this by extending the `staticPasswords` list located in the Dex configuration, but where Dex really shines at is delegating authentication to an external Identity Provider IdP, such as Google, GitHub, Microsoft or basically any provider that implements the OIDC protocol.
 So let's do that!
 
 ### Configuring External Authentication
 
-Like many other organizations, we use several of Microsofts products, so it makes sense for us to use Azure Active Directory (AAD) here.
+Like many other organizations, we use several Microsoft products, so it makes sense for us to use Azure Active Directory (AAD) here.
 But Dex supports a [wide variety of SSO providers](https://dexidp.io/docs/connectors/), including generic SAML and OIDC, so feel free to pick one that works for you.
 
 First, visit [AAD App Registrations](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade) in your browser and create a new registration.
@@ -394,7 +394,7 @@ kubectl rollout restart -n auth deployment dex
 
 :::tip[Try it out]
 Open the site in your browser (make sure to clear your cookies if you have signed in with the example credentials before) and log in.
-On first try, you will be prompted to authorize Dex to access personal information stored in your microsoft account, which you must agree to.
+On first try, you will be prompted to authorize Dex to access personal information stored in your Microsoft account, which you must agree to.
 :::
 
 ### Enabling Registration Flow
@@ -441,13 +441,13 @@ configMapGenerator:
 
 And apply the changes by running `kustomize build custom | kubectl apply -f -`.
 
-Once the command has completed, reload the page in your browser and you should be presented with the Kubeflow registration flow.
-Complete it and you will see that you are now “owner” of a namespace!
+Once the command has completed, reload the page in your browser, and you should be presented with the Kubeflow registration flow.
+Complete it, and you will see that you are now “owner” of a namespace!
 
 ## Final Thoughts
 
 This concludes our guide on how to set up vanilla Kubeflow on GCP.
-If you followed along, you now have a complete and functional Kubeflow installation running on a Kubernetes cluster that automatically scales up or down to accomodate your users CPU and GPU requirements.
+If you followed along, you now have a complete and functional Kubeflow installation running on a Kubernetes cluster that automatically scales up or down to accommodate your users CPU and GPU requirements.
 We exposed the deployment using a GCP load balancer and secured it using Microsoft as our IdP.
 
 While the instance we created might be opinionated in some respects, I believe that it should serve as a reasonable foundation on which you can build your own variant.
