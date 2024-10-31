@@ -178,7 +178,7 @@ There are three approaches to combining Helm and Kustomize, though not all are e
 
 1. **Using** `helm template` **and apply with Kustomize**: In this method, you use `helm template` to generate the Kubernetes manifests from a Helm chart, and then use Kustomize to apply patches or overlays. Since Kustomize is in charge of deploying the resources to Kubernetes, Helm won't manage the release, so there's no Helm-based release tracking.
     
-2. **Using** `helm install` **with Kustomize pre-modifications**: Through this method, Helm is responsible for the application release so it manages and keeps track of the application's lifecycle, while Kustomize modifies the manifests before applying them to the cluster. This allows you to still benefit from Helm's release management.
+2. **Using** `helm install` **with Kustomize pre-modifications**: Through this method, Helm is responsible for the application release, so it manages and keeps track of the application's lifecycle, while Kustomize modifies the manifests before applying them to the cluster. This allows you to still benefit from Helm's release management.
 
 3. **Using Kustomize's HelmChartInflationGenerator**: Kustomize includes built-in support for [Helm chart inflation](https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/helmcharts/) through the `helmCharts` field. This feature requires the `--enable-helm` flag:
    ```bash
