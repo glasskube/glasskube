@@ -29,16 +29,16 @@ Join me in setting up Kubeflow on GKE for your organization and get started with
 ### AI on Kubernetes
 
 Over the course of the last decade, Kubernetes has established itself as one of the foundational pillars of modern cloud computing.
-Countless enterprises and organizations have adopted it as a platform to serve their internal and external IT infrastructure, benefiting from it's declarative management, self-healing and scaling capabilities.
+Countless enterprises and organizations have adopted it as a platform to serve their internal and external IT infrastructure, benefiting from its declarative management, self-healing and scaling capabilities.
 But the advance of Artificial Intelligence (AI) in recent years has presented the community with several challenges.
 
 While containerization, workload scheduling, horizontal scaling and the general abstraction for compute resources are all relevant to AI engineers,
 Kubernetes was designed first and foremost with web applications in mind, and not machine learning tasks and inference serving.
 For this reason, the primitives Kubernetes provides for users to manage workloads have turned out to be unintuitive for individuals tasked with managing AI workloads if they don't already have a deep understanding of the system.
-Furthermore, AI workloads have very different performance characteristics compared to the web servers and database servers we are to.
-They are, generally, very resource demanding, strongly coupled and often short lived.
+Furthermore, AI workloads have very different performance characteristics compared to the web servers and database servers we are used to.
+They are, generally, very resource demanding, tightly coupled and often short lived.
 
-While advanced technices, like cluster autoscaling, can help with some of these challenges, there is a clear need for Kubernetes primitives representing higher level concepts that AI researches and data scientists are more familiar with.
+While advanced techniques, like cluster autoscaling, can help with some of these challenges, there is a clear need for Kubernetes primitives representing higher level concepts that AI researchers and data scientists are more familiar with.
 
 ### Why Kubeflow
 
@@ -47,12 +47,12 @@ Originally developed by Google, Kubeflow is, essentially, a collective of open-s
 However, Kubeflow also positions itself as a complete platform, integrating all of those projects into a cohesive and easy to use solution while providing additional features and security.
 
 Kubeflow makes it easy to train and serve models, supporting most of the commonly used machine learning frameworks.
-It also helps researches to reify their machine-learning workflows using "pipelines", leading to faster and more reproducible model development cycles.
+It also helps researchers to reify their machine-learning workflows using "pipelines", leading to faster and more reproducible model development cycles.
 
 ### Kubeflow Platform Architecture
 
-If all of that sounds to you like a very complex system with a lot of moving parts, for better of for worse, you are right.
-Kubeflow is composed of several components and is built on a base of quite a few third-party pojects:
+If all of that sounds to you like a very complex system with a lot of moving parts, for better or for worse, you are right.
+Kubeflow is composed of several components and is built on a base of quite a few third-party projects:
 
 - cert-manager (generating TLS certificates for admission webhooks)
 - Istio (internal routing, authorization)
@@ -114,7 +114,7 @@ To provision your cluster, click “Create” on the bottom of the page and wait
 
 :::note
 If you get an error like “accelerator l4 is not available in region X”, go back to the “Cluster basics” page and check “Specify default node locations”.
-Then check all the regions except for the one mentionen in the error message and try creating the cluster again.
+Then, check all the regions except for the one mentioned in the error message and try creating the cluster again.
 :::
 
 ### Connect to Your Cluster
@@ -308,7 +308,7 @@ So let's do that!
 
 ### Configuring External Authentication
 
-Like many other organizations, we use several of Microsofts producs, so it makes sense for us to use Azure Active Directory (AAD) here.
+Like many other organizations, we use several of Microsofts products, so it makes sense for us to use Azure Active Directory (AAD) here.
 But Dex supports a [wide variety of SSO providers](https://dexidp.io/docs/connectors/), including generic SAML and OIDC, so feel free to pick one that works for you.
 
 First, visit [AAD App Registrations](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade) in your browser and create a new registration.
@@ -446,7 +446,7 @@ Complete it and you will see that you are now “owner” of a namespace!
 
 ## Final Thoughts
 
-This concludes our guide on how to setup vanilla Kubeflow on GCP.
+This concludes our guide on how to set up vanilla Kubeflow on GCP.
 If you followed along, you now have a complete and functional Kubeflow installation running on a Kubernetes cluster that automatically scales up or down to accomodate your users CPU and GPU requirements.
 We exposed the deployment using a GCP load balancer and secured it using Microsoft as our IdP.
 
