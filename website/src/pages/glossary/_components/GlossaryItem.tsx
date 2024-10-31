@@ -1,19 +1,13 @@
 import React from 'react';
 import Link from '@docusaurus/Link';
-import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import styles from './styles.module.css';
 
 interface GlossaryItemProps {
   term: string;
+  fileName: string;
 }
 
-export default function GlossaryItem({ term }: GlossaryItemProps): JSX.Element {
-  const {siteConfig} = useDocusaurusContext();
-  const glossaryItems = siteConfig.customFields.glossaryItems as Array<{term: string, fileName: string}>;
-  
-  const item = glossaryItems.find(item => item.term === term);
-  const link = item ? `/glossary/${item.fileName}` : '#';
-
+export default function GlossaryItem({ term, fileName }: GlossaryItemProps): JSX.Element {
   return (
     <div className={styles.glossaryItem}>
       <div className={styles.glossaryItemInner}>
@@ -21,7 +15,7 @@ export default function GlossaryItem({ term }: GlossaryItemProps): JSX.Element {
         <p className={styles.description}>
           {/* Add a brief description here if available */}
         </p>
-        <Link to={link} className={styles.moreButton}>
+        <Link to={`/glossary/${fileName}`} className={styles.moreButton}>
           More
         </Link>
       </div>
