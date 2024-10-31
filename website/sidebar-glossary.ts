@@ -20,6 +20,7 @@ const sidebars: SidebarsConfig = {
         'kubernetes-package-management',
         'kubernetes',
         'kubernetes-operator',
+        'kustomize',
       ], 
     },
   ],
