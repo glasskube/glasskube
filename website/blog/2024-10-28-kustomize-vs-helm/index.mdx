@@ -16,9 +16,11 @@ In this post, we’ll explore their key features, compare their strengths and we
 
 ## What is Helm?
 
-[Helm](https://helm.sh/) is cloud native CLI tool, which has risen to be the most widely used package manager for Kubernetes to date. It allows users to define, install, and manage applications as [Helm charts](/blog/what-is-helm-in-kubernetes/#what-is-a-helm-chart). Helm uses a templating engine based on Go templating to generate Kubernetes manifests based on user-defined templates and configuration values. Helm charts encapsulate all the necessary resources and configurations needed to generate the manifests that define the application which is to be deployed, making it easy to share and reuse configurations across different projects. Helm also supports versioning, rollbacks, and dependency management, making it a powerful tool for managing complex applications in Kubernetes.
+[Helm](https://helm.sh/) is a cloud native CLI tool, which has risen to be the most widely used package manager for Kubernetes to date. It allows users to define, install, and manage applications as [Helm charts](/blog/what-is-helm-in-kubernetes/#what-is-a-helm-chart). Helm uses a templating engine based on Go templating to generate Kubernetes manifests based on user-defined templates and configuration values. Helm charts encapsulate all the necessary resources and configurations needed to generate the manifests that define the application which is to be deployed, making it easy to share and reuse configurations across different projects. Helm also supports versioning, rollbacks, and dependency management, making it a powerful tool for managing complex applications in Kubernetes.
 
-> We recently published an [in-depth Helm guide](/blog/what-is-helm-in-kubernetes/), sharing key commands, common errors, best practices and a comprehensive live of FAQs covering many Helm related queries. Check it out.
+:::info
+We recently published an [in-depth Helm guide](/blog/what-is-helm-in-kubernetes/), sharing key commands, common errors, best practices and a comprehensive live of FAQs covering many Helm related queries. Check it out.
+:::
 
 ### What is a Helm chart?
 
@@ -65,7 +67,9 @@ Kustomize is a Kubernetes-native tool developed after Helm, addressing the need 
 
 Unlike Helm, which relies on templates, Kustomize uses overlays to apply different configurations to a base set of resources. This allows you to maintain base YAML files and layer environment-specific changes, such as for `development`, `staging`, or `production`.
 
-> We recently published an [in-depth Kustomize tutorial](/blog/patching-with-kustomize/) that explores the various types of patches, transformers, and generators, along with best practices for using the tool effectively. Be sure to check it out for a more detailed guide.
+:::info
+We recently published an [in-depth Kustomize tutorial](/blog/patching-with-kustomize/) that explores the various types of patches, transformers, and generators, along with best practices for using the tool effectively. Be sure to check it out for a more detailed guide.
+:::
 
 ### How to use Kustomize?
 
@@ -92,12 +96,15 @@ The `overlays/` directories contain their own `kustomization.yaml` files, which 
         ├── kustomization.yaml
         └── resource-patch.yaml
 ```
+:::note
+There isn't a definitive project structure for Kustomize. This is just a structure recommended in the Kustomize documentation which is often used since it has proven to be quite flexible.
+:::
 
 ## Kustomize vs Helm, what are the differences?
 
 | **Feature**                   | **Kustomize**                                      | **Helm**                                                             |
 |--------------------------------|---------------------------------------------------|----------------------------------------------------------------------|
-| **Native Kubernetes integration** | Yes (since v1.14)                                 | No                                                                   |
+| **Kubectl integration**       | Yes (since v1.14)                                 | No                                                                   |
 | **Ease of use**                | Simple for patching                               | More complex due to templating syntax                                 |
 | **Approach**                   | Overlays for resource customization               | Templates for dynamic configuration                                  |
 | **Declarative/imperative**     | Fully declarative                                 | Both declarative and imperative (with hooks, scripts)                |
@@ -125,16 +132,16 @@ One of Helm’s [drawbacks](/blog/5-helm-shortcomings/) is that its dynamically 
 
 Helm is purpose-built for packaging and distributing Kubernetes applications, while Kustomize is more about applying modifications to existing YAML configurations. If you need full application lifecycle management, Helm might be better suited. For granular resource customization, Kustomize is the way to go.
 
-### Native kubectl integration
+### kubectl Integration
 
 Kustomize is natively integrated with [kubectl](/guides/kubectl/) from version 1.14 onwards, meaning you can use it directly without needing any additional tools. Helm, on the other hand, requires the Helm CLI.
 
 Install `kubectl` and run:
 ```
-kubectl kustomize <kustomization_directory>
+kubectl apply -k <kustomization directory>
 ```
 
-Helm on the other hand is custom built to be used in Kubernetes environmnets but it is not integrated into `kubectl`, nor is it considered “kubernetes-native“.
+Helm on the other hand is custom built to be used in Kubernetes environmnets but it is not integrated into `kubectl`.
 
 ### Declarative vs. Imperative
 
@@ -142,10 +149,13 @@ Helm on the other hand is custom built to be used in Kubernetes environmnets but
 -   Helm (Declarative and Imperative), supports declarative configurations but also allows for imperative operations like running hooks and managing deployment state, adding flexibility at the cost of complexity.
     
 
-### Mutable vs. Immutable
+### Release History Management
 
--   **Helm** manages a mutable state, meaning that it tracks the history of each deployment through it’s handling of [“releases”](/blog/what-is-helm-in-kubernetes/#helm-chart-releases).   
--   Kustomize works in an immutable way, it doesn't keep track of state. It simply generates the desired state of Kubernetes resources at any given point, so it's up to the user (or other tools) to manage changes over time. 
+- **Helm** maintains a history of deployments through its ["releases"](/blog/what-is-helm-in-kubernetes/#helm-chart-releases) system. This allows for tracking changes over time and provides rollback capabilities.
+- **Kustomize** focuses solely on generating the desired state of Kubernetes resources without built-in history tracking. While it doesn't manage releases natively, similar functionality can be achieved by:
+  - Using labels in your Kustomize configurations
+  - Combining with `kubectl apply --prune` to handle resource cleanup
+  - Integrating with external tools for deployment tracking
 
 ### Kustomize vs Helm: CI/CD Integration
 
@@ -164,15 +174,21 @@ Helm and Kustomize can each be used as standalone tools, but in practice, they a
 -   **Managing Secrets and ConfigMaps**: Keep sensitive resources separate from Helm charts by creating them with Kustomize after the chart is deployed. Kustomize can also be used to inject sensitive resources that have already been created.   
 -   **GitOps workflows:** Use Helm to generate the base manifests, keep Helm rendered manifests and environment customizations separate while adhering to a clean, declarative GitOps model. Using Helm and Kustomize together supports the principle of separation of concerns, which is a key aspect of the GitOps methodology.   
 
-There are two main, mutually incompatible approaches to combining Helm and Kustomize.
+There are three approaches to combining Helm and Kustomize, though not all are equally mature or reliable.
 
-1.  **Using** `helm template` **and apply with Kustomize**: In this method, you use `helm template` to generate the Kubernetes manifests from a Helm chart, and then use Kustomize to apply patches or overlays. Since Kustomize is in charge of deploying the resources to Kubernetes, Helm won’t manage the release, so there’s no Helm-based release tracking.
+1. **Using** `helm template` **and apply with Kustomize**: In this method, you use `helm template` to generate the Kubernetes manifests from a Helm chart, and then use Kustomize to apply patches or overlays. Since Kustomize is in charge of deploying the resources to Kubernetes, Helm won't manage the release, so there's no Helm-based release tracking.
     
-2.  **Using** `helm install` **with Kustomize pre-modifications**: Through this method, Helm is responsible for the application release so it manages and keeps track of the application's lifecycle, while Kustomize modifies the manifests before applying them to the cluster. This allows you to still benefit from Helm’s release management.
-    
+2. **Using** `helm install` **with Kustomize pre-modifications**: Through this method, Helm is responsible for the application release so it manages and keeps track of the application's lifecycle, while Kustomize modifies the manifests before applying them to the cluster. This allows you to still benefit from Helm's release management.
+
+3. **Using Kustomize's HelmChartInflationGenerator**: Kustomize includes built-in support for [Helm chart inflation](https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/helmcharts/) through the `helmCharts` field. This feature requires the `--enable-helm` flag:
+   ```bash
+   kustomize build --enable-helm
+   ```
+   However, this approach is considered experimental and has known limitations. Its future development status remains uncertain, making it a less reliable choice for production environments.
+
 ## Key takeaways
 
-Helm excels at packaging applications, it offers rich features like rollback, versioning, and dependency management. However, its use of templates reducing it to the limitations of the Go templating framework and can become quite complicated, especially when maintaining large and intricate deployments.
+Helm excels at packaging applications, it offers rich features like rollback, versioning, and dependency management. However, its use of templates reduce it to the limitations of the Go templating framework and can become quite complicated, especially when maintaining large and intricate deployments.
 
 On the other hand, Kustomize takes a simpler, template-free approach, focusing on patch-based configuration management. It's particularly useful for managing different environments (development, staging, production) without leaning on complicated templating logic. This makes Kustomize the obvious option when you need to apply variations to a common set of base configurations in an elegant and straighforward way.
 
