@@ -15,7 +15,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/invopop/jsonschema v0.12.0
 	github.com/onsi/ginkgo/v2 v2.21.0
-	github.com/onsi/gomega v1.35.0
+	github.com/onsi/gomega v1.35.1
 	github.com/posthog/posthog-go v1.2.24
 	github.com/schollz/progressbar/v3 v3.17.0
 	github.com/spf13/cobra v1.8.1
