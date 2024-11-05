@@ -482,6 +482,8 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 		}
 	}
 
+	ownerutils.Add(&r.currentOwnedPackages, ownedPackages...)
+
 	if len(failed) > 0 {
 		message := fmt.Sprintf("required package(s) not installed: %v", strings.Join(failed, ","))
 		r.setShouldUpdate(conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.GetStatus().Conditions,
@@ -495,8 +497,6 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 			conditions.SetUnknown(ctx, &r.pkg.GetStatus().Conditions, condition.Pending, message))
 		return false
 	}
-
-	ownerutils.Add(&r.currentOwnedPackages, ownedPackages...)
 
 	return true
 }
