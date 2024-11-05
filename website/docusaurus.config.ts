@@ -66,6 +66,16 @@ const config: Config = {
       },
     ],
     [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'glossary',
+        path: 'glossary',
+        routeBasePath: 'glossary',
+        sidebarPath: './sidebar-glossary.ts',
+        editUrl: 'https://github.com/glasskube/glasskube/tree/main/website/',
+      },
+    ],
+    [
       'posthog-docusaurus',
       {
         apiKey: 'phc_EloQUW6cgfbTc0pI9c5CXElhQ4gVGRoBsrUAoakJVoQ',
@@ -81,8 +91,6 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
           editUrl: 'https://github.com/glasskube/glasskube/tree/main/website/',
         },
         blog: false,
@@ -100,17 +108,40 @@ const config: Config = {
   ],
   themes: [
     [
-      require.resolve('@getcanary/docusaurus-theme-search-pagefind'),
+      require.resolve('@trieve/docusaurus-search-theme'),
       {
-        includeRoutes: ["**/*"],
-        group: true,
-        tabs: [
-          { name: "All", pattern: "**/*" },
-          { name: "Docs", pattern: "/docs/**" },
-          { name: "Guides", pattern: "/guides/**" },
-          { name: "Blog", pattern: "/blog/**" },
+        apiKey: 'tr-wSPKOWp63V42oepLRWQqOfg8lWo0QCAR',
+        datasetId: 'd5d098bd-fe59-4a16-86e7-7085add427f4',
+        defaultSearchQueries: [
+          'RabbitMQ installation',
+          'Glasskube Gitops Template',
+          'Difference between helm?',
         ],
-       },
+        defaultAiQuestions: [
+          'How to make custom Glasskube Package?',
+          'How to install cert-manager on Glasskube',
+          'How to install Glasskube cli',
+        ],
+        brandLogoImgSrcUrl: 'https://glasskube.dev/img/glasskube-logo.svg',
+        brandName: 'Glasskube',
+        brandColor: '#3c8dcc',
+        responsive: true,
+        tags: [
+          {
+            tag: 'docs',
+            label: 'Docs',
+          },
+          {
+            tag: 'guides',
+            label: 'Guides',
+          },
+          {
+            tag: 'blog',
+            label: 'Blog',
+          },
+        ],
+        debounceMs: 350,
+      },
     ],
   ],
   markdown: {
@@ -129,7 +160,7 @@ const config: Config = {
     announcementBar: {
       id: 'announcementBar-1', // Increment on change
       /* x-release-please-start-version */
-      content: `🎉 We just released v0.24.0 of our Open Source Kubernetes Package Manager on <a href="https://github.com/glasskube/glasskube/" target="_blank">⭐ GitHub ⭐</a>.`,
+      content: `🎉 We just released v0.25.0 of our Open Source Kubernetes Package Manager on <a href="https://github.com/glasskube/glasskube/" target="_blank">⭐ GitHub ⭐</a>.`,
       /* x-release-please-end */
       isCloseable: false,
     },
@@ -161,6 +192,7 @@ const config: Config = {
             {type: 'docSidebar', sidebarId: 'docs', label: 'Docs'},
             {to: '/guides/cert-manager', label: 'Guides'},
             {to: '/blog', label: 'Blog'},
+            {to: '/glossary', label: 'Glossary'},
           ]
         },
         {to: '/pricing', label: 'Pricing', position: 'left'},
