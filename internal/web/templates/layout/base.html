@@ -35,7 +35,7 @@
             <li class="nav-item mx-1">
               {{ with $clusterPackages := "clusterpackages" }}
                 <a
-                  class="nav-link {{ if eq $.NavbarActiveItem $clusterPackages }}active{{ end }}"
+                  class="nav-link {{ if eq $.Navbar.ActiveItem $clusterPackages }}active{{ end }}"
                   href="/clusterpackages"
                   >ClusterPackages</a
                 >
@@ -43,14 +43,14 @@
             </li>
             <li class="nav-item mx-1">
               {{ with $packages := "packages" }}
-                <a class="nav-link {{ if eq $.NavbarActiveItem $packages }}active{{ end }}" href="/packages"
+                <a class="nav-link {{ if eq $.Navbar.ActiveItem $packages }}active{{ end }}" href="/packages"
                   >Packages</a
                 >
               {{ end }}
             </li>
             <li class="nav-item mx-1">
               {{ with $settings := "settings" }}
-                <a class="nav-link {{ if eq $.NavbarActiveItem $settings }}active{{ end }}" href="/settings"
+                <a class="nav-link {{ if eq $.Navbar.ActiveItem $settings }}active{{ end }}" href="/settings"
                   >Settings</a
                 >
               {{ end }}
@@ -118,12 +118,17 @@
             aria-label="Close"></button>
         </div>
 
-        {{ if .VersionMismatchWarning }}
+        {{ if .VersionDetails.MismatchWarning }}
           {{ template "version-mismatch-warning" .VersionDetails }}
         {{ end }}
       </div>
 
-      {{ template "content" . }}
+      {{ if eq .TemplateName "pages/settings" }}
+        {{ template "pages/settings" .TemplateData }}
+      {{ else if eq .TemplateName "pages/repository" }}
+        {{ template "pages/repository" .TemplateData }}
+      {{ end }}
+
     </main>
 
     <div class="modal" id="modal-container" tabindex="-1" style="display: none" aria-hidden="false">

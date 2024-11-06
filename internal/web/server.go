@@ -6,26 +6,18 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/glasskube/glasskube/internal/web/settings"
-	"github.com/glasskube/glasskube/internal/web/templates"
-	"io"
+	"github.com/glasskube/glasskube/internal/telemetry/annotations"
+	"github.com/glasskube/glasskube/internal/web/controllers"
+	"github.com/glasskube/glasskube/internal/web/responder"
 	"io/fs"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
-	"strings"
 	"sync"
 	"syscall"
 	"time"
-
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-
-	"github.com/glasskube/glasskube/internal/dependency/graph"
-	"github.com/glasskube/glasskube/internal/telemetry/annotations"
-
-	"github.com/glasskube/glasskube/internal/web/components/toast"
 
 	"github.com/glasskube/glasskube/internal/web/sse"
 	"github.com/glasskube/glasskube/internal/web/sse/refresh"
@@ -34,24 +26,17 @@ import (
 
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 
-	"github.com/glasskube/glasskube/internal/web/util"
-
-	"github.com/Masterminds/semver/v3"
 	"github.com/glasskube/glasskube/api/v1alpha1"
-	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/dependency"
 	"github.com/glasskube/glasskube/internal/manifestvalues"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
-	repotypes "github.com/glasskube/glasskube/internal/repo/types"
 	"github.com/glasskube/glasskube/internal/telemetry"
 	"github.com/glasskube/glasskube/internal/web/handler"
 	"github.com/glasskube/glasskube/pkg/bootstrap"
 	"github.com/glasskube/glasskube/pkg/client"
-	"github.com/glasskube/glasskube/pkg/list"
 	"github.com/glasskube/glasskube/pkg/open"
-	"github.com/glasskube/glasskube/pkg/uninstall"
 	"github.com/glasskube/glasskube/pkg/update"
 	"github.com/gorilla/mux"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -74,8 +59,8 @@ var webFs fs.FS = embeddedFs
 
 func init() {
 	if config.IsDevBuild() {
-		if _, err := os.Lstat(templates.BaseDir); err == nil {
-			webFs = os.DirFS(templates.BaseDir)
+		if _, err := os.Lstat(responder.BaseDir); err == nil {
+			webFs = os.DirFS(responder.BaseDir)
 		}
 	}
 }
@@ -143,6 +128,17 @@ func (s *server) RepoClient() repoclient.RepoClientset {
 	return s.repoClientset
 }
 
+func (s *server) GetCurrentContext() string {
+	if s.rawConfig != nil {
+		return s.rawConfig.CurrentContext
+	}
+	return ""
+}
+
+func (s *server) IsGitopsModeEnabled() bool {
+	return s.isGitopsModeEnabled()
+}
+
 func initLogging(level int) {
 	klog.InitFlags(nil)
 	_ = flag.Set("v", strconv.Itoa(level))
@@ -160,12 +156,8 @@ func (s *server) Start(ctx context.Context) error {
 		initLogging(5)
 	}
 
-	templates.Templates.ParseTemplates(webFs)
-	if config.IsDevBuild() {
-		if err := templates.Templates.WatchTemplates(); err != nil {
-			fmt.Fprintf(os.Stderr, "templates will not be parsed after changes: %v\n", err)
-		}
-	}
+	responder.Init(s, webFs)
+
 	s.broadcaster = sse.NewBroadcaster()
 	_ = s.ensureBootstrapped(ctx)
 
@@ -180,7 +172,7 @@ func (s *server) Start(ctx context.Context) error {
 	rootMux.Handle("GET /static/", fileServer)
 	rootMux.Handle("GET /favicon.ico", fileServer)
 
-	rootMux.Handle("/settings", s.requireReady(settings.Handler()))
+	rootMux.Handle("/settings", s.requireReady(controllers.SettingsHandler()))
 
 	http.Handle("/", s.enrichContext(rootMux))
 
@@ -295,6 +287,7 @@ func (s *server) shutdown() {
 	close(s.httpServerHasShutdownCh)
 }
 
+/*
 // uninstall is an endpoint, which returns the modal html for GET requests, and performs the uninstallation for POST
 func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
@@ -550,6 +543,8 @@ func (s *server) packages(w http.ResponseWriter, r *http.Request) {
 	util.CheckTmplError(tmplErr, "packages")
 }
 
+*/
+
 func (s *server) isGitopsModeEnabled() bool {
 	if ns, err := (*s.namespaceLister).Get("glasskube-system"); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to fetch glasskube-system namespace: %v\n", err)
@@ -559,6 +554,7 @@ func (s *server) isGitopsModeEnabled() bool {
 	}
 }
 
+/*
 func (s *server) supportPage(w http.ResponseWriter, r *http.Request) {
 	if err := s.ensureBootstrapped(r.Context()); err != nil {
 		if err.BootstrapMissing() {
@@ -707,6 +703,8 @@ func (s *server) persistKubeconfig(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+*/
+
 func (server *server) loadBytesConfig(data []byte) {
 	server.configLoader = &bytesConfigLoader{data}
 }
@@ -782,7 +780,8 @@ func (server *server) initClientDependentComponents() {
 		clientadapter.NewPackageClientAdapter(server.pkgClient),
 		clientadapter.NewKubernetesClientAdapter(server.k8sClient),
 	)
-	templates.Templates.RepoClientset = server.repoClientset
+	// TODO repoclientset not available in templates yet
+	// responder.Templates.RepoClientset = server.repoClientset
 	server.dependencyMgr = dependency.NewDependencyManager(
 		clientadapter.NewPackageClientAdapter(server.pkgClient),
 		server.repoClientset,

@@ -1,11 +1,13 @@
-package templates
+package responder
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"io/fs"
 	"path"
 	"reflect"
+	"strings"
 
 	depUtil "github.com/glasskube/glasskube/internal/dependency/util"
 
@@ -35,56 +37,36 @@ import (
 )
 
 type templates struct {
-	templateFuncs           template.FuncMap
-	baseTemplate            *template.Template
-	ClusterPkgsPageTemplate *template.Template
-	PkgsPageTmpl            *template.Template
-	PkgPageTmpl             *template.Template
-	PkgDiscussionPageTmpl   *template.Template
-	SupportPageTmpl         *template.Template
-	BootstrapPageTmpl       *template.Template
-	KubeconfigPageTmpl      *template.Template
-	SettingsPageTmpl        *template.Template
-	RepositoryPageTmpl      *template.Template
-	PkgDetailHeaderTmpl     *template.Template
-	PkgConfigInput          *template.Template
-	PkgUninstallModalTmpl   *template.Template
-	ToastTmpl               *template.Template
-	DatalistTmpl            *template.Template
-	PkgDiscussionBadgeTmpl  *template.Template
-	YamlModalTmpl           *template.Template
-	RepoClientset           repoclient.RepoClientset
-	fs                      fs.FS
+	templateFuncs template.FuncMap
+	baseTemplate  *template.Template
+	RepoClientset repoclient.RepoClientset // TODO
+	fs            fs.FS
 }
 
 var (
-	BaseDir       = "internal/web"
-	templatesDir  = "templates"
-	componentsDir = path.Join(templatesDir, "components")
-	pagesDir      = path.Join(templatesDir, "pages")
-	Templates     = &templates{}
+	BaseDir      = "internal/web"
+	templatesDir = "templates"
 )
 
 func (t *templates) WatchTemplates() error {
 	watcher, err := fsnotify.NewWatcher()
 	err = multierr.Combine(
 		err,
-		watcher.Add(path.Join(BaseDir, componentsDir)),
+		watcher.Add(path.Join(BaseDir, templatesDir, "components")),
 		watcher.Add(path.Join(BaseDir, templatesDir, "layout")),
-		watcher.Add(path.Join(BaseDir, pagesDir)),
+		watcher.Add(path.Join(BaseDir, templatesDir, "pages")),
 	)
 	if err == nil {
 		go func() {
 			for range watcher.Events {
-				t.ParseTemplates(t.fs)
+				t.ParseTemplates()
 			}
 		}()
 	}
 	return err
 }
 
-func (t *templates) ParseTemplates(webFs fs.FS) {
-	t.fs = webFs
+func (t *templates) ParseTemplates() {
 	t.templateFuncs = template.FuncMap{
 		"ForClPkgOverviewBtn": pkg_overview_btn.ForClPkgOverviewBtn,
 		"ForPkgDetailBtns":    pkg_detail_btns.ForPkgDetailBtns,
@@ -166,45 +148,21 @@ func (t *templates) ParseTemplates(webFs fs.FS) {
 		},
 	}
 
-	t.baseTemplate = template.Must(template.New("base.html").
-		Funcs(t.templateFuncs).
-		ParseFS(webFs, path.Join(templatesDir, "layout", "base.html")))
-	t.ClusterPkgsPageTemplate = t.pageTmpl("clusterpackages.html")
-	t.PkgsPageTmpl = t.pageTmpl("packages.html")
-	t.PkgPageTmpl = t.pageTmpl("package.html")
-	t.PkgDiscussionPageTmpl = t.pageTmpl("discussion.html")
-	t.SupportPageTmpl = t.pageTmpl("support.html")
-	t.BootstrapPageTmpl = t.pageTmpl("bootstrap.html")
-	t.KubeconfigPageTmpl = t.pageTmpl("kubeconfig.html")
-	t.SettingsPageTmpl = t.pageTmpl("settings.html")
-	t.RepositoryPageTmpl = t.pageTmpl("repository.html")
-	t.PkgDetailHeaderTmpl = t.componentTmpl("pkg-detail-header", "pkg-detail-btns")
-	t.PkgConfigInput = t.componentTmpl("pkg-config-input", "datalist")
-	t.PkgUninstallModalTmpl = t.componentTmpl("pkg-uninstall-modal")
-	t.ToastTmpl = t.componentTmpl("toast")
-	t.DatalistTmpl = t.componentTmpl("datalist")
-	t.PkgDiscussionBadgeTmpl = t.componentTmpl("discussion-badge")
-	t.YamlModalTmpl = t.componentTmpl("yaml-modal")
-}
-
-func (t *templates) pageTmpl(fileName string) *template.Template {
-	return template.Must(
-		template.Must(t.baseTemplate.Clone()).ParseFS(
-			t.fs,
-			path.Join(pagesDir, fileName),
-			path.Join(componentsDir, "*.html")))
-}
-
-func (t *templates) componentTmpl(id string, requiredTemplates ...string) *template.Template {
-	tpls := make([]string, 0)
-	for _, requiredTmpl := range requiredTemplates {
-		tpls = append(tpls, path.Join(componentsDir, requiredTmpl+".html"))
+	var paths []string
+	err := fs.WalkDir(t.fs, templatesDir, func(path string, d fs.DirEntry, err error) error {
+		if strings.HasSuffix(d.Name(), ".html") {
+			paths = append(paths, path)
+		}
+		return nil
+	})
+	if err != nil {
+		panic(fmt.Sprintf("failed to walk templates dir: %v", templatesDir))
 	}
-	tpls = append(tpls, path.Join(componentsDir, id+".html"))
-	return template.Must(
-		template.New(id).Funcs(t.templateFuncs).ParseFS(
-			t.fs,
-			tpls...))
+
+	t.baseTemplate = template.Must(
+		template.New("root").
+			Funcs(t.templateFuncs).
+			ParseFS(t.fs, paths...))
 }
 
 type ASTTransformer struct{}

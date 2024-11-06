@@ -1,4 +1,4 @@
-package settings
+package controllers
 
 import (
 	"errors"
@@ -8,21 +8,23 @@ import (
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/web/components/toast"
 	"github.com/glasskube/glasskube/internal/web/cookie"
-	"github.com/glasskube/glasskube/internal/web/templates"
-	"github.com/glasskube/glasskube/internal/web/util"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/glasskube/glasskube/internal/web/responder"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
 	"net/url"
 	"os"
 )
 
-type settingsPage struct {
-	templates.Page
+type settingsPageData struct {
 	Repositories    []v1alpha1.PackageRepository
 	AdvancedOptions bool
 }
 
-func Handler() http.Handler {
+type repositoryPageData struct {
+	Repository v1alpha1.PackageRepository
+}
+
+func SettingsHandler() http.Handler {
 	m := http.NewServeMux()
 	m.HandleFunc("GET /settings", getSettings)
 	m.HandleFunc("POST /settings", postSettings)
@@ -37,7 +39,7 @@ func getSettings(w http.ResponseWriter, r *http.Request) {
 
 	var repos v1alpha1.PackageRepositoryList
 	if err := pkgClient.PackageRepositories().GetAll(ctx, &repos); err != nil {
-		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch repositories: %w", err)))
+		responder.SendToast(w, toast.WithErr(fmt.Errorf("failed to fetch repositories: %w", err)))
 		return
 	}
 
@@ -46,21 +48,15 @@ func getSettings(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(os.Stderr, "failed to get advanced options from cookie: %v\n", err)
 	}
 
-	tmplErr := templates.Templates.SettingsPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
-		"Repositories":    repos.Items,
-		"AdvancedOptions": advancedOptions,
-	}, nil))
-	util.CheckTmplError(tmplErr, "settings")
+	responder.SendPage(w, r, "pages/settings", settingsPageData{
+		Repositories:    repos.Items,
+		AdvancedOptions: advancedOptions,
+	}, nil)
 }
 
 func postSettings(w http.ResponseWriter, r *http.Request) {
 	formVal := r.FormValue(cookie.AdvancedOptionsKey)
 	cookie.SetAdvancedOptionsCookie(w, formVal == "on")
-}
-
-type repositoryPage struct {
-	templates.Page
-	Repository v1alpha1.PackageRepository
 }
 
 func getRepository(w http.ResponseWriter, r *http.Request) {
@@ -70,14 +66,12 @@ func getRepository(w http.ResponseWriter, r *http.Request) {
 	repoName := r.PathValue("repoName")
 	var repo v1alpha1.PackageRepository
 	if err := pkgClient.PackageRepositories().Get(ctx, repoName, &repo); err != nil {
-		// error handling
-		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch repositories: %w", err)))
+		responder.SendToast(w, toast.WithErr(fmt.Errorf("failed to fetch repositories: %w", err)))
 		return
 	}
-	tmplErr := templates.Templates.RepositoryPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
-		"Repository": repo,
-	}, nil))
-	util.CheckTmplError(tmplErr, "repository")
+	responder.SendPage(w, r, "pages/repository", repositoryPageData{
+		Repository: repo,
+	}, nil)
 }
 
 func postRepository(w http.ResponseWriter, r *http.Request) {
@@ -93,13 +87,13 @@ func postRepository(w http.ResponseWriter, r *http.Request) {
 	var err error
 
 	if err := pkgClient.PackageRepositories().Get(ctx, repoName, &repo); err != nil {
-		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch repositories: %w", err)))
+		responder.SendToast(w, toast.WithErr(fmt.Errorf("failed to fetch repositories: %w", err)))
 		return
 	}
 
 	if repoUrl != "" {
 		if _, err := url.ParseRequestURI(repoUrl); err != nil {
-			s.sendToast(w, toast.WithErr(fmt.Errorf("use a valid URL for the package repository (got %v)", err)))
+			responder.SendToast(w, toast.WithErr(fmt.Errorf("use a valid URL for the package repository (got %v)", err)))
 			return
 		}
 		repo.Spec.Url = repoUrl
@@ -108,16 +102,17 @@ func postRepository(w http.ResponseWriter, r *http.Request) {
 	repo.Spec.Auth = nil
 
 	if checkDefault == "on" {
+		// TODO "cliutils" in the server??
 		defaultRepo, err = cliutils.GetDefaultRepo(ctx)
 		if errors.Is(err, cliutils.NoDefaultRepo) {
 			repo.SetDefaultRepository()
 		} else if err != nil {
-			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch repositories: %w", err)))
+			responder.SendToast(w, toast.WithErr(fmt.Errorf("failed to fetch repositories: %w", err)))
 			return
 		} else if defaultRepo.Name != repoName {
 			defaultRepo.SetDefaultRepositoryBool(false)
 			if err := pkgClient.PackageRepositories().Update(ctx, defaultRepo, opts); err != nil {
-				s.sendToast(w, toast.WithErr(fmt.Errorf(" error updating current default package repository: %v", err)))
+				responder.SendToast(w, toast.WithErr(fmt.Errorf(" error updating current default package repository: %v", err)))
 				return
 			}
 			repo.SetDefaultRepository()
@@ -125,14 +120,15 @@ func postRepository(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := pkgClient.PackageRepositories().Update(ctx, &repo, opts); err != nil {
-		s.sendToast(w, toast.WithErr(fmt.Errorf(" error updating the package repository: %v", err)))
+		responder.SendToast(w, toast.WithErr(fmt.Errorf(" error updating the package repository: %v", err)))
 		if checkDefault == "on" && defaultRepo != nil && defaultRepo.Name != repoName {
 			defaultRepo.SetDefaultRepositoryBool(true)
 			if err := pkgClient.PackageRepositories().Update(ctx, defaultRepo, opts); err != nil {
-				s.sendToast(w, toast.WithErr(fmt.Errorf(" error rolling back to default package repository: %v", err)))
+				responder.SendToast(w, toast.WithErr(fmt.Errorf(" error rolling back to default package repository: %v", err)))
 			}
 		}
 		return
 	}
+	// TODO
 	s.swappingRedirect(w, "/settings", "main", "main")
 }

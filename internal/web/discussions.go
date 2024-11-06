@@ -1,28 +1,6 @@
 package web
 
-import (
-	"fmt"
-	"net/http"
-	"os"
-
-	"github.com/glasskube/glasskube/internal/clientutils"
-
-	"github.com/glasskube/glasskube/internal/web/components/toast"
-
-	"github.com/glasskube/glasskube/internal/web/util"
-
-	"github.com/glasskube/glasskube/internal/giscus"
-	"github.com/glasskube/glasskube/internal/httperror"
-
-	"github.com/glasskube/glasskube/api/v1alpha1"
-	"github.com/glasskube/glasskube/internal/repo"
-	"github.com/glasskube/glasskube/internal/telemetry"
-	"github.com/glasskube/glasskube/pkg/client"
-	"github.com/glasskube/glasskube/pkg/describe"
-	"github.com/gorilla/mux"
-	"k8s.io/apimachinery/pkg/api/errors"
-)
-
+/*
 // packageDiscussion is a full page for showing various discussions, reactions, etc.
 func (s *server) packageDiscussion(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
@@ -141,3 +119,6 @@ func (s *server) discussionBadge(w http.ResponseWriter, r *http.Request) {
 	}, err))
 	util.CheckTmplError(err, fmt.Sprintf("discussion-badge (%s)", pkgName))
 }
+
+
+*/

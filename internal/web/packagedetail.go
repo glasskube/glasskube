@@ -1,43 +1,8 @@
 package web
 
 import (
-	"context"
-	"fmt"
-	"github.com/glasskube/glasskube/internal/web/cookie"
-	"net/http"
-	"os"
-	"slices"
-	"strconv"
-	"strings"
-
-	"github.com/glasskube/glasskube/internal/namespaces"
-	"github.com/glasskube/glasskube/pkg/install"
-	"github.com/glasskube/glasskube/pkg/manifest"
-	v12 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	repoerror "github.com/glasskube/glasskube/internal/repo/error"
-
-	"go.uber.org/multierr"
-
-	"github.com/glasskube/glasskube/internal/web/components/toast"
-
-	"github.com/glasskube/glasskube/internal/manifestvalues"
-
-	webutil "github.com/glasskube/glasskube/internal/web/util"
-
 	"github.com/glasskube/glasskube/api/v1alpha1"
-	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
-	"github.com/glasskube/glasskube/internal/dependency"
-	"github.com/glasskube/glasskube/internal/repo"
-	"github.com/glasskube/glasskube/internal/repo/types"
-	"github.com/glasskube/glasskube/internal/util"
-	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
-	"github.com/glasskube/glasskube/pkg/client"
-	"github.com/glasskube/glasskube/pkg/describe"
-	"github.com/gorilla/mux"
-	"k8s.io/apimachinery/pkg/api/errors"
 )
 
 type packageContextRequest struct {
@@ -59,6 +24,7 @@ type packageContext struct {
 	manifest *v1alpha1.PackageManifest
 }
 
+/*
 func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	p := packageContext{
@@ -530,3 +496,4 @@ func (s *server) resolveManifest(ctx context.Context, pkg ctrlpkg.Package, repos
 	}
 	return &mf, repoErr
 }
+*/

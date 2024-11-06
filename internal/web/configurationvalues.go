@@ -1,28 +1,7 @@
 package web
 
 import (
-	"context"
 	"fmt"
-	"net/http"
-	"os"
-	"slices"
-	"strconv"
-	"strings"
-
-	"github.com/glasskube/glasskube/internal/web/components/toast"
-	"github.com/glasskube/glasskube/internal/web/util"
-
-	"github.com/glasskube/glasskube/pkg/manifest"
-
-	"github.com/glasskube/glasskube/internal/maputils"
-	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
-	"github.com/glasskube/glasskube/pkg/describe"
-	"github.com/gorilla/mux"
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
-
-	"github.com/glasskube/glasskube/api/v1alpha1"
 )
 
 const (
@@ -42,6 +21,7 @@ func formKey(valueName string, key string) string {
 	return fmt.Sprintf("%s.%s[%s]", formValuePrefix, valueName, key)
 }
 
+/*
 // extractValues extracts dynamic package configuration values from the form of the given request, such that installation
 // or configuration can be done with the provided values
 func extractValues(r *http.Request, manifest *v1alpha1.PackageManifest) (map[string]v1alpha1.ValueConfiguration, error) {
@@ -385,3 +365,6 @@ func sortedNames[T metav1.Object](objects []T) []string {
 	slices.Sort(names)
 	return names
 }
+
+
+*/

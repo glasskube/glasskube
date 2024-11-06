@@ -1,17 +1,6 @@
 package web
 
-import (
-	"fmt"
-	"net/http"
-
-	"github.com/glasskube/glasskube/api/v1alpha1"
-	"github.com/glasskube/glasskube/internal/clientutils"
-	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
-	"github.com/glasskube/glasskube/internal/web/components/toast"
-	"github.com/glasskube/glasskube/pkg/suspend"
-	"github.com/gorilla/mux"
-)
-
+/*
 func (s *server) handleSuspend(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -96,3 +85,6 @@ func (s *server) getPackageFromRequest(r *http.Request) (ctrlpkg.Package, error)
 	}
 	return pkg, nil
 }
+
+
+*/
