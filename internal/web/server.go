@@ -172,7 +172,7 @@ func (s *server) Start(ctx context.Context) error {
 	rootMux.Handle("GET /static/", fileServer)
 	rootMux.Handle("GET /favicon.ico", fileServer)
 
-	rootMux.Handle("/settings", s.requireReady(controllers.SettingsHandler()))
+	rootMux.Handle("/", s.requireReady(controllers.SettingsHandler()))
 
 	http.Handle("/", s.enrichContext(rootMux))
 

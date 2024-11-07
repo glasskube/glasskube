@@ -6,7 +6,6 @@ import (
 	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/telemetry"
 	"github.com/glasskube/glasskube/internal/web/components/toast"
-	"github.com/glasskube/glasskube/internal/web/util"
 	"io"
 	"io/fs"
 	"net/http"
@@ -19,13 +18,13 @@ type ContextProvider interface {
 	IsGitopsModeEnabled() bool
 }
 
-type templateResponder struct {
+type htmlResponder struct {
 	contextProvider ContextProvider
 	templates       *templates
 	cloudId         string
 }
 
-var responder *templateResponder
+var responder *htmlResponder
 
 func Init(contextProvider ContextProvider, webFs fs.FS) {
 	if responder != nil {
@@ -42,21 +41,26 @@ func Init(contextProvider ContextProvider, webFs fs.FS) {
 		}
 	}
 
-	responder = &templateResponder{
+	responder = &htmlResponder{
 		contextProvider: contextProvider,
 		templates:       t,
 		cloudId:         telemetry.GetMachineId(),
 	}
 }
 
-func SendPage(w http.ResponseWriter, r *http.Request, templateName string, data any, err error) {
-	// TODO options like in toast
-	responder.sendPage(w, r, templateName, data, err)
+func SendPage(w http.ResponseWriter, r *http.Request, templateName string, options ...ResponseOption) {
+	responder.sendPage(w, r, templateName, options...)
 }
 
-func (res *templateResponder) sendPage(w io.Writer, r *http.Request, templateName string, data any, err error) {
+func (res *htmlResponder) sendPage(w io.Writer, req *http.Request, templateName string, options ...ResponseOption) {
+	r := &response{}
+	for _, opt := range options {
+		opt(r)
+	}
+	r.Apply()
+
 	navbar := Navbar{}
-	if pathParts := strings.Split(r.URL.Path, "/"); len(pathParts) >= 2 {
+	if pathParts := strings.Split(req.URL.Path, "/"); len(pathParts) >= 2 {
 		navbar.ActiveItem = pathParts[1]
 	}
 	tmplErr := res.templates.baseTemplate.ExecuteTemplate(w, "base.html", Page{
@@ -64,22 +68,22 @@ func (res *templateResponder) sendPage(w io.Writer, r *http.Request, templateNam
 		VersionDetails:     VersionDetails{}, // TODO from server
 		CurrentContext:     res.contextProvider.GetCurrentContext(),
 		GitopsMode:         res.contextProvider.IsGitopsModeEnabled(),
-		Error:              err,
+		Error:              r.partialErr,
 		CacheBustingString: config.Version,
 		CloudId:            res.cloudId,
 		TemplateName:       templateName,
-		TemplateData:       data,
+		TemplateData:       r.templateData,
 	})
 	checkTmplError(tmplErr, templateName)
 }
 
-// sendToast builds a toast from the given options and sends it to the given response writer. If the response
+// SendToast builds a toast from the given options and sends it to the given response writer. If the response
 // contains an error, this is also logged to stderr.
 func SendToast(w http.ResponseWriter, options ...toast.ResponseOption) {
 	responder.sendToast(w, options...)
 }
 
-func (res *templateResponder) sendToast(w http.ResponseWriter, options ...toast.ResponseOption) {
+func (res *htmlResponder) sendToast(w http.ResponseWriter, options ...toast.ResponseOption) {
 	response := toast.Response{ToastInput: toast.ToastInput{Dismissible: true}}
 	for _, opt := range options {
 		opt(&response)
@@ -87,46 +91,54 @@ func (res *templateResponder) sendToast(w http.ResponseWriter, options ...toast.
 	response.Apply()
 
 	// htmx headers to overwrite any existing/inherited hx-select, hx-swap, hx-target on the client
-	w.Header().Add("Hx-Reselect", "div.toast")
-	w.Header().Add("Hx-Reswap", "afterbegin")
-	w.Header().Add("Hx-Retarget", "#toast-container")
+	w.Header().Add(hxReselect, "div.toast")
+	w.Header().Add(hxReswap, "afterbegin")
+	w.Header().Add(hxRetarget, "#toast-container")
 
 	w.WriteHeader(response.StatusCode)
 
-	tmplErr := res.templates.baseTemplate.ExecuteTemplate(w, "components/toast", response.ToastInput)
-	util.CheckTmplError(tmplErr, "toast")
+	tmplName := "components/toast"
+	tmplErr := res.templates.baseTemplate.ExecuteTemplate(w, tmplName, response.ToastInput)
+	checkTmplError(tmplErr, tmplName)
 
 	if response.Err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", response.Err)
 	}
 }
 
-// swappingRedirect adds the Hx-Location header to the response, which, when interpreted by htmx.js, will make
+// Redirect adds the Hx-Location header to the response, which, when interpreted by htmx.js, will make
 // the frontend redirect to the given path and swap the given target with the given slect from the response
 // also see: https://htmx.org/headers/hx-location/
-func (res *templateResponder) swappingRedirect(w http.ResponseWriter, path string, target string, slect string) {
+func Redirect(w http.ResponseWriter, path string) {
+	responder.redirect(w, path)
+}
+
+func (res *htmlResponder) redirect(w http.ResponseWriter, path string) {
+	target := "main"
+	slect := "main"
 	locationData := map[string]string{
 		"path":   path,
 		"target": target,
 		"select": slect,
 	}
 	locationJson, _ := json.Marshal(locationData)
-	w.Header().Add("Hx-Location", string(locationJson))
+	w.Header().Add(hxLocation, string(locationJson))
 }
 
-func (res *templateResponder) sendYamlModal(w http.ResponseWriter, obj string, alertContent any) {
+func (res *htmlResponder) sendYamlModal(w http.ResponseWriter, obj string, alertContent any) {
 	// htmx headers to overwrite any existing/inherited hx-select, hx-swap, hx-target on the client
-	w.Header().Add("Hx-Reselect", "#yaml-modal")
-	w.Header().Add("Hx-Reswap", "innerHTML")
-	w.Header().Add("Hx-Retarget", "#modal-container")
+	w.Header().Add(hxReselect, "#yaml-modal")
+	w.Header().Add(hxReswap, "innerHTML")
+	w.Header().Add(hxRetarget, "#modal-container")
 
 	w.WriteHeader(http.StatusOK)
 
-	e := res.templates.baseTemplate.ExecuteTemplate(w, "components/yaml-modal", map[string]any{
+	tmplName := "components/yaml-modal"
+	tmplErr := res.templates.baseTemplate.ExecuteTemplate(w, tmplName, map[string]any{
 		"AlertContent": alertContent,
 		"Object":       obj,
 	})
-	util.CheckTmplError(e, "yaml-modal")
+	checkTmplError(tmplErr, tmplName)
 }
 
 func checkTmplError(e error, tmplName string) {

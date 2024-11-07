@@ -95,7 +95,7 @@
         </div>
 
         {{ if .Error }}
-          {{ template "toast" (ForToast .Error "danger" true) }}
+          {{ template "components/toast" (ForToast .Error "danger" true) }}
         {{ end }}
       </div>
 

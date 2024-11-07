@@ -29,7 +29,7 @@ func SettingsHandler() http.Handler {
 	m.HandleFunc("GET /settings", getSettings)
 	m.HandleFunc("POST /settings", postSettings)
 	m.HandleFunc("GET /settings/repository/{repoName}", getRepository)
-	m.HandleFunc("GET /settings/repository/{repoName}", postRepository)
+	m.HandleFunc("POST /settings/repository/{repoName}", postRepository)
 	return m
 }
 
@@ -48,10 +48,11 @@ func getSettings(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(os.Stderr, "failed to get advanced options from cookie: %v\n", err)
 	}
 
-	responder.SendPage(w, r, "pages/settings", settingsPageData{
-		Repositories:    repos.Items,
-		AdvancedOptions: advancedOptions,
-	}, nil)
+	responder.SendPage(w, r, "pages/settings",
+		responder.WithTemplateData(settingsPageData{
+			Repositories:    repos.Items,
+			AdvancedOptions: advancedOptions,
+		}))
 }
 
 func postSettings(w http.ResponseWriter, r *http.Request) {
@@ -69,9 +70,10 @@ func getRepository(w http.ResponseWriter, r *http.Request) {
 		responder.SendToast(w, toast.WithErr(fmt.Errorf("failed to fetch repositories: %w", err)))
 		return
 	}
-	responder.SendPage(w, r, "pages/repository", repositoryPageData{
-		Repository: repo,
-	}, nil)
+	responder.SendPage(w, r, "pages/repository",
+		responder.WithTemplateData(repositoryPageData{
+			Repository: repo,
+		}))
 }
 
 func postRepository(w http.ResponseWriter, r *http.Request) {
@@ -129,6 +131,5 @@ func postRepository(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	// TODO
-	s.swappingRedirect(w, "/settings", "main", "main")
+	responder.Redirect(w, "/settings")
 }

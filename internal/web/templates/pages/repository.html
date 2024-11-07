@@ -26,10 +26,7 @@
         </label>
       </div>
       <div class="flex space-x-4">
-        <button
-          type="submit"
-          hx-post="/settings/repository/{{ .Repository.Name }}"
-          class="btn btn-primary {{ if .ShowConflicts }}disabled{{ end }}">
+        <button type="submit" hx-post="/settings/repository/{{ .Repository.Name }}" class="btn btn-primary">
           Submit
         </button>
         <a href="/settings" class="flex-grow-1 align-items-center gap-1 btn">Cancel</a>
