@@ -13,25 +13,13 @@ import (
 	"os"
 )
 
-func ClusterPackagesHandler() http.Handler {
-	m := http.NewServeMux()
-	m.HandleFunc("GET /clusterpackages", getClusterPackages)
-	return m
-}
-
-func PackagesHandler() http.Handler {
-	m := http.NewServeMux()
-	m.HandleFunc("GET /packages", getPackages)
-	return m
-}
-
 type clusterPackagesTemplateData struct {
 	ClusterPackages               []*list.PackageWithStatus
 	ClusterPackageUpdateAvailable map[string]bool
 	UpdatesAvailable              bool
 }
 
-func getClusterPackages(w http.ResponseWriter, r *http.Request) {
+func GetClusterPackages(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	clpkgs, listErr := list.NewLister(ctx).GetClusterPackagesWithStatus(ctx, list.ListOptions{IncludePackageInfos: true})
 	if listErr != nil && len(clpkgs) == 0 {
@@ -72,7 +60,7 @@ type packagesTemplateData struct {
 	UpdatesAvailable       bool
 }
 
-func getPackages(w http.ResponseWriter, r *http.Request) {
+func GetPackages(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	allPkgs, listErr := list.NewLister(ctx).GetPackagesWithStatus(ctx, list.ListOptions{IncludePackageInfos: true})
 	if listErr != nil {

@@ -15,21 +15,12 @@ import (
 	"os"
 )
 
-func SettingsHandler() http.Handler {
-	m := http.NewServeMux()
-	m.HandleFunc("GET /settings", getSettings)
-	m.HandleFunc("POST /settings", postSettings)
-	m.HandleFunc("GET /settings/repository/{repoName}", getRepository)
-	m.HandleFunc("POST /settings/repository/{repoName}", postRepository)
-	return m
-}
-
 type settingsPageData struct {
 	Repositories    []v1alpha1.PackageRepository
 	AdvancedOptions bool
 }
 
-func getSettings(w http.ResponseWriter, r *http.Request) {
+func GetSettings(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	pkgClient := clicontext.PackageClientFromContext(ctx)
 
@@ -51,7 +42,7 @@ func getSettings(w http.ResponseWriter, r *http.Request) {
 		}))
 }
 
-func postSettings(w http.ResponseWriter, r *http.Request) {
+func PostSettings(w http.ResponseWriter, r *http.Request) {
 	formVal := r.FormValue(cookie.AdvancedOptionsKey)
 	cookie.SetAdvancedOptionsCookie(w, formVal == "on")
 }
@@ -60,7 +51,7 @@ type repositoryPageData struct {
 	Repository v1alpha1.PackageRepository
 }
 
-func getRepository(w http.ResponseWriter, r *http.Request) {
+func GetRepository(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	pkgClient := clicontext.PackageClientFromContext(ctx)
 
@@ -76,7 +67,7 @@ func getRepository(w http.ResponseWriter, r *http.Request) {
 		}))
 }
 
-func postRepository(w http.ResponseWriter, r *http.Request) {
+func PostRepository(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	pkgClient := clicontext.PackageClientFromContext(ctx)
 

@@ -64,16 +64,34 @@ func (res *htmlResponder) sendPage(w io.Writer, req *http.Request, templateName 
 		navbar.ActiveItem = pathParts[1]
 	}
 	tmplErr := res.templates.baseTemplate.ExecuteTemplate(w, "base.html", Page{
-		Navbar:             navbar,
-		VersionDetails:     VersionDetails{}, // TODO from server
-		CurrentContext:     res.contextProvider.GetCurrentContext(),
-		GitopsMode:         res.contextProvider.IsGitopsModeEnabled(),
-		Error:              r.partialErr,
-		CacheBustingString: config.Version,
-		CloudId:            res.cloudId,
-		TemplateName:       templateName,
-		TemplateData:       r.templateData,
+		TemplateContext: TemplateContext{
+			Navbar:             navbar,
+			VersionDetails:     VersionDetails{}, // TODO from server
+			CurrentContext:     res.contextProvider.GetCurrentContext(),
+			GitopsMode:         res.contextProvider.IsGitopsModeEnabled(),
+			Error:              r.partialErr,
+			CacheBustingString: config.Version,
+			CloudId:            res.cloudId,
+			TemplateName:       templateName,
+		},
+		TemplateData: r.templateData,
 	})
+	// TODO tmpl error should return status 500 ??
+	checkTmplError(tmplErr, templateName)
+}
+
+func SendComponent(w http.ResponseWriter, r *http.Request, templateName string, options ...ResponseOption) {
+	responder.sendComponent(w, r, templateName, options...)
+}
+
+func (res *htmlResponder) sendComponent(w io.Writer, req *http.Request, templateName string, options ...ResponseOption) {
+	r := &response{}
+	for _, opt := range options {
+		opt(r)
+	}
+	r.Apply()
+
+	tmplErr := res.templates.baseTemplate.ExecuteTemplate(w, templateName, r.templateData)
 	checkTmplError(tmplErr, templateName)
 }
 
@@ -123,6 +141,10 @@ func (res *htmlResponder) redirect(w http.ResponseWriter, path string) {
 	}
 	locationJson, _ := json.Marshal(locationData)
 	w.Header().Add(hxLocation, string(locationJson))
+}
+
+func SendYamlModal(w http.ResponseWriter, obj string, alertContent any) {
+	responder.sendYamlModal(w, obj, alertContent)
 }
 
 func (res *htmlResponder) sendYamlModal(w http.ResponseWriter, obj string, alertContent any) {

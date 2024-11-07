@@ -11,7 +11,7 @@ type VersionDetails struct {
 	NeedsOperatorUpdate bool
 }
 
-type Page struct {
+type TemplateContext struct {
 	Navbar             Navbar
 	VersionDetails     VersionDetails
 	CurrentContext     string
@@ -20,5 +20,11 @@ type Page struct {
 	CacheBustingString string
 	CloudId            string
 	TemplateName       string
-	TemplateData       any
+}
+
+type TemplateData = any
+
+type Page struct {
+	TemplateContext
+	TemplateData
 }

@@ -1,4 +1,4 @@
-{{ define "content" }}
+{{ define "pages/package" }}
   {{ if .Manifest }}
     {{ $isUpdate := and .Status (IsUpgradable .Package.Spec.PackageInfo.Version .SelectedVersion) }}
     {{ $isDowngrade := and .Status (not $isUpdate) (ne .Package.Spec.PackageInfo.Version .SelectedVersion) }}
@@ -21,7 +21,7 @@
         hx-select="#pkg-detail-container-swapped"
         hx-target="#pkg-detail-container-swapped">
         <div id="pkg-detail-container-swapped">
-          {{ template "pkg-detail-header" . }}
+          {{ template "components/pkg-detail-header" . }}
 
           {{ if  .Manifest.LongDescription }}
             <div class="mt-3">
@@ -188,7 +188,7 @@
                       autocomplete="off"
                       {{ if .Status }}value="{{ .Package.Namespace }}" disabled{{ end }}
                       required />
-                    {{ template "datalist" ForDatalist "namespaces" "" (index $.DatalistOptions "").Namespaces }}
+                    {{ template "components/datalist" ForDatalist "namespaces" "" (index $.DatalistOptions "").Namespaces }}
                   </div>
                   <div class="col-md-6">
                     <span class="form-label">Name <span class="text-danger">*</span></span>
@@ -224,7 +224,7 @@
               {{ if ne (len .Manifest.ValueDefinitions) 0 }}
                 <hr class="border border-1 opacity-75" />
                 {{ range $valName, $valDef := .Manifest.ValueDefinitions }}
-                  {{ template "pkg-config-input"
+                  {{ template "components/pkg-config-input"
                     (ForPkgConfigInput
                     $.Package
                     $.RepositoryName

@@ -3,6 +3,7 @@ package responder
 import (
 	"bytes"
 	"fmt"
+	"github.com/glasskube/glasskube/internal/web/components"
 	"html/template"
 	"io/fs"
 	"path"
@@ -18,7 +19,6 @@ import (
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	"github.com/glasskube/glasskube/internal/semver"
-	"github.com/glasskube/glasskube/internal/web/components/datalist"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_detail_btns"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_overview_btn"
@@ -81,7 +81,7 @@ func (t *templates) ParseTemplates() {
 		},
 		"ForToast":          toast.ForToast,
 		"ForPkgConfigInput": pkg_config_input.ForPkgConfigInput,
-		"ForDatalist":       datalist.ForDatalist,
+		"ForDatalist":       components.ForDatalist,
 		"IsUpgradable":      semver.IsUpgradable,
 		"Markdown": func(source string) template.HTML {
 			var buf bytes.Buffer

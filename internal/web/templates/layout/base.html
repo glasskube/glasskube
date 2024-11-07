@@ -141,13 +141,15 @@
       </div>
 
       {{ if eq .TemplateName "pages/settings" }}
-        {{ template "pages/settings" .TemplateData }}
+        {{ template "pages/settings" . }}
       {{ else if eq .TemplateName "pages/repository" }}
-        {{ template "pages/repository" .TemplateData }}
+        {{ template "pages/repository" . }}
       {{ else if eq .TemplateName "pages/clusterpackages" }}
-        {{ template "pages/clusterpackages" .TemplateData }}
+        {{ template "pages/clusterpackages" . }}
       {{ else if eq .TemplateName "pages/packages" }}
-        {{ template "pages/packages" .TemplateData }}
+        {{ template "pages/packages" . }}
+      {{ else if eq .TemplateName "pages/package" }}
+        {{ template "pages/package" . }}
       {{ end }}
 
     </main>

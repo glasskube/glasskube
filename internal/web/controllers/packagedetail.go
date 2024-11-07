@@ -1,8 +1,40 @@
-package web
+package controllers
 
 import (
+	"context"
+	"fmt"
 	"github.com/glasskube/glasskube/api/v1alpha1"
+	clientadapter "github.com/glasskube/glasskube/internal/adapter/goclient"
+	"github.com/glasskube/glasskube/internal/clicontext"
+	"github.com/glasskube/glasskube/internal/clientutils"
+	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
+	"github.com/glasskube/glasskube/internal/dependency"
+	"github.com/glasskube/glasskube/internal/manifestvalues"
+	"github.com/glasskube/glasskube/internal/namespaces"
+	"github.com/glasskube/glasskube/internal/repo"
+	repoerror "github.com/glasskube/glasskube/internal/repo/error"
+	"github.com/glasskube/glasskube/internal/repo/types"
+	"github.com/glasskube/glasskube/internal/util"
+	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
+	"github.com/glasskube/glasskube/internal/web/components/toast"
+	"github.com/glasskube/glasskube/internal/web/cookie"
+	opts "github.com/glasskube/glasskube/internal/web/options"
+	"github.com/glasskube/glasskube/internal/web/responder"
+	webutil "github.com/glasskube/glasskube/internal/web/util"
+	"github.com/glasskube/glasskube/pkg/client"
+	"github.com/glasskube/glasskube/pkg/describe"
+	"github.com/glasskube/glasskube/pkg/install"
+	"github.com/glasskube/glasskube/pkg/manifest"
+	"go.uber.org/multierr"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"net/http"
+	"os"
+	"slices"
+	"strconv"
+	"strings"
 )
 
 type packageContextRequest struct {
@@ -24,72 +56,70 @@ type packageContext struct {
 	manifest *v1alpha1.PackageManifest
 }
 
-/*
-func (s *server) packageDetail(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	p := packageContext{
+func getPackageContext(r *http.Request) *packageContext {
+	return &packageContext{
 		request: packageContextRequest{
 			manifestName:   r.PathValue("manifestName"),
-			namespace:      mux.Vars(r)["namespace"],
-			name:           mux.Vars(r)["name"],
+			namespace:      r.PathValue("namespace"),
+			name:           r.PathValue("name"),
 			repositoryName: r.FormValue("repositoryName"),
 			version:        r.FormValue("version"),
 			component:      r.FormValue("component"),
 		},
-	}
-
-	switch r.Method {
-	case http.MethodPost:
-		s.installOrConfigurePackage(w, r, &p.request)
-	case http.MethodGet:
-		var pkg *v1alpha1.Package
-		var mf *v1alpha1.PackageManifest
-		if p.request.namespaceAndNameSet() {
-			var err error
-			pkg, mf, err = describe.DescribeInstalledPackage(ctx, p.request.namespace, p.request.name)
-			if err != nil && !errors.IsNotFound(err) {
-				s.sendToast(w,
-					toast.WithErr(fmt.Errorf("failed to fetch installed package %v/%v: %w", p.request.namespace, p.request.name, err)))
-				return
-			} else if errors.IsNotFound(err) {
-				s.swappingRedirect(w, "/packages", "main", "main")
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
-		}
-		p.pkg = pkg
-		p.manifest = mf
-		s.renderPackageDetailPage(ctx, r, w, &p)
 	}
 }
 
-func (s *server) clusterPackageDetail(w http.ResponseWriter, r *http.Request) {
+func GetPackageDetail(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	p := packageContext{
-		request: packageContextRequest{
-			manifestName:   mux.Vars(r)["pkgName"],
-			repositoryName: r.FormValue("repositoryName"),
-			version:        r.FormValue("version"),
-			component:      r.FormValue("component"),
-		},
-	}
+	p := getPackageContext(r)
 
-	if r.Method == http.MethodPost {
-		s.installOrConfigureClusterPackage(w, r, &p.request)
-	} else if r.Method == http.MethodGet {
-		pkg, mf, err := describe.DescribeInstalledClusterPackage(ctx, p.request.manifestName)
+	var pkg *v1alpha1.Package
+	var mf *v1alpha1.PackageManifest
+	if p.request.namespaceAndNameSet() {
+		var err error
+		pkg, mf, err = describe.DescribeInstalledPackage(ctx, p.request.namespace, p.request.name)
 		if err != nil && !errors.IsNotFound(err) {
-			s.sendToast(w,
-				toast.WithErr(fmt.Errorf("failed to fetch installed clusterpackage %v: %w", p.request.manifestName, err)))
+			responder.SendToast(w, toast.WithErr(
+				fmt.Errorf("failed to fetch installed package %v/%v: %w", p.request.namespace, p.request.name, err)))
+			return
+		} else if errors.IsNotFound(err) {
+			responder.Redirect(w, "/packages")
+			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		p.pkg = pkg
-		p.manifest = mf
-		s.renderPackageDetailPage(ctx, r, w, &p)
 	}
+	p.pkg = pkg
+	p.manifest = mf
+	renderPackageDetailPage(w, r, p)
 }
 
-func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w http.ResponseWriter, p *packageContext) {
+func PostPackageDetail(w http.ResponseWriter, r *http.Request) {
+	p := getPackageContext(r)
+	installOrConfigurePackage(w, r, &p.request)
+}
+
+func GetClusterPackageDetail(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	p := getPackageContext(r)
+
+	pkg, mf, err := describe.DescribeInstalledClusterPackage(ctx, p.request.manifestName)
+	if err != nil && !errors.IsNotFound(err) {
+		responder.SendToast(w,
+			toast.WithErr(fmt.Errorf("failed to fetch installed clusterpackage %v: %w", p.request.manifestName, err)))
+		return
+	}
+	p.pkg = pkg
+	p.manifest = mf
+	renderPackageDetailPage(w, r, p)
+}
+
+func PostClusterPackageDetail(w http.ResponseWriter, r *http.Request) {
+	p := getPackageContext(r)
+	installOrConfigureClusterPackage(w, r, &p.request)
+}
+
+func renderPackageDetailPage(w http.ResponseWriter, r *http.Request, p *packageContext) {
+	ctx := r.Context()
 	migrateManifest := false
 	headerOnly := p.request.component == "header"
 
@@ -109,18 +139,18 @@ func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w
 	var repoErr error
 	var repos []v1alpha1.PackageRepository
 	var usedRepo *v1alpha1.PackageRepository
-	if p.request.repositoryName, repos, usedRepo, repoErr = s.resolveRepos(
+	if p.request.repositoryName, repos, usedRepo, repoErr = resolveRepos(
 		ctx, p.request.manifestName, p.request.repositoryName); repoerror.IsComplete(repoErr) {
-		s.sendToast(w, toast.WithErr(repoErr))
+		responder.SendToast(w, toast.WithErr(repoErr))
 		return
 	}
 
 	var idx repo.PackageIndex
 	var latestVersion string
 	var err error
-	if idx, latestVersion, p.request.version, err = s.resolveVersions(
-		p.request.repositoryName, p.request.manifestName, p.request.version); err != nil {
-		s.sendToast(w,
+	if idx, latestVersion, p.request.version, err = resolveVersions(
+		ctx, p.request.repositoryName, p.request.manifestName, p.request.version); err != nil {
+		responder.SendToast(w,
 			toast.WithErr(fmt.Errorf("failed to fetch package index of %v in repo %v: %w",
 				p.request.manifestName, p.request.repositoryName, multierr.Append(repoErr, err))))
 		return
@@ -128,9 +158,10 @@ func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w
 
 	if p.manifest == nil || migrateManifest {
 		p.manifest = &v1alpha1.PackageManifest{}
-		if err := s.repoClientset.ForRepoWithName(p.request.repositoryName).
+		repoClientset := clicontext.RepoClientsetFromContext(ctx)
+		if err := repoClientset.ForRepoWithName(p.request.repositoryName).
 			FetchPackageManifest(p.request.manifestName, p.request.version, p.manifest); err != nil {
-			s.sendToast(w,
+			responder.SendToast(w,
 				toast.WithErr(fmt.Errorf("failed to fetch manifest of %v (%v) in repo %v: %w",
 					p.request.manifestName, p.request.version, p.request.repositoryName, err)))
 			return
@@ -144,33 +175,44 @@ func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w
 	datalistOptions := make(map[string]*pkg_config_input.PkgConfigInputDatalistOptions)
 
 	if !headerOnly {
+		pkgClient := clicontext.PackageClientFromContext(ctx)
+		repoClientset := clicontext.RepoClientsetFromContext(ctx)
+		dependencyMgr := dependency.NewDependencyManager(
+			clientadapter.NewPackageClientAdapter(pkgClient),
+			repoClientset,
+		)
 		// TODO properly componentize header away and use view model objects
 		if p.pkg.IsNil() {
 			if p.manifest.Scope.IsCluster() {
 				validationResult, validationErr =
-					s.dependencyMgr.Validate(r.Context(), p.request.manifestName, "", p.manifest, p.request.version)
+					dependencyMgr.Validate(r.Context(), p.request.manifestName, "", p.manifest, p.request.version)
 			} else {
 				// In this case we don't know the actual namespace, but we can assume the default
 				// TODO: make name and namespace depend on user input
 				validationResult, validationErr =
-					s.dependencyMgr.Validate(r.Context(), p.request.manifestName, p.manifest.DefaultNamespace, p.manifest, p.request.version)
+					dependencyMgr.Validate(r.Context(), p.request.manifestName, p.manifest.DefaultNamespace, p.manifest, p.request.version)
 			}
 		} else if migrateManifest {
 			validationResult, validationErr =
-				s.dependencyMgr.Validate(r.Context(), p.pkg.GetName(), p.pkg.GetNamespace(), p.manifest, p.request.version)
+				dependencyMgr.Validate(r.Context(), p.pkg.GetName(), p.pkg.GetNamespace(), p.manifest, p.request.version)
 		}
 		if validationErr != nil {
-			s.sendToast(w,
+			responder.SendToast(w,
 				toast.WithErr(fmt.Errorf("failed to validate dependencies of %v (%v): %w",
 					p.request.manifestName, p.request.version, validationErr)))
 			return
 		}
 
-		nsOptions, _ := s.getNamespaceOptions()
+		nsOptions, _ := opts.GetNamespaceOptions(ctx)
 		if !p.pkg.IsNil() {
-			pkgsOptions, _ := s.getPackagesOptions(r.Context())
+			pkgsOptions, _ := opts.GetPackagesOptions(r.Context())
 			for key, v := range p.pkg.GetSpec().Values {
-				if resolved, err := s.valueResolver.ResolveValue(r.Context(), v); err != nil {
+				k8sClient := clicontext.KubernetesClientFromContext(ctx)
+				valueResolver := manifestvalues.NewResolver(
+					clientadapter.NewPackageClientAdapter(pkgClient),
+					clientadapter.NewKubernetesClientAdapter(k8sClient),
+				)
+				if resolved, err := valueResolver.ResolveValue(r.Context(), v); err != nil {
 					valueErrors[key] = util.GetRootCause(err)
 				} else if valDef, exists := p.manifest.ValueDefinitions[key]; !exists {
 					// can happen when a different repo/version of the pkg is requested (advanced options)
@@ -179,7 +221,7 @@ func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w
 					valueErrors[key] = err
 				}
 				if v.ValueFrom != nil {
-					options, err := s.getDatalistOptions(r.Context(), v.ValueFrom, nsOptions, pkgsOptions)
+					options, err := opts.GetDatalistOptions(ctx, v.ValueFrom, nsOptions, pkgsOptions)
 					if err != nil {
 						fmt.Fprintf(os.Stderr, "%v\n", err)
 					}
@@ -190,7 +232,7 @@ func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w
 		datalistOptions[""] = &pkg_config_input.PkgConfigInputDatalistOptions{Namespaces: nsOptions}
 	}
 
-	advancedOptions, err := cookie.getAdvancedOptionsFromCookie(r)
+	advancedOptions, err := cookie.GetAdvancedOptionsFromCookie(r)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to get advanced options from cookie: %v\n", err)
 	}
@@ -204,7 +246,7 @@ func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w
 		"Status":               client.GetStatusOrPending(p.pkg),
 		"Manifest":             p.manifest,
 		"LatestVersion":        latestVersion,
-		"UpdateAvailable":      s.isUpdateAvailableForPkg(r.Context(), p.pkg),
+		"UpdateAvailable":      isUpdateAvailableForPkg(r.Context(), p.pkg),
 		"ValidationResult":     validationResult,
 		"ShowConflicts":        validationResult.Status == dependency.ValidationResultStatusConflict,
 		"SelectedVersion":      p.request.version,
@@ -222,17 +264,16 @@ func (s *server) renderPackageDetailPage(ctx context.Context, r *http.Request, w
 	}
 
 	if headerOnly {
-		repoErr = s.templates.PkgDetailHeaderTmpl.Execute(w, templateData)
-		webutil.CheckTmplError(repoErr, fmt.Sprintf("package-detail-header (%s)", p.request.manifestName))
+		responder.SendComponent(w, r, "components/pkg-detail-header", responder.WithTemplateData(templateData))
 	} else {
-		repoErr = s.templates.PkgPageTmpl.Execute(w, s.enrichPage(r, templateData, repoErr))
-		webutil.CheckTmplError(repoErr, fmt.Sprintf("package-detail (%s)", p.request.manifestName))
+		responder.SendPage(w, r, "pages/package", responder.WithTemplateData(templateData), responder.WithPartialErr(repoErr))
 	}
 }
 
-func (s *server) resolveVersions(repositoryName string, pkgName string, selectedVersion string) (repo.PackageIndex, string, string, error) {
+func resolveVersions(ctx context.Context, repositoryName string, pkgName string, selectedVersion string) (repo.PackageIndex, string, string, error) {
 	var idx repo.PackageIndex
-	if err := s.repoClientset.ForRepoWithName(repositoryName).FetchPackageIndex(pkgName, &idx); err != nil {
+	repoClientset := clicontext.RepoClientsetFromContext(ctx)
+	if err := repoClientset.ForRepoWithName(repositoryName).FetchPackageIndex(pkgName, &idx); err != nil {
 		return repo.PackageIndex{}, "", "", err
 	}
 	latestVersion := idx.LatestVersion
@@ -247,11 +288,14 @@ func (s *server) resolveVersions(repositoryName string, pkgName string, selected
 	return idx, latestVersion, selectedVersion, nil
 }
 
-func (s *server) resolveRepos(ctx context.Context, manifestName string, repositoryName string) (
+func resolveRepos(ctx context.Context, manifestName string, repositoryName string) (
 	string, []v1alpha1.PackageRepository, *v1alpha1.PackageRepository, error) {
 	var repos []v1alpha1.PackageRepository
 	var err error
-	if repos, err = s.repoClientset.Meta().GetReposForPackage(manifestName); err != nil {
+	repoClientset := clicontext.RepoClientsetFromContext(ctx)
+	pkgClient := clicontext.PackageClientFromContext(ctx)
+
+	if repos, err = repoClientset.Meta().GetReposForPackage(manifestName); err != nil {
 		if repoerror.IsComplete(err) {
 			return "", nil, nil, err
 		}
@@ -270,7 +314,7 @@ func (s *server) resolveRepos(ctx context.Context, manifestName string, reposito
 	}
 
 	var usedRepo v1alpha1.PackageRepository
-	if err := s.pkgClient.PackageRepositories().Get(ctx, repositoryName, &usedRepo); err != nil {
+	if err := pkgClient.PackageRepositories().Get(ctx, repositoryName, &usedRepo); err != nil {
 		return "", nil, nil, err
 	}
 
@@ -278,8 +322,9 @@ func (s *server) resolveRepos(ctx context.Context, manifestName string, reposito
 }
 
 // installOrConfigurePackage is like installOrConfigureClusterPackage but for packages
-func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Request, p *packageContextRequest) {
+func installOrConfigurePackage(w http.ResponseWriter, r *http.Request, p *packageContextRequest) {
 	ctx := r.Context()
+	pkgClient := clicontext.PackageClientFromContext(ctx)
 	namespace := r.FormValue("namespace")
 	name := r.FormValue("name")
 	autoUpdate := strings.ToLower(r.FormValue("autoUpdate")) == "on"
@@ -288,8 +333,8 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 	var err error
 	pkg := &v1alpha1.Package{}
 	var mf *v1alpha1.PackageManifest
-	if err := s.pkgClient.Packages(p.namespace).Get(ctx, p.name, pkg); err != nil && !errors.IsNotFound(err) {
-		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch package %v/%v: %w", p.namespace, p.name, err)))
+	if err := pkgClient.Packages(p.namespace).Get(ctx, p.name, pkg); err != nil && !errors.IsNotFound(err) {
+		responder.SendToast(w, toast.WithErr(fmt.Errorf("failed to fetch package %v/%v: %w", p.namespace, p.name, err)))
 		return
 	} else if err != nil {
 		pkg = nil
@@ -303,33 +348,34 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	mf, err = s.resolveManifest(ctx, pkg, p.repositoryName, p.manifestName, p.version)
+	mf, err = resolveManifest(ctx, pkg, p.repositoryName, p.manifestName, p.version)
 	if repoerror.IsPartial(err) {
 		fmt.Fprintf(os.Stderr, "problem fetching manifest and repo, but installation can continue: %v", err)
 	} else if err != nil {
-		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to get manifest and repo of %v: %w", p.manifestName, err)))
+		responder.SendToast(w, toast.WithErr(fmt.Errorf("failed to get manifest and repo of %v: %w", p.manifestName, err)))
 		return
 	}
 
 	if values, err := extractValues(r, mf); err != nil {
-		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to parse values: %w", err)))
+		responder.SendToast(w, toast.WithErr(fmt.Errorf("failed to parse values: %w", err)))
 		return
 	} else if pkg == nil {
 		opts := v1.CreateOptions{}
 		if dryRun {
 			opts.DryRun = []string{v1.DryRunAll}
 		}
-		if exists, err := namespaces.Exists(ctx, s.k8sClient, namespace); err != nil {
-			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to check namespace: %w", err)))
+		k8sClient := clicontext.KubernetesClientFromContext(ctx)
+		if exists, err := namespaces.Exists(ctx, k8sClient, namespace); err != nil {
+			responder.SendToast(w, toast.WithErr(fmt.Errorf("failed to check namespace: %w", err)))
 			return
 		} else if !exists {
-			ns := v12.Namespace{
+			ns := corev1.Namespace{
 				ObjectMeta: v1.ObjectMeta{
 					Name: namespace,
 				},
 			}
-			if _, err := s.k8sClient.CoreV1().Namespaces().Create(ctx, &ns, opts); err != nil {
-				s.sendToast(w, toast.WithErr(fmt.Errorf("failed to create namespace: %w", err)))
+			if _, err := k8sClient.CoreV1().Namespaces().Create(ctx, &ns, opts); err != nil {
+				responder.SendToast(w, toast.WithErr(fmt.Errorf("failed to create namespace: %w", err)))
 				return
 			}
 		}
@@ -341,17 +387,17 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 			WithNamespace(namespace).
 			WithName(name).
 			BuildPackage()
-		err := install.NewInstaller(s.pkgClient).Install(ctx, pkg, opts)
+		err := install.NewInstaller(pkgClient).Install(ctx, pkg, opts)
 		if err != nil {
-			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to install %v: %w", p.manifestName, err)))
+			responder.SendToast(w, toast.WithErr(fmt.Errorf("failed to install %v: %w", p.manifestName, err)))
 		} else if dryRun {
 			if yamlOutput, err := clientutils.Format(clientutils.OutputFormatYAML, false, pkg); err != nil {
-				s.sendToast(w, toast.WithErr(fmt.Errorf("failed to render yaml: %w", err)))
+				responder.SendToast(w, toast.WithErr(fmt.Errorf("failed to render yaml: %w", err)))
 			} else {
-				s.sendYamlModal(w, yamlOutput, nil)
+				responder.SendYamlModal(w, yamlOutput, nil)
 			}
 		} else {
-			s.swappingRedirect(w, "/packages", "main", "main")
+			responder.Redirect(w, "/packages")
 			w.WriteHeader(http.StatusAccepted)
 		}
 	} else {
@@ -363,24 +409,25 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 		if dryRun {
 			opts.DryRun = []string{v1.DryRunAll}
 		}
-		if err := s.pkgClient.Packages(pkg.GetNamespace()).Update(ctx, pkg, opts); err != nil {
-			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to configure %v: %w", p.manifestName, err)))
+		if err := pkgClient.Packages(pkg.GetNamespace()).Update(ctx, pkg, opts); err != nil {
+			responder.SendToast(w, toast.WithErr(fmt.Errorf("failed to configure %v: %w", p.manifestName, err)))
 			return
 		}
-		_, resolveErr := s.valueResolver.Resolve(ctx, values)
+		valueResolver := cliutils.ValueResolver(ctx)
+		_, resolveErr := valueResolver.Resolve(ctx, values)
 		if dryRun {
 			if yamlOutput, err := clientutils.Format(clientutils.OutputFormatYAML, false, pkg); err != nil {
-				s.sendToast(w, toast.WithErr(fmt.Errorf("failed to render yaml: %w", err)))
+				responder.SendToast(w, toast.WithErr(fmt.Errorf("failed to render yaml: %w", err)))
 			} else {
-				s.sendYamlModal(w, yamlOutput, resolveErr)
+				responder.SendYamlModal(w, yamlOutput, resolveErr)
 			}
 		} else if resolveErr != nil {
-			s.sendToast(w,
+			responder.SendToast(w,
 				toast.WithErr(fmt.Errorf("some values could not be resolved: %w", resolveErr)),
 				toast.WithSeverity(toast.Warning),
 				toast.WithStatusCode(http.StatusAccepted))
 		} else {
-			s.sendToast(w, toast.WithMessage("Configuration updated successfully"))
+			responder.SendToast(w, toast.WithMessage("Configuration updated successfully"))
 		}
 	}
 }
@@ -389,7 +436,7 @@ func (s *server) installOrConfigurePackage(w http.ResponseWriter, r *http.Reques
 // or updates the configuration of an existing one.
 // In either case, the parameters from the form are parsed and converted into ValueConfiguration objects, which are
 // being set in the packages spec.
-func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http.Request, p *packageContextRequest) {
+func installOrConfigureClusterPackage(w http.ResponseWriter, r *http.Request, p *packageContextRequest) {
 	ctx := r.Context()
 	autoUpdate := strings.ToLower(r.FormValue("autoUpdate")) == "on"
 	dryRun, _ := strconv.ParseBool(r.FormValue("dryRun"))
@@ -397,8 +444,9 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 	var err error
 	pkg := &v1alpha1.ClusterPackage{}
 	var mf *v1alpha1.PackageManifest
-	if err = s.pkgClient.ClusterPackages().Get(ctx, p.manifestName, pkg); err != nil && !errors.IsNotFound(err) {
-		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch clusterpackage %v: %w", p.manifestName, err)))
+	pkgClient := clicontext.PackageClientFromContext(ctx)
+	if err = pkgClient.ClusterPackages().Get(ctx, p.manifestName, pkg); err != nil && !errors.IsNotFound(err) {
+		responder.SendToast(w, toast.WithErr(fmt.Errorf("failed to fetch clusterpackage %v: %w", p.manifestName, err)))
 		return
 	} else if err != nil {
 		pkg = nil
@@ -412,16 +460,16 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 		}
 	}
 
-	mf, err = s.resolveManifest(ctx, pkg, p.repositoryName, p.manifestName, p.version)
+	mf, err = resolveManifest(ctx, pkg, p.repositoryName, p.manifestName, p.version)
 	if repoerror.IsPartial(err) {
 		fmt.Fprintf(os.Stderr, "problem fetching manifest and repo, but installation can continue: %v", err)
 	} else if err != nil {
-		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to get manifest and repo of %v: %w", p.manifestName, err)))
+		responder.SendToast(w, toast.WithErr(fmt.Errorf("failed to get manifest and repo of %v: %w", p.manifestName, err)))
 		return
 	}
 
 	if values, err := extractValues(r, mf); err != nil {
-		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to parse values: %w", err)))
+		responder.SendToast(w, toast.WithErr(fmt.Errorf("failed to parse values: %w", err)))
 		return
 	} else if pkg == nil {
 		pkg = client.PackageBuilder(p.manifestName).
@@ -434,15 +482,15 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 		if dryRun {
 			opts.DryRun = []string{v1.DryRunAll}
 		}
-		err := install.NewInstaller(s.pkgClient).Install(ctx, pkg, opts)
+		err := install.NewInstaller(pkgClient).Install(ctx, pkg, opts)
 		if err != nil {
-			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to install %v: %w", p.manifestName, err)))
+			responder.SendToast(w, toast.WithErr(fmt.Errorf("failed to install %v: %w", p.manifestName, err)))
 			return
 		} else if dryRun {
 			if yamlOutput, err := clientutils.Format(clientutils.OutputFormatYAML, false, pkg); err != nil {
-				s.sendToast(w, toast.WithErr(fmt.Errorf("failed to render yaml: %w", err)))
+				responder.SendToast(w, toast.WithErr(fmt.Errorf("failed to render yaml: %w", err)))
 			} else {
-				s.sendYamlModal(w, yamlOutput, nil)
+				responder.SendYamlModal(w, yamlOutput, nil)
 			}
 		}
 	} else {
@@ -454,36 +502,38 @@ func (s *server) installOrConfigureClusterPackage(w http.ResponseWriter, r *http
 		if dryRun {
 			opts.DryRun = []string{v1.DryRunAll}
 		}
-		if err := s.pkgClient.ClusterPackages().Update(ctx, pkg, opts); err != nil {
-			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to configure %v: %w", p.manifestName, err)))
+		if err := pkgClient.ClusterPackages().Update(ctx, pkg, opts); err != nil {
+			responder.SendToast(w, toast.WithErr(fmt.Errorf("failed to configure %v: %w", p.manifestName, err)))
 			return
 		}
-		_, resolveErr := s.valueResolver.Resolve(ctx, values)
+		valueResolver := cliutils.ValueResolver(ctx)
+		_, resolveErr := valueResolver.Resolve(ctx, values)
 		if dryRun {
 			if yamlOutput, err := clientutils.Format(clientutils.OutputFormatYAML, false, pkg); err != nil {
-				s.sendToast(w, toast.WithErr(fmt.Errorf("failed to render yaml: %w", err)))
+				responder.SendToast(w, toast.WithErr(fmt.Errorf("failed to render yaml: %w", err)))
 			} else {
-				s.sendYamlModal(w, yamlOutput, resolveErr)
+				responder.SendYamlModal(w, yamlOutput, resolveErr)
 			}
 		} else if resolveErr != nil {
-			s.sendToast(w,
+			responder.SendToast(w,
 				toast.WithErr(fmt.Errorf("some values could not be resolved: %w", resolveErr)),
 				toast.WithSeverity(toast.Warning),
 				toast.WithStatusCode(http.StatusAccepted))
 		} else {
-			s.sendToast(w, toast.WithMessage("Configuration updated successfully"))
+			responder.SendToast(w, toast.WithMessage("Configuration updated successfully"))
 		}
 	}
 }
 
-func (s *server) resolveManifest(ctx context.Context, pkg ctrlpkg.Package, repositoryName string, manifestName string, selectedVersion string) (
+func resolveManifest(ctx context.Context, pkg ctrlpkg.Package, repositoryName string, manifestName string, selectedVersion string) (
 	*v1alpha1.PackageManifest, error) {
 
 	var mf v1alpha1.PackageManifest
 	var repoErr error
 	if pkg.IsNil() ||
 		(pkg.GetSpec().PackageInfo.RepositoryName != repositoryName || pkg.GetSpec().PackageInfo.Version != selectedVersion) {
-		repoClient := s.repoClientset.ForRepoWithName(repositoryName)
+		repoClientset := clicontext.RepoClientsetFromContext(ctx)
+		repoClient := repoClientset.ForRepoWithName(repositoryName)
 		if err := repoClient.FetchPackageManifest(manifestName, selectedVersion, &mf); err != nil {
 			return nil, multierr.Append(err, repoErr)
 		}
@@ -496,4 +546,3 @@ func (s *server) resolveManifest(ctx context.Context, pkg ctrlpkg.Package, repos
 	}
 	return &mf, repoErr
 }
-*/

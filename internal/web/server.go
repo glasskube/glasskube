@@ -6,10 +6,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/telemetry/annotations"
 	"github.com/glasskube/glasskube/internal/web/controllers"
 	"github.com/glasskube/glasskube/internal/web/responder"
-	"github.com/gorilla/mux"
 	"io/fs"
 	"net"
 	"net/http"
@@ -30,8 +30,6 @@ import (
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/config"
-	"github.com/glasskube/glasskube/internal/dependency"
-	"github.com/glasskube/glasskube/internal/manifestvalues"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	"github.com/glasskube/glasskube/internal/telemetry"
 	"github.com/glasskube/glasskube/internal/web/handler"
@@ -43,7 +41,6 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
-	corev1 "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
@@ -93,14 +90,10 @@ type server struct {
 	nonCachedClient         client.PackageV1Alpha1Client
 	repoClientset           repoclient.RepoClientset
 	k8sClient               *kubernetes.Clientset
+	coreListers             *clicontext.CoreListers
 	broadcaster             *sse.Broadcaster
-	namespaceLister         *corev1.NamespaceLister
-	configMapLister         *corev1.ConfigMapLister
-	secretLister            *corev1.SecretLister
 	forwarders              map[string]*open.OpenResult
 	forwardersMutex         sync.Mutex
-	dependencyMgr           *dependency.DependendcyManager
-	valueResolver           *manifestvalues.Resolver
 	isBootstrapped          bool
 	httpServer              *http.Server
 	httpServerHasShutdownCh chan struct{}
@@ -121,6 +114,10 @@ func (s *server) Client() client.PackageV1Alpha1Client {
 
 func (s *server) K8sClient() *kubernetes.Clientset {
 	return s.k8sClient
+}
+
+func (s *server) CoreListers() *clicontext.CoreListers {
+	return s.coreListers
 }
 
 func (s *server) RepoClient() repoclient.RepoClientset {
@@ -167,20 +164,53 @@ func (s *server) Start(ctx context.Context) error {
 
 	fileServer := http.FileServer(http.FS(root))
 
-	rootMux := http.NewServeMux()
-	rootMux.Handle("GET /static/", fileServer)
-	rootMux.Handle("GET /favicon.ico", fileServer)
+	router := http.NewServeMux()
+	router.Handle("GET /static/", fileServer)
+	router.Handle("GET /favicon.ico", fileServer)
 
-	rootMux.HandleFunc("GET /events", s.broadcaster.Handler)
-	rootMux.Handle("/settings", s.requireReady(controllers.SettingsHandler()))
-	rootMux.Handle("/clusterpackages", s.requireReady(controllers.ClusterPackagesHandler()))
-	rootMux.Handle("/packages", s.requireReady(controllers.PackagesHandler()))
+	router.HandleFunc("GET /events", s.broadcaster.Handler) // TODO ??
 
-	http.Handle("/", s.enrichContext(rootMux))
+	// settings
+	router.Handle("GET /settings", s.requireReady(controllers.GetSettings))
+	router.Handle("POST /settings", s.requireReady(controllers.PostSettings))
+	router.Handle("GET /settings/repository/{repoName}", s.requireReady(controllers.GetRepository))
+	router.Handle("POST /settings/repository/{repoName}", s.requireReady(controllers.PostRepository))
 
-	router := mux.NewRouter()
-	router.Use(telemetry.HttpMiddleware(telemetry.WithPathRedactor(packagesPathRedactor)))
+	router.Handle("GET /clusterpackages", s.requireReady(controllers.GetClusterPackages))
+	router.Handle("GET /clusterpackages/{manifestName}", s.requireReady(controllers.GetClusterPackageDetail))
+	router.Handle("POST /clusterpackages/{manifestName}", s.requireReady(controllers.PostClusterPackageDetail))
+
+	router.Handle("GET /packages", s.requireReady(controllers.GetPackages))
+	// TODO package details: namespace and name is optional !!
+	router.Handle("GET /packages/{manifestName}/{namespace}/{name}", s.requireReady(controllers.GetPackageDetail))
+	router.Handle("POST /packages/{manifestName}/{namespace}/{name}", s.requireReady(controllers.PostPackageDetail))
+
+	// discussion
+
+	// configuration
+	router.Handle("GET /clusterpackages/{manifestName}/configuration/{valueName}", s.requireReady(controllers.GetClusterPackageConfigurationInput))
+	// TODO package details: namespace and name is optional !!
+	router.Handle("GET /packages/{manifestName}/{namespace}/{name}/configuration/{valueName}", s.requireReady(controllers.GetPackageConfigurationInput))
+
+	// open
+
+	// uninstall
+
+	// suspend
+
+	// datalists
+	router.Handle("GET /datalists/{valueName}/names", s.requireReady(controllers.GetNamesDatalist))
+	router.Handle("GET /datalists/{valueName}/keys", s.requireReady(controllers.GetKeysDatalist))
+
+	router.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/clusterpackages", http.StatusFound)
+	})
+	http.Handle("/", s.enrichContext(router))
+
 	/*
+		TODO
+		router.Use(telemetry.HttpMiddleware(telemetry.WithPathRedactor(packagesPathRedactor)))
+
 		router.HandleFunc("/support", s.supportPage)
 		router.HandleFunc("/kubeconfig", s.kubeconfigPage)
 		router.Handle("/bootstrap", s.requireKubeconfig(s.bootstrapPage))
@@ -190,9 +220,7 @@ func (s *server) Start(ctx context.Context) error {
 		pkgBasePath := "/packages/{manifestName}"
 		installedPkgBasePath := pkgBasePath + "/{namespace}/{name}"
 		clpkgBasePath := "/clusterpackages/{pkgName}"
-		router.Handle(pkgBasePath, s.requireReady(s.packageDetail))
-		router.Handle(installedPkgBasePath, s.requireReady(s.packageDetail))
-		router.Handle(clpkgBasePath, s.requireReady(s.clusterPackageDetail))
+
 		// discussion endpoints
 		router.Handle(pkgBasePath+"/discussion", s.requireReady(s.packageDiscussion))
 		router.Handle(installedPkgBasePath+"/discussion", s.requireReady(s.packageDiscussion))
@@ -216,13 +244,7 @@ func (s *server) Start(ctx context.Context) error {
 		router.Handle(installedPkgBasePath+"/suspend", s.requireReady(s.handleSuspend))
 		router.Handle(installedPkgBasePath+"/resume", s.requireReady(s.handleResume))
 
-		// configuration datalist endpoints
-		router.Handle("/datalists/{valueName}/names", s.requireReady(s.namesDatalist))
-		router.Handle("/datalists/{valueName}/keys", s.requireReady(s.keysDatalist))
-		router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			http.Redirect(w, r, "/clusterpackages", http.StatusFound)
-		})*/
-	// http.Handle("/", s.enrichContext(rootMux))
+	*/
 
 	s.listener, err = net.Listen("tcp", net.JoinHostPort(s.Host, s.Port))
 	if err != nil {
@@ -461,7 +483,7 @@ func (s *server) handleOpen(ctx context.Context, w http.ResponseWriter, pkg ctrl
 */
 
 func (s *server) isGitopsModeEnabled() bool {
-	if ns, err := (*s.namespaceLister).Get("glasskube-system"); err != nil {
+	if ns, err := (*s.coreListers.NamespaceLister).Get("glasskube-system"); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to fetch glasskube-system namespace: %v\n", err)
 		return true
 	} else {
@@ -682,12 +704,14 @@ func (server *server) initWhenBootstrapped(ctx context.Context) {
 	factory := informers.NewSharedInformerFactory(server.k8sClient, 0)
 	c := make(chan struct{})
 	namespaceLister := factory.Core().V1().Namespaces().Lister()
-	server.namespaceLister = &namespaceLister
 	configMapLister := factory.Core().V1().ConfigMaps().Lister()
-	server.configMapLister = &configMapLister
 	secretLister := factory.Core().V1().Secrets().Lister()
-	server.secretLister = &secretLister
-	factory.Start(c)
+	server.coreListers = &clicontext.CoreListers{
+		NamespaceLister: &namespaceLister,
+		ConfigMapLister: &configMapLister,
+		SecretLister:    &secretLister,
+	}
+	factory.Start(c) // TODO maybe the stop channel should be something else??
 }
 
 func (server *server) initClientDependentComponents() {
@@ -697,14 +721,6 @@ func (server *server) initClientDependentComponents() {
 	)
 	// TODO repoclientset not available in templates yet
 	// responder.Templates.RepoClientset = server.repoClientset
-	server.dependencyMgr = dependency.NewDependencyManager(
-		clientadapter.NewPackageClientAdapter(server.pkgClient),
-		server.repoClientset,
-	)
-	server.valueResolver = manifestvalues.NewResolver(
-		clientadapter.NewPackageClientAdapter(server.pkgClient),
-		clientadapter.NewKubernetesClientAdapter(server.k8sClient),
-	)
 }
 
 func (server *server) initCachedClient(ctx context.Context) {
@@ -804,7 +820,7 @@ func (s *server) enrichContext(h http.Handler) http.Handler {
 	return &handler.ContextEnrichingHandler{Source: s, Handler: h}
 }
 
-func (s *server) requireReady(h http.Handler) http.Handler {
+func (s *server) requireReady(h http.HandlerFunc) http.Handler {
 	return &handler.PreconditionHandler{
 		Precondition: func(r *http.Request) error {
 			err := s.ensureBootstrapped(r.Context())

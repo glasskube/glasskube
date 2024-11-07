@@ -17,6 +17,7 @@ type ContextDataSupplier interface {
 	Client() client.PackageV1Alpha1Client
 	K8sClient() *kubernetes.Clientset
 	RepoClient() repoclient.RepoClientset
+	CoreListers() *clicontext.CoreListers
 }
 
 type ContextEnrichingHandler struct {
@@ -30,7 +31,7 @@ func (enricher *ContextEnrichingHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		enricher.Source.RawConfig(),
 		enricher.Source.Client(),
 		enricher.Source.K8sClient())
-	ctx = clicontext.ContextWithRepositoryClientset(ctx,
-		enricher.Source.RepoClient())
+	ctx = clicontext.ContextWithRepositoryClientset(ctx, enricher.Source.RepoClient())
+	ctx = clicontext.ContextWithCoreListers(ctx, enricher.Source.CoreListers())
 	enricher.Handler.ServeHTTP(w, r.WithContext(ctx))
 }
