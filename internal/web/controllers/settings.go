@@ -15,15 +15,6 @@ import (
 	"os"
 )
 
-type settingsPageData struct {
-	Repositories    []v1alpha1.PackageRepository
-	AdvancedOptions bool
-}
-
-type repositoryPageData struct {
-	Repository v1alpha1.PackageRepository
-}
-
 func SettingsHandler() http.Handler {
 	m := http.NewServeMux()
 	m.HandleFunc("GET /settings", getSettings)
@@ -31,6 +22,11 @@ func SettingsHandler() http.Handler {
 	m.HandleFunc("GET /settings/repository/{repoName}", getRepository)
 	m.HandleFunc("POST /settings/repository/{repoName}", postRepository)
 	return m
+}
+
+type settingsPageData struct {
+	Repositories    []v1alpha1.PackageRepository
+	AdvancedOptions bool
 }
 
 func getSettings(w http.ResponseWriter, r *http.Request) {
@@ -58,6 +54,10 @@ func getSettings(w http.ResponseWriter, r *http.Request) {
 func postSettings(w http.ResponseWriter, r *http.Request) {
 	formVal := r.FormValue(cookie.AdvancedOptionsKey)
 	cookie.SetAdvancedOptionsCookie(w, formVal == "on")
+}
+
+type repositoryPageData struct {
+	Repository v1alpha1.PackageRepository
 }
 
 func getRepository(w http.ResponseWriter, r *http.Request) {

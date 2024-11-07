@@ -22,7 +22,6 @@ import (
 	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_detail_btns"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_overview_btn"
-	"github.com/glasskube/glasskube/internal/web/components/pkg_update_alert"
 	"github.com/glasskube/glasskube/internal/web/components/toast"
 	"github.com/glasskube/glasskube/pkg/condition"
 	"github.com/yuin/goldmark"
@@ -70,7 +69,6 @@ func (t *templates) ParseTemplates() {
 	t.templateFuncs = template.FuncMap{
 		"ForClPkgOverviewBtn": pkg_overview_btn.ForClPkgOverviewBtn,
 		"ForPkgDetailBtns":    pkg_detail_btns.ForPkgDetailBtns,
-		"ForPkgUpdateAlert":   pkg_update_alert.ForPkgUpdateAlert,
 		"PackageManifestUrl": func(pkg ctrlpkg.Package) string {
 			if !pkg.IsNil() {
 				url, err := t.RepoClientset.ForPackage(pkg).

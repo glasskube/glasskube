@@ -9,6 +9,7 @@ import (
 	"github.com/glasskube/glasskube/internal/telemetry/annotations"
 	"github.com/glasskube/glasskube/internal/web/controllers"
 	"github.com/glasskube/glasskube/internal/web/responder"
+	"github.com/gorilla/mux"
 	"io/fs"
 	"net"
 	"net/http"
@@ -37,8 +38,6 @@ import (
 	"github.com/glasskube/glasskube/pkg/bootstrap"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/open"
-	"github.com/glasskube/glasskube/pkg/update"
-	"github.com/gorilla/mux"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -172,62 +171,57 @@ func (s *server) Start(ctx context.Context) error {
 	rootMux.Handle("GET /static/", fileServer)
 	rootMux.Handle("GET /favicon.ico", fileServer)
 
-	rootMux.Handle("/", s.requireReady(controllers.SettingsHandler()))
+	rootMux.HandleFunc("GET /events", s.broadcaster.Handler)
+	rootMux.Handle("/settings", s.requireReady(controllers.SettingsHandler()))
+	rootMux.Handle("/clusterpackages", s.requireReady(controllers.ClusterPackagesHandler()))
+	rootMux.Handle("/packages", s.requireReady(controllers.PackagesHandler()))
 
 	http.Handle("/", s.enrichContext(rootMux))
 
 	router := mux.NewRouter()
 	router.Use(telemetry.HttpMiddleware(telemetry.WithPathRedactor(packagesPathRedactor)))
-	/*router.PathPrefix("/static/").Handler(fileServer)
-	router.Handle("/favicon.ico", fileServer)
-	router.HandleFunc("/events", s.broadcaster.Handler)
-	router.HandleFunc("/support", s.supportPage)
-	router.HandleFunc("/kubeconfig", s.kubeconfigPage)
-	router.Handle("/bootstrap", s.requireKubeconfig(s.bootstrapPage))
-	router.Handle("/kubeconfig/persist", s.requireKubeconfig(s.persistKubeconfig))
-	// overview pages
-	router.Handle("/packages", s.requireReady(s.packages))
-	router.Handle("/clusterpackages", s.requireReady(s.clusterPackages))
+	/*
+		router.HandleFunc("/support", s.supportPage)
+		router.HandleFunc("/kubeconfig", s.kubeconfigPage)
+		router.Handle("/bootstrap", s.requireKubeconfig(s.bootstrapPage))
+		router.Handle("/kubeconfig/persist", s.requireKubeconfig(s.persistKubeconfig))
 
-	// detail page endpoints
-	pkgBasePath := "/packages/{manifestName}"
-	installedPkgBasePath := pkgBasePath + "/{namespace}/{name}"
-	clpkgBasePath := "/clusterpackages/{pkgName}"
-	router.Handle(pkgBasePath, s.requireReady(s.packageDetail))
-	router.Handle(installedPkgBasePath, s.requireReady(s.packageDetail))
-	router.Handle(clpkgBasePath, s.requireReady(s.clusterPackageDetail))
-	// discussion endpoints
-	router.Handle(pkgBasePath+"/discussion", s.requireReady(s.packageDiscussion))
-	router.Handle(installedPkgBasePath+"/discussion", s.requireReady(s.packageDiscussion))
-	router.Handle(clpkgBasePath+"/discussion", s.requireReady(s.clusterPackageDiscussion))
-	router.Handle(pkgBasePath+"/discussion/badge", s.requireReady(s.discussionBadge))
-	router.Handle(installedPkgBasePath+"/discussion/badge", s.requireReady(s.discussionBadge))
-	router.Handle(clpkgBasePath+"/discussion/badge", s.requireReady(s.discussionBadge))
-	// configuration endpoints
-	router.Handle(pkgBasePath+"/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
-	router.Handle(installedPkgBasePath+"/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
-	router.Handle(clpkgBasePath+"/configuration/{valueName}", s.requireReady(s.clusterPackageConfigurationInput))
-	// open endpoints
-	router.Handle(installedPkgBasePath+"/open", s.requireReady(s.open))
-	router.Handle(clpkgBasePath+"/open", s.requireReady(s.open))
-	// uninstall endpoints
-	router.Handle(installedPkgBasePath+"/uninstall", s.requireReady(s.uninstall))
-	router.Handle(clpkgBasePath+"/uninstall", s.requireReady(s.uninstall))
-	// suspend endpoints
-	router.Handle(clpkgBasePath+"/suspend", s.requireReady(s.handleSuspend))
-	router.Handle(clpkgBasePath+"/resume", s.requireReady(s.handleResume))
-	router.Handle(installedPkgBasePath+"/suspend", s.requireReady(s.handleSuspend))
-	router.Handle(installedPkgBasePath+"/resume", s.requireReady(s.handleResume))
+		// detail page endpoints
+		pkgBasePath := "/packages/{manifestName}"
+		installedPkgBasePath := pkgBasePath + "/{namespace}/{name}"
+		clpkgBasePath := "/clusterpackages/{pkgName}"
+		router.Handle(pkgBasePath, s.requireReady(s.packageDetail))
+		router.Handle(installedPkgBasePath, s.requireReady(s.packageDetail))
+		router.Handle(clpkgBasePath, s.requireReady(s.clusterPackageDetail))
+		// discussion endpoints
+		router.Handle(pkgBasePath+"/discussion", s.requireReady(s.packageDiscussion))
+		router.Handle(installedPkgBasePath+"/discussion", s.requireReady(s.packageDiscussion))
+		router.Handle(clpkgBasePath+"/discussion", s.requireReady(s.clusterPackageDiscussion))
+		router.Handle(pkgBasePath+"/discussion/badge", s.requireReady(s.discussionBadge))
+		router.Handle(installedPkgBasePath+"/discussion/badge", s.requireReady(s.discussionBadge))
+		router.Handle(clpkgBasePath+"/discussion/badge", s.requireReady(s.discussionBadge))
+		// configuration endpoints
+		router.Handle(pkgBasePath+"/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
+		router.Handle(installedPkgBasePath+"/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
+		router.Handle(clpkgBasePath+"/configuration/{valueName}", s.requireReady(s.clusterPackageConfigurationInput))
+		// open endpoints
+		router.Handle(installedPkgBasePath+"/open", s.requireReady(s.open))
+		router.Handle(clpkgBasePath+"/open", s.requireReady(s.open))
+		// uninstall endpoints
+		router.Handle(installedPkgBasePath+"/uninstall", s.requireReady(s.uninstall))
+		router.Handle(clpkgBasePath+"/uninstall", s.requireReady(s.uninstall))
+		// suspend endpoints
+		router.Handle(clpkgBasePath+"/suspend", s.requireReady(s.handleSuspend))
+		router.Handle(clpkgBasePath+"/resume", s.requireReady(s.handleResume))
+		router.Handle(installedPkgBasePath+"/suspend", s.requireReady(s.handleSuspend))
+		router.Handle(installedPkgBasePath+"/resume", s.requireReady(s.handleResume))
 
-	// configuration datalist endpoints
-	router.Handle("/datalists/{valueName}/names", s.requireReady(s.namesDatalist))
-	router.Handle("/datalists/{valueName}/keys", s.requireReady(s.keysDatalist))
-	// settings
-	router.Handle("/settings", s.requireReady(s.settingsPage))
-	router.Handle("/settings/repository/{repoName}", s.requireReady(s.repositoryConfig))
-	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, "/clusterpackages", http.StatusFound)
-	})*/
+		// configuration datalist endpoints
+		router.Handle("/datalists/{valueName}/names", s.requireReady(s.namesDatalist))
+		router.Handle("/datalists/{valueName}/keys", s.requireReady(s.keysDatalist))
+		router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, "/clusterpackages", http.StatusFound)
+		})*/
 	// http.Handle("/", s.enrichContext(rootMux))
 
 	s.listener, err = net.Listen("tcp", net.JoinHostPort(s.Host, s.Port))
@@ -462,85 +456,6 @@ func (s *server) handleOpen(ctx context.Context, w http.ResponseWriter, pkg ctrl
 			}
 		}()
 	}
-}
-
-func (s *server) clusterPackages(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	clpkgs, listErr := list.NewLister(ctx).GetClusterPackagesWithStatus(ctx, list.ListOptions{IncludePackageInfos: true})
-	if listErr != nil && len(clpkgs) == 0 {
-		listErr = fmt.Errorf("could not load clusterpackages: %w", listErr)
-		fmt.Fprintf(os.Stderr, "%v\n", listErr)
-	}
-
-	// Call isUpdateAvailable for each installed clusterpackage.
-	// This is not the same as getting all updates in a single transaction, because some dependency
-	// conflicts could be resolvable by installing individual clpkgs.
-	installedClpkgs := make([]ctrlpkg.Package, 0, len(clpkgs))
-	clpkgUpdateAvailable := map[string]bool{}
-	for _, pkg := range clpkgs {
-		if pkg.ClusterPackage != nil {
-			installedClpkgs = append(installedClpkgs, pkg.ClusterPackage)
-		}
-		clpkgUpdateAvailable[pkg.Name] = s.isUpdateAvailableForPkg(r.Context(), pkg.ClusterPackage)
-	}
-
-	overallUpdatesAvailable := false
-	if len(installedClpkgs) > 0 {
-		overallUpdatesAvailable = s.isUpdateAvailable(r.Context(), installedClpkgs)
-	}
-
-	tmplErr := templates.Templates.ClusterPkgsPageTemplate.Execute(w, s.enrichPage(r, map[string]any{
-		"ClusterPackages":               clpkgs,
-		"ClusterPackageUpdateAvailable": clpkgUpdateAvailable,
-		"UpdatesAvailable":              overallUpdatesAvailable,
-		"PackageHref":                   util.GetClusterPkgHref("-"),
-	}, listErr))
-	util.CheckTmplError(tmplErr, "clusterpackages")
-}
-
-func (s *server) packages(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	allPkgs, listErr := list.NewLister(ctx).GetPackagesWithStatus(ctx, list.ListOptions{IncludePackageInfos: true})
-	if listErr != nil {
-		listErr = fmt.Errorf("could not load packages: %w", listErr)
-		fmt.Fprintf(os.Stderr, "%v\n", listErr)
-		// TODO check again
-	}
-
-	packageUpdateAvailable := map[string]bool{}
-	var installed []*list.PackagesWithStatus
-	var available []*repotypes.PackageRepoIndexItem
-	var installedPkgs []ctrlpkg.Package
-	for _, pkgsWithStatus := range allPkgs {
-		if len(pkgsWithStatus.Packages) > 0 {
-			for _, pkgWithStatus := range pkgsWithStatus.Packages {
-				installedPkgs = append(installedPkgs, pkgWithStatus.Package)
-
-				// Call isUpdateAvailable for each installed package.
-				// This is not the same as getting all updates in a single transaction, because some dependency
-				// conflicts could be resolvable by installing individual packages.
-				packageUpdateAvailable[cache.MetaObjectToName(pkgWithStatus.Package).String()] =
-					s.isUpdateAvailableForPkg(ctx, pkgWithStatus.Package)
-			}
-			installed = append(installed, pkgsWithStatus)
-		} else {
-			available = append(available, &pkgsWithStatus.PackageRepoIndexItem)
-		}
-	}
-
-	overallUpdatesAvailable := false
-	if len(installedPkgs) > 0 {
-		overallUpdatesAvailable = s.isUpdateAvailable(r.Context(), installedPkgs)
-	}
-
-	tmplErr := templates.Templates.PkgsPageTmpl.Execute(w, s.enrichPage(r, map[string]any{
-		"InstalledPackages":      installed,
-		"AvailablePackages":      available,
-		"PackageUpdateAvailable": packageUpdateAvailable,
-		"UpdatesAvailable":       overallUpdatesAvailable,
-		"PackageHref":            util.GetNamespacedPkgHref("-", "-", "-"),
-	}, listErr))
-	util.CheckTmplError(tmplErr, "packages")
 }
 
 */
@@ -1054,22 +969,4 @@ func (s *server) initPackageRepoStoreAndController(ctx context.Context) (cache.S
 		ObjectType: &v1alpha1.PackageRepository{},
 		Handler:    cache.ResourceEventHandlerFuncs{}, // TODO we might also want to update here?
 	})
-}
-
-func (s *server) isUpdateAvailableForPkg(ctx context.Context, pkg ctrlpkg.Package) bool {
-	if pkg.IsNil() {
-		return false
-	}
-	return s.isUpdateAvailable(ctx, []ctrlpkg.Package{pkg})
-}
-
-func (s *server) isUpdateAvailable(ctx context.Context, pkgs []ctrlpkg.Package) bool {
-	if tx, err := update.NewUpdater(ctx).Prepare(ctx, update.GetExact(pkgs)); err != nil {
-		fmt.Fprintf(os.Stderr, "Error checking for updates: %v\n", err)
-		return false
-	} else if len(tx.ConflictItems) > 0 {
-		return true
-	} else {
-		return !tx.IsEmpty()
-	}
 }

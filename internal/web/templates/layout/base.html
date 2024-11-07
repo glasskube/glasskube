@@ -9,6 +9,7 @@
     <script type="text/javascript">
       // htmx.logAll();
       htmx.config.scrollIntoViewOnBoost = false; // TODO put somewhere else?
+      htmx.config.disableInheritance = true;
     </script>
   </head>
 
@@ -31,26 +32,42 @@
             <h1 class="navbar-brand text-white mx-1 my-0">Glasskube</h1>
           </a>
 
-          <ul class="navbar-nav d-flex flex-row" hx-boost="true" hx-select="main" hx-target="main" hx-swap="outerHTML">
+          <ul class="navbar-nav d-flex flex-row">
             <li class="nav-item mx-1">
               {{ with $clusterPackages := "clusterpackages" }}
                 <a
                   class="nav-link {{ if eq $.Navbar.ActiveItem $clusterPackages }}active{{ end }}"
                   href="/clusterpackages"
+                  hx-boost="true"
+                  hx-select="main"
+                  hx-target="main"
+                  hx-swap="outerHTML"
                   >ClusterPackages</a
                 >
               {{ end }}
             </li>
             <li class="nav-item mx-1">
               {{ with $packages := "packages" }}
-                <a class="nav-link {{ if eq $.Navbar.ActiveItem $packages }}active{{ end }}" href="/packages"
+                <a
+                  class="nav-link {{ if eq $.Navbar.ActiveItem $packages }}active{{ end }}"
+                  href="/packages"
+                  hx-boost="true"
+                  hx-select="main"
+                  hx-target="main"
+                  hx-swap="outerHTML"
                   >Packages</a
                 >
               {{ end }}
             </li>
             <li class="nav-item mx-1">
               {{ with $settings := "settings" }}
-                <a class="nav-link {{ if eq $.Navbar.ActiveItem $settings }}active{{ end }}" href="/settings"
+                <a
+                  class="nav-link {{ if eq $.Navbar.ActiveItem $settings }}active{{ end }}"
+                  href="/settings"
+                  hx-boost="true"
+                  hx-select="main"
+                  hx-target="main"
+                  hx-swap="outerHTML"
                   >Settings</a
                 >
               {{ end }}
@@ -127,6 +144,10 @@
         {{ template "pages/settings" .TemplateData }}
       {{ else if eq .TemplateName "pages/repository" }}
         {{ template "pages/repository" .TemplateData }}
+      {{ else if eq .TemplateName "pages/clusterpackages" }}
+        {{ template "pages/clusterpackages" .TemplateData }}
+      {{ else if eq .TemplateName "pages/packages" }}
+        {{ template "pages/packages" .TemplateData }}
       {{ end }}
 
     </main>
