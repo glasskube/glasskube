@@ -157,15 +157,23 @@ func renderPackageDetailPage(w http.ResponseWriter, r *http.Request, p *packageC
 		return
 	}
 
+	packageManifestUrl := ""
 	if p.manifest == nil || migrateManifest {
 		p.manifest = &v1alpha1.PackageManifest{}
 		repoClientset := clicontext.RepoClientsetFromContext(ctx)
+		// TODO we could use repoClientset.ForRepo(usedRepo) here instead ?? probably also above in resolveVersions
 		if err := repoClientset.ForRepoWithName(p.request.repositoryName).
 			FetchPackageManifest(p.request.manifestName, p.request.version, p.manifest); err != nil {
 			responder.SendToast(w,
 				toast.WithErr(fmt.Errorf("failed to fetch manifest of %v (%v) in repo %v: %w",
 					p.request.manifestName, p.request.version, p.request.repositoryName, err)))
 			return
+		}
+		if url, err := repoClientset.ForRepoWithName(p.request.repositoryName).GetPackageManifestURL(p.request.manifestName, p.request.version); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to get package manifest url of %v (%v) in repo %v: %w",
+				p.request.manifestName, p.request.version, p.request.repositoryName, err)
+		} else {
+			packageManifestUrl = url
 		}
 	}
 
@@ -246,6 +254,7 @@ func renderPackageDetailPage(w http.ResponseWriter, r *http.Request, p *packageC
 		Package:              p.pkg,
 		Status:               client.GetStatusOrPending(p.pkg),
 		Manifest:             p.manifest,
+		PackageManifestUrl:   packageManifestUrl,
 		LatestVersion:        latestVersion,
 		UpdateAvailable:      isUpdateAvailableForPkg(r.Context(), p.pkg),
 		ValidationResult:     validationResult,
@@ -276,6 +285,7 @@ type packageDetailTemplateData struct {
 	Package              ctrlpkg.Package
 	Status               *client.PackageStatus
 	Manifest             *v1alpha1.PackageManifest
+	PackageManifestUrl   string
 	LatestVersion        string
 	UpdateAvailable      bool
 	ValidationResult     *dependency.ValidationResult

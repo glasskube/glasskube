@@ -17,7 +17,6 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
-	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	"github.com/glasskube/glasskube/internal/semver"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_detail_btns"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_overview_btn"
@@ -37,7 +36,6 @@ import (
 type templates struct {
 	templateFuncs template.FuncMap
 	baseTemplate  *template.Template
-	RepoClientset repoclient.RepoClientset // TODO
 	fs            fs.FS
 }
 
@@ -68,20 +66,10 @@ func (t *templates) ParseTemplates() {
 	t.templateFuncs = template.FuncMap{
 		"ForClPkgOverviewBtn": pkg_overview_btn.ForClPkgOverviewBtn,
 		"ForPkgDetailBtns":    pkg_detail_btns.ForPkgDetailBtns,
-		"PackageManifestUrl": func(pkg ctrlpkg.Package) string {
-			if !pkg.IsNil() {
-				url, err := t.RepoClientset.ForPackage(pkg).
-					GetPackageManifestURL(pkg.GetSpec().PackageInfo.Name, pkg.GetSpec().PackageInfo.Version)
-				if err == nil {
-					return url
-				}
-			}
-			return ""
-		},
-		"ForToast":          toast.ForToast,
-		"ForPkgConfigInput": components.ForPkgConfigInput,
-		"ForDatalist":       components.ForDatalist,
-		"IsUpgradable":      semver.IsUpgradable,
+		"ForToast":            toast.ForToast,
+		"ForPkgConfigInput":   components.ForPkgConfigInput,
+		"ForDatalist":         components.ForDatalist,
+		"IsUpgradable":        semver.IsUpgradable,
 		"Markdown": func(source string) template.HTML {
 			var buf bytes.Buffer
 
