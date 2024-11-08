@@ -6,6 +6,7 @@ import (
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	repotypes "github.com/glasskube/glasskube/internal/repo/types"
 	"github.com/glasskube/glasskube/internal/web/responder"
+	"github.com/glasskube/glasskube/internal/web/types"
 	"github.com/glasskube/glasskube/pkg/list"
 	"github.com/glasskube/glasskube/pkg/update"
 	"k8s.io/client-go/tools/cache"
@@ -14,6 +15,7 @@ import (
 )
 
 type clusterPackagesTemplateData struct {
+	types.TemplateContextHolder
 	ClusterPackages               []*list.PackageWithStatus
 	ClusterPackageUpdateAvailable map[string]bool
 	UpdatesAvailable              bool
@@ -45,7 +47,7 @@ func GetClusterPackages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responder.SendPage(w, r, "pages/clusterpackages",
-		responder.WithTemplateData(clusterPackagesTemplateData{
+		responder.WithTemplateData(&clusterPackagesTemplateData{
 			ClusterPackages:               clpkgs,
 			ClusterPackageUpdateAvailable: clpkgUpdateAvailable,
 			UpdatesAvailable:              overallUpdatesAvailable,
@@ -54,6 +56,7 @@ func GetClusterPackages(w http.ResponseWriter, r *http.Request) {
 }
 
 type packagesTemplateData struct {
+	types.TemplateContextHolder
 	InstalledPackages      []*list.PackagesWithStatus
 	AvailablePackages      []*repotypes.PackageRepoIndexItem
 	PackageUpdateAvailable map[string]bool
@@ -95,7 +98,7 @@ func GetPackages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responder.SendPage(w, r, "pages/packages",
-		responder.WithTemplateData(packagesTemplateData{
+		responder.WithTemplateData(&packagesTemplateData{
 			InstalledPackages:      installed,
 			AvailablePackages:      available,
 			PackageUpdateAvailable: packageUpdateAvailable,

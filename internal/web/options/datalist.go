@@ -6,7 +6,7 @@ import (
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/maputils"
-	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
+	"github.com/glasskube/glasskube/internal/web/components"
 	"github.com/glasskube/glasskube/pkg/manifest"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -14,8 +14,8 @@ import (
 )
 
 func GetDatalistOptions(ctx context.Context, ref *v1alpha1.ValueReference, namespaceOptions []string, pkgsOptions []string) (
-	*pkg_config_input.PkgConfigInputDatalistOptions, error) {
-	datalistOptions := pkg_config_input.PkgConfigInputDatalistOptions{}
+	*components.PkgConfigInputDatalistOptions, error) {
+	datalistOptions := components.PkgConfigInputDatalistOptions{}
 	if ref.ConfigMapRef != nil {
 		datalistOptions.Namespaces = namespaceOptions
 		if nameOptions, err := GetConfigMapNameOptions(ctx, ref.ConfigMapRef.Namespace); err != nil {

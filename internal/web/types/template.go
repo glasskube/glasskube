@@ -1,4 +1,4 @@
-package responder
+package types
 
 type Navbar struct {
 	ActiveItem string
@@ -11,7 +11,7 @@ type VersionDetails struct {
 	NeedsOperatorUpdate bool
 }
 
-type TemplateContext struct {
+type TemplateContextData struct {
 	Navbar             Navbar
 	VersionDetails     VersionDetails
 	CurrentContext     string
@@ -22,9 +22,14 @@ type TemplateContext struct {
 	TemplateName       string
 }
 
-type TemplateData = any
+type TemplateContextHolder struct {
+	Ctx TemplateContextData
+}
 
-type Page struct {
-	TemplateContext
-	TemplateData
+func (p *TemplateContextHolder) SetContextData(ctx TemplateContextData) {
+	p.Ctx = ctx
+}
+
+type ContextInjectable interface {
+	SetContextData(TemplateContextData)
 }

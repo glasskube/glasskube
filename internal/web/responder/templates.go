@@ -19,7 +19,6 @@ import (
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	"github.com/glasskube/glasskube/internal/semver"
-	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_detail_btns"
 	"github.com/glasskube/glasskube/internal/web/components/pkg_overview_btn"
 	"github.com/glasskube/glasskube/internal/web/components/toast"
@@ -80,7 +79,7 @@ func (t *templates) ParseTemplates() {
 			return ""
 		},
 		"ForToast":          toast.ForToast,
-		"ForPkgConfigInput": pkg_config_input.ForPkgConfigInput,
+		"ForPkgConfigInput": components.ForPkgConfigInput,
 		"ForDatalist":       components.ForDatalist,
 		"IsUpgradable":      semver.IsUpgradable,
 		"Markdown": func(source string) template.HTML {

@@ -9,6 +9,7 @@ import (
 	"github.com/glasskube/glasskube/internal/web/components/toast"
 	"github.com/glasskube/glasskube/internal/web/cookie"
 	"github.com/glasskube/glasskube/internal/web/responder"
+	"github.com/glasskube/glasskube/internal/web/types"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
 	"net/url"
@@ -16,6 +17,7 @@ import (
 )
 
 type settingsPageData struct {
+	types.TemplateContextHolder
 	Repositories    []v1alpha1.PackageRepository
 	AdvancedOptions bool
 }
@@ -36,7 +38,7 @@ func GetSettings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responder.SendPage(w, r, "pages/settings",
-		responder.WithTemplateData(settingsPageData{
+		responder.WithTemplateData(&settingsPageData{
 			Repositories:    repos.Items,
 			AdvancedOptions: advancedOptions,
 		}))
@@ -48,6 +50,7 @@ func PostSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 type repositoryPageData struct {
+	types.TemplateContextHolder
 	Repository v1alpha1.PackageRepository
 }
 
@@ -62,7 +65,7 @@ func GetRepository(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	responder.SendPage(w, r, "pages/repository",
-		responder.WithTemplateData(repositoryPageData{
+		responder.WithTemplateData(&repositoryPageData{
 			Repository: repo,
 		}))
 }

@@ -42,7 +42,7 @@
                 </h1>
               </a>
               <span class="align-self-center mx-auto">
-                {{ template "pkg-detail-btns" ForPkgDetailBtns .Manifest.Name .Status .Manifest .Package .UpdateAvailable .GitopsMode }}
+                {{ template "pkg-detail-btns" ForPkgDetailBtns .Manifest.Name .Status .Manifest .Package .UpdateAvailable .Ctx.GitopsMode }}
               </span>
             </span>
           </div>

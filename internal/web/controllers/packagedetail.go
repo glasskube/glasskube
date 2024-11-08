@@ -16,11 +16,12 @@ import (
 	repoerror "github.com/glasskube/glasskube/internal/repo/error"
 	"github.com/glasskube/glasskube/internal/repo/types"
 	"github.com/glasskube/glasskube/internal/util"
-	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
+	"github.com/glasskube/glasskube/internal/web/components"
 	"github.com/glasskube/glasskube/internal/web/components/toast"
 	"github.com/glasskube/glasskube/internal/web/cookie"
 	opts "github.com/glasskube/glasskube/internal/web/options"
 	"github.com/glasskube/glasskube/internal/web/responder"
+	types2 "github.com/glasskube/glasskube/internal/web/types"
 	webutil "github.com/glasskube/glasskube/internal/web/util"
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/describe"
@@ -172,7 +173,7 @@ func renderPackageDetailPage(w http.ResponseWriter, r *http.Request, p *packageC
 	var validationErr error
 	var lostValueDefinitions []string
 	valueErrors := make(map[string]error)
-	datalistOptions := make(map[string]*pkg_config_input.PkgConfigInputDatalistOptions)
+	datalistOptions := make(map[string]*components.PkgConfigInputDatalistOptions)
 
 	if !headerOnly {
 		pkgClient := clicontext.PackageClientFromContext(ctx)
@@ -229,7 +230,7 @@ func renderPackageDetailPage(w http.ResponseWriter, r *http.Request, p *packageC
 				}
 			}
 		}
-		datalistOptions[""] = &pkg_config_input.PkgConfigInputDatalistOptions{Namespaces: nsOptions}
+		datalistOptions[""] = &components.PkgConfigInputDatalistOptions{Namespaces: nsOptions}
 	}
 
 	advancedOptions, err := cookie.GetAdvancedOptionsFromCookie(r)
@@ -241,26 +242,26 @@ func renderPackageDetailPage(w http.ResponseWriter, r *http.Request, p *packageC
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to check whether auto updater is installed: %v\n", err)
 	}
-	templateData := map[string]any{
-		"Package":              p.pkg,
-		"Status":               client.GetStatusOrPending(p.pkg),
-		"Manifest":             p.manifest,
-		"LatestVersion":        latestVersion,
-		"UpdateAvailable":      isUpdateAvailableForPkg(r.Context(), p.pkg),
-		"ValidationResult":     validationResult,
-		"ShowConflicts":        validationResult.Status == dependency.ValidationResultStatusConflict,
-		"SelectedVersion":      p.request.version,
-		"PackageIndex":         &idx,
-		"Repositories":         repos,
-		"RepositoryName":       p.request.repositoryName,
-		"ShowConfiguration":    (!p.pkg.IsNil() && len(p.manifest.ValueDefinitions) > 0 && p.pkg.GetDeletionTimestamp().IsZero()) || p.pkg.IsNil(),
-		"ValueErrors":          valueErrors,
-		"DatalistOptions":      datalistOptions,
-		"ShowDiscussionLink":   usedRepo.IsGlasskubeRepo(),
-		"PackageHref":          webutil.GetPackageHrefWithFallback(p.pkg, p.manifest),
-		"AdvancedOptions":      advancedOptions,
-		"LostValueDefinitions": lostValueDefinitions,
-		"AutoUpdaterInstalled": autoUpdaterInstalled,
+	templateData := &packageDetailTemplateData{
+		Package:              p.pkg,
+		Status:               client.GetStatusOrPending(p.pkg),
+		Manifest:             p.manifest,
+		LatestVersion:        latestVersion,
+		UpdateAvailable:      isUpdateAvailableForPkg(r.Context(), p.pkg),
+		ValidationResult:     validationResult,
+		ShowConflicts:        validationResult.Status == dependency.ValidationResultStatusConflict,
+		SelectedVersion:      p.request.version,
+		PackageIndex:         &idx,
+		Repositories:         repos,
+		RepositoryName:       p.request.repositoryName,
+		ShowConfiguration:    (!p.pkg.IsNil() && len(p.manifest.ValueDefinitions) > 0 && p.pkg.GetDeletionTimestamp().IsZero()) || p.pkg.IsNil(),
+		ValueErrors:          valueErrors,
+		DatalistOptions:      datalistOptions,
+		ShowDiscussionLink:   usedRepo.IsGlasskubeRepo(),
+		PackageHref:          webutil.GetPackageHrefWithFallback(p.pkg, p.manifest),
+		AdvancedOptions:      advancedOptions,
+		LostValueDefinitions: lostValueDefinitions,
+		AutoUpdaterInstalled: autoUpdaterInstalled,
 	}
 
 	if headerOnly {
@@ -268,6 +269,29 @@ func renderPackageDetailPage(w http.ResponseWriter, r *http.Request, p *packageC
 	} else {
 		responder.SendPage(w, r, "pages/package", responder.WithTemplateData(templateData), responder.WithPartialErr(repoErr))
 	}
+}
+
+type packageDetailTemplateData struct {
+	types2.TemplateContextHolder
+	Package              ctrlpkg.Package
+	Status               *client.PackageStatus
+	Manifest             *v1alpha1.PackageManifest
+	LatestVersion        string
+	UpdateAvailable      bool
+	ValidationResult     *dependency.ValidationResult
+	ShowConflicts        bool
+	SelectedVersion      string
+	PackageIndex         *repo.PackageIndex
+	Repositories         []v1alpha1.PackageRepository
+	RepositoryName       string
+	ShowConfiguration    bool
+	ValueErrors          map[string]error
+	DatalistOptions      map[string]*components.PkgConfigInputDatalistOptions
+	ShowDiscussionLink   bool
+	PackageHref          string
+	AdvancedOptions      bool
+	LostValueDefinitions []string
+	AutoUpdaterInstalled bool
 }
 
 func resolveVersions(ctx context.Context, repositoryName string, pkgName string, selectedVersion string) (repo.PackageIndex, string, string, error) {

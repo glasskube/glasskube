@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="giscus:backlink" content="https://glasskube.dev/packages" />
     <title>Glasskube</title>
-    <link type="text/css" rel="stylesheet" href="/static/bundle/index.min.css?v={{ .CacheBustingString }}" />
-    <script src="/static/bundle/index.min.js?v={{ .CacheBustingString }}"></script>
+    <link type="text/css" rel="stylesheet" href="/static/bundle/index.min.css?v={{ .Ctx.CacheBustingString }}" />
+    <script src="/static/bundle/index.min.js?v={{ .Ctx.CacheBustingString }}"></script>
     <script type="text/javascript">
       // htmx.logAll();
       htmx.config.scrollIntoViewOnBoost = false; // TODO put somewhere else?
@@ -36,7 +36,7 @@
             <li class="nav-item mx-1">
               {{ with $clusterPackages := "clusterpackages" }}
                 <a
-                  class="nav-link {{ if eq $.Navbar.ActiveItem $clusterPackages }}active{{ end }}"
+                  class="nav-link {{ if eq $.Ctx.Navbar.ActiveItem $clusterPackages }}active{{ end }}"
                   href="/clusterpackages"
                   hx-boost="true"
                   hx-select="main"
@@ -49,7 +49,7 @@
             <li class="nav-item mx-1">
               {{ with $packages := "packages" }}
                 <a
-                  class="nav-link {{ if eq $.Navbar.ActiveItem $packages }}active{{ end }}"
+                  class="nav-link {{ if eq $.Ctx.Navbar.ActiveItem $packages }}active{{ end }}"
                   href="/packages"
                   hx-boost="true"
                   hx-select="main"
@@ -62,7 +62,7 @@
             <li class="nav-item mx-1">
               {{ with $settings := "settings" }}
                 <a
-                  class="nav-link {{ if eq $.Navbar.ActiveItem $settings }}active{{ end }}"
+                  class="nav-link {{ if eq $.Ctx.Navbar.ActiveItem $settings }}active{{ end }}"
                   href="/settings"
                   hx-boost="true"
                   hx-select="main"
@@ -78,7 +78,7 @@
         <div class="d-flex  flex-row align-items-center justify-content-around">
           <ul class="navbar-nav ms-auto align-items-center gap-2 d-flex flex-row">
             <li class="nav-item">
-              <a class="nav-link" href="https://glasskube.cloud/signup.html?id={{ .CloudId }}" target="_blank"
+              <a class="nav-link" href="https://glasskube.cloud/signup.html?id={{ .Ctx.CloudId }}" target="_blank"
                 ><span class="bi bi-box-arrow-up-right me-1"></span>Glasskube Cloud</a
               >
             </li>
@@ -111,8 +111,8 @@
           </div>
         </div>
 
-        {{ if .Error }}
-          {{ template "components/toast" (ForToast .Error "danger" true) }}
+        {{ if .Ctx.Error }}
+          {{ template "components/toast" (ForToast .Ctx.Error "danger" true) }}
         {{ end }}
       </div>
 
@@ -123,7 +123,7 @@
           class="alert alert-info alert-dismissible text-center visually-hidden"
           role="alert">
           🎉️ Glasskube Cloud is launching soon! 😎
-          <a class="text-reset" href="https://glasskube.cloud/signup.html?id={{ .CloudId }}" target="_blank"
+          <a class="text-reset" href="https://glasskube.cloud/signup.html?id={{ .Ctx.CloudId }}" target="_blank"
             >Join the wait list to request early access.</a
           >
           🥳
@@ -135,20 +135,20 @@
             aria-label="Close"></button>
         </div>
 
-        {{ if .VersionDetails.MismatchWarning }}
-          {{ template "version-mismatch-warning" .VersionDetails }}
+        {{ if .Ctx.VersionDetails.MismatchWarning }}
+          {{ template "version-mismatch-warning" .Ctx.VersionDetails }}
         {{ end }}
       </div>
 
-      {{ if eq .TemplateName "pages/settings" }}
+      {{ if eq .Ctx.TemplateName "pages/settings" }}
         {{ template "pages/settings" . }}
-      {{ else if eq .TemplateName "pages/repository" }}
+      {{ else if eq .Ctx.TemplateName "pages/repository" }}
         {{ template "pages/repository" . }}
-      {{ else if eq .TemplateName "pages/clusterpackages" }}
+      {{ else if eq .Ctx.TemplateName "pages/clusterpackages" }}
         {{ template "pages/clusterpackages" . }}
-      {{ else if eq .TemplateName "pages/packages" }}
+      {{ else if eq .Ctx.TemplateName "pages/packages" }}
         {{ template "pages/packages" . }}
-      {{ else if eq .TemplateName "pages/package" }}
+      {{ else if eq .Ctx.TemplateName "pages/package" }}
         {{ template "pages/package" . }}
       {{ end }}
 
@@ -162,20 +162,20 @@
       <div class="container">
         <div class="row">
           <div class="col-4 ">
-            <div class="text-muted text-wrap text-break">Context: {{ .CurrentContext }}</div>
+            <div class="text-muted text-wrap text-break">Context: {{ .Ctx.CurrentContext }}</div>
 
             <span class="text-muted text-wrap text-break"
-              >GitopsMode: {{ if .GitopsMode }}Enabled{{ else }}Disabled{{ end }}</span
+              >GitopsMode: {{ if .Ctx.GitopsMode }}Enabled{{ else }}Disabled{{ end }}</span
             >
           </div>
           <div class="col-4 text-center">
-            <span class="text-muted">Glasskube cluster version: {{ .VersionDetails.OperatorVersion }}</span>
+            <span class="text-muted">Glasskube cluster version: {{ .Ctx.VersionDetails.OperatorVersion }}</span>
             <br />
-            <span class="text-muted">Glasskube version: {{ .VersionDetails.ClientVersion }}</span>
+            <span class="text-muted">Glasskube version: {{ .Ctx.VersionDetails.ClientVersion }}</span>
             <br />
           </div>
           <div class="col-4 text-end">
-            <a class="nav-link" href="https://glasskube.cloud/signup.html?id={{ .CloudId }}" target="_blank">
+            <a class="nav-link" href="https://glasskube.cloud/signup.html?id={{ .Ctx.CloudId }}" target="_blank">
               <span class="bi bi-box-arrow-up-right me-1"></span>Glasskube Cloud
             </a>
             <a class="nav-link" href="https://discord.gg/SxH6KUCGH7" target="_blank">
@@ -186,6 +186,6 @@
       </div>
     </footer>
 
-    <script src="/static/bundle/custom.min.js?v={{ .CacheBustingString }}"></script>
+    <script src="/static/bundle/custom.min.js?v={{ .Ctx.CacheBustingString }}"></script>
   </body>
 </html>

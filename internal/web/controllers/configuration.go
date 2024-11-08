@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clicontext"
-	"github.com/glasskube/glasskube/internal/web/components/pkg_config_input"
+	"github.com/glasskube/glasskube/internal/web/components"
 	"github.com/glasskube/glasskube/internal/web/components/toast"
 	opts "github.com/glasskube/glasskube/internal/web/options"
 	"github.com/glasskube/glasskube/internal/web/responder"
@@ -155,7 +155,7 @@ func handleConfigurationInput(w http.ResponseWriter, r *http.Request, d *package
 	valueName := r.PathValue("valueName")
 	refKind := r.URL.Query().Get("refKind")
 	if valueDefinition, ok := d.manifest.ValueDefinitions[valueName]; ok {
-		options := pkg_config_input.PkgConfigInputDatalistOptions{}
+		options := components.PkgConfigInputDatalistOptions{}
 		if refKind == refKindConfigMap || refKind == refKindSecret {
 			if opts, err := opts.GetNamespaceOptions(ctx); err != nil {
 				fmt.Fprintf(os.Stderr, "failed to get namespace options: %v\n", err)
@@ -169,9 +169,9 @@ func handleConfigurationInput(w http.ResponseWriter, r *http.Request, d *package
 				options.Names = opts
 			}
 		}
-		input := pkg_config_input.ForPkgConfigInput(
+		input := components.ForPkgConfigInput(
 			d.pkg, d.request.repositoryName, d.request.version, d.manifest, valueName, valueDefinition, nil, &options,
-			&pkg_config_input.PkgConfigInputRenderOptions{
+			&components.PkgConfigInputRenderOptions{
 				Autofocus:      true,
 				DesiredRefKind: &refKind,
 			})

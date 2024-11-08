@@ -285,12 +285,12 @@
                   type="submit"
                   class="btn btn-primary {{ $extraClasses }} d-flex ms-auto {{ $disabledStr }}"
                   name="dryRun"
-                  value="{{ .GitopsMode }}"
-                  {{ if .GitopsMode }}
+                  value="{{ .Ctx.GitopsMode }}"
+                  {{ if .Ctx.GitopsMode }}
                     data-bs-toggle="modal" data-bs-target="#modal-container"
                   {{ end }}
                   {{ if $disabledStr }}disabled{{ end }}>
-                  {{ if .GitopsMode }}
+                  {{ if .Ctx.GitopsMode }}
                     Show YAML
                   {{ else if eq .Status nil }}
                     Install

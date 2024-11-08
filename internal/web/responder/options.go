@@ -1,8 +1,10 @@
 package responder
 
+import "github.com/glasskube/glasskube/internal/web/types"
+
 type response struct {
 	statusCode   int
-	templateData any
+	templateData types.ContextInjectable
 	partialErr   error
 }
 
@@ -15,7 +17,7 @@ func WithStatusCode(statusCode int) ResponseOption {
 	}
 }
 
-func WithTemplateData(templateData any) ResponseOption {
+func WithTemplateData(templateData types.ContextInjectable) ResponseOption {
 	return func(r *response) {
 		r.templateData = templateData
 	}
@@ -25,8 +27,4 @@ func WithPartialErr(partialErr error) ResponseOption {
 	return func(r *response) {
 		r.partialErr = partialErr
 	}
-}
-
-func (r *response) Apply() {
-
 }
