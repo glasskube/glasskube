@@ -63,6 +63,14 @@ func (res *htmlResponder) sendPage(w io.Writer, req *http.Request, templateName 
 	if pathParts := strings.Split(req.URL.Path, "/"); len(pathParts) >= 2 {
 		navbar.ActiveItem = pathParts[1]
 	}
+	res.enrichTemplateData(r, navbar, templateName)
+
+	tmplErr := res.templates.baseTemplate.ExecuteTemplate(w, "base.html", r.templateData)
+	// TODO tmpl error should return status 500 ??
+	checkTmplError(tmplErr, templateName)
+}
+
+func (res *htmlResponder) enrichTemplateData(r *response, navbar types.Navbar, templateName string) {
 	r.templateData.SetContextData(types.TemplateContextData{
 		Navbar:             navbar,
 		VersionDetails:     types.VersionDetails{}, // TODO from server (also think about caching when getting the version!!)
@@ -73,10 +81,6 @@ func (res *htmlResponder) sendPage(w io.Writer, req *http.Request, templateName 
 		CloudId:            res.cloudId,
 		TemplateName:       templateName,
 	})
-
-	tmplErr := res.templates.baseTemplate.ExecuteTemplate(w, "base.html", r.templateData)
-	// TODO tmpl error should return status 500 ??
-	checkTmplError(tmplErr, templateName)
 }
 
 func SendComponent(w http.ResponseWriter, r *http.Request, templateName string, options ...ResponseOption) {
@@ -89,14 +93,7 @@ func (res *htmlResponder) sendComponent(w io.Writer, req *http.Request, template
 		opt(r)
 	}
 
-	// TODO leave "reduced" TemplateContextData or simply send all of it every time ?
-	r.templateData.SetContextData(types.TemplateContextData{
-		CurrentContext: res.contextProvider.GetCurrentContext(),
-		GitopsMode:     res.contextProvider.IsGitopsModeEnabled(),
-		Error:          r.partialErr,
-		CloudId:        res.cloudId,
-		TemplateName:   templateName,
-	})
+	res.enrichTemplateData(r, types.Navbar{}, templateName)
 
 	tmplErr := res.templates.baseTemplate.ExecuteTemplate(w, templateName, r.templateData)
 	checkTmplError(tmplErr, templateName)
