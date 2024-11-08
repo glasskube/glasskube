@@ -36,7 +36,7 @@ func GetNamesDatalist(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	responder.SendComponent(w, r, "components/datalist",
-		responder.WithTemplateData(&components.DatalistInput{
+		responder.RawTemplate(components.DatalistInput{
 			Options: options,
 			Id:      id,
 		}))
@@ -68,7 +68,7 @@ func GetKeysDatalist(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	responder.SendComponent(w, r, "components/datalist",
-		responder.WithTemplateData(&components.DatalistInput{
+		responder.RawTemplate(components.DatalistInput{
 			Id:      r.FormValue("id"),
 			Options: options,
 		}))

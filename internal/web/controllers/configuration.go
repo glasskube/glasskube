@@ -175,6 +175,6 @@ func handleConfigurationInput(w http.ResponseWriter, r *http.Request, d *package
 				Autofocus:      true,
 				DesiredRefKind: &refKind,
 			})
-		responder.SendComponent(w, r, "components/pkg-config-input", responder.WithTemplateData(input))
+		responder.SendComponent(w, r, "components/pkg-config-input", responder.RawTemplate(input))
 	}
 }

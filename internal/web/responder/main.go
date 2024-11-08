@@ -71,16 +71,18 @@ func (res *htmlResponder) sendPage(w io.Writer, req *http.Request, templateName 
 }
 
 func (res *htmlResponder) enrichTemplateData(r *response, navbar types.Navbar, templateName string) {
-	r.templateData.SetContextData(types.TemplateContextData{
-		Navbar:             navbar,
-		VersionDetails:     types.VersionDetails{}, // TODO from server (also think about caching when getting the version!!)
-		CurrentContext:     res.contextProvider.GetCurrentContext(),
-		GitopsMode:         res.contextProvider.IsGitopsModeEnabled(),
-		Error:              r.partialErr,
-		CacheBustingString: config.Version,
-		CloudId:            res.cloudId,
-		TemplateName:       templateName,
-	})
+	if templateData, ok := r.templateData.(types.ContextInjectable); ok {
+		templateData.SetContextData(types.TemplateContextData{
+			Navbar:             navbar,
+			VersionDetails:     types.VersionDetails{}, // TODO from server (also think about caching when getting the version!!)
+			CurrentContext:     res.contextProvider.GetCurrentContext(),
+			GitopsMode:         res.contextProvider.IsGitopsModeEnabled(),
+			Error:              r.partialErr,
+			CacheBustingString: config.Version,
+			CloudId:            res.cloudId,
+			TemplateName:       templateName,
+		})
+	}
 }
 
 func SendComponent(w http.ResponseWriter, r *http.Request, templateName string, options ...ResponseOption) {

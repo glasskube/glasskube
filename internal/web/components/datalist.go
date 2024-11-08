@@ -2,11 +2,9 @@ package components
 
 import (
 	"fmt"
-	"github.com/glasskube/glasskube/internal/web/types"
 )
 
 type DatalistInput struct {
-	types.TemplateContextHolder
 	Id      string
 	Options []string
 }

@@ -176,23 +176,38 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle("GET /settings/repository/{repoName}", s.requireReady(controllers.GetRepository))
 	router.Handle("POST /settings/repository/{repoName}", s.requireReady(controllers.PostRepository))
 
+	// overview
 	router.Handle("GET /clusterpackages", s.requireReady(controllers.GetClusterPackages))
-	router.Handle("GET /clusterpackages/{manifestName}", s.requireReady(controllers.GetClusterPackageDetail))
-	router.Handle("POST /clusterpackages/{manifestName}", s.requireReady(controllers.PostClusterPackageDetail))
-
 	router.Handle("GET /packages", s.requireReady(controllers.GetPackages))
-	// TODO package details: namespace and name is optional !!
+
+	// package detail
+	router.Handle("GET /clusterpackages/{manifestName}", s.requireReady(controllers.GetClusterPackageDetail))
+	// TODO maybe there is a more fancy way for these "duplicated" routes (also for configuration etc subpaths):
+	router.Handle("GET /packages/{manifestName}", s.requireReady(controllers.GetPackageDetail))
 	router.Handle("GET /packages/{manifestName}/{namespace}/{name}", s.requireReady(controllers.GetPackageDetail))
+
+	// installation/update + configuration
+	router.Handle("POST /clusterpackages/{manifestName}", s.requireReady(controllers.PostClusterPackageDetail))
 	router.Handle("POST /packages/{manifestName}/{namespace}/{name}", s.requireReady(controllers.PostPackageDetail))
 
 	// discussion
+	// TODO its a bit too messy here
+	router.Handle("POST /giscus", s.requireReady(controllers.PostGiscus))
+	router.Handle("GET /clusterpackages/{manifestName}/discussion", s.requireReady(controllers.GetClusterPackageDiscussion))
+	router.Handle("GET /packages/{manifestName}/discussion", s.requireReady(controllers.GetPackageDiscussion))
+	router.Handle("GET /packages/{manifestName}/{namespace}/{name}/discussion", s.requireReady(controllers.GetPackageDiscussion))
+	router.Handle("GET /clusterpackages/{manifestName}/discussion/badge", s.requireReady(controllers.GetDiscussionBadge))
+	router.Handle("GET /packages/{manifestName}/discussion/badge", s.requireReady(controllers.GetDiscussionBadge))
+	router.Handle("GET /packages/{manifestName}/{namespace}/{name}/discussion/badge", s.requireReady(controllers.GetDiscussionBadge))
 
 	// configuration
 	router.Handle("GET /clusterpackages/{manifestName}/configuration/{valueName}", s.requireReady(controllers.GetClusterPackageConfigurationInput))
-	// TODO package details: namespace and name is optional !!
+	router.Handle("GET /packages/{manifestName}/configuration/{valueName}", s.requireReady(controllers.GetPackageConfigurationInput))
 	router.Handle("GET /packages/{manifestName}/{namespace}/{name}/configuration/{valueName}", s.requireReady(controllers.GetPackageConfigurationInput))
 
 	// open
+	//router.Handle("GET /clusterpackages/{manifestName}/open", s.requireReady(controllers.PostOpenClusterPackage))
+	//router.Handle("GET /packages/{manifestName}/{namespace}/{name}/open", s.requireReady(controllers.PostOpenPackage))
 
 	// uninstall
 
@@ -232,9 +247,6 @@ func (s *server) Start(ctx context.Context) error {
 		router.Handle(pkgBasePath+"/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
 		router.Handle(installedPkgBasePath+"/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
 		router.Handle(clpkgBasePath+"/configuration/{valueName}", s.requireReady(s.clusterPackageConfigurationInput))
-		// open endpoints
-		router.Handle(installedPkgBasePath+"/open", s.requireReady(s.open))
-		router.Handle(clpkgBasePath+"/open", s.requireReady(s.open))
 		// uninstall endpoints
 		router.Handle(installedPkgBasePath+"/uninstall", s.requireReady(s.uninstall))
 		router.Handle(clpkgBasePath+"/uninstall", s.requireReady(s.uninstall))
@@ -379,104 +391,6 @@ func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
 			})
 			util.CheckTmplError(err, "pkgUninstallModalTmpl")
 		}
-	}
-}
-
-func (s *server) open(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	pkgName := mux.Vars(r)["pkgName"]
-	namespace := mux.Vars(r)["namespace"]
-	name := mux.Vars(r)["name"]
-
-	if pkgName != "" {
-		var pkg v1alpha1.ClusterPackage
-		if err := s.pkgClient.ClusterPackages().Get(ctx, pkgName, &pkg); err != nil {
-			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch clusterpackage %v: %w", pkgName, err)))
-			return
-		}
-		s.handleOpen(ctx, w, &pkg)
-	} else {
-		var pkg v1alpha1.Package
-		if err := s.pkgClient.Packages(namespace).Get(ctx, name, &pkg); err != nil {
-			s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch package %v/%v: %w", namespace, name, err)))
-			return
-		}
-		s.handleOpen(ctx, w, &pkg)
-	}
-}
-
-func (s *server) handleOpen(ctx context.Context, w http.ResponseWriter, pkg ctrlpkg.Package) {
-	fwName := cache.NewObjectName(pkg.GetNamespace(), pkg.GetName()).String()
-	s.forwardersMutex.Lock()
-	defer s.forwardersMutex.Unlock()
-	if result, ok := s.forwarders[fwName]; ok {
-		result.WaitReady()
-		_ = cliutils.OpenInBrowser(result.Url)
-		return
-	}
-
-	result, err := open.NewOpener().Open(ctx, pkg, "", s.Host, 0)
-	if err != nil {
-		s.sendToast(w, toast.WithErr(fmt.Errorf("failed to open %v: %w", pkg.GetName(), err)))
-	} else {
-		s.forwarders[fwName] = result
-		result.WaitReady()
-		_ = cliutils.OpenInBrowser(result.Url)
-		w.WriteHeader(http.StatusAccepted)
-
-		go func() {
-			ctx = context.WithoutCancel(ctx)
-		resultLoop:
-			for {
-				select {
-				case <-s.stopCh:
-					break resultLoop
-				case fwErr := <-result.Completion:
-					// note: this does not happen in "realtime" (e.g. when the forwarded-to-pod is deleted), but only
-					// the next time a connection on that port is requested, e.g. when the user reloads the forwarded
-					// page or clicks open again – only then we will end up here.
-					if fwErr != nil {
-						fmt.Fprintf(os.Stderr, "forwarder %v completed with error: %v\n", fwName, fwErr)
-					} else {
-						fmt.Fprintf(os.Stderr, "forwarder %v completed without error\n", fwName)
-					}
-					// try to re-open if the package is still installed
-					if pkg.IsNamespaceScoped() {
-						var p v1alpha1.Package
-						if err := s.pkgClient.Packages(pkg.GetNamespace()).Get(ctx, pkg.GetName(), &p); err != nil {
-							if !apierrors.IsNotFound(err) {
-								fmt.Fprintf(os.Stderr, "can not reopen %v: %v\n", fwName, err)
-							}
-							break resultLoop
-						} else {
-							pkg = &p
-						}
-					} else {
-						var cp v1alpha1.ClusterPackage
-						if err := s.pkgClient.ClusterPackages().Get(ctx, pkg.GetName(), &cp); err != nil {
-							if !apierrors.IsNotFound(err) {
-								fmt.Fprintf(os.Stderr, "can not reopen %v: %v\n", fwName, err)
-							}
-							break resultLoop
-						} else {
-							pkg = &cp
-						}
-					}
-					result, err = open.NewOpener().Open(ctx, pkg, "", s.Host, 0)
-					s.forwardersMutex.Lock()
-					if err != nil {
-						fmt.Fprintf(os.Stderr, "failed to reopen forwarder %v: %v\n", fwName, err)
-						delete(s.forwarders, fwName)
-						s.forwardersMutex.Unlock()
-						break resultLoop
-					} else {
-						fmt.Fprintf(os.Stderr, "reopened forwarder %v\n", fwName)
-						s.forwarders[fwName] = result
-						s.forwardersMutex.Unlock()
-					}
-				}
-			}
-		}()
 	}
 }
 
@@ -719,8 +633,6 @@ func (server *server) initClientDependentComponents() {
 		clientadapter.NewPackageClientAdapter(server.pkgClient),
 		clientadapter.NewKubernetesClientAdapter(server.k8sClient),
 	)
-	// TODO repoclientset not available in templates yet
-	// responder.Templates.RepoClientset = server.repoClientset
 }
 
 func (server *server) initCachedClient(ctx context.Context) {

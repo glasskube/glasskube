@@ -38,7 +38,7 @@ func GetSettings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responder.SendPage(w, r, "pages/settings",
-		responder.WithTemplateData(&settingsPageData{
+		responder.ContextualizedTemplate(&settingsPageData{
 			Repositories:    repos.Items,
 			AdvancedOptions: advancedOptions,
 		}))
@@ -65,7 +65,7 @@ func GetRepository(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	responder.SendPage(w, r, "pages/repository",
-		responder.WithTemplateData(&repositoryPageData{
+		responder.ContextualizedTemplate(&repositoryPageData{
 			Repository: repo,
 		}))
 }

@@ -2,7 +2,6 @@ package components
 
 import (
 	"fmt"
-	"github.com/glasskube/glasskube/internal/web/types"
 	"strconv"
 
 	"github.com/glasskube/glasskube/internal/web/util"
@@ -24,7 +23,6 @@ type PkgConfigInputDatalistOptions struct {
 }
 
 type pkgConfigInputInput struct {
-	types.TemplateContextHolder
 	RepositoryName     string
 	SelectedVersion    string
 	PkgName            string

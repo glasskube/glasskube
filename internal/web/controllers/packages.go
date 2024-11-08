@@ -47,7 +47,7 @@ func GetClusterPackages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responder.SendPage(w, r, "pages/clusterpackages",
-		responder.WithTemplateData(&clusterPackagesTemplateData{
+		responder.ContextualizedTemplate(&clusterPackagesTemplateData{
 			ClusterPackages:               clpkgs,
 			ClusterPackageUpdateAvailable: clpkgUpdateAvailable,
 			UpdatesAvailable:              overallUpdatesAvailable,
@@ -98,7 +98,7 @@ func GetPackages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responder.SendPage(w, r, "pages/packages",
-		responder.WithTemplateData(&packagesTemplateData{
+		responder.ContextualizedTemplate(&packagesTemplateData{
 			InstalledPackages:      installed,
 			AvailablePackages:      available,
 			PackageUpdateAvailable: packageUpdateAvailable,

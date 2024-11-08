@@ -4,7 +4,7 @@ import "github.com/glasskube/glasskube/internal/web/types"
 
 type response struct {
 	statusCode   int
-	templateData types.ContextInjectable
+	templateData any
 	partialErr   error
 }
 
@@ -17,7 +17,13 @@ func WithStatusCode(statusCode int) ResponseOption {
 	}
 }
 
-func WithTemplateData(templateData types.ContextInjectable) ResponseOption {
+func ContextualizedTemplate(templateData types.ContextInjectable) ResponseOption {
+	return func(r *response) {
+		r.templateData = templateData
+	}
+}
+
+func RawTemplate(templateData any) ResponseOption {
 	return func(r *response) {
 		r.templateData = templateData
 	}

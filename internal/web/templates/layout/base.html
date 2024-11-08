@@ -9,7 +9,6 @@
     <script type="text/javascript">
       // htmx.logAll();
       htmx.config.scrollIntoViewOnBoost = false; // TODO put somewhere else?
-      htmx.config.disableInheritance = true;
     </script>
   </head>
 
@@ -150,6 +149,10 @@
         {{ template "pages/packages" . }}
       {{ else if eq .Ctx.TemplateName "pages/package" }}
         {{ template "pages/package" . }}
+      {{ else if eq .Ctx.TemplateName "pages/discussion" }}
+        {{ template "pages/discussion" . }}
+      {{ else }}
+        <p>DEBUG: {{ .Ctx.TemplateName }} not listed in base.html</p>
       {{ end }}
 
     </main>
