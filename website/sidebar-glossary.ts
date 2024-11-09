@@ -21,7 +21,10 @@ const sidebars: SidebarsConfig = {
         'kubernetes',
         'kubernetes-operator',
         'kustomize',
-      ], 
+        'BYOC',
+        'SaaS',
+        'Self-managed',
+      ],
     },
   ],
 };
