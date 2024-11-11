@@ -2,7 +2,7 @@
   {{ if .PackageName }}{{ .PackageName }}{{ else }}{{ .Namespace }}/{{ .Name }}{{ end }}
 {{ end }}
 
-{{ define "pkg-uninstall-modal" }}
+{{ define "components/pkg-uninstall-modal" }}
   <div class="modal-dialog modal-dialog-centered" id="pkg-uninstall-modal">
     <div class="modal-content">
       <form hx-post="{{ .PackageHref }}/uninstall">
@@ -13,9 +13,9 @@
           </h1>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        {{ if eq .Err nil }}
+        {{ if eq .ShownError nil }}
           <div class="modal-body" id="pkg-update-modal-body">
-            {{ if .GitopsMode }}
+            {{ if .Ctx.GitopsMode }}
               <div class="alert alert-info m-0" role="alert">
                 <div>
                   Your are using Glasskube in GitopsMode. To uninstall this (cluster-)package, remove the corresponding
@@ -35,7 +35,7 @@
             {{ end }}
           </div>
           <div class="modal-footer">
-            {{ if not .GitopsMode }}
+            {{ if not .Ctx.GitopsMode }}
               <button type="button" class="btn btn-outline-primary btn-sm" data-bs-dismiss="modal">Cancel</button>
               <button type="submit" data-bs-dismiss="modal" class="btn btn-danger btn-sm">Confirm</button>
             {{ else }}
@@ -45,7 +45,7 @@
         {{ else }}
           <div class="modal-body" id="pkg-update-modal-body">
             <div class="alert alert-danger m-0" role="alert">
-              {{ .Err }}
+              {{ .ShownError }}
             </div>
           </div>
           <div class="modal-footer">

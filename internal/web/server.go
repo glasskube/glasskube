@@ -188,7 +188,6 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle("POST /packages/{manifestName}/{namespace}/{name}", s.requireReady(controllers.PostPackageDetail))
 
 	// discussion
-	// TODO its a bit too messy here
 	router.Handle("POST /giscus", s.requireReady(controllers.PostGiscus))
 	router.Handle("GET /clusterpackages/{manifestName}/discussion", s.requireReady(controllers.GetClusterPackageDiscussion))
 	router.Handle("GET /packages/{manifestName}/discussion", s.requireReady(controllers.GetPackageDiscussion))
@@ -207,6 +206,10 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle("POST /packages/{manifestName}/{namespace}/{name}/open", s.requireReady(controllers.PostOpenPackage))
 
 	// uninstall
+	router.Handle("GET /clusterpackages/{manifestName}/uninstall", s.requireReady(controllers.GetUninstallClusterPackage))
+	router.Handle("POST /clusterpackages/{manifestName}/uninstall", s.requireReady(controllers.PostUninstallClusterPackage))
+	router.Handle("GET /packages/{manifestName}/{namespace}/{name}/uninstall", s.requireReady(controllers.GetUninstallPackage))
+	router.Handle("POST /packages/{manifestName}/{namespace}/{name}/uninstall", s.requireReady(controllers.PostUninstallPackage))
 
 	// suspend
 
@@ -233,9 +236,6 @@ func (s *server) Start(ctx context.Context) error {
 		installedPkgBasePath := pkgBasePath + "/{namespace}/{name}"
 		clpkgBasePath := "/clusterpackages/{pkgName}"
 
-		// uninstall endpoints
-		router.Handle(installedPkgBasePath+"/uninstall", s.requireReady(s.uninstall))
-		router.Handle(clpkgBasePath+"/uninstall", s.requireReady(s.uninstall))
 		// suspend endpoints
 		router.Handle(clpkgBasePath+"/suspend", s.requireReady(s.handleSuspend))
 		router.Handle(clpkgBasePath+"/resume", s.requireReady(s.handleResume))
@@ -300,87 +300,6 @@ func (s *server) shutdown() {
 	}
 	close(s.httpServerHasShutdownCh)
 }
-
-/*
-// uninstall is an endpoint, which returns the modal html for GET requests, and performs the uninstallation for POST
-func (s *server) uninstall(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	pkgName := mux.Vars(r)["pkgName"]
-	manifestName := mux.Vars(r)["manifestName"]
-	namespace := mux.Vars(r)["namespace"]
-	name := mux.Vars(r)["name"]
-
-	if r.Method == http.MethodPost {
-		uninstaller := uninstall.NewUninstaller(s.pkgClient)
-		if pkgName != "" {
-			var pkg v1alpha1.ClusterPackage
-			if err := s.pkgClient.ClusterPackages().Get(ctx, pkgName, &pkg); err != nil {
-				s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch clusterpackage %v: %w", pkgName, err)))
-				return
-			}
-			if err := uninstaller.Uninstall(ctx, &pkg, false); err != nil {
-				s.sendToast(w, toast.WithErr(fmt.Errorf("failed to uninstall clusterpackage %v: %w", pkgName, err)))
-				return
-			}
-		} else {
-			var pkg v1alpha1.Package
-			if err := s.pkgClient.Packages(namespace).Get(ctx, name, &pkg); err != nil {
-				s.sendToast(w, toast.WithErr(fmt.Errorf("failed to fetch package %v/%v: %w", namespace, name, err)))
-				return
-			}
-			if err := uninstaller.Uninstall(ctx, &pkg, false); err != nil {
-				s.sendToast(w, toast.WithErr(fmt.Errorf("failed to uninstall package %v/%v: %w", namespace, name, err)))
-				return
-			}
-		}
-	} else {
-		if pkgName != "" {
-			var pruned []graph.PackageRef
-			var err error
-			if g, err1 := s.dependencyMgr.NewGraph(r.Context()); err1 != nil {
-				err = fmt.Errorf("error validating uninstall: %w", err1)
-			} else {
-				g.Delete(pkgName, "")
-				pruned = g.Prune()
-				if err1 := g.Validate(); err1 != nil {
-					err = fmt.Errorf("%v cannot be uninstalled: %w", pkgName, err1)
-				}
-			}
-			err = templates.Templates.PkgUninstallModalTmpl.Execute(w, map[string]any{
-				"PackageName": pkgName,
-				"Pruned":      pruned,
-				"Err":         err,
-				"PackageHref": util.GetClusterPkgHref(pkgName),
-				"GitopsMode":  s.isGitopsModeEnabled(),
-			})
-			util.CheckTmplError(err, "pkgUninstallModalTmpl")
-		} else {
-			var pruned []graph.PackageRef
-			var err error
-			// TODO: refactor this duplicate code segment
-			if g, err1 := s.dependencyMgr.NewGraph(r.Context()); err1 != nil {
-				err = fmt.Errorf("error validating uninstall: %w", err1)
-			} else {
-				g.Delete(name, namespace)
-				pruned = g.Prune()
-				if err1 := g.Validate(); err1 != nil {
-					err = fmt.Errorf("%v cannot be uninstalled: %w", pkgName, err1)
-				}
-			}
-			err = templates.Templates.PkgUninstallModalTmpl.Execute(w, map[string]any{
-				"Namespace":   namespace,
-				"Name":        name,
-				"Pruned":      pruned,
-				"Err":         err,
-				"PackageHref": util.GetNamespacedPkgHref(manifestName, namespace, name),
-				"GitopsMode":  s.isGitopsModeEnabled(),
-			})
-			util.CheckTmplError(err, "pkgUninstallModalTmpl")
-		}
-	}
-}
-
-*/
 
 func (s *server) isGitopsModeEnabled() bool {
 	if ns, err := (*s.coreListers.NamespaceLister).Get("glasskube-system"); err != nil {
