@@ -221,12 +221,8 @@ func (s *server) Start(ctx context.Context) error {
 	router.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/clusterpackages", http.StatusFound)
 	})
-	http.Handle("/", s.enrichContext(router))
-
-	/*
-		TODO
-		router.Use(telemetry.HttpMiddleware(telemetry.WithPathRedactor(packagesPathRedactor)))
-	*/
+	telemetryMiddleware := telemetry.HttpMiddleware(telemetry.WithPathRedactor(packagesPathRedactor))
+	http.Handle("/", telemetryMiddleware(s.enrichContext(router)))
 
 	s.listener, err = net.Listen("tcp", net.JoinHostPort(s.Host, s.Port))
 	if err != nil {
