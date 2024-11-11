@@ -135,7 +135,7 @@
         </div>
 
         {{ if .Ctx.VersionDetails.MismatchWarning }}
-          {{ template "version-mismatch-warning" .Ctx.VersionDetails }}
+          {{ template "version-mismatch-warning" . }}
         {{ end }}
       </div>
 

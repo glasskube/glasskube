@@ -75,7 +75,7 @@ func (res *htmlResponder) enrichTemplateData(r *response, req *http.Request, tem
 		}
 		templateData.SetContextData(types.TemplateContextData{
 			Navbar:             navbar,
-			VersionDetails:     types.VersionDetails{}, // TODO from server (also think about caching when getting the version!!)
+			VersionDetails:     webutil.GetVersionDetails(req),
 			CurrentContext:     currentContext,
 			GitopsMode:         webutil.IsGitopsModeEnabled(req),
 			Error:              r.partialErr,

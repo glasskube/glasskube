@@ -382,61 +382,6 @@ func (s *server) persistKubeconfig(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-/*
-func (s *server) enrichPage(r *http.Request, data map[string]any, err error) map[string]any {
-	data["CloudId"] = telemetry.GetMachineId()
-	if pathParts := strings.Split(r.URL.Path, "/"); len(pathParts) >= 2 {
-		data["NavbarActiveItem"] = pathParts[1]
-	}
-	data["Error"] = err
-	data["CurrentContext"] = s.rawConfig.CurrentContext
-	data["GitopsMode"] = s.isGitopsModeEnabled()
-	operatorVersion, clientVersion, err := s.getGlasskubeVersions(r.Context())
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to check for version mismatch: %v\n", err)
-	} else if operatorVersion != nil && clientVersion != nil && !operatorVersion.Equal(clientVersion) {
-		data["VersionMismatchWarning"] = true
-	}
-	if operatorVersion != nil && clientVersion != nil && !config.IsDevBuild() {
-		data["VersionDetails"] = map[string]any{
-			"OperatorVersion":     operatorVersion.String(),
-			"ClientVersion":       clientVersion.String(),
-			"NeedsOperatorUpdate": operatorVersion.LessThan(clientVersion),
-			"GitopsMode":          s.isGitopsModeEnabled(),
-		}
-	}
-	if config.IsDevBuild() {
-		data["VersionDetails"] = map[string]any{
-			"OperatorVersion": config.Version,
-			"ClientVersion":   config.Version,
-		}
-	}
-	data["CacheBustingString"] = config.Version
-	return data
-}
-
-func (server *server) getGlasskubeVersions(ctx context.Context) (*semver.Version, *semver.Version, error) {
-	if !config.IsDevBuild() {
-		if operatorVersion, err := clientutils.GetPackageOperatorVersion(ctx); err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to check package operator version: %v\n", err)
-			return nil, nil, err
-		} else if parsedOperator, err := semver.NewVersion(operatorVersion); err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to parse operator version %v: %v\n", operatorVersion, err)
-			return nil, nil, err
-		} else if parsedClient, err := semver.NewVersion(config.Version); err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to parse client version %v: %v\n", config.Version, err)
-			return nil, nil, err
-		} else {
-			return parsedOperator, parsedClient, nil
-		}
-	}
-	return nil, nil, nil
-}
-
-
-
-*/
-
 func (server *server) loadBytesConfig(data []byte) {
 	server.configLoader = &bytesConfigLoader{data}
 }
@@ -501,10 +446,12 @@ func (server *server) initWhenBootstrapped(ctx context.Context) {
 	namespaceLister := factory.Core().V1().Namespaces().Lister()
 	configMapLister := factory.Core().V1().ConfigMaps().Lister()
 	secretLister := factory.Core().V1().Secrets().Lister()
+	deploymentLister := factory.Apps().V1().Deployments().Lister()
 	server.coreListers = &clicontext.CoreListers{
-		NamespaceLister: &namespaceLister,
-		ConfigMapLister: &configMapLister,
-		SecretLister:    &secretLister,
+		NamespaceLister:  &namespaceLister,
+		ConfigMapLister:  &configMapLister,
+		SecretLister:     &secretLister,
+		DeploymentLister: &deploymentLister,
 	}
 	factory.Start(c) // TODO maybe the stop channel should be something else??
 }

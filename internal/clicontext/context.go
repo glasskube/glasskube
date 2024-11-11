@@ -5,6 +5,7 @@ import (
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	"github.com/glasskube/glasskube/pkg/client"
 	"k8s.io/client-go/kubernetes"
+	appsv1 "k8s.io/client-go/listers/apps/v1"
 	"k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd/api"
@@ -117,7 +118,8 @@ func CoreListersFromContext(ctx context.Context) *CoreListers {
 }
 
 type CoreListers struct {
-	NamespaceLister *v1.NamespaceLister
-	ConfigMapLister *v1.ConfigMapLister
-	SecretLister    *v1.SecretLister
+	NamespaceLister  *v1.NamespaceLister
+	ConfigMapLister  *v1.ConfigMapLister
+	SecretLister     *v1.SecretLister
+	DeploymentLister *appsv1.DeploymentLister
 }
