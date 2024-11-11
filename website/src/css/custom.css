@@ -194,10 +194,6 @@ h2 {
   padding-bottom: 5px;
 }
 
-[data-theme='dark'] h2 {
-  text-shadow: 0 0 5px var(--glasskube-pink);
-}
-
 canary-root {
   --canary-color-primary-c: 0.08;
   --canary-color-primary-h: 250;
