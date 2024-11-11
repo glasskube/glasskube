@@ -388,7 +388,7 @@ func (server *server) loadBytesConfig(data []byte) {
 
 func (server *server) checkKubeconfig() ServerConfigError {
 	if server.pkgClient == nil {
-		return server.initKubeConfig()
+		return server.initKubeConfigAndStartListers()
 	} else {
 		return nil
 	}
@@ -419,7 +419,7 @@ func (server *server) ensureBootstrapped(ctx context.Context) ServerConfigError 
 	return nil
 }
 
-func (server *server) initKubeConfig() ServerConfigError {
+func (server *server) initKubeConfigAndStartListers() ServerConfigError {
 	restConfig, rawConfig, err := server.LoadConfig()
 	if err != nil {
 		return newKubeconfigErr(err)
@@ -428,19 +428,13 @@ func (server *server) initKubeConfig() ServerConfigError {
 	if err != nil {
 		return newKubeconfigErr(err)
 	}
-	telemetry.InitClient(restConfig)
 
 	server.restConfig = restConfig
 	server.rawConfig = rawConfig
 	server.nonCachedClient = client // this should never be overridden
 	server.pkgClient = client       // be aware that server.pkgClient is overridden with the cached client once bootstrap check succeeded
-	return nil
-}
 
-func (server *server) initWhenBootstrapped(ctx context.Context) {
 	server.k8sClient = kubernetes.NewForConfigOrDie(server.restConfig)
-	server.initCachedClient(context.WithoutCancel(ctx))
-	server.initClientDependentComponents()
 	factory := informers.NewSharedInformerFactory(server.k8sClient, 0)
 	c := make(chan struct{})
 	namespaceLister := factory.Core().V1().Namespaces().Lister()
@@ -454,6 +448,13 @@ func (server *server) initWhenBootstrapped(ctx context.Context) {
 		DeploymentLister: &deploymentLister,
 	}
 	factory.Start(c) // TODO maybe the stop channel should be something else??
+	telemetry.InitClient(restConfig, &namespaceLister)
+	return nil
+}
+
+func (server *server) initWhenBootstrapped(ctx context.Context) {
+	server.initCachedClient(context.WithoutCancel(ctx))
+	server.initClientDependentComponents()
 }
 
 func (server *server) initClientDependentComponents() {
