@@ -9,6 +9,7 @@ import (
 	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/telemetry/annotations"
 	"github.com/glasskube/glasskube/internal/web/controllers"
+	webopen "github.com/glasskube/glasskube/internal/web/open"
 	"github.com/glasskube/glasskube/internal/web/responder"
 	"io/fs"
 	"net"
@@ -16,7 +17,6 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"sync"
 	"syscall"
 	"time"
 
@@ -35,7 +35,6 @@ import (
 	"github.com/glasskube/glasskube/internal/web/handler"
 	"github.com/glasskube/glasskube/pkg/bootstrap"
 	"github.com/glasskube/glasskube/pkg/client"
-	"github.com/glasskube/glasskube/pkg/open"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -73,7 +72,6 @@ func NewServer(options ServerOptions) *server {
 	server := server{
 		ServerOptions:           options,
 		configLoader:            &defaultConfigLoader{options.Kubeconfig},
-		forwarders:              make(map[string]*open.OpenResult),
 		stopCh:                  make(chan struct{}, 1),
 		httpServerHasShutdownCh: make(chan struct{}, 1),
 	}
@@ -92,8 +90,6 @@ type server struct {
 	k8sClient               *kubernetes.Clientset
 	coreListers             *clicontext.CoreListers
 	broadcaster             *sse.Broadcaster
-	forwarders              map[string]*open.OpenResult
-	forwardersMutex         sync.Mutex
 	isBootstrapped          bool
 	httpServer              *http.Server
 	httpServerHasShutdownCh chan struct{}
@@ -153,6 +149,7 @@ func (s *server) Start(ctx context.Context) error {
 	}
 
 	responder.Init(s, webFs)
+	webopen.Init(s.Host, s.stopCh)
 
 	s.broadcaster = sse.NewBroadcaster()
 	_ = s.ensureBootstrapped(ctx)
@@ -206,8 +203,8 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle("GET /packages/{manifestName}/{namespace}/{name}/configuration/{valueName}", s.requireReady(controllers.GetPackageConfigurationInput))
 
 	// open
-	//router.Handle("GET /clusterpackages/{manifestName}/open", s.requireReady(controllers.PostOpenClusterPackage))
-	//router.Handle("GET /packages/{manifestName}/{namespace}/{name}/open", s.requireReady(controllers.PostOpenPackage))
+	router.Handle("POST /clusterpackages/{manifestName}/open", s.requireReady(controllers.PostOpenClusterPackage))
+	router.Handle("POST /packages/{manifestName}/{namespace}/{name}/open", s.requireReady(controllers.PostOpenPackage))
 
 	// uninstall
 
@@ -236,17 +233,6 @@ func (s *server) Start(ctx context.Context) error {
 		installedPkgBasePath := pkgBasePath + "/{namespace}/{name}"
 		clpkgBasePath := "/clusterpackages/{pkgName}"
 
-		// discussion endpoints
-		router.Handle(pkgBasePath+"/discussion", s.requireReady(s.packageDiscussion))
-		router.Handle(installedPkgBasePath+"/discussion", s.requireReady(s.packageDiscussion))
-		router.Handle(clpkgBasePath+"/discussion", s.requireReady(s.clusterPackageDiscussion))
-		router.Handle(pkgBasePath+"/discussion/badge", s.requireReady(s.discussionBadge))
-		router.Handle(installedPkgBasePath+"/discussion/badge", s.requireReady(s.discussionBadge))
-		router.Handle(clpkgBasePath+"/discussion/badge", s.requireReady(s.discussionBadge))
-		// configuration endpoints
-		router.Handle(pkgBasePath+"/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
-		router.Handle(installedPkgBasePath+"/configuration/{valueName}", s.requireReady(s.packageConfigurationInput))
-		router.Handle(clpkgBasePath+"/configuration/{valueName}", s.requireReady(s.clusterPackageConfigurationInput))
 		// uninstall endpoints
 		router.Handle(installedPkgBasePath+"/uninstall", s.requireReady(s.uninstall))
 		router.Handle(clpkgBasePath+"/uninstall", s.requireReady(s.uninstall))
@@ -807,13 +793,7 @@ func (s *server) initClusterPackageStoreAndController(ctx context.Context) (cach
 			DeleteFunc: func(obj any) {
 				if pkg, ok := obj.(*v1alpha1.ClusterPackage); ok {
 					s.broadcaster.UpdatesAvailableForPackage(pkg, nil)
-					fwName := pkg.GetName()
-					s.forwardersMutex.Lock()
-					if result, ok := s.forwarders[fwName]; ok {
-						result.Stop()
-						delete(s.forwarders, fwName)
-					}
-					s.forwardersMutex.Unlock()
+					webopen.CloseForwarders(pkg)
 				}
 			},
 		},
@@ -850,13 +830,7 @@ func (s *server) initPackageStoreAndController(ctx context.Context) (cache.Store
 			DeleteFunc: func(obj any) {
 				if pkg, ok := obj.(*v1alpha1.Package); ok {
 					s.broadcaster.UpdatesAvailableForPackage(pkg, nil)
-					fwName := cache.ObjectName{Namespace: pkg.GetNamespace(), Name: pkg.GetName()}.String()
-					s.forwardersMutex.Lock()
-					if result, ok := s.forwarders[fwName]; ok {
-						result.Stop()
-						delete(s.forwarders, fwName)
-					}
-					s.forwardersMutex.Unlock()
+					webopen.CloseForwarders(pkg)
 				}
 			},
 		},
