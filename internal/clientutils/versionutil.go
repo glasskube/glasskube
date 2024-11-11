@@ -2,14 +2,14 @@ package clientutils
 
 import (
 	"context"
-	v12 "k8s.io/api/apps/v1"
+	"k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	appsv1 "k8s.io/client-go/listers/apps/v1"
 
 	"k8s.io/client-go/rest"
 
 	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/google/go-containerregistry/pkg/name"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -29,7 +29,7 @@ func GetPackageOperatorVersionForConfig(config *rest.Config, ctx context.Context
 		return "", err
 	}
 
-	deployment, err := clientset.AppsV1().Deployments(namespace).Get(ctx, deploymentName, v1.GetOptions{})
+	deployment, err := clientset.AppsV1().Deployments(namespace).Get(ctx, deploymentName, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -44,7 +44,7 @@ func GetPackageOperatorVersionForLister(deploymentLister *appsv1.DeploymentListe
 	return getVersionOfDeployment(deployment)
 }
 
-func getVersionOfDeployment(deployment *v12.Deployment) (string, error) {
+func getVersionOfDeployment(deployment *v1.Deployment) (string, error) {
 	containers := deployment.Spec.Template.Spec.Containers
 	for _, container := range containers {
 		if container.Name == "manager" {
