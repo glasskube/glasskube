@@ -8,13 +8,15 @@ import (
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/web/components/toast"
 	"github.com/glasskube/glasskube/internal/web/responder"
+	webutil "github.com/glasskube/glasskube/internal/web/util"
 	"github.com/glasskube/glasskube/pkg/suspend"
 	"net/http"
 )
 
 func PostSuspend(w http.ResponseWriter, r *http.Request) {
 	var options suspend.Options
-	if s.isGitopsModeEnabled() {
+	gitopsModeEnabled := webutil.IsGitopsModeEnabled(r)
+	if gitopsModeEnabled {
 		options = append(options, suspend.DryRun())
 	}
 
@@ -23,7 +25,7 @@ func PostSuspend(w http.ResponseWriter, r *http.Request) {
 	} else if suspended, err := suspend.Suspend(r.Context(), pkg, options...); err != nil {
 		responder.SendToast(w, toast.WithErr(err))
 	} else if suspended {
-		if s.isGitopsModeEnabled() {
+		if gitopsModeEnabled {
 			if yamlOutput, err := clientutils.Format(clientutils.OutputFormatYAML, false, pkg); err != nil {
 				responder.SendToast(w, toast.WithErr(fmt.Errorf("failed to render yaml: %w", err)))
 			} else {
@@ -41,7 +43,8 @@ func PostSuspend(w http.ResponseWriter, r *http.Request) {
 
 func PostResume(w http.ResponseWriter, r *http.Request) {
 	var options suspend.Options
-	if s.isGitopsModeEnabled() {
+	gitopsModeEnabled := webutil.IsGitopsModeEnabled(r)
+	if gitopsModeEnabled {
 		options = append(options, suspend.DryRun())
 	}
 
@@ -50,7 +53,7 @@ func PostResume(w http.ResponseWriter, r *http.Request) {
 	} else if resumed, err := suspend.Resume(r.Context(), pkg, options...); err != nil {
 		responder.SendToast(w, toast.WithErr(err))
 	} else if resumed {
-		if s.isGitopsModeEnabled() {
+		if gitopsModeEnabled {
 			if yamlOutput, err := clientutils.Format(clientutils.OutputFormatYAML, false, pkg); err != nil {
 				responder.SendToast(w, toast.WithErr(fmt.Errorf("failed to render yaml: %w", err)))
 			} else {

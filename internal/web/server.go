@@ -7,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"github.com/glasskube/glasskube/internal/clicontext"
-	"github.com/glasskube/glasskube/internal/telemetry/annotations"
 	"github.com/glasskube/glasskube/internal/web/controllers"
 	webopen "github.com/glasskube/glasskube/internal/web/open"
 	"github.com/glasskube/glasskube/internal/web/responder"
@@ -120,17 +119,6 @@ func (s *server) RepoClient() repoclient.RepoClientset {
 	return s.repoClientset
 }
 
-func (s *server) GetCurrentContext() string {
-	if s.rawConfig != nil {
-		return s.rawConfig.CurrentContext
-	}
-	return ""
-}
-
-func (s *server) IsGitopsModeEnabled() bool {
-	return s.isGitopsModeEnabled()
-}
-
 func initLogging(level int) {
 	klog.InitFlags(nil)
 	_ = flag.Set("v", strconv.Itoa(level))
@@ -148,7 +136,7 @@ func (s *server) Start(ctx context.Context) error {
 		initLogging(5)
 	}
 
-	responder.Init(s, webFs)
+	responder.Init(webFs)
 	webopen.Init(s.Host, s.stopCh)
 
 	s.broadcaster = sse.NewBroadcaster()
@@ -291,15 +279,6 @@ func (s *server) shutdown() {
 		fmt.Fprintf(os.Stderr, "Failed to shutdown server: %v\n", err)
 	}
 	close(s.httpServerHasShutdownCh)
-}
-
-func (s *server) isGitopsModeEnabled() bool {
-	if ns, err := (*s.coreListers.NamespaceLister).Get("glasskube-system"); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to fetch glasskube-system namespace: %v\n", err)
-		return true
-	} else {
-		return annotations.IsGitopsModeEnabled(ns.Annotations)
-	}
 }
 
 /*

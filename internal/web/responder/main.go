@@ -3,10 +3,12 @@ package responder
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/telemetry"
 	"github.com/glasskube/glasskube/internal/web/components/toast"
 	"github.com/glasskube/glasskube/internal/web/types"
+	webutil "github.com/glasskube/glasskube/internal/web/util"
 	"io"
 	"io/fs"
 	"net/http"
@@ -14,20 +16,14 @@ import (
 	"strings"
 )
 
-type ContextProvider interface {
-	GetCurrentContext() string
-	IsGitopsModeEnabled() bool
-}
-
 type htmlResponder struct {
-	contextProvider ContextProvider
-	templates       *templates
-	cloudId         string
+	templates *templates
+	cloudId   string
 }
 
 var responder *htmlResponder
 
-func Init(contextProvider ContextProvider, webFs fs.FS) {
+func Init(webFs fs.FS) {
 	if responder != nil {
 		panic("responder already initialized")
 	}
@@ -43,9 +39,8 @@ func Init(contextProvider ContextProvider, webFs fs.FS) {
 	}
 
 	responder = &htmlResponder{
-		contextProvider: contextProvider,
-		templates:       t,
-		cloudId:         telemetry.GetMachineId(),
+		templates: t,
+		cloudId:   telemetry.GetMachineId(),
 	}
 }
 
@@ -59,24 +54,30 @@ func (res *htmlResponder) sendPage(w io.Writer, req *http.Request, templateName 
 		opt(r)
 	}
 
-	navbar := types.Navbar{}
-	if pathParts := strings.Split(req.URL.Path, "/"); len(pathParts) >= 2 {
-		navbar.ActiveItem = pathParts[1]
-	}
-	res.enrichTemplateData(r, navbar, templateName)
+	res.enrichTemplateData(r, req, templateName)
 
 	tmplErr := res.templates.baseTemplate.ExecuteTemplate(w, "base.html", r.templateData)
 	// TODO tmpl error should return status 500 ??
 	checkTmplError(tmplErr, templateName)
 }
 
-func (res *htmlResponder) enrichTemplateData(r *response, navbar types.Navbar, templateName string) {
+func (res *htmlResponder) enrichTemplateData(r *response, req *http.Request, templateName string) {
 	if templateData, ok := r.templateData.(types.ContextInjectable); ok {
+		var currentContext string
+		ctx := req.Context()
+		rawConfig := clicontext.RawConfigFromContext(ctx)
+		if rawConfig != nil {
+			currentContext = rawConfig.CurrentContext
+		}
+		navbar := types.Navbar{}
+		if pathParts := strings.Split(req.URL.Path, "/"); len(pathParts) >= 2 {
+			navbar.ActiveItem = pathParts[1]
+		}
 		templateData.SetContextData(types.TemplateContextData{
 			Navbar:             navbar,
 			VersionDetails:     types.VersionDetails{}, // TODO from server (also think about caching when getting the version!!)
-			CurrentContext:     res.contextProvider.GetCurrentContext(),
-			GitopsMode:         res.contextProvider.IsGitopsModeEnabled(),
+			CurrentContext:     currentContext,
+			GitopsMode:         webutil.IsGitopsModeEnabled(req),
 			Error:              r.partialErr,
 			CacheBustingString: config.Version,
 			CloudId:            res.cloudId,
@@ -95,7 +96,7 @@ func (res *htmlResponder) sendComponent(w io.Writer, req *http.Request, template
 		opt(r)
 	}
 
-	res.enrichTemplateData(r, types.Navbar{}, templateName)
+	res.enrichTemplateData(r, req, templateName)
 
 	tmplErr := res.templates.baseTemplate.ExecuteTemplate(w, templateName, r.templateData)
 	checkTmplError(tmplErr, templateName)
