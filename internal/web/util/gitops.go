@@ -18,5 +18,5 @@ func IsGitopsModeEnabled(req *http.Request) bool {
 			return annotations.IsGitopsModeEnabled(ns.Annotations)
 		}
 	}
-	return true
+	return false
 }

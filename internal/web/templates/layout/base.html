@@ -151,6 +151,12 @@
         {{ template "pages/package" . }}
       {{ else if eq .Ctx.TemplateName "pages/discussion" }}
         {{ template "pages/discussion" . }}
+      {{ else if eq .Ctx.TemplateName "pages/support" }}
+        {{ template "pages/support" . }}
+      {{ else if eq .Ctx.TemplateName "pages/kubeconfig" }}
+        {{ template "pages/kubeconfig" . }}
+      {{ else if eq .Ctx.TemplateName "pages/bootstrap" }}
+        {{ template "pages/bootstrap" . }}
       {{ else }}
         <p>DEBUG: {{ .Ctx.TemplateName }} not listed in base.html</p>
       {{ end }}

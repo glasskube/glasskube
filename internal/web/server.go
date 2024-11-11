@@ -10,6 +10,8 @@ import (
 	"github.com/glasskube/glasskube/internal/web/controllers"
 	webopen "github.com/glasskube/glasskube/internal/web/open"
 	"github.com/glasskube/glasskube/internal/web/responder"
+	"github.com/glasskube/glasskube/internal/web/types"
+	"io"
 	"io/fs"
 	"net"
 	"net/http"
@@ -208,6 +210,14 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle("POST /clusterpackages/{manifestName}/resume", s.requireReady(controllers.PostResume))
 	router.Handle("POST /packages/{manifestName}/{namespace}/{name}/resume", s.requireReady(controllers.PostResume))
 
+	// setup
+	router.HandleFunc("GET /support", s.supportPage)
+	router.HandleFunc("GET /kubeconfig", s.getKubeconfigPage)
+	router.HandleFunc("POST /kubeconfig", s.postKubeconfig)
+	router.Handle("GET /bootstrap", s.requireKubeconfig(s.getBootstrap))
+	router.Handle("POST /bootstrap", s.requireKubeconfig(s.postBootstrap))
+	router.Handle("POST /kubeconfig/persist", s.requireKubeconfig(s.persistKubeconfig))
+
 	router.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/clusterpackages", http.StatusFound)
 	})
@@ -216,12 +226,6 @@ func (s *server) Start(ctx context.Context) error {
 	/*
 		TODO
 		router.Use(telemetry.HttpMiddleware(telemetry.WithPathRedactor(packagesPathRedactor)))
-
-		router.HandleFunc("/support", s.supportPage)
-		router.HandleFunc("/kubeconfig", s.kubeconfigPage)
-		router.Handle("/bootstrap", s.requireKubeconfig(s.bootstrapPage))
-		router.Handle("/kubeconfig/persist", s.requireKubeconfig(s.persistKubeconfig))
-
 	*/
 
 	s.listener, err = net.Listen("tcp", net.JoinHostPort(s.Host, s.Port))
@@ -281,88 +285,108 @@ func (s *server) shutdown() {
 	close(s.httpServerHasShutdownCh)
 }
 
-/*
+type supportPageData struct {
+	types.TemplateContextHolder
+	KubeconfigDefaultLocation string
+	Err                       error
+}
+
 func (s *server) supportPage(w http.ResponseWriter, r *http.Request) {
 	if err := s.ensureBootstrapped(r.Context()); err != nil {
 		if err.BootstrapMissing() {
 			http.Redirect(w, r, "/bootstrap", http.StatusFound)
 			return
 		}
-		err := templates.Templates.SupportPageTmpl.Execute(w, &map[string]any{
-			"CurrentContext":            "",
-			"KubeconfigDefaultLocation": clientcmd.RecommendedHomeFile,
-			"Err":                       err,
-		})
-		util.CheckTmplError(err, "support")
+		responder.SendPage(w, r, "pages/support", responder.ContextualizedTemplate(&supportPageData{
+			KubeconfigDefaultLocation: clientcmd.RecommendedHomeFile,
+			Err:                       err,
+		}))
 	} else {
 		http.Redirect(w, r, "/", http.StatusFound)
 	}
 }
 
-func (s *server) bootstrapPage(w http.ResponseWriter, r *http.Request) {
+type bootstrapPageData struct {
+	types.TemplateContextHolder
+	Err error
+}
+
+func (s *server) getBootstrap(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	if r.Method == "POST" {
-		client := bootstrap.NewBootstrapClient(s.restConfig)
-		if _, err := client.Bootstrap(ctx, bootstrap.DefaultOptions()); err != nil {
-			fmt.Fprintf(os.Stderr, "\nAn error occurred during bootstrap:\n%v\n", err)
-			err := templates.Templates.BootstrapPageTmpl.ExecuteTemplate(w, "bootstrap-failure", nil)
-			util.CheckTmplError(err, "bootstrap-failure")
+	isBootstrapped, err := bootstrap.IsBootstrapped(ctx, s.restConfig)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "\nFailed to check whether Glasskube is bootstrapped: %v\n\n", err)
+	} else if isBootstrapped {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+	responder.SendPage(w, r, "pages/bootstrap", responder.ContextualizedTemplate(&bootstrapPageData{
+		Err: err,
+	}))
+}
+
+func (s *server) postBootstrap(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	client := bootstrap.NewBootstrapClient(s.restConfig)
+	if _, err := client.Bootstrap(ctx, bootstrap.DefaultOptions()); err != nil {
+		fmt.Fprintf(os.Stderr, "\nAn error occurred during bootstrap:\n%v\n", err)
+		responder.SendComponent(w, r, "components/bootstrap-failure")
+	} else {
+		responder.SendComponent(w, r, "components/bootstrap-success")
+	}
+}
+
+func (s *server) postKubeconfig(w http.ResponseWriter, r *http.Request) {
+	file, _, err := r.FormFile("kubeconfig")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	data, err := io.ReadAll(file)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	s.loadBytesConfig(data)
+	if err := s.checkKubeconfig(); err != nil {
+		fmt.Fprintf(os.Stderr, "The selected kubeconfig is invalid: %v\n", err)
+	} else {
+		fmt.Fprintln(os.Stderr, "The selected kubeconfig is valid!")
+	}
+
+	s.getKubeconfigPage(w, r)
+}
+
+type kubeconfigPageData struct {
+	types.TemplateContextHolder
+	ConfigErr                 error
+	KubeconfigDefaultLocation string
+	DefaultKubeconfigExists   bool
+}
+
+func (s *server) getKubeconfigPage(w http.ResponseWriter, r *http.Request) {
+	configErr := s.checkKubeconfig()
+	responder.SendPage(w, r, "pages/kubeconfig", responder.ContextualizedTemplate(&kubeconfigPageData{
+		ConfigErr:                 configErr,
+		KubeconfigDefaultLocation: clientcmd.RecommendedHomeFile,
+		DefaultKubeconfigExists:   defaultKubeconfigExists(),
+	}))
+}
+
+func (s *server) persistKubeconfig(w http.ResponseWriter, r *http.Request) {
+	if !defaultKubeconfigExists() {
+		if err := clientcmd.WriteToFile(*s.rawConfig, clientcmd.RecommendedHomeFile); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 		} else {
-			err := templates.Templates.BootstrapPageTmpl.ExecuteTemplate(w, "bootstrap-success", nil)
-			util.CheckTmplError(err, "bootstrap-success")
+			http.Redirect(w, r, "/", http.StatusFound)
 		}
 	} else {
-		isBootstrapped, err := bootstrap.IsBootstrapped(ctx, s.restConfig)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "\nFailed to check whether Glasskube is bootstrapped: %v\n\n", err)
-		} else if isBootstrapped {
-			http.Redirect(w, r, "/", http.StatusFound)
-			return
-		}
-		tplErr := templates.Templates.BootstrapPageTmpl.Execute(w, &map[string]any{
-			"CloudId":        telemetry.GetMachineId(),
-			"CurrentContext": s.rawConfig.CurrentContext,
-			"Err":            err,
-		})
-		util.CheckTmplError(tplErr, "bootstrap")
+		fmt.Fprintln(os.Stderr, "default kubeconfig already exists! nothing was saved")
+		http.Error(w, "", http.StatusBadRequest)
 	}
 }
 
-func (s *server) kubeconfigPage(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodPost {
-		file, _, err := r.FormFile("kubeconfig")
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		data, err := io.ReadAll(file)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		s.loadBytesConfig(data)
-		if err := s.checkKubeconfig(); err != nil {
-			fmt.Fprintf(os.Stderr, "The selected kubeconfig is invalid: %v\n", err)
-		} else {
-			fmt.Fprintln(os.Stderr, "The selected kubeconfig is valid!")
-		}
-	}
-
-	configErr := s.checkKubeconfig()
-	var currentContext string
-	if s.rawConfig != nil {
-		currentContext = s.rawConfig.CurrentContext
-	}
-	tplErr := templates.Templates.KubeconfigPageTmpl.Execute(w, map[string]any{
-		"CloudId":                   telemetry.GetMachineId(),
-		"CurrentContext":            currentContext,
-		"ConfigErr":                 configErr,
-		"KubeconfigDefaultLocation": clientcmd.RecommendedHomeFile,
-		"DefaultKubeconfigExists":   defaultKubeconfigExists(),
-	})
-	util.CheckTmplError(tplErr, "kubeconfig")
-}
-
+/*
 func (s *server) enrichPage(r *http.Request, data map[string]any, err error) map[string]any {
 	data["CloudId"] = telemetry.GetMachineId()
 	if pathParts := strings.Split(r.URL.Path, "/"); len(pathParts) >= 2 {
@@ -413,22 +437,7 @@ func (server *server) getGlasskubeVersions(ctx context.Context) (*semver.Version
 	return nil, nil, nil
 }
 
-func (s *server) persistKubeconfig(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodPost {
-		if !defaultKubeconfigExists() {
-			if err := clientcmd.WriteToFile(*s.rawConfig, clientcmd.RecommendedHomeFile); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-			} else {
-				http.Redirect(w, r, "/", http.StatusFound)
-			}
-		} else {
-			fmt.Fprintln(os.Stderr, "default kubeconfig already exists! nothing was saved")
-			http.Error(w, "", http.StatusBadRequest)
-		}
-	} else {
-		http.Error(w, "only POST is supported", http.StatusMethodNotAllowed)
-	}
-}
+
 
 */
 
@@ -622,7 +631,7 @@ func (s *server) requireReady(h http.HandlerFunc) http.Handler {
 	}
 }
 
-func (s *server) requireKubeconfig(h http.Handler) http.Handler {
+func (s *server) requireKubeconfig(h http.HandlerFunc) http.Handler {
 	return &handler.PreconditionHandler{
 		Precondition:  func(r *http.Request) error { return s.checkKubeconfig() },
 		Handler:       h,
