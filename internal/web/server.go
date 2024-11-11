@@ -179,7 +179,6 @@ func (s *server) Start(ctx context.Context) error {
 
 	// package detail
 	router.Handle("GET /clusterpackages/{manifestName}", s.requireReady(controllers.GetClusterPackageDetail))
-	// TODO maybe there is a more fancy way for these "duplicated" routes (also for configuration etc subpaths):
 	router.Handle("GET /packages/{manifestName}", s.requireReady(controllers.GetPackageDetail))
 	router.Handle("GET /packages/{manifestName}/{namespace}/{name}", s.requireReady(controllers.GetPackageDetail))
 
@@ -201,6 +200,10 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle("GET /packages/{manifestName}/configuration/{valueName}", s.requireReady(controllers.GetPackageConfigurationInput))
 	router.Handle("GET /packages/{manifestName}/{namespace}/{name}/configuration/{valueName}", s.requireReady(controllers.GetPackageConfigurationInput))
 
+	// datalists
+	router.Handle("GET /datalists/{valueName}/names", s.requireReady(controllers.GetNamesDatalist))
+	router.Handle("GET /datalists/{valueName}/keys", s.requireReady(controllers.GetKeysDatalist))
+
 	// open
 	router.Handle("POST /clusterpackages/{manifestName}/open", s.requireReady(controllers.PostOpenClusterPackage))
 	router.Handle("POST /packages/{manifestName}/{namespace}/{name}/open", s.requireReady(controllers.PostOpenPackage))
@@ -212,10 +215,10 @@ func (s *server) Start(ctx context.Context) error {
 	router.Handle("POST /packages/{manifestName}/{namespace}/{name}/uninstall", s.requireReady(controllers.PostUninstallPackage))
 
 	// suspend
-
-	// datalists
-	router.Handle("GET /datalists/{valueName}/names", s.requireReady(controllers.GetNamesDatalist))
-	router.Handle("GET /datalists/{valueName}/keys", s.requireReady(controllers.GetKeysDatalist))
+	router.Handle("POST /clusterpackages/{manifestName}/suspend", s.requireReady(controllers.PostSuspend))
+	router.Handle("POST /packages/{manifestName}/{namespace}/{name}/suspend", s.requireReady(controllers.PostSuspend))
+	router.Handle("POST /clusterpackages/{manifestName}/resume", s.requireReady(controllers.PostResume))
+	router.Handle("POST /packages/{manifestName}/{namespace}/{name}/resume", s.requireReady(controllers.PostResume))
 
 	router.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/clusterpackages", http.StatusFound)
@@ -230,17 +233,6 @@ func (s *server) Start(ctx context.Context) error {
 		router.HandleFunc("/kubeconfig", s.kubeconfigPage)
 		router.Handle("/bootstrap", s.requireKubeconfig(s.bootstrapPage))
 		router.Handle("/kubeconfig/persist", s.requireKubeconfig(s.persistKubeconfig))
-
-		// detail page endpoints
-		pkgBasePath := "/packages/{manifestName}"
-		installedPkgBasePath := pkgBasePath + "/{namespace}/{name}"
-		clpkgBasePath := "/clusterpackages/{pkgName}"
-
-		// suspend endpoints
-		router.Handle(clpkgBasePath+"/suspend", s.requireReady(s.handleSuspend))
-		router.Handle(clpkgBasePath+"/resume", s.requireReady(s.handleResume))
-		router.Handle(installedPkgBasePath+"/suspend", s.requireReady(s.handleSuspend))
-		router.Handle(installedPkgBasePath+"/resume", s.requireReady(s.handleResume))
 
 	*/
 
