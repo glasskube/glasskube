@@ -3,6 +3,7 @@ import DemoButton from '../buttons/DemoButton';
 import TalkToFoundersButton from '../buttons/TalkToFoundersButton';
 import styles from './styles.module.css';
 import clsx from 'clsx';
+import SignupForWaitlistButton from '@site/src/components/buttons/SignupForWaitlistButton';
 
 export default function BlogCTA(): JSX.Element {
   return (
@@ -11,13 +12,13 @@ export default function BlogCTA(): JSX.Element {
         <div className="row">
           <div className="col col--10 col--offset-1">
             <div className={styles.ctaContent}>
-              <h2>Issues with private infra and On-prem deployments?</h2>
+              <h2>Need help running Kubeflow in production?</h2>
               <p className="margin-bottom--lg">
-                Book a call with us to discuss your Kubernetes deployment and scaling needs.
+                Book a call with us to discuss your Kubernetes deployment and scaling needs for your Cloud-Native AI.
               </p>
               <div className={styles.buttonContainer}>
-                <DemoButton additionalClassNames="margin-right--md" />
-                <TalkToFoundersButton additionalClassNames="" />
+                <SignupForWaitlistButton additionalClassNames="margin-right--md" />
+                <DemoButton additionalClassNames="" />
               </div>
             </div>
           </div>
