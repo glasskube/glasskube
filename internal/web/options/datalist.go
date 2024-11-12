@@ -3,14 +3,15 @@ package options
 import (
 	"context"
 	"fmt"
+	"slices"
+
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/maputils"
 	"github.com/glasskube/glasskube/internal/web/components"
 	"github.com/glasskube/glasskube/pkg/manifest"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"slices"
 )
 
 func GetDatalistOptions(ctx context.Context, ref *v1alpha1.ValueReference, namespaceOptions []string, pkgsOptions []string) (

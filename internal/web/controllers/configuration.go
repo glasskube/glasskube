@@ -2,6 +2,11 @@ package controllers
 
 import (
 	"fmt"
+	"net/http"
+	"os"
+	"strconv"
+	"strings"
+
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/web/components"
@@ -10,10 +15,6 @@ import (
 	"github.com/glasskube/glasskube/internal/web/responder"
 	"github.com/glasskube/glasskube/pkg/describe"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"net/http"
-	"os"
-	"strconv"
-	"strings"
 )
 
 const (

@@ -3,12 +3,13 @@ package responder
 import (
 	"bytes"
 	"fmt"
-	"github.com/glasskube/glasskube/internal/web/components"
 	"html/template"
 	"io/fs"
 	"path"
 	"reflect"
 	"strings"
+
+	"github.com/glasskube/glasskube/internal/web/components"
 
 	depUtil "github.com/glasskube/glasskube/internal/dependency/util"
 

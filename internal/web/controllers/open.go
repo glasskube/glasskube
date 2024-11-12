@@ -2,12 +2,13 @@ package controllers
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/web/components/toast"
 	webopen "github.com/glasskube/glasskube/internal/web/open"
 	"github.com/glasskube/glasskube/internal/web/responder"
-	"net/http"
 )
 
 func PostOpenClusterPackage(w http.ResponseWriter, r *http.Request) {

@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/adapter/goclient"
 	"github.com/glasskube/glasskube/internal/clicontext"
@@ -12,7 +14,6 @@ import (
 	"github.com/glasskube/glasskube/internal/web/types"
 	"github.com/glasskube/glasskube/internal/web/util"
 	"github.com/glasskube/glasskube/pkg/uninstall"
-	"net/http"
 )
 
 type uninstallModalData struct {

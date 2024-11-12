@@ -3,6 +3,10 @@ package controllers
 import (
 	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
+	"os"
+
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/cliutils"
@@ -11,9 +15,6 @@ import (
 	"github.com/glasskube/glasskube/internal/web/responder"
 	"github.com/glasskube/glasskube/internal/web/types"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"net/http"
-	"net/url"
-	"os"
 )
 
 type settingsPageData struct {

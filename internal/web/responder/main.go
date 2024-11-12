@@ -3,17 +3,18 @@ package responder
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/fs"
+	"net/http"
+	"os"
+	"strings"
+
 	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/telemetry"
 	"github.com/glasskube/glasskube/internal/web/components/toast"
 	"github.com/glasskube/glasskube/internal/web/types"
 	webutil "github.com/glasskube/glasskube/internal/web/util"
-	"io"
-	"io/fs"
-	"net/http"
-	"os"
-	"strings"
 )
 
 type htmlResponder struct {

@@ -3,6 +3,9 @@ package open
 import (
 	"context"
 	"fmt"
+	"os"
+	"sync"
+
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/cliutils"
@@ -10,8 +13,6 @@ import (
 	"github.com/glasskube/glasskube/pkg/open"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/cache"
-	"os"
-	"sync"
 )
 
 type openState struct {

@@ -3,6 +3,9 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"os"
+
 	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	repotypes "github.com/glasskube/glasskube/internal/repo/types"
 	"github.com/glasskube/glasskube/internal/web/responder"
@@ -10,8 +13,6 @@ import (
 	"github.com/glasskube/glasskube/pkg/list"
 	"github.com/glasskube/glasskube/pkg/update"
 	"k8s.io/client-go/tools/cache"
-	"net/http"
-	"os"
 )
 
 type clusterPackagesTemplateData struct {

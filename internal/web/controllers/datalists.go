@@ -2,11 +2,12 @@ package controllers
 
 import (
 	"fmt"
+	"net/http"
+	"os"
+
 	"github.com/glasskube/glasskube/internal/web/components"
 	opts "github.com/glasskube/glasskube/internal/web/options"
 	"github.com/glasskube/glasskube/internal/web/responder"
-	"net/http"
-	"os"
 )
 
 // GetNamesDatalist is a GET endpoint returning an html datalist, containing options depending on the given valueName,

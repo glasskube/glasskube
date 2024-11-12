@@ -2,6 +2,9 @@ package controllers
 
 import (
 	"fmt"
+	"net/http"
+	"os"
+
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/clientutils"
@@ -16,8 +19,6 @@ import (
 	"github.com/glasskube/glasskube/pkg/client"
 	"github.com/glasskube/glasskube/pkg/describe"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"net/http"
-	"os"
 )
 
 func GetPackageDiscussion(w http.ResponseWriter, r *http.Request) {

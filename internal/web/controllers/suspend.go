@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/clientutils"
@@ -10,7 +12,6 @@ import (
 	"github.com/glasskube/glasskube/internal/web/responder"
 	webutil "github.com/glasskube/glasskube/internal/web/util"
 	"github.com/glasskube/glasskube/pkg/suspend"
-	"net/http"
 )
 
 func PostSuspend(w http.ResponseWriter, r *http.Request) {
