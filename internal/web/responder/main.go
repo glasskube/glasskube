@@ -57,7 +57,6 @@ func (res *htmlResponder) sendPage(w io.Writer, req *http.Request, templateName 
 	res.enrichTemplateData(r, req, templateName)
 
 	tmplErr := res.templates.baseTemplate.ExecuteTemplate(w, "base.html", r.templateData)
-	// TODO tmpl error should return status 500 ??
 	checkTmplError(tmplErr, templateName)
 }
 
