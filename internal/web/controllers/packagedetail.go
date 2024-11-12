@@ -3,6 +3,10 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"os"
+	"slices"
+
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	clientadapter "github.com/glasskube/glasskube/internal/adapter/goclient"
 	"github.com/glasskube/glasskube/internal/clicontext"
@@ -25,9 +29,6 @@ import (
 	"github.com/glasskube/glasskube/pkg/describe"
 	"go.uber.org/multierr"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"net/http"
-	"os"
-	"slices"
 )
 
 type packageDetailCommonData struct {
@@ -180,7 +181,7 @@ func renderPackageDetailPage(w http.ResponseWriter, r *http.Request, p *packageC
 			return
 		}
 		if url, err := repoClientset.ForRepoWithName(p.request.repositoryName).GetPackageManifestURL(p.request.manifestName, p.request.version); err != nil {
-			fmt.Fprintf(os.Stderr, "failed to get package manifest url of %v (%v) in repo %v: %w",
+			fmt.Fprintf(os.Stderr, "failed to get package manifest url of %v (%v) in repo %v: %v",
 				p.request.manifestName, p.request.version, p.request.repositoryName, err)
 		} else {
 			packageManifestUrl = url

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	listerv1 "k8s.io/client-go/listers/core/v1"
 	"log"
 	"math/rand"
 	"net/http"
@@ -12,6 +11,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	listerv1 "k8s.io/client-go/listers/core/v1"
 
 	"github.com/glasskube/glasskube/internal/config"
 

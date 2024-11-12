@@ -3,13 +3,14 @@ package util
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"os"
+
 	"github.com/Masterminds/semver/v3"
 	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/web/types"
-	"net/http"
-	"os"
 )
 
 func GetVersionDetails(req *http.Request) types.VersionDetails {

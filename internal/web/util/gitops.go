@@ -2,10 +2,11 @@ package util
 
 import (
 	"fmt"
-	"github.com/glasskube/glasskube/internal/clicontext"
-	"github.com/glasskube/glasskube/internal/telemetry/annotations"
 	"net/http"
 	"os"
+
+	"github.com/glasskube/glasskube/internal/clicontext"
+	"github.com/glasskube/glasskube/internal/telemetry/annotations"
 )
 
 func IsGitopsModeEnabled(req *http.Request) bool {
