@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/clicontext"
+	webcontext "github.com/glasskube/glasskube/internal/web/context"
+
+	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/maputils"
 	"github.com/glasskube/glasskube/internal/web/components"
 	"github.com/glasskube/glasskube/pkg/manifest"
@@ -53,7 +55,7 @@ func GetDatalistOptions(ctx context.Context, ref *v1alpha1.ValueReference, names
 }
 
 func GetNamespaceOptions(ctx context.Context) ([]string, error) {
-	coreListers := clicontext.CoreListersFromContext(ctx)
+	coreListers := webcontext.CoreListersFromContext(ctx)
 	if namespaces, err := (*coreListers.NamespaceLister).List(labels.NewSelector()); err != nil {
 		return nil, err
 	} else {
@@ -78,7 +80,7 @@ func GetPackagesOptions(ctx context.Context) ([]string, error) {
 
 func GetConfigMapNameOptions(ctx context.Context, namespace string) ([]string, error) {
 	if namespace != "" {
-		coreListers := clicontext.CoreListersFromContext(ctx)
+		coreListers := webcontext.CoreListersFromContext(ctx)
 		if configMaps, err := (*coreListers.ConfigMapLister).ConfigMaps(namespace).List(labels.NewSelector()); err != nil {
 			return nil, err
 		} else {
@@ -90,7 +92,7 @@ func GetConfigMapNameOptions(ctx context.Context, namespace string) ([]string, e
 
 func GetConfigMapKeyOptions(ctx context.Context, namespace string, name string) ([]string, error) {
 	if namespace != "" && name != "" {
-		coreLister := clicontext.CoreListersFromContext(ctx)
+		coreLister := webcontext.CoreListersFromContext(ctx)
 		if configMap, err := (*coreLister.ConfigMapLister).ConfigMaps(namespace).Get(name); err != nil {
 			return nil, err
 		} else {
@@ -102,7 +104,7 @@ func GetConfigMapKeyOptions(ctx context.Context, namespace string, name string) 
 
 func GetSecretNameOptions(ctx context.Context, namespace string) ([]string, error) {
 	if namespace != "" {
-		coreListers := clicontext.CoreListersFromContext(ctx)
+		coreListers := webcontext.CoreListersFromContext(ctx)
 		if secrets, err := (*coreListers.SecretLister).Secrets(namespace).List(labels.NewSelector()); err != nil {
 			return nil, err
 		} else {
@@ -114,7 +116,7 @@ func GetSecretNameOptions(ctx context.Context, namespace string) ([]string, erro
 
 func GetSecretKeyOptions(ctx context.Context, namespace string, name string) ([]string, error) {
 	if namespace != "" && name != "" {
-		coreListers := clicontext.CoreListersFromContext(ctx)
+		coreListers := webcontext.CoreListersFromContext(ctx)
 		if secret, err := (*coreListers.SecretLister).Secrets(namespace).Get(name); err != nil {
 			return nil, err
 		} else {

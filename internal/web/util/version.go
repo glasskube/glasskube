@@ -6,8 +6,9 @@ import (
 	"net/http"
 	"os"
 
+	webcontext "github.com/glasskube/glasskube/internal/web/context"
+
 	"github.com/Masterminds/semver/v3"
-	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/clientutils"
 	"github.com/glasskube/glasskube/internal/config"
 	"github.com/glasskube/glasskube/internal/web/types"
@@ -36,7 +37,7 @@ func GetVersionDetails(req *http.Request) types.VersionDetails {
 
 func getGlasskubeVersions(ctx context.Context) (*semver.Version, *semver.Version, error) {
 	if !config.IsDevBuild() {
-		coreListers := clicontext.CoreListersFromContext(ctx)
+		coreListers := webcontext.CoreListersFromContext(ctx)
 		if operatorVersion, err := clientutils.GetPackageOperatorVersionForLister(coreListers.DeploymentLister); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to check package operator version: %v\n", err)
 			return nil, nil, err

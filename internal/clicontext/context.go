@@ -6,23 +6,20 @@ import (
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	"github.com/glasskube/glasskube/pkg/client"
 	"k8s.io/client-go/kubernetes"
-	appsv1 "k8s.io/client-go/listers/apps/v1"
-	v1 "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 type (
-	contextKey int
+	ContextKey int
 )
 
 const (
-	pkgClientContextKey contextKey = iota
+	pkgClientContextKey ContextKey = iota
 	k8sClientContextKey
 	configContextKey
 	rawConfigContextKey
 	repoClientsetContextKey
-	coreListersContextKey
 )
 
 func SetupContext(ctx context.Context, config *rest.Config, rawConfig *api.Config) (context.Context, error) {
@@ -51,10 +48,6 @@ func SetupContextWithClient(
 
 func ContextWithRepositoryClientset(parent context.Context, clientset repoclient.RepoClientset) context.Context {
 	return context.WithValue(parent, repoClientsetContextKey, clientset)
-}
-
-func ContextWithCoreListers(parent context.Context, coreListers *CoreListers) context.Context {
-	return context.WithValue(parent, coreListersContextKey, coreListers)
 }
 
 func PackageClientFromContext(ctx context.Context) client.PackageV1Alpha1Client {
@@ -105,22 +98,4 @@ func RepoClientsetFromContext(ctx context.Context) repoclient.RepoClientset {
 		}
 	}
 	return nil
-}
-
-// TODO too web specific and should maybe be an web-extension ?
-func CoreListersFromContext(ctx context.Context) *CoreListers {
-	value := ctx.Value(coreListersContextKey)
-	if value != nil {
-		if coreListers, ok := value.(*CoreListers); ok {
-			return coreListers
-		}
-	}
-	return nil
-}
-
-type CoreListers struct {
-	NamespaceLister  *v1.NamespaceLister
-	ConfigMapLister  *v1.ConfigMapLister
-	SecretLister     *v1.SecretLister
-	DeploymentLister *appsv1.DeploymentLister
 }

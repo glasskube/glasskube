@@ -16,7 +16,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/glasskube/glasskube/internal/clicontext"
 	"github.com/glasskube/glasskube/internal/web/handlers"
 	webopen "github.com/glasskube/glasskube/internal/web/open"
 	"github.com/glasskube/glasskube/internal/web/responder"
@@ -90,7 +89,7 @@ type server struct {
 	nonCachedClient         client.PackageV1Alpha1Client
 	repoClientset           repoclient.RepoClientset
 	k8sClient               *kubernetes.Clientset
-	coreListers             *clicontext.CoreListers
+	coreListers             *types.CoreListers
 	broadcaster             *sse.Broadcaster
 	isBootstrapped          bool
 	httpServer              *http.Server
@@ -114,7 +113,7 @@ func (s *server) K8sClient() *kubernetes.Clientset {
 	return s.k8sClient
 }
 
-func (s *server) CoreListers() *clicontext.CoreListers {
+func (s *server) CoreListers() *types.CoreListers {
 	return s.coreListers
 }
 
@@ -442,7 +441,7 @@ func (server *server) initKubeConfigAndStartListers() ServerConfigError {
 	configMapLister := factory.Core().V1().ConfigMaps().Lister()
 	secretLister := factory.Core().V1().Secrets().Lister()
 	deploymentLister := factory.Apps().V1().Deployments().Lister()
-	server.coreListers = &clicontext.CoreListers{
+	server.coreListers = &types.CoreListers{
 		NamespaceLister:  &namespaceLister,
 		ConfigMapLister:  &configMapLister,
 		SecretLister:     &secretLister,

@@ -3,8 +3,11 @@ package middleware
 import (
 	"net/http"
 
+	"github.com/glasskube/glasskube/internal/web/types"
+
 	"github.com/glasskube/glasskube/internal/clicontext"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
+	webcontext "github.com/glasskube/glasskube/internal/web/context"
 	"github.com/glasskube/glasskube/pkg/client"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -17,7 +20,7 @@ type ContextDataSupplier interface {
 	Client() client.PackageV1Alpha1Client
 	K8sClient() *kubernetes.Clientset
 	RepoClient() repoclient.RepoClientset
-	CoreListers() *clicontext.CoreListers
+	CoreListers() *types.CoreListers
 }
 
 type ContextEnrichingHandler struct {
@@ -32,6 +35,6 @@ func (enricher *ContextEnrichingHandler) ServeHTTP(w http.ResponseWriter, r *htt
 		enricher.Source.Client(),
 		enricher.Source.K8sClient())
 	ctx = clicontext.ContextWithRepositoryClientset(ctx, enricher.Source.RepoClient())
-	ctx = clicontext.ContextWithCoreListers(ctx, enricher.Source.CoreListers())
+	ctx = webcontext.ContextWithCoreListers(ctx, enricher.Source.CoreListers())
 	enricher.Handler.ServeHTTP(w, r.WithContext(ctx))
 }
