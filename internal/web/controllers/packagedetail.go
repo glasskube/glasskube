@@ -132,76 +132,36 @@ func GetClusterPackageDetail(w http.ResponseWriter, r *http.Request) {
 
 func renderPackageDetailPage(w http.ResponseWriter, r *http.Request, p *packageContext) {
 	ctx := r.Context()
-	migrateManifest := false
-	headerOnly := p.request.component == "header"
 
-	if !p.pkg.IsNil() {
-		// for installed packages, the installed repo + version is the fallback, if they are not requested explicitly
-		if p.request.repositoryName == "" {
-			p.request.repositoryName = p.pkg.GetSpec().PackageInfo.RepositoryName
-		}
-		if p.request.version == "" {
-			p.request.version = p.pkg.GetSpec().PackageInfo.Version
-		}
-		migrateManifest =
-			p.request.repositoryName != p.pkg.GetSpec().PackageInfo.RepositoryName ||
-				p.request.version != p.pkg.GetSpec().PackageInfo.Version
-	}
-
-	var repoErr error
-	var repos []v1alpha1.PackageRepository
-	var usedRepo *v1alpha1.PackageRepository
-	if p.request.repositoryName, repos, usedRepo, repoErr = resolveRepos(
-		ctx, p.request.manifestName, p.request.repositoryName); repoerror.IsComplete(repoErr) {
-		responder.SendToast(w, toast.WithErr(repoErr))
+	pkgDetailCommonData, repos, idx, repoErr := resolvePkgDetailCommon(w, ctx, p)
+	if pkgDetailCommonData == nil {
+		// something happened, but already handled by resolvePkgDetailCommon func
 		return
 	}
 
-	var idx repo.PackageIndex
-	var latestVersion string
-	var err error
-	if idx, latestVersion, p.request.version, err = resolveVersions(
-		ctx, p.request.repositoryName, p.request.manifestName, p.request.version); err != nil {
-		responder.SendToast(w,
-			toast.WithErr(fmt.Errorf("failed to fetch package index of %v in repo %v: %w",
-				p.request.manifestName, p.request.repositoryName, multierr.Append(repoErr, err))))
-		return
+	advancedOptions, err := cookie.GetAdvancedOptionsFromCookie(r)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to get advanced options from cookie: %v\n", err)
 	}
 
-	packageManifestUrl := ""
-	if p.manifest == nil || migrateManifest {
-		p.manifest = &v1alpha1.PackageManifest{}
-		repoClientset := clicontext.RepoClientsetFromContext(ctx)
-		// TODO we could use repoClientset.ForRepo(usedRepo) here instead ?? probably also above in resolveVersions
-		if err := repoClientset.ForRepoWithName(p.request.repositoryName).
-			FetchPackageManifest(p.request.manifestName, p.request.version, p.manifest); err != nil {
-			responder.SendToast(w,
-				toast.WithErr(fmt.Errorf("failed to fetch manifest of %v (%v) in repo %v: %w",
-					p.request.manifestName, p.request.version, p.request.repositoryName, err)))
-			return
-		}
-		if url, err := repoClientset.ForRepoWithName(p.request.repositoryName).GetPackageManifestURL(p.request.manifestName, p.request.version); err != nil {
-			fmt.Fprintf(os.Stderr, "failed to get package manifest url of %v (%v) in repo %v: %v",
-				p.request.manifestName, p.request.version, p.request.repositoryName, err)
-		} else {
-			packageManifestUrl = url
-		}
-	}
-
-	validationResult := &dependency.ValidationResult{}
-	var validationErr error
-	var lostValueDefinitions []string
-	valueErrors := make(map[string]error)
-	datalistOptions := make(map[string]*components.PkgConfigInputDatalistOptions)
-
-	if !headerOnly {
+	if p.request.component == "header" {
+		responder.SendComponent(w, r, "components/pkg-detail-header",
+			responder.ContextualizedTemplate(&packageDetailTemplateData{
+				packageDetailCommonData: *pkgDetailCommonData,
+			}))
+	} else {
 		pkgClient := clicontext.PackageClientFromContext(ctx)
 		repoClientset := clicontext.RepoClientsetFromContext(ctx)
 		dependencyMgr := dependency.NewDependencyManager(
 			clientadapter.NewPackageClientAdapter(pkgClient),
 			repoClientset,
 		)
-		// TODO properly componentize header away and use view model objects
+		validationResult := &dependency.ValidationResult{}
+		var validationErr error
+		var lostValueDefinitions []string
+		valueErrors := make(map[string]error)
+		datalistOptions := make(map[string]*components.PkgConfigInputDatalistOptions)
+
 		if p.pkg.IsNil() {
 			if p.manifest.Scope.IsCluster() {
 				validationResult, validationErr =
@@ -212,7 +172,7 @@ func renderPackageDetailPage(w http.ResponseWriter, r *http.Request, p *packageC
 				validationResult, validationErr =
 					dependencyMgr.Validate(r.Context(), p.request.manifestName, p.manifest.DefaultNamespace, p.manifest, p.request.version)
 			}
-		} else if migrateManifest {
+		} else if shouldMigrateManifest(p) {
 			validationResult, validationErr =
 				dependencyMgr.Validate(r.Context(), p.pkg.GetName(), p.pkg.GetNamespace(), p.manifest, p.request.version)
 		}
@@ -250,47 +210,99 @@ func renderPackageDetailPage(w http.ResponseWriter, r *http.Request, p *packageC
 			}
 		}
 		datalistOptions[""] = &components.PkgConfigInputDatalistOptions{Namespaces: nsOptions}
+
+		templateData := &packageDetailTemplateData{
+			packageDetailCommonData: *pkgDetailCommonData,
+			ValidationResult:        validationResult,
+			ShowConflicts:           validationResult.Status == dependency.ValidationResultStatusConflict,
+			SelectedVersion:         p.request.version,
+			PackageIndex:            &idx,
+			Repositories:            repos,
+			RepositoryName:          p.request.repositoryName,
+			ShowConfiguration:       (!p.pkg.IsNil() && len(p.manifest.ValueDefinitions) > 0 && p.pkg.GetDeletionTimestamp().IsZero()) || p.pkg.IsNil(),
+			ValueErrors:             valueErrors,
+			DatalistOptions:         datalistOptions,
+			AdvancedOptions:         advancedOptions,
+			LostValueDefinitions:    lostValueDefinitions,
+		}
+		responder.SendPage(w, r, "pages/package", responder.ContextualizedTemplate(templateData), responder.WithPartialErr(repoErr))
+	}
+}
+
+func resolvePkgDetailCommon(w http.ResponseWriter, ctx context.Context, p *packageContext) (*packageDetailCommonData, []v1alpha1.PackageRepository, repo.PackageIndex, error) {
+	if !p.pkg.IsNil() {
+		// for installed packages, the installed repo + version is the fallback, if they are not requested explicitly
+		if p.request.repositoryName == "" {
+			p.request.repositoryName = p.pkg.GetSpec().PackageInfo.RepositoryName
+		}
+		if p.request.version == "" {
+			p.request.version = p.pkg.GetSpec().PackageInfo.Version
+		}
 	}
 
-	advancedOptions, err := cookie.GetAdvancedOptionsFromCookie(r)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to get advanced options from cookie: %v\n", err)
+	var repoErr error
+	var repos []v1alpha1.PackageRepository
+	var usedRepo *v1alpha1.PackageRepository
+	if p.request.repositoryName, repos, usedRepo, repoErr = resolveRepos(
+		ctx, p.request.manifestName, p.request.repositoryName); repoerror.IsComplete(repoErr) {
+		responder.SendToast(w, toast.WithErr(repoErr))
+		return nil, nil, repo.PackageIndex{}, nil
 	}
 
-	autoUpdaterInstalled, err := clientutils.IsAutoUpdaterInstalled(r.Context())
+	var idx repo.PackageIndex
+	var latestVersion string
+	var err error
+	if idx, latestVersion, p.request.version, err = resolveVersions(
+		ctx, p.request.repositoryName, p.request.manifestName, p.request.version); err != nil {
+		responder.SendToast(w,
+			toast.WithErr(fmt.Errorf("failed to fetch package index of %v in repo %v: %w",
+				p.request.manifestName, p.request.repositoryName, multierr.Append(repoErr, err))))
+		return nil, nil, repo.PackageIndex{}, nil
+	}
+
+	packageManifestUrl := ""
+	repoClientset := clicontext.RepoClientsetFromContext(ctx)
+	repoClient := repoClientset.ForRepo(*usedRepo)
+	if p.manifest == nil || shouldMigrateManifest(p) {
+		p.manifest = &v1alpha1.PackageManifest{}
+		if err := repoClient.FetchPackageManifest(p.request.manifestName, p.request.version, p.manifest); err != nil {
+			responder.SendToast(w,
+				toast.WithErr(fmt.Errorf("failed to fetch manifest of %v (%v) in repo %v: %w",
+					p.request.manifestName, p.request.version, p.request.repositoryName, err)))
+			return nil, nil, repo.PackageIndex{}, nil
+		}
+	}
+	if url, err := repoClient.GetPackageManifestURL(p.request.manifestName, p.request.version); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to get package manifest url of %v (%v) in repo %v: %v",
+			p.request.manifestName, p.request.version, p.request.repositoryName, err)
+	} else {
+		packageManifestUrl = url
+	}
+
+	autoUpdaterInstalled, err := clientutils.IsAutoUpdaterInstalled(ctx)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to check whether auto updater is installed: %v\n", err)
 	}
-	templateData := &packageDetailTemplateData{
-		packageDetailCommonData: packageDetailCommonData{
-			Package:              p.pkg,
-			Status:               client.GetStatusOrPending(p.pkg),
-			Manifest:             p.manifest,
-			PackageManifestUrl:   packageManifestUrl,
-			LatestVersion:        latestVersion,
-			UpdateAvailable:      isUpdateAvailableForPkg(r.Context(), p.pkg),
-			ShowDiscussionLink:   usedRepo.IsGlasskubeRepo(),
-			PackageHref:          webutil.GetPackageHrefWithFallback(p.pkg, p.manifest),
-			AutoUpdaterInstalled: autoUpdaterInstalled,
-		},
-		ValidationResult:     validationResult,
-		ShowConflicts:        validationResult.Status == dependency.ValidationResultStatusConflict,
-		SelectedVersion:      p.request.version,
-		PackageIndex:         &idx,
-		Repositories:         repos,
-		RepositoryName:       p.request.repositoryName,
-		ShowConfiguration:    (!p.pkg.IsNil() && len(p.manifest.ValueDefinitions) > 0 && p.pkg.GetDeletionTimestamp().IsZero()) || p.pkg.IsNil(),
-		ValueErrors:          valueErrors,
-		DatalistOptions:      datalistOptions,
-		AdvancedOptions:      advancedOptions,
-		LostValueDefinitions: lostValueDefinitions,
-	}
 
-	if headerOnly {
-		responder.SendComponent(w, r, "components/pkg-detail-header", responder.ContextualizedTemplate(templateData))
-	} else {
-		responder.SendPage(w, r, "pages/package", responder.ContextualizedTemplate(templateData), responder.WithPartialErr(repoErr))
+	return &packageDetailCommonData{
+		Package:              p.pkg,
+		Status:               client.GetStatusOrPending(p.pkg),
+		Manifest:             p.manifest,
+		PackageManifestUrl:   packageManifestUrl,
+		LatestVersion:        latestVersion,
+		UpdateAvailable:      isUpdateAvailableForPkg(ctx, p.pkg),
+		ShowDiscussionLink:   usedRepo.IsGlasskubeRepo(),
+		PackageHref:          webutil.GetPackageHrefWithFallback(p.pkg, p.manifest),
+		AutoUpdaterInstalled: autoUpdaterInstalled,
+	}, repos, idx, repoErr
+}
+
+func shouldMigrateManifest(p *packageContext) bool {
+	if !p.pkg.IsNil() {
+		return p.request.repositoryName != p.pkg.GetSpec().PackageInfo.RepositoryName ||
+			p.request.version != p.pkg.GetSpec().PackageInfo.Version
 	}
+	return false
 }
 
 func resolveVersions(ctx context.Context, repositoryName string, pkgName string, selectedVersion string) (repo.PackageIndex, string, string, error) {
