@@ -17,7 +17,7 @@ import (
 	"time"
 
 	"github.com/glasskube/glasskube/internal/clicontext"
-	"github.com/glasskube/glasskube/internal/web/controllers"
+	"github.com/glasskube/glasskube/internal/web/handlers"
 	webopen "github.com/glasskube/glasskube/internal/web/open"
 	"github.com/glasskube/glasskube/internal/web/responder"
 	"github.com/glasskube/glasskube/internal/web/types"
@@ -34,7 +34,7 @@ import (
 	"github.com/glasskube/glasskube/internal/config"
 	repoclient "github.com/glasskube/glasskube/internal/repo/client"
 	"github.com/glasskube/glasskube/internal/telemetry"
-	"github.com/glasskube/glasskube/internal/web/handler"
+	"github.com/glasskube/glasskube/internal/web/middleware"
 	"github.com/glasskube/glasskube/pkg/bootstrap"
 	"github.com/glasskube/glasskube/pkg/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -159,57 +159,57 @@ func (s *server) Start(ctx context.Context) error {
 	router.HandleFunc("GET /events", s.broadcaster.Handler) // TODO ??
 
 	// settings
-	router.Handle("GET /settings", s.requireReady(controllers.GetSettings))
-	router.Handle("POST /settings", s.requireReady(controllers.PostSettings))
-	router.Handle("GET /settings/repository/{repoName}", s.requireReady(controllers.GetRepository))
-	router.Handle("POST /settings/repository/{repoName}", s.requireReady(controllers.PostRepository))
+	router.Handle("GET /settings", s.requireReady(handlers.GetSettings))
+	router.Handle("POST /settings", s.requireReady(handlers.PostSettings))
+	router.Handle("GET /settings/repository/{repoName}", s.requireReady(handlers.GetRepository))
+	router.Handle("POST /settings/repository/{repoName}", s.requireReady(handlers.PostRepository))
 
 	// overview
-	router.Handle("GET /clusterpackages", s.requireReady(controllers.GetClusterPackages))
-	router.Handle("GET /packages", s.requireReady(controllers.GetPackages))
+	router.Handle("GET /clusterpackages", s.requireReady(handlers.GetClusterPackages))
+	router.Handle("GET /packages", s.requireReady(handlers.GetPackages))
 
 	// package detail
-	router.Handle("GET /clusterpackages/{manifestName}", s.requireReady(controllers.GetClusterPackageDetail))
-	router.Handle("GET /packages/{manifestName}", s.requireReady(controllers.GetPackageDetail))
-	router.Handle("GET /packages/{manifestName}/{namespace}/{name}", s.requireReady(controllers.GetPackageDetail))
+	router.Handle("GET /clusterpackages/{manifestName}", s.requireReady(handlers.GetClusterPackageDetail))
+	router.Handle("GET /packages/{manifestName}", s.requireReady(handlers.GetPackageDetail))
+	router.Handle("GET /packages/{manifestName}/{namespace}/{name}", s.requireReady(handlers.GetPackageDetail))
 
 	// installation/update + configuration
-	router.Handle("POST /clusterpackages/{manifestName}", s.requireReady(controllers.PostClusterPackageDetail))
-	router.Handle("POST /packages/{manifestName}/{namespace}/{name}", s.requireReady(controllers.PostPackageDetail))
+	router.Handle("POST /clusterpackages/{manifestName}", s.requireReady(handlers.PostClusterPackageDetail))
+	router.Handle("POST /packages/{manifestName}/{namespace}/{name}", s.requireReady(handlers.PostPackageDetail))
 
 	// discussion
-	router.Handle("POST /giscus", s.requireReady(controllers.PostGiscus))
-	router.Handle("GET /clusterpackages/{manifestName}/discussion", s.requireReady(controllers.GetClusterPackageDiscussion))
-	router.Handle("GET /packages/{manifestName}/discussion", s.requireReady(controllers.GetPackageDiscussion))
-	router.Handle("GET /packages/{manifestName}/{namespace}/{name}/discussion", s.requireReady(controllers.GetPackageDiscussion))
-	router.Handle("GET /clusterpackages/{manifestName}/discussion/badge", s.requireReady(controllers.GetDiscussionBadge))
-	router.Handle("GET /packages/{manifestName}/discussion/badge", s.requireReady(controllers.GetDiscussionBadge))
-	router.Handle("GET /packages/{manifestName}/{namespace}/{name}/discussion/badge", s.requireReady(controllers.GetDiscussionBadge))
+	router.Handle("POST /giscus", s.requireReady(handlers.PostGiscus))
+	router.Handle("GET /clusterpackages/{manifestName}/discussion", s.requireReady(handlers.GetClusterPackageDiscussion))
+	router.Handle("GET /packages/{manifestName}/discussion", s.requireReady(handlers.GetPackageDiscussion))
+	router.Handle("GET /packages/{manifestName}/{namespace}/{name}/discussion", s.requireReady(handlers.GetPackageDiscussion))
+	router.Handle("GET /clusterpackages/{manifestName}/discussion/badge", s.requireReady(handlers.GetDiscussionBadge))
+	router.Handle("GET /packages/{manifestName}/discussion/badge", s.requireReady(handlers.GetDiscussionBadge))
+	router.Handle("GET /packages/{manifestName}/{namespace}/{name}/discussion/badge", s.requireReady(handlers.GetDiscussionBadge))
 
 	// configuration
-	router.Handle("GET /clusterpackages/{manifestName}/configuration/{valueName}", s.requireReady(controllers.GetClusterPackageConfigurationInput))
-	router.Handle("GET /packages/{manifestName}/configuration/{valueName}", s.requireReady(controllers.GetPackageConfigurationInput))
-	router.Handle("GET /packages/{manifestName}/{namespace}/{name}/configuration/{valueName}", s.requireReady(controllers.GetPackageConfigurationInput))
+	router.Handle("GET /clusterpackages/{manifestName}/configuration/{valueName}", s.requireReady(handlers.GetClusterPackageConfigurationInput))
+	router.Handle("GET /packages/{manifestName}/configuration/{valueName}", s.requireReady(handlers.GetPackageConfigurationInput))
+	router.Handle("GET /packages/{manifestName}/{namespace}/{name}/configuration/{valueName}", s.requireReady(handlers.GetPackageConfigurationInput))
 
 	// datalists
-	router.Handle("GET /datalists/{valueName}/names", s.requireReady(controllers.GetNamesDatalist))
-	router.Handle("GET /datalists/{valueName}/keys", s.requireReady(controllers.GetKeysDatalist))
+	router.Handle("GET /datalists/{valueName}/names", s.requireReady(handlers.GetNamesDatalist))
+	router.Handle("GET /datalists/{valueName}/keys", s.requireReady(handlers.GetKeysDatalist))
 
 	// open
-	router.Handle("POST /clusterpackages/{manifestName}/open", s.requireReady(controllers.PostOpenClusterPackage))
-	router.Handle("POST /packages/{manifestName}/{namespace}/{name}/open", s.requireReady(controllers.PostOpenPackage))
+	router.Handle("POST /clusterpackages/{manifestName}/open", s.requireReady(handlers.PostOpenClusterPackage))
+	router.Handle("POST /packages/{manifestName}/{namespace}/{name}/open", s.requireReady(handlers.PostOpenPackage))
 
 	// uninstall
-	router.Handle("GET /clusterpackages/{manifestName}/uninstall", s.requireReady(controllers.GetUninstallClusterPackage))
-	router.Handle("POST /clusterpackages/{manifestName}/uninstall", s.requireReady(controllers.PostUninstallClusterPackage))
-	router.Handle("GET /packages/{manifestName}/{namespace}/{name}/uninstall", s.requireReady(controllers.GetUninstallPackage))
-	router.Handle("POST /packages/{manifestName}/{namespace}/{name}/uninstall", s.requireReady(controllers.PostUninstallPackage))
+	router.Handle("GET /clusterpackages/{manifestName}/uninstall", s.requireReady(handlers.GetUninstallClusterPackage))
+	router.Handle("POST /clusterpackages/{manifestName}/uninstall", s.requireReady(handlers.PostUninstallClusterPackage))
+	router.Handle("GET /packages/{manifestName}/{namespace}/{name}/uninstall", s.requireReady(handlers.GetUninstallPackage))
+	router.Handle("POST /packages/{manifestName}/{namespace}/{name}/uninstall", s.requireReady(handlers.PostUninstallPackage))
 
 	// suspend
-	router.Handle("POST /clusterpackages/{manifestName}/suspend", s.requireReady(controllers.PostSuspend))
-	router.Handle("POST /packages/{manifestName}/{namespace}/{name}/suspend", s.requireReady(controllers.PostSuspend))
-	router.Handle("POST /clusterpackages/{manifestName}/resume", s.requireReady(controllers.PostResume))
-	router.Handle("POST /packages/{manifestName}/{namespace}/{name}/resume", s.requireReady(controllers.PostResume))
+	router.Handle("POST /clusterpackages/{manifestName}/suspend", s.requireReady(handlers.PostSuspend))
+	router.Handle("POST /packages/{manifestName}/{namespace}/{name}/suspend", s.requireReady(handlers.PostSuspend))
+	router.Handle("POST /clusterpackages/{manifestName}/resume", s.requireReady(handlers.PostResume))
+	router.Handle("POST /packages/{manifestName}/{namespace}/{name}/resume", s.requireReady(handlers.PostResume))
 
 	// setup
 	router.HandleFunc("GET /support", s.supportPage)
@@ -559,11 +559,11 @@ func (s *server) handleVerificationError(err error) {
 }
 
 func (s *server) enrichContext(h http.Handler) http.Handler {
-	return &handler.ContextEnrichingHandler{Source: s, Handler: h}
+	return &middleware.ContextEnrichingHandler{Source: s, Handler: h}
 }
 
 func (s *server) requireReady(h http.HandlerFunc) http.Handler {
-	return &handler.PreconditionHandler{
+	return &middleware.PreconditionHandler{
 		Precondition: func(r *http.Request) error {
 			err := s.ensureBootstrapped(r.Context())
 			if err != nil {
@@ -577,7 +577,7 @@ func (s *server) requireReady(h http.HandlerFunc) http.Handler {
 }
 
 func (s *server) requireKubeconfig(h http.HandlerFunc) http.Handler {
-	return &handler.PreconditionHandler{
+	return &middleware.PreconditionHandler{
 		Precondition:  func(r *http.Request) error { return s.checkKubeconfig() },
 		Handler:       h,
 		FailedHandler: handleConfigError,
