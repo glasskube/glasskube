@@ -12,6 +12,7 @@ image: https://github.com/user-attachments/assets/3a0efa8f-98fb-4cc7-a407-594aa3
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import BlogCTA from '@site/src/components/BlogCTA/blogCTA';
 
 ![Kubeflow setup thumbnail](https://github.com/user-attachments/assets/3a0efa8f-98fb-4cc7-a407-594aa3878551)
 
@@ -132,6 +133,8 @@ gcloud container clusters get-credentials "<cluster name>" \
 ```
 
 Verify that the configuration works, by running any command such as `kubectl get nodes`.
+
+<BlogCTA />
 
 ## Kubeflow Installation
 
@@ -462,3 +465,6 @@ We exposed the deployment using a GCP load balancer and secured it using Microso
 While the instance we created might be opinionated in some respects, I believe that it should serve as a reasonable foundation on which you can build your own variant.
 Check out our [dedicated Kustomize tutorial](../patching-with-kustomize) if you want to learn more about how you can further customize your Kubeflow deployment.
 If you want to learn more about Kubeflow, why not check out one of the official user-guides: https://www.kubeflow.org/docs/started/introduction/
+
+
+<BlogCTA />
