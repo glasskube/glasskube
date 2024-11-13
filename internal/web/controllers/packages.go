@@ -42,10 +42,7 @@ func GetClusterPackages(w http.ResponseWriter, r *http.Request) {
 		clpkgUpdateAvailable[pkg.Name] = isUpdateAvailableForPkg(ctx, pkg.ClusterPackage)
 	}
 
-	overallUpdatesAvailable := false
-	if len(installedClpkgs) > 0 {
-		overallUpdatesAvailable = isUpdateAvailable(ctx, installedClpkgs)
-	}
+	overallUpdatesAvailable := isUpdateAvailable(ctx, installedClpkgs)
 
 	responder.SendPage(w, r, "pages/clusterpackages",
 		responder.ContextualizedTemplate(&clusterPackagesTemplateData{

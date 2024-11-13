@@ -136,7 +136,7 @@ func GetPackageValuesOptions(ctx context.Context, pkgName string) ([]string, err
 }
 
 func sortedNames[T v1.Object](objects []T) []string {
-	names := make([]string, 0)
+	names := make([]string, 0, len(objects))
 	for _, obj := range objects {
 		names = append(names, obj.GetName())
 	}
