@@ -50,11 +50,6 @@
   </div>
 {{ end }}
 
-{{ define "pkg-detail-update" }}
-  {{ if .UpdateAvailable }}
-  {{ end }}
-{{ end }}
-
 {{ define "pkg-detail-btns" }}
   <span id="{{ .ContainerId }}" hx-swap="none">
     {{ if ne .Status nil }}
@@ -77,14 +72,12 @@
           <i class="bi bi-box-arrow-up-right"></i>
           <span>Open</span>
         </button>
-        {{ template "pkg-detail-update" . }}
         {{ template "pkg-detail-actions" . }}
       {{ else }}
         <a class="btn btn-success btn-sm pe-none">
           <i class="bi bi-check-lg"></i>
           <span>Installed</span>
         </a>
-        {{ template "pkg-detail-update" . }}
         {{ template "pkg-detail-actions" . }}
       {{ end }}
     {{ end }}
