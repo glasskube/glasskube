@@ -14,7 +14,7 @@ import (
 
 var client *GiscusClient
 
-type giscusConfig struct {
+type GiscusConfig struct {
 	Repo       string
 	RepoId     string
 	Category   string
@@ -22,7 +22,7 @@ type giscusConfig struct {
 }
 
 type GiscusClient struct {
-	Config      *giscusConfig
+	Config      *GiscusConfig
 	cache       sync.Map
 	maxCacheAge time.Duration
 }
@@ -46,7 +46,7 @@ type giscusResponse struct {
 func Client() *GiscusClient {
 	if client == nil {
 		client = &GiscusClient{
-			Config: &giscusConfig{
+			Config: &GiscusConfig{
 				Repo:       "glasskube/glasskube",
 				RepoId:     "R_kgDOLDumDw",
 				Category:   "Packages",
