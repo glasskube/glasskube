@@ -1,7 +1,9 @@
 package cli
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -10,6 +12,11 @@ import (
 	"github.com/glasskube/glasskube/internal/cliutils"
 	"github.com/glasskube/glasskube/internal/manifestvalues"
 	"github.com/glasskube/glasskube/internal/maputils"
+	"github.com/glasskube/glasskube/internal/util"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/renderer"
+	goldmarkutil "github.com/yuin/goldmark/util"
 )
 
 var (
@@ -29,10 +36,30 @@ var (
 	red   = color.RedString
 )
 
+type ConfigureOptions struct {
+	oldValues map[string]v1alpha1.ValueConfiguration
+	UseDefaultValuesOption
+}
+
+type ConfigureOption func(*ConfigureOptions)
+
+func WithOldValues(oldValues map[string]v1alpha1.ValueConfiguration) ConfigureOption {
+	return func(co *ConfigureOptions) { co.oldValues = oldValues }
+}
+
+func WithUseDefaults(opts UseDefaultValuesOption) ConfigureOption {
+	return func(co *ConfigureOptions) { co.UseDefaultValuesOption = opts }
+}
+
 func Configure(
 	manifest v1alpha1.PackageManifest,
-	oldValues map[string]v1alpha1.ValueConfiguration,
+	opts ...ConfigureOption,
 ) (map[string]v1alpha1.ValueConfiguration, error) {
+	var options ConfigureOptions
+	for _, fn := range opts {
+		fn(&options)
+	}
+
 	newValues := make(map[string]v1alpha1.ValueConfiguration, len(manifest.ValueDefinitions))
 	if len(manifest.ValueDefinitions) > 0 {
 		fmt.Fprintf(os.Stderr, "\n%v has %v values for configuration.\n\n",
@@ -48,13 +75,20 @@ func Configure(
 	for i, name := range maputils.KeysSorted(manifest.ValueDefinitions) {
 		def := manifest.ValueDefinitions[name]
 		var oldValuePtr *v1alpha1.ValueConfiguration
-		if oldValue, ok := oldValues[name]; ok {
+		if oldValue, ok := options.oldValues[name]; ok {
 			oldValuePtr = &oldValue
 		}
-		if newValue, err := ConfigureSingle(name, def, oldValuePtr); err != nil {
-			return nil, err
-		} else if newValue != nil {
-			newValues[name] = *newValue
+		if options.ShouldUseDefault(name, def) {
+			fmt.Fprintf(os.Stderr, "Using default value for %v: %v\n", name, def.DefaultValue)
+			newValues[name] = v1alpha1.ValueConfiguration{
+				InlineValueConfiguration: v1alpha1.InlineValueConfiguration{Value: util.Pointer(def.DefaultValue)},
+			}
+		} else {
+			if newValue, err := ConfigureSingle(name, def, oldValuePtr); err != nil {
+				return nil, err
+			} else if newValue != nil {
+				newValues[name] = *newValue
+			}
 		}
 		fmt.Fprintf(os.Stderr, "\nProgress: %v%v\n\n",
 			green(strings.Repeat("✔", i+1)),
@@ -129,7 +163,26 @@ func printHeader(name string, def v1alpha1.ValueDefinition) {
 	}
 	fmt.Fprintln(os.Stderr, bold(title))
 	if len(def.Metadata.Description) > 0 {
-		fmt.Fprintln(os.Stderr, def.Metadata.Description)
+		printMarkdown(os.Stderr, def.Metadata.Description)
+	}
+}
+
+func printMarkdown(w io.Writer, text string) {
+	md := goldmark.New(
+		goldmark.WithExtensions(
+			extension.Linkify,
+		),
+		goldmark.WithRenderer(renderer.NewRenderer(
+			renderer.WithNodeRenderers(
+				goldmarkutil.Prioritized(cliutils.MarkdownRenderer(), 1000),
+			),
+		)),
+	)
+	var buf bytes.Buffer
+	if err := md.Convert([]byte(text), &buf); err != nil {
+		util.Must(fmt.Fprintln(w, text))
+	} else {
+		util.Must(fmt.Fprint(w, strings.TrimSpace(buf.String())+"\n\n"))
 	}
 }
 

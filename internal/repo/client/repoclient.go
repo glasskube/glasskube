@@ -2,6 +2,8 @@ package client
 
 import (
 	packagesv1alpha1 "github.com/glasskube/glasskube/api/v1alpha1"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
+	"github.com/glasskube/glasskube/internal/repo/client/auth"
 	"github.com/glasskube/glasskube/internal/repo/types"
 )
 
@@ -10,6 +12,7 @@ type LatestVersionGetter interface {
 }
 
 type RepoClient interface {
+	auth.Authenticator
 	LatestVersionGetter
 	FetchPackageRepoIndex(target *types.PackageRepoIndex) error
 	FetchLatestPackageManifest(name string, target *packagesv1alpha1.PackageManifest) (version string, err error)
@@ -25,7 +28,7 @@ type RepoMetaclient interface {
 }
 
 type RepoClientset interface {
-	ForPackage(pkg packagesv1alpha1.Package) RepoClient
+	ForPackage(pkg ctrlpkg.Package) RepoClient
 	ForRepoWithName(name string) RepoClient
 	ForRepo(repo packagesv1alpha1.PackageRepository) RepoClient
 	Default() RepoClient

@@ -1,5 +1,7 @@
 package types
 
+import "github.com/glasskube/glasskube/api/v1alpha1"
+
 type PackageIndex struct {
 	Versions      []PackageIndexItem `json:"versions" jsonschema:"required"`
 	LatestVersion string             `json:"latestVersion" jsonschema:"required"`
@@ -14,10 +16,11 @@ type PackageRepoIndex struct {
 }
 
 type PackageRepoIndexItem struct {
-	Name             string `json:"name"`
-	ShortDescription string `json:"shortDescription,omitempty"`
-	IconUrl          string `json:"iconUrl,omitempty"`
-	LatestVersion    string `json:"latestVersion,omitempty"`
+	Name             string                 `json:"name"`
+	ShortDescription string                 `json:"shortDescription,omitempty"`
+	IconUrl          string                 `json:"iconUrl,omitempty"`
+	LatestVersion    string                 `json:"latestVersion,omitempty"`
+	Scope            *v1alpha1.PackageScope `json:"scope,omitempty"`
 }
 
 type MetaIndex struct {

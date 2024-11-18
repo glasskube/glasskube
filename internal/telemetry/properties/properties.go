@@ -4,8 +4,6 @@ import (
 	"context"
 	"strings"
 
-	"github.com/glasskube/glasskube/internal/constants"
-
 	"github.com/glasskube/glasskube/api/v1alpha1"
 
 	"github.com/glasskube/glasskube/internal/telemetry/annotations"
@@ -36,6 +34,7 @@ type ClusterProperties struct {
 	kubernetesVersion string
 	provider          string
 	nnodes            int
+	gitopsMode        bool
 }
 
 type RepositoryProperties struct {
@@ -82,6 +81,11 @@ func (g PropertyGetter) ClusterProperties() (p ClusterProperties) {
 			}
 		}
 	}
+	if g.NamespaceGetter != nil {
+		if ns, err := g.NamespaceGetter.GetNamespace(context.Background(), "glasskube-system"); err == nil {
+			p.gitopsMode = annotations.IsGitopsModeEnabled(ns.Annotations)
+		}
+	}
 	return
 }
 
@@ -93,7 +97,7 @@ func (g PropertyGetter) RepositoryProperties() (p RepositoryProperties) {
 				if repo.Spec.Auth != nil {
 					p.nrepositoriesAuth = p.nrepositoriesAuth + 1
 				}
-				if repo.IsDefaultRepository() && !strings.Contains(repo.Spec.Url, constants.DefaultRepoUrl) {
+				if repo.IsDefaultRepository() && !repo.IsGlasskubeRepo() {
 					p.customRepoAsDefault = true
 				}
 			}

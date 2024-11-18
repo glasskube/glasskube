@@ -7,9 +7,12 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
+
+	listerv1 "k8s.io/client-go/listers/core/v1"
 
 	"github.com/glasskube/glasskube/internal/config"
 
@@ -29,6 +32,14 @@ type clientsetNamespaceGetter struct {
 
 func (g clientsetNamespaceGetter) GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
 	return g.client.CoreV1().Namespaces().Get(ctx, name, v1.GetOptions{})
+}
+
+type listerNamespaceGetter struct {
+	lister *listerv1.NamespaceLister
+}
+
+func (l listerNamespaceGetter) GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
+	return (*l.lister).Get(name)
 }
 
 type clientsetNodeLister struct {
@@ -53,8 +64,8 @@ func Init() {
 	instance = ForClient()
 }
 
-func InitClient(config *rest.Config) {
-	instance.InitClient(config)
+func InitClient(config *rest.Config, namespaceLister *listerv1.NamespaceLister) {
+	instance.InitClient(config, namespaceLister)
 }
 
 func BootstrapAttempt() {
@@ -127,11 +138,15 @@ func ForClient() *ClientTelemetry {
 	return &ct
 }
 
-func (t *ClientTelemetry) InitClient(config *rest.Config) {
+func (t *ClientTelemetry) InitClient(config *rest.Config, namespaceLister *listerv1.NamespaceLister) {
 	if config != nil {
 		t.restConfig = config
 		if client, err := kubernetes.NewForConfig(config); err == nil {
-			t.properties.NamespaceGetter = clientsetNamespaceGetter{client}
+			if namespaceLister != nil {
+				t.properties.NamespaceGetter = listerNamespaceGetter{namespaceLister}
+			} else {
+				t.properties.NamespaceGetter = clientsetNamespaceGetter{client}
+			}
 			t.properties.NodeLister = clientsetNodeLister{client}
 			t.properties.DiscoveryClient = client
 		}
@@ -214,18 +229,37 @@ func (t *ClientTelemetry) close() {
 	}
 }
 
-func HttpMiddleware() func(http.Handler) http.Handler {
+type PathRedactor = func(url string) string
+
+type httpMiddlewareOptions struct {
+	PathRedactors []PathRedactor
+}
+
+type HttpMiddlewareConfigurator = func(opt *httpMiddlewareOptions)
+
+func WithPathRedactor(pr PathRedactor) HttpMiddlewareConfigurator {
+	return func(opt *httpMiddlewareOptions) {
+		opt.PathRedactors = append(opt.PathRedactors, pr)
+	}
+}
+
+func HttpMiddleware(conf ...HttpMiddlewareConfigurator) func(http.Handler) http.Handler {
+	var options httpMiddlewareOptions
+	for _, c := range conf {
+		c(&options)
+	}
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
 			next.ServeHTTP(w, r)
 			defer func() {
-				if instance != nil {
+				if instance != nil && instance.properties.Enabled() {
 					go func() {
+						redactedUrl := redactedPath(r, options.PathRedactors)
 						ev := instance.getBaseEvent("ui_endpoint", false)
-						ev.Properties["$current_url"] = r.URL.String()
+						ev.Properties["$current_url"] = redactedUrl.String()
 						ev.Properties["method"] = r.Method
-						ev.Properties["path"] = r.URL
+						ev.Properties["path"] = redactedUrl
 						ev.Properties["execution_time"] = time.Since(start).Milliseconds()
 						ev.Properties["user_agent"] = r.UserAgent()
 						_ = instance.posthog.Enqueue(ev)
@@ -234,6 +268,14 @@ func HttpMiddleware() func(http.Handler) http.Handler {
 			}()
 		})
 	}
+}
+
+func redactedPath(r *http.Request, redactors []PathRedactor) url.URL {
+	result := *r.URL
+	for _, redactor := range redactors {
+		result.Path = redactor(result.Path)
+	}
+	return result
 }
 
 func SetUserProperty(key string, value string) {
@@ -246,4 +288,10 @@ func SetUserProperty(key string, value string) {
 			},
 		},
 	})
+}
+
+func ReportCacheVerificationError(err error) {
+	ev := instance.getBaseEvent("error_cache_verification", false)
+	ev.Properties["err"] = err.Error()
+	_ = instance.posthog.Enqueue(ev)
 }

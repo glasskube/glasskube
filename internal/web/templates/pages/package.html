@@ -1,9 +1,13 @@
-{{ define "content" }}
+{{ define "pages/package" }}
   {{ if .Manifest }}
+    {{ $isUpdate := and .Status (IsUpgradable .Package.Spec.PackageInfo.Version .SelectedVersion) }}
+    {{ $isDowngrade := and .Status (not $isUpdate) (ne .Package.Spec.PackageInfo.Version .SelectedVersion) }}
+
+
     <div
       class="container-lg mt-2"
       hx-trigger="htmx:historyRestore from:body"
-      hx-get="/packages/{{ .Manifest.Name }}"
+      hx-get="{{ .PackageHref }}"
       hx-select="main"
       hx-target="main"
       hx-swap="outerHTML">
@@ -11,53 +15,23 @@
        otherwise during the time of swapping, a following event might not be able to trigger a new request -->
       <div
         class="row p-3 col-lg-10 offset-lg-1"
-        hx-trigger="sse:refresh-pkg-detail-{{ .Manifest.Name }}"
-        hx-get="/packages/{{ .Manifest.Name }}"
+        hx-trigger="sse:{{ PackageDetailRefreshId .Manifest .Package }}"
+        hx-get="{{ .PackageHref }}"
         hx-swap="outerHTML"
         hx-select="#pkg-detail-container-swapped"
         hx-target="#pkg-detail-container-swapped">
         <div id="pkg-detail-container-swapped">
-          {{ template "pkg-detail-header" . }}
-          <div class="mt-3">
-            <h2 class="text-reset">Package Details</h2>
+          {{ template "components/pkg-detail-header" . }}
 
-            {{ if  .Manifest.LongDescription }}
-              {{ .Manifest.LongDescription | Markdown }}
-            {{ else }}
-              <i>
-                This package has no detailed description yet.
-                {{ if PackageManifestUrl .Package }}
-                  You can request to change this here:
-                  <a class="icon-link text-reset me-2" href="{{ PackageManifestUrl .Package }}" target="_blank">
-                    <span class="bi bi-box-arrow-up-right"></span>
-                    Glasskube Package Manifest
-                  </a>
-                {{ end }}
-              </i>
-            {{ end }}
-
-            {{ if or (eq .Package nil) (IsUpgradable .Package.Spec.PackageInfo.Version .LatestVersion) }}
-              <div class="my-1">
-                <i>Latest version: {{ .LatestVersion }}</i>
-              </div>
-            {{ end }}
-            {{ if ne .Status nil }}
-              <div class="my-1">
-                <i>Installed version: {{ .Package.Spec.PackageInfo.Version }}</i>
-              </div>
-              <div class="my-1">
-                <i>Repository: {{ .Package.Spec.PackageInfo.RepositoryName }}</i>
-              </div>
-            {{ end }}
-            {{ if .AutoUpdate }}
-              <div class="my-1">
-                <i>Auto-Update: {{ .AutoUpdate }}</i>
-              </div>
-            {{ end }}
-          </div>
-          {{ if ne .Manifest.Dependencies nil }}
+          {{ if  .Manifest.LongDescription }}
             <div class="mt-3">
-              <h2 class="text-reset">Package Dependencies</h2>
+              {{ .Manifest.LongDescription | Markdown }}
+            </div>
+          {{ end }}
+
+          {{ if or (ne (len .Manifest.Dependencies) 0) (ne (len .Manifest.Components) 0) }}
+            <div class="mt-2">
+              <strong>This package uses</strong>
               <ul>
                 {{ range .Manifest.Dependencies }}
                   <li>
@@ -67,135 +41,272 @@
                       hx-select="main"
                       hx-target="main"
                       hx-swap="outerHTML"
-                      href="/packages/{{ .Name }}"
+                      href="/clusterpackages/{{ .Name }}"
                       >{{ .Name }}</a
                     >
                     {{ if ne .Version "" }}({{ .Version }}){{ end }}
+                  </li>
+                {{ end }}
+
+                {{ range .Manifest.Components }}
+                  <li>
+                    {{ if $.Status }}
+                      <a
+                        class="text-reset"
+                        hx-boost="true"
+                        hx-select="main"
+                        hx-target="main"
+                        hx-swap="outerHTML"
+                        href="/packages/{{ .Name }}/{{ $.Package.Namespace }}/{{ ComponentName $.Package.Name . }}"
+                        >{{ .Name }} ({{ $.Package.Namespace }}/{{ ComponentName $.Package.Name . }})</a
+                      >
+                      {{ if ne .Version "" }}({{ .Version }}){{ end }}
+                    {{ else }}
+                      <a
+                        class="text-reset"
+                        hx-boost="true"
+                        hx-select="main"
+                        hx-target="main"
+                        hx-swap="outerHTML"
+                        href="/packages/{{ .Name }}"
+                        >{{ .Name }}</a
+                      >
+                    {{ end }}
                   </li>
                 {{ end }}
               </ul>
             </div>
           {{ end }}
 
-          {{ if .ShowConfiguration }}
-            <div class="mt-3" id="configuration">
-              <h2 class="text-reset">
-                {{ if eq .Status nil }}
-                  Install
-                  {{ .Manifest.Name }}
-                {{ else if ne .Manifest.ValueDefinitions nil }}
-                  Configuration
-                {{ end }}
-              </h2>
 
-              <form
-                hx-post="/packages/{{ .Manifest.Name }}/configure"
-                hx-target="#error-container"
-                hx-target-error="#error-container"
-                hx-select="div.alert"
-                hx-swap="innerHTML">
-                {{ if eq .Status nil }}
-                  {{ if gt (len .Repositories) 1 }}
-                    <label class="form-label" for="pkg-install-repository">Repository</label>
-                    <div class="input-group mb-2">
-                      <select
-                        class="form-select"
-                        id="pkg-install-repository"
-                        name="repositoryName"
-                        required
-                        hx-select="main"
-                        hx-swap="main"
-                        hx-target="main"
-                        hx-get="/packages/{{ .Manifest.Name }}"
-                        hx-include="#pkg-install-version">
-                        {{ range .Repositories }}
-                          <option value="{{ .Name }}" {{ if eq .Name $.RepositoryName }}selected{{ end }}>
-                            {{ .Name }}
-                          </option>
-                        {{ end }}
-                      </select>
-                    </div>
-                  {{ end }}
-                  <label class="form-label" for="pkg-install-version">Version</label>
-                  <div class="input-group mb-2">
+          <div class="mt-3" id="configuration">
+            <h2 class="text-reset">
+              {{ if eq .Status nil }}
+                Installation
+              {{ else }}
+                Configuration
+              {{ end }}
+            </h2>
+
+            <form hx-post="{{ .PackageHref }}" hx-swap="none">
+              <div class="row">
+                <div class="col-md-6">
+                  <label for="pkg-install-repository" class="form-label"
+                    >Repository <span class="text-danger">*</span></label
+                  >
+                  <select
+                    class="form-select"
+                    id="pkg-install-repository"
+                    name="repositoryName"
+                    required
+                    {{ if (and .Status (not .AdvancedOptions)) }}disabled{{ end }}
+                    hx-select="main"
+                    hx-swap="main"
+                    hx-target="main"
+                    hx-get="{{ .PackageHref }}"
+                    hx-include="#pkg-install-version">
+                    {{ range .Repositories }}
+                      <option value="{{ .Name }}" {{ if eq .Name $.RepositoryName }}selected{{ end }}>
+                        {{ .Name }}
+                      </option>
+                    {{ end }}
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label for="pkg-install-version" class="form-label">Version <span class="text-danger">*</span></label>
+                  <div class="input-group">
                     <select
                       class="form-select"
                       id="pkg-install-version"
-                      name="selectedVersion"
+                      name="version"
                       required
                       hx-select="main"
                       hx-swap="main"
                       hx-target="main"
-                      hx-get="/packages/{{ .Manifest.Name }}"
+                      hx-get="{{ .PackageHref }}"
                       hx-include="#pkg-install-repository">
-                      {{ with $idx := .PackageIndex }}
-                        {{ range $idx.Versions | Reversed }}
-                          <option value="{{ .Version }}" {{ if eq .Version $.SelectedVersion }}selected{{ end }}>
-                            {{ .Version }}
-                            {{ if eq .Version $idx.LatestVersion }}(latest){{ end }}
-                          </option>
+                      {{ $idx := .PackageIndex }}
+                      {{ $currentVersionIdx := len $idx.Versions }}
+                      {{ $latestVersionEnabled := true }}
+                      {{ range $versIdx, $version := $idx.Versions | Reversed }}
+                        {{ if and $.Status (eq $version.Version $.Package.Spec.PackageInfo.Version) }}
+                          {{ $currentVersionIdx = $versIdx }}
                         {{ end }}
+                        {{ $isLatestVersion := (eq $version.Version $idx.LatestVersion) }}
+                        <option
+                          value="{{ $version.Version }}"
+                          {{ if eq $version.Version $.SelectedVersion }}selected{{ end }}
+                          {{ if and (gt $versIdx $currentVersionIdx) (not $.AdvancedOptions) }}
+                            disabled
+                            {{ if $isLatestVersion }}
+                              {{ $latestVersionEnabled = false }}
+                            {{ end }}
+                          {{ end }}>
+                          {{ .Version }}
+                          {{ if $isLatestVersion }}(latest){{ end }}
+                        </option>
                       {{ end }}
                     </select>
+                    {{ if and .Status (ne .SelectedVersion $idx.LatestVersion) $latestVersionEnabled }}
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-warning"
+                        name="version"
+                        value="{{ $idx.LatestVersion }}"
+                        hx-select="main"
+                        hx-swap="main"
+                        hx-target="main"
+                        hx-get="{{ .PackageHref }}"
+                        hx-include="#pkg-install-repository">
+                        <i class="bi bi-arrow-repeat me-1"></i>Set Latest
+                      </button>
+                    {{ end }}
                   </div>
-                  <div class="form-check mt-1 mb-3">
-                    <input class="form-check-input" type="checkbox" name="enableAutoUpdate" id="enable-auto-update" />
-                    <label class="form-check-label ms-1" for="enable-auto-update">Auto Updates</label>
+                </div>
+
+                {{ if or $isDowngrade (and .Status (ne .RepositoryName .Package.Spec.PackageInfo.RepositoryName)) }}
+                  <div class="form-text m-0">
+                    <div class="alert alert-warning small p-1 my-1" role="alert">
+                      <i class="bi bi-exclamation-triangle-fill me-1"></i><b>Use at your own risk!</b>
+                      Changing repository and/or downgrading could lead to data loss and a broken cluster!
+                    </div>
                   </div>
                 {{ end }}
 
-                {{ if ne (len .Manifest.ValueDefinitions) 0 }}
-                  {{ if eq .Status nil }}
-                    <h4 class="text-reset">Configuration</h4>
+              </div>
+
+              {{ if .Manifest.Scope.IsNamespaced }}
+                <div class="row mt-1">
+                  <div class="col-md-6">
+                    <span class="form-label">Namespace <span class="text-danger">*</span></span>
+                    <input
+                      class="form-control"
+                      type="text"
+                      name="namespace"
+                      id="pkg-install-namespace"
+                      list="namespaces"
+                      autocomplete="off"
+                      {{ if .Status }}value="{{ .Package.Namespace }}" disabled{{ end }}
+                      required />
+                    {{ template "components/datalist" ForDatalist "namespaces" "" (index $.DatalistOptions "").Namespaces }}
+                  </div>
+                  <div class="col-md-6">
+                    <span class="form-label">Name <span class="text-danger">*</span></span>
+                    <input
+                      class="form-control"
+                      type="text"
+                      name="name"
+                      id="pkg-install-name"
+                      {{ if .Status }}value="{{ .Package.Name }}" disabled{{ end }}
+                      autocomplete="off"
+                      required />
+                  </div>
+
+                  {{ if not .Status }}
+                    <div class="form-text">Namespace will be created if necessary</div>
                   {{ end }}
-                  {{ range $valName, $valDef := .Manifest.ValueDefinitions }}
-                    {{ template "pkg-config-input"
-                      (ForPkgConfigInput
-                      $.Package
-                      $.RepositoryName
-                      $.SelectedVersion
-                      $.Manifest.Name
-                      $valName
-                      $valDef
-                      (index $.ValueErrors $valName)
-                      (index $.DatalistOptions $valName)
-                      nil)
-                    }}
-                  {{ end }}
+                </div>
+              {{ end }}
+
+
+              <div class="mt-1 mb-2">
+                <div class="form-check ">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    name="autoUpdate"
+                    id="pkg-auto-update"
+                    {{ if AutoUpdateEnabled .Package }}checked{{ end }} />
+                  <label class="form-check-label ms-1" for="pkg-auto-update">Automatically keep up-to-date</label>
+                </div>
+              </div>
+
+              {{ if ne (len .Manifest.ValueDefinitions) 0 }}
+                <hr class="border border-1 opacity-75" />
+                {{ range $valName, $valDef := .Manifest.ValueDefinitions }}
+                  {{ template "components/pkg-config-input"
+                    (ForPkgConfigInput
+                    $.Package
+                    $.RepositoryName
+                    $.SelectedVersion
+                    $.Manifest
+                    $valName
+                    $valDef
+                    (index $.ValueErrors $valName)
+                    (index $.DatalistOptions $valName)
+                    nil)
+                  }}
                 {{ end }}
-                {{ if $.ShowConflicts }}
-                  <div class="alert alert-danger m-0 mb-2" role="alert">
-                    <span>Cannot install due to dependency conflicts:</span>
-                    <ul class="mb-0 mt-1">
-                      {{ range .ValidationResult.Conflicts }}
-                        <li>{{ .Actual.Name }} (required: {{ .Required.Version }}, actual: {{ .Actual.Version }})</li>
-                      {{ end }}
-                    </ul>
-                  </div>
-                {{ else if eq .Status nil }}
-                  <div class="alert alert-success m-0 mb-2" role="alert">
-                    <span>The following packages will be installed:</span>
-                    <ul class="mb-0 mt-1">
+              {{ end }}
+              {{ if ne (len .LostValueDefinitions) 0 }}
+                <div class="alert alert-warning m-0 mb-2" role="alert">
+                  <span
+                    >The following value definitions are not present in the selected manifest and will be deleted:</span
+                  >
+                  <ul class="mb-0 mt-1">
+                    {{ range .LostValueDefinitions }}
+                      <li>{{ . }}</li>
+                    {{ end }}
+                  </ul>
+                </div>
+              {{ end }}
+              {{ if $.ShowConflicts }}
+                <div class="alert alert-danger m-0 mb-2" role="alert">
+                  <span>Cannot install due to dependency conflicts:</span>
+                  <ul class="mb-0 mt-1">
+                    {{ range .ValidationResult.Conflicts }}
+                      <li>{{ .Actual.Name }} (required: {{ .Required.Version }}, actual: {{ .Actual.Version }})</li>
+                    {{ end }}
+                  </ul>
+                </div>
+              {{ else if or (not .Status) .ValidationResult.Requirements }}
+                <div class="alert alert-success m-0 mb-2" role="alert">
+                  <span>The following packages will be installed:</span>
+                  <ul class="mb-0 mt-1">
+                    {{ if not .Status }}
                       <li>{{ $.Manifest.Name }} ({{ $.SelectedVersion }})</li>
-                      {{ range .ValidationResult.Requirements }}
-                        <li>{{ .Name }} ({{ .Version }})</li>
-                      {{ end }}
-                    </ul>
-                  </div>
+                    {{ end }}
+                    {{ range .ValidationResult.Requirements }}
+                      <li>{{ .Name }} ({{ .Version }})</li>
+                    {{ end }}
+                  </ul>
+                </div>
+              {{ end }}
+              {{ if or (not .Status) (and .Package .Package.DeletionTimestamp.IsZero) }}
+                {{ $extraClasses := "" }}
+                {{ if or $isUpdate $isDowngrade }}
+                  {{ $extraClasses = "btn-warning sticky-bottom" }}
+                {{ end }}
+                {{ $disabledStr := "" }}
+                {{ if .ShowConflicts }}
+                  {{ $disabledStr = "disabled" }}
                 {{ end }}
                 <button
                   type="submit"
-                  class="btn btn-primary d-flex ms-auto {{ if .ShowConflicts }}disabled{{ end }}"
-                  {{ if .ShowConflicts }}disabled{{ end }}>
-                  {{ if eq .Status nil }}
+                  class="btn btn-primary {{ $extraClasses }} d-flex ms-auto {{ $disabledStr }}"
+                  name="dryRun"
+                  value="{{ .Ctx.GitopsMode }}"
+                  {{ if .Ctx.GitopsMode }}
+                    data-bs-toggle="modal" data-bs-target="#modal-container"
+                  {{ end }}
+                  {{ if $disabledStr }}disabled{{ end }}>
+                  {{ if .Ctx.GitopsMode }}
+                    Show YAML
+                  {{ else if eq .Status nil }}
                     Install
+                  {{ else if $isUpdate }}
+                    Update to
+                    {{ .SelectedVersion }}
+                  {{ else if $isDowngrade }}
+                    Downgrade to
+                    {{ .SelectedVersion }}
                   {{ else }}
                     Save Configuration
                   {{ end }}
                 </button>
-              </form>
-            </div>
-          {{ end }}
+              {{ end }}
+            </form>
+          </div>
         </div>
       </div>
     </div>

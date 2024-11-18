@@ -2,86 +2,63 @@ import clsx from 'clsx';
 import Heading from '@theme/Heading';
 import styles from './styles.module.css';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faGitAlt} from '@fortawesome/free-brands-svg-icons';
 import {IconDefinition} from '@fortawesome/free-regular-svg-icons';
-import {faBoxes, faCodeBranch, faDisplay, faMagnifyingGlass, faSync} from '@fortawesome/free-solid-svg-icons';
+import React from 'react';
+import {
+  faChartLine,
+  faCheckDouble,
+  faKey,
+} from '@fortawesome/free-solid-svg-icons';
 
 type FeatureItem = {
   title: string;
-  Icon: IconDefinition;
+  icon: IconDefinition;
   description: JSX.Element;
 };
 
 const FeatureList: FeatureItem[] = [
   {
-    title: 'CLI and GUI available',
-    Icon: faDisplay,
+    title: 'Manage Licensing',
+    icon: faKey,
     description: (
       <>
-        CLI und UI as first class components. It doesn't matter if you prefer managing your
-        packages via a CLI or UI - Glasskube supports both.
+        Restrict and permit access to your software with built in license
+        management and validation.
       </>
     ),
   },
   {
-    title: 'Dependency aware',
-    Icon: faCodeBranch,
+    title: 'Compatibility testing',
+    icon: faCheckDouble,
     description: (
       <>
-        Glasskube packages are dependency aware. If two packages require the same dependency,
-        Glasskube makes sure it only gets installed once.
+        Ensure compatibility across different environments like AWS, GCP and
+        on-prem.
       </>
     ),
   },
   {
-    title: 'GitOps ready',
-    Icon: faGitAlt,
+    title: 'Insights',
+    icon: faChartLine,
     description: (
       <>
-        All packages are stored in custom resources, which can easily be managed with your favorite
-        GitOps tool like ArgoCD or Flux.
-      </>
-    ),
-  },
-  {
-    title: 'Automated updates',
-    Icon: faSync,
-    description: (
-      <>
-        Glasskube ensures your Kubernetes packages and apps are always up-to-date, minimizing the
-        manual effort required for maintenance.
-      </>
-    ),
-  },
-  {
-    title: 'Central package repository',
-    Icon: faBoxes,
-    description: (
-      <>
-        Keep track of all your packages in one central repository, with a planned feature for custom repositories.
-      </>
-    ),
-  },
-  {
-    title: 'Cluster Scan',
-    Icon: faMagnifyingGlass,
-    description: (
-      <>
-        Introducing the Cluster Scan feature in a future version, which allows you to detect packages in your cluster,
-        providing valuable insights for better management and upgrade paths.
+        Monitor uptime, usage, configuration, and issues of your enterprise
+        deployments.
       </>
     ),
   },
 ];
 
-function Feature({title, Icon, description}: FeatureItem) {
+function Feature({title, icon, description}: FeatureItem) {
   return (
     <div className={clsx('col col--4', 'margin-top--lg')}>
-      <div className="text--center">
-        <FontAwesomeIcon icon={Icon} size="4x" className={styles.h64}/>
+      <div className={clsx('text--center', styles.iconBorder)}>
+        <FontAwesomeIcon icon={icon} size="8x" className={styles.iconHeight} />
       </div>
       <div className="text--center padding-horiz--md margin-top--lg">
-        <Heading as="h3" className="">{title}</Heading>
+        <Heading as="h3" className="">
+          {title}
+        </Heading>
         <p>{description}</p>
       </div>
     </div>
@@ -93,8 +70,16 @@ export default function HomepageFeatures(): JSX.Element {
     <section className={styles.features}>
       <div className="container">
         <div className="row">
-          {FeatureList.map((props, idx) => (
-            <Feature key={idx} {...props} />
+          <div className="col text--center">
+            <Heading as="h2">
+              Sell software to enterprises and deploy to private infrastructure,
+              different cloud environments, and on-premises.
+            </Heading>
+          </div>
+        </div>
+        <div className="row">
+          {FeatureList.map((item, idx) => (
+            <Feature key={idx} {...item} />
           ))}
         </div>
       </div>

@@ -1,0 +1,191 @@
+/**
+ * CSS files with the .module.css suffix will be treated as CSS modules
+ * and scoped locally.
+ */
+
+.heroBanner {
+  padding: var(--ifm-global-spacing);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.heroTitle {
+  text-align: center;
+  margin-top: 6rem;
+  margin-bottom: 2rem;
+  font-size: 4rem;
+}
+
+.heroCol {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+@media (max-width: 996px) {
+  .heroCol {
+    padding: 2rem 0;
+  }
+
+  .heroTitle {
+    margin-top: 1rem;
+    font-size: 2rem;
+  }
+}
+
+.buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ifm-global-spacing);
+}
+
+@media (min-width: 997px) {
+  .buttons {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+.twitterButton,
+.githubButton {
+  margin: 0.2rem;
+  display: inline;
+}
+
+.socialButtons {
+  text-align: end;
+  margin-bottom: var(--ifm-spacing-vertical);
+}
+
+.socialButtonsLink {
+  margin: 0 0 0 0.5rem;
+  padding: 0.2rem 0.5rem;
+}
+
+.pink {
+  color: #63c5e3;
+  font-weight: bold;
+}
+
+.backgroundSecondary {
+  background-color: var(--ifm-color-primary-dark);
+}
+
+.colorWhite {
+  color: #FFF;
+}
+
+.lottieFallback {
+  width: 100%;
+  height: 480px;
+}
+
+@media (max-width: 996px) {
+  .lottiePlayerWrapper {
+    display: none;
+  }
+}
+
+.emailInput {
+  padding: 12px 20px;
+  box-sizing: border-box;
+  border-radius: var(--ifm-button-border-radius);
+  border: 1px solid var(--glasskube-main-2);
+}
+
+.emailInput:focus {
+  border-color: var(--glasskube-main-3);
+}
+
+.newsletterForm {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--ifm-global-spacing);
+}
+
+@media (min-width: 997px) {
+  .newsletterForm {
+    flex-direction: row;
+    margin: 8px 0;
+  }
+}
+
+.yc {
+  margin-top: 40px;
+  color: var(--glasskube-main-light);
+}
+
+.ycImg {
+  height: 40px;
+  margin-top: -10px;
+}
+
+@media (min-width: 997px) {
+  .buttons {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+  }
+
+  h2 {
+    font-size: 2rem;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+  }
+
+  .ycImg {
+    height: 50px;
+  }
+}
+
+
+[data-theme='light'] .sliderBg {
+    background: var(--ifm-color-primary-dark);
+}
+
+.sliderWrap {
+  overflow: hidden;
+
+  @media (min-width: 1440px) {
+    max-width: 1440px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+@keyframes slide {
+  from {
+    transform: translateX(0%);
+  }
+
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+.sliderContainer {
+  display: inline-flex;
+  overflow: hidden;
+  white-space: nowrap;
+  position: relative;
+}
+
+.sliderContainer:hover .sliderGrid {
+  animation-play-state: paused;
+}
+
+.sliderGrid {
+  animation: 50s slide infinite linear;
+}
+
+.sliderGrid img {
+  height: auto;
+  max-width: unset;
+  object-fit: contain;
+  margin-left: 50px;
+}

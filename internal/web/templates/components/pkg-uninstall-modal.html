@@ -1,38 +1,51 @@
-{{ define "pkg-uninstall-modal" }}
+{{ define "pkg-uninstall-pkg-name" }}
+  {{ if .PackageName }}{{ .PackageName }}{{ else }}{{ .Namespace }}/{{ .Name }}{{ end }}
+{{ end }}
+
+{{ define "components/pkg-uninstall-modal" }}
   <div class="modal-dialog modal-dialog-centered" id="pkg-uninstall-modal">
     <div class="modal-content">
-      <form hx-post="/packages/uninstall">
+      <form hx-post="{{ .PackageHref }}/uninstall">
         <div class="modal-header">
-          <h1 class="modal-title fs-5">Uninstall {{ .PackageName }}</h1>
+          <h1 class="modal-title fs-5">
+            Uninstall
+            {{ template "pkg-uninstall-pkg-name" . }}
+          </h1>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-        {{ if eq .Err nil }}
+        {{ if eq .ShownError nil }}
           <div class="modal-body" id="pkg-update-modal-body">
-            <div class="alert alert-warning m-0" role="alert">
-              <div>The following packages will be <strong>removed</strong> from your cluster:</div>
-              <ul class="m-0 mt-1">
-                <li>{{ $.PackageName }} (requested by user)</li>
-                {{ range .Pruned }}
-                  <li>{{ . }} (dependency)</li>
-                {{ end }}
-              </ul>
-            </div>
+            {{ if .Ctx.GitopsMode }}
+              <div class="alert alert-info m-0" role="alert">
+                <div>
+                  Your are using Glasskube in GitopsMode. To uninstall this (cluster-)package, remove the corresponding
+                  custom resource.
+                </div>
+              </div>
+            {{ else }}
+              <div class="alert alert-warning m-0" role="alert">
+                <div>The following packages will be <strong>removed</strong> from your cluster:</div>
+                <ul class="m-0 mt-1">
+                  <li><strong>{{ template "pkg-uninstall-pkg-name" . }}</strong> (requested by user)</li>
+                  {{ range .Pruned }}
+                    <li><strong>{{ . }}</strong> (no longer needed)</li>
+                  {{ end }}
+                </ul>
+              </div>
+            {{ end }}
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-outline-primary btn-sm" data-bs-dismiss="modal">Cancel</button>
-            <button
-              type="submit"
-              data-bs-dismiss="modal"
-              name="packageName"
-              class="btn btn-danger btn-sm"
-              value="{{ .PackageName }}">
-              Confirm
-            </button>
+            {{ if not .Ctx.GitopsMode }}
+              <button type="button" class="btn btn-outline-primary btn-sm" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" data-bs-dismiss="modal" class="btn btn-danger btn-sm">Confirm</button>
+            {{ else }}
+              <button type="button" class="btn btn-primary btn-sm" data-bs-dismiss="modal">OK</button>
+            {{ end }}
           </div>
         {{ else }}
           <div class="modal-body" id="pkg-update-modal-body">
             <div class="alert alert-danger m-0" role="alert">
-              {{ .Err }}
+              {{ .ShownError }}
             </div>
           </div>
           <div class="modal-footer">

@@ -1,0 +1,26 @@
+{{ define "components/yaml-modal" }}
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" id="yaml-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        {{ if .AlertContent }}
+          <div class="alert alert-danger" role="alert">
+            {{ .AlertContent }}
+          </div>
+        {{ end }}
+        <pre id="yaml-modal-code">{{ .Object }}</pre>
+      </div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          onclick="navigator.clipboard.writeText(document.getElementById('yaml-modal-code').innerText)"
+          data-bs-dismiss="modal"
+          class="btn btn-primary btn-sm">
+          Copy &amp; Close
+        </button>
+      </div>
+    </div>
+  </div>
+{{ end }}

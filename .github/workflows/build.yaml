@@ -1,4 +1,4 @@
-name: Build
+name: Build Go Project
 
 on:
   push:
@@ -7,31 +7,35 @@ on:
   pull_request:
     paths-ignore:
       - website/**
+  merge_group:
+    types:
+      - checks_requested
+    paths-ignore:
+      - website/**
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: make all
     steps:
       - name: Checkout
-        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - name: Setup Go
-        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5
+        uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5
         with:
-          go-version: 1.22.x
+          go-version: 1.23.x
       - name: Set up node
-        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
         with:
           node-version: "20.9"
           cache: npm
-      - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+      - uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
         with:
           path: bin
           key: ${{ runner.os }}-${{ hashFiles('Makefile', 'go.mod', 'go.sum') }}
       - name: Install dependencies
         run: npm ci
       - run: make all
-      - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
+      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: artifacts-${{ runner.os }}-${{ runner.arch }}
           path: dist/

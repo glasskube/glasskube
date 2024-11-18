@@ -1,0 +1,160 @@
+import ThemedImage from "@theme/ThemedImage";
+
+# Glasskube Repositories
+
+## Problem Analysis
+
+In its current state, Glasskube only supports a single repository that is baked into the source code.
+While there was an effort to support different repositories in the beginning, by providing a `RepositoryURL` field in the `PackageSpec`, it was never documented and is currently not functional.
+
+Implementing support would provide multiple benefits:
+
+- Support local repositories for use during package creation
+- Support users to manage their own packages without publishing them to the official repository
+
+The following challenges were identified during analysis and should be addressed by the proposed solution:
+
+- Authentication must be supported. Basic and Bearer authentication (fixed token) should be sufficient to start with.
+- Provide authentication credentials via secret or directly
+- Packages are identified by name only, if there is a package with the same name in multiple repositories, the behavior should be documented, deterministic and obvious to the user.
+
+## Proposed Solution
+
+### API Specification and Operator
+
+A list of available repositories is available in the cluster via a new CRD `PackageRepository`.
+The `PackageRepository` could look something like this:
+
+```yaml
+apiVersion: packages.glasskube.dev/v1alpha1
+kind: PackageRepository
+metadata:
+  # PackageRepository is cluster-scoped
+  name: private-repo
+spec:
+  url: https://packages.example.com/
+  # auth is optional
+  auth:
+    # exactly one of the following auth methods must be provided. an empty auth block is invalid
+    basic:
+      # username and password can be specified directly or via secret.
+      # Both must be specified either directly or via secretRef
+      # Any secret referenced here must be in the glasskube-system namespace
+      username: foo
+      usernameSecretRef:
+        name: private-repo-auth
+        key: username
+      password: bar
+      passwordSecretRef:
+        name: private-repo-auth
+        key: password
+    bearer:
+      token: xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      tokenSecretRef:
+        name: private-repo-token
+        key: token
+```
+
+A `Package` may reference a repository explicitly by its name.
+
+```yaml
+apiVersion: packages.glasskube.dev/v1alpha1
+kind: Package
+metadata:
+  name: package-sample
+spec:
+  packageInfo:
+    name: foo
+    version: v1.0.0+1
+    # repositoryName is optional
+    repositoryName: private-repo
+```
+
+If a package does not specify a `repoName`, the default repository is used.
+The default repository can be determined by getting all `PackageRepositories` with the `packages.glasskube.dev/defaultRepository=true` annotation.
+If there is exactly one such `PackageRepositories`, use it as default.
+If there are two or more such `PackageRepositories`, there is no default repository.
+
+A `PackageRepository` can only be deleted if there are no packages installed using it.
+This is also true for the default repository.
+The default repository can only be changed if there are no packages installed from the default repository.
+For now, these limitations are not enforced by a validating webhook, they will lead to a reconciliation error.
+Installed packages do not break but can not be updated until the missing repository is re-created.
+
+### CLI Design
+
+#### Repository Management
+
+- `glasskube repo list` prints a list of installed repositories
+- `glasskube repo add [name] [url]` creates a new repository
+  - `--default` toggles the `packages.glasskube.dev/defaultRepository=true` annotation. If there is a repository
+    with that annotation already, the default annotation will be removed for that repository
+  - `--auth=none` no authentication (default)
+  - `--auth=basic` enables basic authentication
+  - `--auth=bearer` enables token authentication
+  - `--username`, `--password` and `--token` set the auth credentials.
+    - If `--username` or `--password` is specified, auth type "basic" can be inferred.
+    - If `--token` is specified, auth type "bearer" can be inferred.
+- `glasskube repo update [name]` creates a new repository
+  - same flags as "add" plus the following
+  - `--auth=none` disable the authentication
+  - `--default` toggles the `packages.glasskube.dev/defaultRepository=true` annotation. If there is a repository
+    with that annotation already, the default annotation will be removed for that repository
+  - `--url` set the new url for the repository
+- `glasskube repo delete [name]` removes an installed repository
+
+#### Package Management
+
+- `glasskube install foo` checks all installed repositories for a package with name "foo".
+  - If no match: error
+  - If 1 match: use that repo (show which one in the summary before confirmation)
+  - if 2 or more match: Let the user choose
+- `glasskube install foo --repository=private-repo` uses the `PackageRepository` with name "private-repo"
+- `glasskube update` uses the repo from the installed package
+- `glasskube list` lists packages from all repositories.
+  The repositories each package is available from are shown in a new column.
+  If a package is installed and it is available from more than one repository, the one used in the installation is marked in this column with "(used)"
+  If a package is not installed and it is available from more than one repository, the latest version shown is the highes one available across repositories.
+- `glasskube describe` shows the repositories the package is available from and the one that is used for installation.
+
+### UI Design
+
+#### Repository Management
+
+Current UI of the new settings holds the package repository configuration.
+
+<ThemedImage
+  alt="Glasskube UI Repo settings"
+  sources={{
+    light: 'https://github.com/glasskube/glasskube/assets/3041752/e8565cf7-6089-4b82-b169-91f5b3ef4c33',
+    dark: 'https://github.com/glasskube/glasskube/assets/3041752/cf1f1983-78c8-4bb4-9d47-86dbf3a16c4e',
+  }}
+/>
+
+Adding and updating repositories is not yet supported via the UI.
+(see [#860](https://github.com/glasskube/glasskube/issues/860) and [#860](https://github.com/glasskube/glasskube/issues/861))
+
+#### Package Management
+
+On the list page, packages from all installed repositories are shown.
+If two or more repositories feature a package with the same name and that package is not installed, it is only shown once, where the iconUrl and shortDescription are taken from the first repository ordered alphabetically, that is not the default repository.
+
+On the details page, if the package is not installed and featured in two or more repositories, there is a dropdown at the top of the page where a user can select the repository they want to install the package from.
+When changing the dropdown value, the page is refreshed with data from the new selected repository.
+All data shown comes from the selected repository.
+
+If a package is already installed or only available from one repository, the dropdown is not shown.
+
+### Migration & Compatibility
+
+The `bootstrap` command creates a default repository in the cluster by default.
+This repository has the name "glasskube" and repositoryUrl "https://packages.dl.glasskube.dev/packages/".
+By creating this repository, we ensure that existing installations remain functional.
+This behavior can be turned off by running `bootstrap` with `--create-default-repository=false`.
+
+## Known Limitations
+
+- If a package has a dependency that is available from more than one repository, the operator would have to decide which one to install.
+  This is not something we want to do!
+  Therefore, we treat this case as an error for now and ask the user to install the dependency manually, deciding which repository to use.
+  This will be better once we migrate to fully client-side dependency resolution.

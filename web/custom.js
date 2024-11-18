@@ -10,7 +10,7 @@
 })();
 
 (() => {
-  const dismissed = sessionStorage.getItem('cloud-info-dismissed');
+  const dismissed = sessionStorage.getItem('cloud-info-dismissed') === 'true';
   if (!dismissed) {
     document.body
       .querySelector('#cloud-info')
@@ -23,22 +23,28 @@
     });
 })();
 
-var sseOnline = true;
-document.addEventListener('htmx:sseError', function () {
-  sseOnline = false;
-  document
-    .getElementById('sse-error-container')
-    .classList.remove('visually-hidden');
-  document.getElementById('sse-error-container-message').innerHTML =
-    'You are disconnected from the server. Make sure to run <code>glasskube serve</code> and refresh this page!';
-});
-document.addEventListener('htmx:sseOpen', function () {
-  if (!sseOnline) {
-    sseOnline = true;
-    const msg = document.getElementById('sse-error-container-message');
-    msg.innerText =
-      'You have been disconnected for a while. Please refresh this page to make sure you are up to date!';
+(() => {
+  const modal = document.getElementById('modal-container');
+  modal.addEventListener('show.bs.modal', (evt) => {
+    // https://getbootstrap.com/docs/5.3/components/modal/#events
+    // "hidden.bs.modal" is too early to clear innerHTML – the form submission from inside the modal would be cancelled
+    modal.innerHTML = '';
+  });
+})();
+
+function setSSEDisconnected() {
+  const elem = document.getElementById('disconnected-toast');
+  if (elem && !elem.classList.contains('show')) {
+    document.getElementById('disconnected-toast').classList.add('show');
   }
+}
+document.addEventListener('htmx:sseError', function (evt) {
+  console.log('htmx:sseError', evt);
+  setSSEDisconnected();
+});
+document.addEventListener('htmx:sseClose', function (evt) {
+  console.log('htmx:sseClose', evt);
+  setSSEDisconnected();
 });
 
 window.giscusReported = false;
@@ -56,7 +62,7 @@ function handleGiscusMessage(ev) {
     const githubUrl = giscusData['viewer']['url'];
     const formData = new FormData();
     formData.append('githubUrl', githubUrl);
-    fetch('', {
+    fetch('/giscus', {
       method: 'POST',
       body: formData,
     });

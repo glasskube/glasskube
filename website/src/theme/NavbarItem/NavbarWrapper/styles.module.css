@@ -2,7 +2,11 @@
   text-align: center;
   width: 160px;
   height: 28px;
-  margin: 0 auto;
+}
+
+.ctaWrapper {
+  text-align: center;
+  width: 300px;
 }
 
 @media (max-width: 576px) {
@@ -17,3 +21,8 @@
   }
 }
 
+@media (max-width: 1400px) {
+  .ctaWrapper {
+    display: none;
+  }
+}

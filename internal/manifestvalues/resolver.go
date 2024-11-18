@@ -2,7 +2,6 @@ package manifestvalues
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
 	"fmt"
 
@@ -77,15 +76,13 @@ func (r *Resolver) resolveSecretRef(ctx context.Context, ref v1alpha1.ObjectKeyV
 		return "", NewSecretRefError(ref, err)
 	} else if v, ok := c.Data[ref.Key]; !ok {
 		return "", NewSecretRefError(ref, NewKeyError(ref.Key))
-	} else if decoded, err := base64.StdEncoding.DecodeString(string(v)); err != nil {
-		return "", NewSecretRefError(ref, err)
 	} else {
-		return string(decoded), nil
+		return string(v), nil
 	}
 }
 
 func (r *Resolver) resolvePackageRef(ctx context.Context, ref v1alpha1.PackageValueSource) (string, error) {
-	if pkg, err := r.pkg.GetPackage(ctx, ref.Name); err != nil {
+	if pkg, err := r.pkg.GetClusterPackage(ctx, ref.Name); err != nil {
 		return "", NewPackageRefError(ref, err)
 	} else if value, ok := pkg.Spec.Values[ref.Value]; !ok {
 		return "", NewPackageRefError(ref, NewKeyError(ref.Value))

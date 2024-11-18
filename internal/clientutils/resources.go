@@ -5,13 +5,33 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/glasskube/glasskube/internal/contenttype"
 	"github.com/glasskube/glasskube/internal/httperror"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
-func FetchResources(url string) ([]unstructured.Unstructured, error) {
-	response, err := httperror.CheckResponse(http.Get(url))
+func FetchResourcesFromUrl(url string) ([]unstructured.Unstructured, error) {
+	if request, err := NewResourcesRequest(url); err != nil {
+		return nil, err
+	} else {
+		return FetchResources(request)
+	}
+}
+
+func NewResourcesRequest(url string) (*http.Request, error) {
+	request, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Add("Accept", contenttype.MediaTypeJSON)
+	request.Header.Add("Accept", contenttype.MediaTypeYAML)
+	return request, nil
+}
+
+func FetchResources(request *http.Request) ([]unstructured.Unstructured, error) {
+	url := request.URL.Redacted()
+	response, err := httperror.CheckResponse(http.DefaultClient.Do(request))
 	if err != nil {
 		switch {
 		case httperror.IsNotFound(err):
@@ -28,6 +48,10 @@ func FetchResources(url string) ([]unstructured.Unstructured, error) {
 		_ = Body.Close()
 	}(response.Body)
 
+	if err := contenttype.IsJsonOrYaml(response); err != nil {
+		return nil, fmt.Errorf("could not decode manifest %v: %w", url, err)
+	}
+
 	decoder := yaml.NewYAMLOrJSONDecoder(response.Body, 4096)
 	resources := make([]unstructured.Unstructured, 0)
 	for {
@@ -37,6 +61,9 @@ func FetchResources(url string) ([]unstructured.Unstructured, error) {
 				break
 			}
 			return nil, fmt.Errorf("could not decode manifest %v: %w", url, err)
+		}
+		if len(object.Object) == 0 {
+			continue
 		}
 		resources = append(resources, object)
 	}

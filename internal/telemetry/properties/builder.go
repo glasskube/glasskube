@@ -3,8 +3,8 @@ package properties
 import (
 	"runtime"
 
-	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/config"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/pkg/condition"
 	"github.com/posthog/posthog-go"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -28,7 +28,8 @@ func ForClientUser(pg PropertyGetter, includeCluster bool) PropertiesBuilderFn {
 			p.Set("cluster_id", pg.ClusterId()).
 				Set("cluster_k8s_version", cp.kubernetesVersion).
 				Set("cluster_provider", cp.provider).
-				Set("cluster_nnodes", cp.nnodes)
+				Set("cluster_nnodes", cp.nnodes).
+				Set("cluster_gitops_mode", cp.gitopsMode)
 		}
 		p.Set("$set", map[string]any{
 			"version": config.Version,
@@ -52,6 +53,7 @@ func ForOperatorUser(pg PropertyGetter) PropertiesBuilderFn {
 				"k8s_version":         cp.kubernetesVersion,
 				"provider":            cp.provider,
 				"nnodes":              cp.nnodes,
+				"gitops_mode":         cp.gitopsMode,
 				"nrepositories":       rp.nrepositories,
 				"nrepositories_auth":  rp.nrepositoriesAuth,
 				"custom_default_repo": rp.customRepoAsDefault,
@@ -72,16 +74,17 @@ func FromMap(data map[string]any) PropertiesBuilderFn {
 	}
 }
 
-func FromPackage(pkg *v1alpha1.Package) PropertiesBuilderFn {
+func FromPackage(pkg ctrlpkg.Package) PropertiesBuilderFn {
 	return func(p posthog.Properties) posthog.Properties {
-		p.Set("package_name", pkg.Spec.PackageInfo.Name).
-			Set("package_version_desired", pkg.Spec.PackageInfo.Version).
-			Set("package_version_actual", pkg.Status.Version).
+		p.Set("package_kind", pkg.GroupVersionKind().Kind).
+			Set("package_name", pkg.GetSpec().PackageInfo.Name).
+			Set("package_version_desired", pkg.GetSpec().PackageInfo.Version).
+			Set("package_version_actual", pkg.GetStatus().Version).
 			// TODO: set_once ?
-			Set("package_creation_timestamp", pkg.CreationTimestamp).
-			Set("package_auto_update", pkg.Annotations["packages.glasskube.dev/auto-update"]).
-			Set("package_repository_name", pkg.Spec.PackageInfo.RepositoryName)
-		if c := meta.FindStatusCondition(pkg.Status.Conditions, string(condition.Ready)); c != nil {
+			Set("package_creation_timestamp", pkg.GetCreationTimestamp()).
+			Set("package_auto_update", pkg.AutoUpdatesEnabled()).
+			Set("package_repository_name", pkg.GetSpec().PackageInfo.RepositoryName)
+		if c := meta.FindStatusCondition(pkg.GetStatus().Conditions, string(condition.Ready)); c != nil {
 			p.Set("package_ready_status", c.Status)
 			p.Set("package_ready_reason", c.Reason)
 		}

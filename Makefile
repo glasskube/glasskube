@@ -6,7 +6,10 @@ ENVTEST_K8S_VERSION = 1.28.0
 
 # Allows to override name and location of the "go" binary.
 # This allows using different versions of Go, as outlined in the documentation: https://go.dev/doc/manage-install
-GOCMD?=go
+GOCMD ?= go
+
+# Location for temporary files. This environment variable is set by default on macOS but on on most Linux systems.
+TMPDIR ?= /tmp
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell $(GOCMD) env GOBIN))
@@ -85,7 +88,7 @@ test: manifests generate fmt lint-go envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" $(GOCMD) test ./... -coverprofile cover.out
 
 GOLANGCI_LINT = $(shell pwd)/bin/golangci-lint
-GOLANGCI_LINT_VERSION ?= v1.54.2
+GOLANGCI_LINT_VERSION ?= v1.60.1
 golangci-lint:
 	@[ -f $(GOLANGCI_LINT) ] || { \
 	set -e ;\
@@ -120,7 +123,7 @@ run: manifests generate fmt ## Run a controller from your host.
 
 .PHONY: cert
 cert: manifests generate fmt
-	$(GOCMD) run ./cmd/cert-manager/ --cert-dir /tmp/k8s-webhook-server/serving-certs
+	$(GOCMD) run ./cmd/cert-manager/ --cert-dir $(TMPDIR)/k8s-webhook-server/serving-certs
 
 # If you wish to build the manager image targeting other platforms you can use the --platform flag.
 # (i.e. docker build --platform linux/arm64). However, you must enable docker buildKit for it.
@@ -228,7 +231,7 @@ ENVTEST ?= $(LOCALBIN)/setup-envtest
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v5.2.1
-CONTROLLER_TOOLS_VERSION ?= v0.14.0
+CONTROLLER_TOOLS_VERSION ?= v0.16.1
 
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary. If wrong version is installed, it will be removed before downloading.

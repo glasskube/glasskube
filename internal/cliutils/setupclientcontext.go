@@ -18,7 +18,7 @@ import (
 func SetupClientContext(requireBootstrapped bool, skipUpdateCheck *bool) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
 		cfg, rawCfg := RequireConfig(config.Kubeconfig)
-		telemetry.InitClient(cfg)
+		telemetry.InitClient(cfg, nil)
 		if requireBootstrapped {
 			RequireBootstrapped(cmd.Context(), cfg, rawCfg)
 		}
@@ -63,7 +63,7 @@ func RequireBootstrapped(ctx context.Context, cfg *rest.Config, rawCfg *api.Conf
 			ExitWithError()
 		}
 		client := bootstrap.NewBootstrapClient(cfg)
-		if err := client.Bootstrap(ctx, bootstrap.DefaultOptions()); err != nil {
+		if _, err := client.Bootstrap(ctx, bootstrap.DefaultOptions()); err != nil {
 			fmt.Fprintf(os.Stderr, "\nAn error occurred during bootstrap:\n%v\n", err)
 			ExitWithError()
 		} else {

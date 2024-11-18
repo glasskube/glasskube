@@ -1,28 +1,20 @@
-{{ define "content" }}
+{{ define "pages/discussion" }}
   {{ if .Manifest }}
     <div
       class="container-lg mt-2"
       hx-trigger="htmx:historyRestore from:body"
-      hx-get="/packages/{{ .Manifest.Name }}/discussion"
+      hx-get="{{ .DiscussionHref }}"
       hx-select="main"
       hx-target="main"
       hx-swap="outerHTML">
-      <div
-        class="row p-3 col-lg-10 offset-lg-1"
-        hx-trigger="sse:refresh-pkg-detail-{{ .Manifest.Name }}"
-        hx-get="/packages/{{ .Manifest.Name }}/discussion"
-        hx-swap="outerHTML"
-        hx-select="#pkg-detail-header-swapped"
-        hx-target="#pkg-detail-header-swapped">
-        <div id="pkg-detail-header-swapped">
-          {{ template "pkg-detail-header" . }}
-        </div>
+      <div class="row p-3 col-lg-10 offset-lg-1">
+        {{ template "components/pkg-detail-header" . }}
         <div class="mt-3">
           <giscus-widget
-            repo="glasskube/glasskube"
-            repoId="R_kgDOLDumDw"
-            category="Packages"
-            categoryId="DIC_kwDOLDumD84CcybS"
+            repo="{{ .Giscus.Repo }}"
+            repoId="{{ .Giscus.RepoId }}"
+            category="{{ .Giscus.Category }}"
+            categoryId="{{ .Giscus.CategoryId }}"
             mapping="specific"
             term="{{ .Manifest.Name }}"
             strict="0"

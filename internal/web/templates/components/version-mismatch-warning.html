@@ -1,14 +1,23 @@
 {{ define "version-mismatch-warning" }}
   <div class="alert alert-warning alert-dismissible" role="alert">
     <div>
-      {{ if .NeedsOperatorUpdate }}
-        <i class="bi bi-exclamation-triangle-fill"></i> Glasskube cluster version ({{ .OperatorVersion }}) does not
-        match your client version ({{ .ClientVersion }}). Please update the cluster components to
-        {{ .ClientVersion }}
-        by running <code>glasskube bootstrap</code>.
+      {{ if .Ctx.VersionDetails.NeedsOperatorUpdate }}
+        <i class="bi bi-exclamation-triangle-fill"></i> Glasskube cluster version
+        ({{ .Ctx.VersionDetails.OperatorVersion }}) does not match your client version
+        ({{ .Ctx.VersionDetails.ClientVersion }}).
+        {{ if .Ctx.GitopsMode }}
+          Please update the cluster components to {{ .Ctx.VersionDetails.ClientVersion }} by using
+          <code>glasskube bootstrap --dry-run -o yaml</code> and pushing the generated manifests into your GitOps
+          repository.
+        {{ else }}
+          Please update the cluster components to
+          {{ .Ctx.VersionDetails.ClientVersion }}
+          by running <code>glasskube bootstrap</code>.
+        {{ end }}
       {{ else }}
-        <i class="bi bi-exclamation-triangle-fill"></i> Glasskube client version ({{ .ClientVersion }}) does not match
-        your cluster components' version ({{ .OperatorVersion }}). Please update your client.
+        <i class="bi bi-exclamation-triangle-fill"></i> Glasskube client version
+        ({{ .Ctx.VersionDetails.ClientVersion }}) does not match your cluster components' version
+        ({{ .Ctx.VersionDetails.OperatorVersion }}). Please update your client.
       {{ end }}
     </div>
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>

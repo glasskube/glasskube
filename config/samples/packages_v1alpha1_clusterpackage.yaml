@@ -1,0 +1,9 @@
+apiVersion: packages.glasskube.dev/v1alpha1
+kind: ClusterPackage
+metadata:
+  labels:
+    app.kubernetes.io/name: glasskube
+    app.kubernetes.io/managed-by: kustomize
+  name: clusterpackage-sample
+spec:
+  # TODO(user): Add fields here

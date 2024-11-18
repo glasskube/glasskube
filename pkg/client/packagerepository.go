@@ -1,7 +1,9 @@
+//nolint:dupl // It might be possible to refactor this using generics but for now we accept the dupliate code.
 package client
 
 import (
 	"context"
+	"time"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -12,41 +14,46 @@ import (
 
 var packageRepositoryGVR = v1alpha1.GroupVersion.WithResource("packagerepositories")
 
-type PackageRepositoryInterface interface {
-	Create(ctx context.Context, obj *v1alpha1.PackageRepository) error
-	Update(ctx context.Context, obj *v1alpha1.PackageRepository) error
-	Get(ctx context.Context, name string, obj *v1alpha1.PackageRepository) error
-	GetAll(ctx context.Context, obj *v1alpha1.PackageRepositoryList) error
-	Watch(ctx context.Context) (watch.Interface, error)
-	Delete(ctx context.Context, obj *v1alpha1.PackageRepository, options metav1.DeleteOptions) error
-}
-
 type packageRepositoryClient struct {
 	restClient rest.Interface
 }
 
 // Create implements PackageRepositoryInterface.
-func (c *packageRepositoryClient) Create(ctx context.Context, obj *v1alpha1.PackageRepository) error {
+func (c *packageRepositoryClient) Create(
+	ctx context.Context,
+	obj *v1alpha1.PackageRepository,
+	opts metav1.CreateOptions,
+) error {
 	return c.restClient.Post().
 		Resource(packageRepositoryGVR.Resource).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(obj).Do(ctx).Into(obj)
 }
 
 // Update implements PackageRepositoryInterface.
-func (c *packageRepositoryClient) Update(ctx context.Context, obj *v1alpha1.PackageRepository) error {
+func (c *packageRepositoryClient) Update(
+	ctx context.Context,
+	obj *v1alpha1.PackageRepository,
+	opts metav1.UpdateOptions) error {
 	return c.restClient.Put().
 		Resource(packageRepositoryGVR.Resource).
 		Name(obj.GetName()).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(obj).
 		Do(ctx).
 		Into(obj)
 }
 
 // Watch implements PackageRepositoryInterface.
-func (c *packageRepositoryClient) Watch(ctx context.Context) (watch.Interface, error) {
-	opts := metav1.ListOptions{Watch: true}
+func (c *packageRepositoryClient) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
+	var timeout time.Duration
+	if opts.TimeoutSeconds != nil {
+		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
+	}
+	opts.Watch = true
 	return c.restClient.Get().
 		Resource(packageRepositoryGVR.Resource).
+		Timeout(timeout).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Watch(ctx)
 }

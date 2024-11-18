@@ -11,11 +11,11 @@ import (
 )
 
 type (
-	contextKey int
+	ContextKey int
 )
 
 const (
-	pkgClientContextKey contextKey = iota
+	pkgClientContextKey ContextKey = iota
 	k8sClientContextKey
 	configContextKey
 	rawConfigContextKey

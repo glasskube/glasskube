@@ -27,7 +27,7 @@ func YesNoPrompt(label string, defaultChoice bool) bool {
 	r := bufio.NewReader(os.Stdin)
 	var s string
 	for {
-		fmt.Fprintf(os.Stderr, "%s (%s) ", label, choices)
+		fmt.Fprintf(os.Stderr, "%s (%s) ", strings.TrimSpace(label), choices)
 		InteractivityEnabledOrFail()
 		s, _ = r.ReadString('\n')
 		s = strings.TrimSpace(s)
@@ -47,7 +47,8 @@ func YesNoPrompt(label string, defaultChoice bool) bool {
 func GetInputStr(label string) (input string) {
 	fmt.Fprintf(os.Stderr, "%v> ", label)
 	InteractivityEnabledOrFail()
-	fmt.Scanln(&input)
+	// TODO: Handle the error returned by fmt.Scanln
+	_, _ = fmt.Scanln(&input)
 	return
 }
 

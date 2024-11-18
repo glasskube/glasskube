@@ -69,7 +69,9 @@ func (*markdownRenderer) renderHeading(
 		bold.SetWriter(writer)
 	} else {
 		bold.UnsetWriter(writer)
-		fmt.Fprintln(writer)
+		if _, err := fmt.Fprintln(writer); err != nil {
+			return ast.WalkStop, err
+		}
 	}
 	return ast.WalkContinue, nil
 }
@@ -87,8 +89,12 @@ func (*markdownRenderer) renderBlockquote(
 func (r *markdownRenderer) renderCodeBlock(
 	writer util.BufWriter, source []byte, n ast.Node, entering bool) (ast.WalkStatus, error) {
 	if entering {
-		r.writeLines(writer, source, n)
-		fmt.Fprintln(writer)
+		if err := r.writeLines(writer, source, n); err != nil {
+			return ast.WalkStop, err
+		}
+		if _, err := fmt.Fprintln(writer); err != nil {
+			return ast.WalkStop, err
+		}
 	}
 	return ast.WalkContinue, nil
 }
@@ -96,8 +102,12 @@ func (r *markdownRenderer) renderCodeBlock(
 func (r *markdownRenderer) renderFencedCodeBlock(
 	writer util.BufWriter, source []byte, n ast.Node, entering bool) (ast.WalkStatus, error) {
 	if entering {
-		r.writeLines(writer, source, n)
-		fmt.Fprintln(writer)
+		if err := r.writeLines(writer, source, n); err != nil {
+			return ast.WalkStop, err
+		}
+		if _, err := fmt.Fprintln(writer); err != nil {
+			return ast.WalkStop, err
+		}
 	}
 	return ast.WalkContinue, nil
 }
@@ -115,7 +125,9 @@ func (r *markdownRenderer) renderList(
 		}
 	} else {
 		r.listContext = nil
-		fmt.Fprintln(writer)
+		if _, err := fmt.Fprintln(writer); err != nil {
+			return ast.WalkStop, err
+		}
 	}
 	return ast.WalkContinue, nil
 }
@@ -125,13 +137,19 @@ func (r *markdownRenderer) renderListItem(
 	n.Parent().(*ast.List).IsOrdered()
 	if entering {
 		if r.listContext.ordered {
-			fmt.Fprintf(writer, " %v) ", r.listContext.index+1)
+			if _, err := fmt.Fprintf(writer, " %v) ", r.listContext.index+1); err != nil {
+				return ast.WalkStop, err
+			}
 		} else {
-			fmt.Fprint(writer, " * ")
+			if _, err := fmt.Fprint(writer, " * "); err != nil {
+				return ast.WalkStop, err
+			}
 		}
 		r.listContext.index++
 	} else {
-		fmt.Fprintln(writer)
+		if _, err := fmt.Fprintln(writer); err != nil {
+			return ast.WalkStop, err
+		}
 	}
 	return ast.WalkContinue, nil
 }
@@ -139,7 +157,9 @@ func (r *markdownRenderer) renderListItem(
 func (*markdownRenderer) renderParagraph(
 	writer util.BufWriter, source []byte, n ast.Node, entering bool) (ast.WalkStatus, error) {
 	if !entering {
-		fmt.Fprint(writer, "\n\n")
+		if _, err := fmt.Fprint(writer, "\n\n"); err != nil {
+			return ast.WalkStop, err
+		}
 	}
 	return ast.WalkContinue, nil
 }
@@ -148,7 +168,9 @@ func (*markdownRenderer) renderTextBlock(
 	writer util.BufWriter, source []byte, n ast.Node, entering bool) (ast.WalkStatus, error) {
 	if !entering {
 		if n.NextSibling() != nil && n.FirstChild() != nil {
-			fmt.Fprintln(writer)
+			if _, err := fmt.Fprintln(writer); err != nil {
+				return ast.WalkStop, err
+			}
 		}
 	}
 	return ast.WalkContinue, nil
@@ -168,9 +190,12 @@ func (*markdownRenderer) renderThematicBreak(
 
 func (*markdownRenderer) renderAutoLink(
 	writer util.BufWriter, source []byte, n ast.Node, entering bool) (ast.WalkStatus, error) {
-	fmt.Fprint(writer, n.Text(source))
+	al := n.(*ast.AutoLink)
 	if entering {
 		underline.SetWriter(writer)
+		if _, err := writer.Write(al.URL(source)); err != nil {
+			return ast.WalkStop, err
+		}
 	} else {
 		underline.UnsetWriter(writer)
 	}
@@ -215,7 +240,9 @@ func (*markdownRenderer) renderLink(
 		if !strings.Contains(url, "://") {
 			url = "https://" + url
 		}
-		fmt.Fprintf(writer, " (%v)", underline.Sprint(url))
+		if _, err := fmt.Fprintf(writer, " (%v)", underline.Sprint(url)); err != nil {
+			return ast.WalkStop, err
+		}
 	}
 	return ast.WalkContinue, nil
 }
@@ -229,9 +256,13 @@ func (*markdownRenderer) renderText(
 	writer util.BufWriter, source []byte, n ast.Node, entering bool) (ast.WalkStatus, error) {
 	if entering {
 		t := n.(*ast.Text)
-		_, _ = writer.Write(t.Segment.Value(source))
+		if _, err := writer.Write(t.Segment.Value(source)); err != nil {
+			return ast.WalkStop, err
+		}
 		if t.HardLineBreak() {
-			fmt.Fprintln(writer)
+			if _, err := fmt.Fprintln(writer); err != nil {
+				return ast.WalkStop, err
+			}
 		}
 		if t.SoftLineBreak() {
 			_, _ = writer.WriteRune(' ')
@@ -243,15 +274,20 @@ func (*markdownRenderer) renderText(
 func (*markdownRenderer) renderString(
 	writer util.BufWriter, source []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {
 	if entering {
-		_, _ = writer.Write(node.(*ast.String).Value)
+		if _, err := writer.Write(node.(*ast.String).Value); err != nil {
+			return ast.WalkStop, err
+		}
 	}
 	return ast.WalkContinue, nil
 }
 
-func (r *markdownRenderer) writeLines(w util.BufWriter, source []byte, n ast.Node) {
+func (r *markdownRenderer) writeLines(w util.BufWriter, source []byte, n ast.Node) error {
 	l := n.Lines().Len()
 	for i := 0; i < l; i++ {
 		line := n.Lines().At(i)
-		_, _ = w.Write(line.Value(source))
+		if _, err := w.Write(line.Value(source)); err != nil {
+			return err
+		}
 	}
+	return nil
 }

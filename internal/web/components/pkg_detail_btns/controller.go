@@ -3,6 +3,10 @@ package pkg_detail_btns
 import (
 	"fmt"
 
+	"github.com/glasskube/glasskube/internal/web/util"
+
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
+
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/pkg/client"
 )
@@ -15,7 +19,9 @@ type pkgDetailBtnsInput struct {
 	Status          *client.PackageStatus
 	Manifest        *v1alpha1.PackageManifest
 	UpdateAvailable bool
-	Pkg             *v1alpha1.Package
+	Pkg             ctrlpkg.Package
+	PackageHref     string
+	GitopsMode      bool
 }
 
 func getId(pkgName string) string {
@@ -26,8 +32,9 @@ func ForPkgDetailBtns(
 	pkgName string,
 	status *client.PackageStatus,
 	manifest *v1alpha1.PackageManifest,
-	pkg *v1alpha1.Package,
+	pkg ctrlpkg.Package,
 	updateAvailable bool,
+	gitopsMode bool,
 ) *pkgDetailBtnsInput {
 	id := getId(pkgName)
 	return &pkgDetailBtnsInput{
@@ -37,5 +44,7 @@ func ForPkgDetailBtns(
 		Manifest:        manifest,
 		UpdateAvailable: updateAvailable,
 		Pkg:             pkg,
+		PackageHref:     util.GetPackageHref(pkg, manifest),
+		GitopsMode:      gitopsMode,
 	}
 }

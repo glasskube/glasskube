@@ -7,3 +7,11 @@ webhooks:
       service:
         port: 9443
     name: vpackage.kb.io
+  - clientConfig:
+      service:
+        port: 9443
+    name: vclusterpackage.kb.io
+  - clientConfig:
+      service:
+        port: 9443
+    name: vpackagerepository.kb.io

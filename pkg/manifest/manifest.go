@@ -7,6 +7,7 @@ import (
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
+	"github.com/glasskube/glasskube/internal/controller/ctrlpkg"
 	"github.com/glasskube/glasskube/internal/names"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
@@ -15,14 +16,14 @@ var ErrPackageNoManifest = errors.New("package has no manifest")
 
 func GetInstalledManifest(ctx context.Context, pkgName string) (*v1alpha1.PackageManifest, error) {
 	pkgClient := cliutils.PackageClient(ctx)
-	var pkg v1alpha1.Package
-	if err := pkgClient.Packages().Get(ctx, pkgName, &pkg); err != nil {
+	var pkg v1alpha1.ClusterPackage
+	if err := pkgClient.ClusterPackages().Get(ctx, pkgName, &pkg); err != nil {
 		return nil, err
 	}
-	return GetInstalledManifestForPackage(ctx, pkg)
+	return GetInstalledManifestForPackage(ctx, &pkg)
 }
 
-func GetInstalledManifestForPackage(ctx context.Context, pkg v1alpha1.Package) (*v1alpha1.PackageManifest, error) {
+func GetInstalledManifestForPackage(ctx context.Context, pkg ctrlpkg.Package) (*v1alpha1.PackageManifest, error) {
 	pkgClient := cliutils.PackageClient(ctx)
 	var packageInfo v1alpha1.PackageInfo
 	if err := pkgClient.PackageInfos().Get(ctx, names.PackageInfoName(pkg), &packageInfo); err != nil {
@@ -36,4 +37,22 @@ func GetInstalledManifestForPackage(ctx context.Context, pkg v1alpha1.Package) (
 	} else {
 		return nil, ErrPackageNoManifest
 	}
+}
+
+func GetManifestForPackage(
+	ctx context.Context,
+	pkg ctrlpkg.Package,
+	version string,
+) (*v1alpha1.PackageManifest, error) {
+	repoClient := cliutils.RepositoryClientset(ctx)
+	var manifest v1alpha1.PackageManifest
+	err := repoClient.ForPackage(pkg).FetchPackageManifest(
+		pkg.GetSpec().PackageInfo.Name,
+		version,
+		&manifest,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching manifest: %w", err)
+	}
+	return &manifest, nil
 }

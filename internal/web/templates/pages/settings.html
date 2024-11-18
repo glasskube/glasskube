@@ -1,32 +1,74 @@
-{{ define "content" }}
-  <div class="container-lg mt-2">
+{{ define "pages/settings" }}
+  <div
+    class="container-lg mt-2"
+    id="settings"
+    hx-trigger="htmx:historyRestore from:body"
+    hx-get="/settings"
+    hx-select="main"
+    hx-target="main"
+    hx-swap="outerHTML">
     <div class="row p-3 col-lg-10 offset-lg-1">
       <div>
         <h2 class="text-reset">Package Repositories</h2>
         <div class="alert alert-info" role="alert">
-          Please use the CLI to manage your repositories: <code>glasskube repo --help</code>.
+          Please use the CLI to create or delete package repositories: <code>glasskube repo --help</code>.
         </div>
         <div class="row row-cols-1 g-2">
           {{ range .Repositories }}
             <div class="col">
               <div class="card bg-body-secondary h-100 border-primary border-1">
-                <div class="card-body d-flex flex-row p-2">
-                  <div class="mx-1 align-self-center">
-                    {{ if IsRepoStatusReady . }}
-                      <i class="bi bi-circle-fill text-success"></i>
-                    {{ else }}
-                      <i class="bi bi-circle-fill text-danger"></i>
-                    {{ end }}
+                <a
+                  class="flex-grow-1 d-flex align-items-center gap-1 text-reset text-decoration-none p-1"
+                  href="/settings/repository/{{ .Name }}"
+                  hx-select="main"
+                  hx-target="main"
+                  hx-swap="outerHTML"
+                  hx-boost="true">
+                  <div class="card-body d-flex flex-row p-2">
+                    <div class="mx-1 align-self-center">
+                      {{ if IsRepoStatusReady . }}
+                        <i class="bi bi-circle-fill text-success" title="Ready"></i>
+                      {{ else }}
+                        <i class="bi bi-circle-fill text-danger" title="Not Ready"></i>
+                      {{ end }}
+                    </div>
+                    <div class="ms-2 d-flex flex-column">
+                      <span class="fw-semibold">
+                        {{ .Name }}
+                        {{ if .IsDefaultRepository }}
+                          <span class="badge bg-primary">Default</span>
+                        {{ end }}
+                      </span>
+                      <span class="small lh-sm fw-normal" id="url">{{ .Spec.Url }}</span>
+                    </div>
                   </div>
-                  <div class="ms-2 d-flex flex-column">
-                    <span class="fw-semibold">{{ .Name }}</span>
-                    <span class="small lh-sm fw-normal">{{ .Spec.Url }}</span>
-                  </div>
-                </div>
+                </a>
               </div>
             </div>
           {{ end }}
         </div>
+      </div>
+      <div class="mt-2">
+        <h2 class="text-reset">Danger Zone</h2>
+        <div class="alert alert-warning" role="alert">
+          <div class="form-switch mb-2">
+            <input
+              hx-post="/settings"
+              hx-swap="none"
+              class="form-check-input"
+              type="checkbox"
+              role="switch"
+              name="advancedOptions"
+              {{ if .AdvancedOptions }}checked{{ end }}
+              id="enableAdvancedOptions" />
+            <label class="form-check-label mx-1 fw-semibold" for="enableAdvancedOptions">Advanced Options</label>
+          </div>
+          <p>Advanced options include package downgrades and changing the repository of an installed package.</p>
+          <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>
+          It is not recommended to use these except for testing / maintaining a Glasskube package. These should only
+          ever be used in dev/test environments, and never in production. <strong>Use at your own risk!</strong>
+        </div>
+        <div class="row row-cols-1 g-2"></div>
       </div>
     </div>
   </div>

@@ -90,8 +90,8 @@ The package operator has two controllers:
 #### Package Repository
 
 A place where `PackageManifest`s are stored, searched and maintained.
-There is a central package repository managed by Glasskube: [`glasskube/packages`](https://github.com/glasskube/packages), 
-however using custom package repositories is supported too, see [Glasskube Repositories](design/repositories).  
+There is a central package repository managed by Glasskube: [`glasskube/packages`](https://github.com/glasskube/packages),
+however using custom package repositories is supported too, see [Glasskube Repositories](design/repositories).
 
 ## Commands
 
@@ -151,10 +151,36 @@ Shows additional information about the given package.
 Opens the default entrypoint of the given package.
 Use `glasskube open <package> <entrypoint>` to open a specific entrypoint.
 
+### `glasskube suspend`
+
+Instruct the package-operator to suspend reconciliation of the given package
+
+### `glasskube resume`
+
+Resume reconciliation of a suspended package
+
+### `glasskube auto-update`
+
+Update autopilot for packages where automatic updates are enabled.
+Use the `enable` and `disable` subcommands to enable/disable automatic updates for some or all packages.
+Examples:
+
+- `glasskube auto-update enable` (Enable automatic updates for all packages)
+- `glasskube auto-update disable foo bar` (Disable automatic updates for packages "foo" and "bar")
+
+For more information check out `glasskube help auto-update` and `glasskube help auto-update enable`.
+
 ### `glasskube repo`
 
-Manages the package repositories of the cluster. `glasskube repo list` lists the currently configured repositories, 
+Manages the package repositories of the cluster. `glasskube repo list` lists the currently configured repositories,
 while `glasskube repo add` allows you to add new repositories to your cluster.
+
+### `glasskube purge`
+
+Uninstalls the Glassube package-operator from the current cluster and deletes all Glasskube Custom Resource Definitions.
+**Warning:** This will delete all installed packages.
+
+If you are unhappy with Glasskube we would love to hear your feedback, so please get in touch!
 
 ### `glasskube version`
 

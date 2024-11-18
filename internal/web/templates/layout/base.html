@@ -2,11 +2,13 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="giscus:backlink" content="https://glasskube.dev/packages" />
     <title>Glasskube</title>
-    <link type="text/css" rel="stylesheet" href="/static/bundle/index.min.css?v={{ .CacheBustingString }}" />
-    <script src="/static/bundle/index.min.js?v={{ .CacheBustingString }}"></script>
+    <link type="text/css" rel="stylesheet" href="/static/bundle/index.min.css?v={{ .Ctx.CacheBustingString }}" />
+    <script src="/static/bundle/index.min.js?v={{ .Ctx.CacheBustingString }}"></script>
     <script type="text/javascript">
       // htmx.logAll();
+      htmx.config.scrollIntoViewOnBoost = false; // TODO put somewhere else?
     </script>
   </head>
 
@@ -14,39 +16,68 @@
     class="d-flex flex-column vh-100"
     hx-ext="sse,response-targets"
     sse-connect="/events"
+    sse-close="close"
     hx-indicator="#indicator"
-    hx-target-error="#error-container">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-secondary">
+    hx-target-error="#toast-container">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-secondary sticky-top">
       <div id="indicator" class="progress-container bg-transparent w-100 position-fixed top-0 start-0">
         <div class="htmx-indicator progress-bar bg-primary h-100 w-100"></div>
       </div>
 
-      <div class="container" hx-swap-oob="outerHTML:#navbar-content" id="navbar-content">
-        <a class="navbar-brand d-flex align-items-center" href="/">
-          <img src="/static/assets/glasskube-logo.svg" alt="Logo" height="32" width="32" />
-          <h1 class="navbar-brand text-white mx-1 my-0">Glasskube</h1>
-        </a>
+      <div class="container-lg d-flex flex-row" hx-swap-oob="outerHTML:#navbar-content" id="navbar-content">
+        <div class="d-flex  flex-row align-items-center justify-content-around">
+          <a class="navbar-brand d-flex align-items-center" href="/">
+            <img src="/static/assets/glasskube-logo.svg" alt="Logo" height="32" width="32" />
+            <h1 class="navbar-brand text-white mx-1 my-0">Glasskube</h1>
+          </a>
 
-        <ul class="navbar-nav" hx-boost="true" hx-select="main" hx-target="main" hx-swap="outerHTML">
-          <li class="nav-item mx-1">
-            {{ with $packages := "packages" }}
-              <a class="nav-link {{ if eq $.NavbarActiveItem $packages }}active{{ end }}" href="/packages">Packages</a>
-            {{ end }}
-          </li>
-          <li class="nav-item mx-1">
-            <a class="nav-link disabled">Apps</a>
-          </li>
-          <li class="nav-item mx-1">
-            {{ with $settings := "settings" }}
-              <a class="nav-link {{ if eq $.NavbarActiveItem $settings }}active{{ end }}" href="/settings">Settings</a>
-            {{ end }}
-          </li>
-        </ul>
+          <ul class="navbar-nav d-flex flex-row">
+            <li class="nav-item mx-1">
+              {{ with $clusterPackages := "clusterpackages" }}
+                <a
+                  class="nav-link {{ if eq $.Ctx.Navbar.ActiveItem $clusterPackages }}active{{ end }}"
+                  href="/clusterpackages"
+                  hx-boost="true"
+                  hx-select="main"
+                  hx-target="main"
+                  hx-swap="outerHTML"
+                  >ClusterPackages</a
+                >
+              {{ end }}
+            </li>
+            <li class="nav-item mx-1">
+              {{ with $packages := "packages" }}
+                <a
+                  class="nav-link {{ if eq $.Ctx.Navbar.ActiveItem $packages }}active{{ end }}"
+                  href="/packages"
+                  hx-boost="true"
+                  hx-select="main"
+                  hx-target="main"
+                  hx-swap="outerHTML"
+                  >Packages</a
+                >
+              {{ end }}
+            </li>
+            <li class="nav-item mx-1">
+              {{ with $settings := "settings" }}
+                <a
+                  class="nav-link {{ if eq $.Ctx.Navbar.ActiveItem $settings }}active{{ end }}"
+                  href="/settings"
+                  hx-boost="true"
+                  hx-select="main"
+                  hx-target="main"
+                  hx-swap="outerHTML"
+                  >Settings</a
+                >
+              {{ end }}
+            </li>
+          </ul>
+        </div>
 
-        <div class="navbar-collapse">
-          <ul class="navbar-nav ms-auto align-items-center gap-1">
+        <div class="d-flex  flex-row align-items-center justify-content-around">
+          <ul class="navbar-nav ms-auto align-items-center gap-2 d-flex flex-row">
             <li class="nav-item">
-              <a class="nav-link" href="https://glasskube.cloud/signup.html?id={{ .CloudId }}" target="_blank"
+              <a class="nav-link" href="https://glasskube.cloud/signup.html?id={{ .Ctx.CloudId }}" target="_blank"
                 ><span class="bi bi-box-arrow-up-right me-1"></span>Glasskube Cloud</a
               >
             </li>
@@ -60,19 +91,38 @@
         </div>
       </div>
     </nav>
+
     <main id="main">
-      <div id="sse-error-container" class="visually-hidden container-lg mt-2">
-        <div class="alert alert-danger" role="alert" id="sse-error-container-message"></div>
+      <div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3 pt-4 mt-4">
+        <div
+          hx-preserve="disconnected-toast"
+          id="disconnected-toast"
+          class="toast text-bg-danger border-0"
+          role="alert"
+          aria-live="assertive"
+          aria-atomic="true">
+          <div class="d-flex">
+            <div class="toast-body">
+              <p><strong>You are disconnected from the server!</strong></p>
+              Make sure to run <code class="text-reset">glasskube serve</code> and
+              <a href="javascript:window.location.reload()" class="text-reset">refresh</a> this page!
+            </div>
+          </div>
+        </div>
+
+        {{ if .Ctx.Error }}
+          {{ template "components/toast" (ForToast .Ctx.Error "danger" true) }}
+        {{ end }}
       </div>
 
-      <div id="error-container" class="container-lg mt-2">
+      <div id="info-container" class="container-lg mt-2">
         <div
           id="cloud-info"
           hx-preserve="cloud-info"
           class="alert alert-info alert-dismissible text-center visually-hidden"
           role="alert">
           🎉️ Glasskube Cloud is launching soon! 😎
-          <a class="text-reset" href="https://glasskube.cloud/signup.html?id={{ .CloudId }}" target="_blank"
+          <a class="text-reset" href="https://glasskube.cloud/signup.html?id={{ .Ctx.CloudId }}" target="_blank"
             >Join the wait list to request early access.</a
           >
           🥳
@@ -83,46 +133,68 @@
             data-bs-dismiss="alert"
             aria-label="Close"></button>
         </div>
-        {{ if .Error }}
-          {{ template "alert" (ForAlert .Error "danger") }}
-        {{ end }}
-        {{ if .VersionMismatchWarning }}
-          {{ template "version-mismatch-warning" .VersionDetails }}
+
+        {{ if .Ctx.VersionDetails.MismatchWarning }}
+          {{ template "version-mismatch-warning" . }}
         {{ end }}
       </div>
 
-      {{ template "content" . }}
+      {{ if eq .Ctx.TemplateName "pages/settings" }}
+        {{ template "pages/settings" . }}
+      {{ else if eq .Ctx.TemplateName "pages/repository" }}
+        {{ template "pages/repository" . }}
+      {{ else if eq .Ctx.TemplateName "pages/clusterpackages" }}
+        {{ template "pages/clusterpackages" . }}
+      {{ else if eq .Ctx.TemplateName "pages/packages" }}
+        {{ template "pages/packages" . }}
+      {{ else if eq .Ctx.TemplateName "pages/package" }}
+        {{ template "pages/package" . }}
+      {{ else if eq .Ctx.TemplateName "pages/discussion" }}
+        {{ template "pages/discussion" . }}
+      {{ else if eq .Ctx.TemplateName "pages/support" }}
+        {{ template "pages/support" . }}
+      {{ else if eq .Ctx.TemplateName "pages/kubeconfig" }}
+        {{ template "pages/kubeconfig" . }}
+      {{ else if eq .Ctx.TemplateName "pages/bootstrap" }}
+        {{ template "pages/bootstrap" . }}
+      {{ else }}
+        <p>DEBUG: {{ .Ctx.TemplateName }} not listed in base.html</p>
+      {{ end }}
+
     </main>
 
     <div class="modal" id="modal-container" tabindex="-1" style="display: none" aria-hidden="false">
       <div class="modal-dialog" role="document"></div>
     </div>
+
     <footer class="footer py-3 mt-auto w-100 bg-secondary-subtle">
       <div class="container">
         <div class="row">
           <div class="col-4 ">
-            <span class="text-muted text-wrap text-break">Context: {{ .CurrentContext }}</span>
+            <div class="text-muted text-wrap text-break">Context: {{ .Ctx.CurrentContext }}</div>
+
+            <span class="text-muted text-wrap text-break"
+              >GitopsMode: {{ if .Ctx.GitopsMode }}Enabled{{ else }}Disabled{{ end }}</span
+            >
           </div>
           <div class="col-4 text-center">
-            <span class="text-muted">Glasskube cluster version: {{ .VersionDetails.OperatorVersion }}</span>
+            <span class="text-muted">Glasskube cluster version: {{ .Ctx.VersionDetails.OperatorVersion }}</span>
             <br />
-            <span class="text-muted">Glasskube version: {{ .VersionDetails.ClientVersion }}</span>
+            <span class="text-muted">Glasskube version: {{ .Ctx.VersionDetails.ClientVersion }}</span>
             <br />
-            {{ if .VersionDetails.NeedsOperatorUpdate }}
-              <span class="text-danger">New version available! ({{ .VersionDetails.ClientVersion }})</span>
-            {{ else }}
-              <span class="text-success">Up to date</span>
-            {{ end }}
           </div>
           <div class="col-4 text-end">
-            <a class="nav-link" href="https://glasskube.cloud/signup.html?id={{ .CloudId }}" target="_blank"
-              ><span class="bi bi-box-arrow-up-right me-1"></span>Glasskube Cloud</a
-            >
+            <a class="nav-link" href="https://glasskube.cloud/signup.html?id={{ .Ctx.CloudId }}" target="_blank">
+              <span class="bi bi-box-arrow-up-right me-1"></span>Glasskube Cloud
+            </a>
+            <a class="nav-link" href="https://discord.gg/SxH6KUCGH7" target="_blank">
+              <span class="bi bi-box-arrow-up-right me-1"></span>Glasskube Discord
+            </a>
           </div>
         </div>
       </div>
     </footer>
 
-    <script src="/static/bundle/custom.min.js?v={{ .CacheBustingString }}"></script>
+    <script src="/static/bundle/custom.min.js?v={{ .Ctx.CacheBustingString }}"></script>
   </body>
 </html>
