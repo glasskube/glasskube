@@ -174,7 +174,7 @@ func (a *FluxHelmAdapter) ensureHelmReleases(
 		releases := make([]*helmv2.HelmRelease, len(manifest.Helm.Releases))
 		for i, rel := range manifest.Helm.Releases {
 			release, err := a.ensureHelmRelease(ctx, pkg, manifest, patches,
-				fmt.Sprintf("%v-%v", manifest.Name, rel.ChartName), rel.ChartName, rel.ChartVersion, rel.Values)
+				names.HelmResourceNameWithChart(pkg, manifest, rel.ChartName), rel.ChartName, rel.ChartVersion, rel.Values)
 			if err != nil {
 				return nil, err
 			}
@@ -183,7 +183,7 @@ func (a *FluxHelmAdapter) ensureHelmReleases(
 		return releases, nil
 	} else {
 		release, err := a.ensureHelmRelease(ctx, pkg, manifest, patches,
-			manifest.Name, manifest.Helm.ChartName, manifest.Helm.ChartVersion, manifest.Helm.Values)
+			names.HelmResourceName(pkg, manifest), manifest.Helm.ChartName, manifest.Helm.ChartVersion, manifest.Helm.Values)
 		if err != nil {
 			return nil, err
 		}
@@ -196,7 +196,7 @@ func (a *FluxHelmAdapter) ensureHelmRelease(
 	pkg ctrlpkg.Package,
 	manifest *packagesv1alpha1.PackageManifest,
 	patches resourcepatch.TargetPatches,
-	name, chartName, chartVersion string,
+	helmReleaseName, chartName, chartVersion string,
 	values *packagesv1alpha1.JSON,
 ) (*helmv2.HelmRelease, error) {
 	var namespace string
@@ -207,7 +207,7 @@ func (a *FluxHelmAdapter) ensureHelmRelease(
 	}
 	helmRelease := helmv2.HelmRelease{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      names.HelmResourceName(pkg, manifest),
+			Name:      helmReleaseName,
 			Namespace: namespace,
 		},
 	}

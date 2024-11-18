@@ -19,3 +19,7 @@ func PackageInfoName(pkg ctrlpkg.Package) string {
 func HelmResourceName(pkg ctrlpkg.Package, manifest *v1alpha1.PackageManifest) string {
 	return strings.Join([]string{pkg.GetName(), manifest.Name}, "-")
 }
+
+func HelmResourceNameWithChart(pkg ctrlpkg.Package, manifest *v1alpha1.PackageManifest, chartName string) string {
+	return strings.Join([]string{HelmResourceName(pkg, manifest), chartName}, "-")
+}
