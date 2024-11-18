@@ -196,8 +196,6 @@ func PostClusterPackageDetail(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	} else {
-		// note: not using updater here since it doesn't support changing repository or downgrading (and it probably shouldn't)
-		// could maybe be refactored in the future (PackageChanger construct, which the "normal" updater is a special case of)
 		pkg.Spec.PackageInfo.Version = p.version
 		pkg.Spec.PackageInfo.RepositoryName = p.repositoryName
 		pkg.Spec.Values = values
