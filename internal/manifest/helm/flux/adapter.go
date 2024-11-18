@@ -166,9 +166,9 @@ func (a *FluxHelmAdapter) ensureHelmRepository(
 
 func (a *FluxHelmAdapter) ensureHelmReleases(
 	ctx context.Context,
-	pkg *packagesv1alpha1.Package,
+	pkg ctrlpkg.Package,
 	manifest *packagesv1alpha1.PackageManifest,
-	patches manifestvalues.TargetPatches,
+	patches resourcepatch.TargetPatches,
 ) ([]*helmv2.HelmRelease, error) {
 	if len(manifest.Helm.Releases) > 0 {
 		releases := make([]*helmv2.HelmRelease, len(manifest.Helm.Releases))
