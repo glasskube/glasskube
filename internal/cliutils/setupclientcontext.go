@@ -18,7 +18,7 @@ import (
 func SetupClientContext(requireBootstrapped bool, skipUpdateCheck *bool) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
 		cfg, rawCfg := RequireConfig(config.Kubeconfig)
-		telemetry.InitClient(cfg)
+		telemetry.InitClient(cfg, nil)
 		if requireBootstrapped {
 			RequireBootstrapped(cmd.Context(), cfg, rawCfg)
 		}

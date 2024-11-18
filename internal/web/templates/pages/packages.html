@@ -1,4 +1,4 @@
-{{ define "content" }}
+{{ define "pages/packages" }}
   <div
     class="container-lg my-2"
     hx-trigger="htmx:historyRestore from:body"
@@ -14,7 +14,9 @@
       hx-swap="innerHTML"
       hx-select="#package-overview-swapped"
       hx-target="#package-overview-swapped">
-      {{ template "pkg-update-alert" . | ForPkgUpdateAlert }}
+      {{ if .UpdatesAvailable }}
+        {{ template "components/pkg-update-alert" }}
+      {{ end }}
       <div class="row row-cols-1 g-2">
         <div>
           <h2 class="text-reset">Installed Packages</h2>
@@ -72,6 +74,7 @@
                         <th scope="col" class="bg-body-secondary p-0">Namespace</th>
                         <th scope="col" class="bg-body-secondary p-0">Repository</th>
                         <th scope="col" class="bg-body-secondary p-0">Version</th>
+                        <th scope="col" class="bg-body-secondary p-0">Suspended</th>
                         <th scope="col" class="bg-body-secondary p-0">Status</th>
                         <th scope="col" class="bg-body-secondary p-0"></th>
                       </tr>
@@ -93,6 +96,13 @@
                           <td class="bg-body-secondary p-0">{{ .Package.Namespace }}</td>
                           <td class="bg-body-secondary p-0">{{ .Package.Spec.PackageInfo.RepositoryName }}</td>
                           <td class="bg-body-secondary p-0">{{ .Package.Spec.PackageInfo.Version }}</td>
+                          <td class="bg-body-secondary p-0">
+                            {{ if IsSuspended .Package }}
+                              Yes
+                            {{ else }}
+                              No
+                            {{ end }}
+                          </td>
                           <td class="bg-body-secondary p-0">{{ .Status.Status }}</td>
                           <td class="bg-body-secondary p-0 pe-2 text-end">
                             {{ if and (eq .Status.Status "Ready") .InstalledManifest .InstalledManifest.Entrypoints }}

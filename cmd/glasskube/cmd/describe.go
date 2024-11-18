@@ -25,6 +25,7 @@ import (
 	"github.com/glasskube/glasskube/pkg/describe"
 	"github.com/spf13/cobra"
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/renderer"
 	goldmarkutil "github.com/yuin/goldmark/util"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -144,6 +145,7 @@ var describeCmd = &cobra.Command{
 				fmt.Println(bold("Status:     "), status(pkgStatus))
 				fmt.Println(bold("Message:    "), message(pkgStatus))
 				fmt.Println(bold("Auto-Update:"), clientutils.AutoUpdateString(pkg, "Disabled"))
+				fmt.Println(bold("Suspended:  "), boolYesNo(pkg.GetSpec().Suspend))
 			} else if len(pkgs) > 0 {
 				fmt.Println()
 				fmt.Println(bold("Instances:"))
@@ -156,6 +158,7 @@ var describeCmd = &cobra.Command{
 					fmt.Println(bold("    Status:     "), status(pkgStatus))
 					fmt.Println(bold("    Message:    "), message(pkgStatus))
 					fmt.Println(bold("    Auto-Update:"), clientutils.AutoUpdateString(&pkg, "Disabled"))
+					fmt.Println(bold("    Suspended:  "), boolYesNo(pkg.Spec.Suspend))
 				}
 			}
 
@@ -325,6 +328,9 @@ func printValueConfigurations(w io.Writer, values map[string]v1alpha1.ValueConfi
 
 func printMarkdown(w io.Writer, text string) {
 	md := goldmark.New(
+		goldmark.WithExtensions(
+			extension.Linkify,
+		),
 		goldmark.WithRenderer(renderer.NewRenderer(
 			renderer.WithNodeRenderers(
 				goldmarkutil.Prioritized(cliutils.MarkdownRenderer(), 1000),
@@ -337,6 +343,13 @@ func printMarkdown(w io.Writer, text string) {
 	} else {
 		util.Must(fmt.Fprintln(w, strings.TrimSpace(buf.String())))
 	}
+}
+
+func boolYesNo(value bool) string {
+	if value {
+		return "Yes"
+	}
+	return "No"
 }
 
 func status(pkgStatus *client.PackageStatus) string {
@@ -420,6 +433,7 @@ func createOutputStructure(
 		data["autoUpdate"] = pkg.AutoUpdatesEnabled()
 		data["isUpgradable"] = semver.IsUpgradable(pkg.GetSpec().PackageInfo.Version, latestVersion)
 		data["status"] = client.GetStatusOrPending(pkg).Status
+		data["suspend"] = pkg.GetSpec().Suspend
 	}
 	if len(instances) > 0 {
 		data["instances"] = instances

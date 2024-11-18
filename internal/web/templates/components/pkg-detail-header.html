@@ -1,4 +1,4 @@
-{{ define "pkg-detail-header" }}
+{{ define "components/pkg-detail-header" }}
   <div
     class="d-flex flex-column"
     id="pkg-detail-header"
@@ -42,7 +42,7 @@
                 </h1>
               </a>
               <span class="align-self-center mx-auto">
-                {{ template "pkg-detail-btns" ForPkgDetailBtns .Manifest.Name .Status .Manifest .Package .UpdateAvailable }}
+                {{ template "pkg-detail-btns" ForPkgDetailBtns .Manifest.Name .Status .Manifest .Package .UpdateAvailable .Ctx.GitopsMode }}
               </span>
             </span>
           </div>
@@ -75,8 +75,8 @@
                 </span>
               </a>
             {{ end }}
-            {{ if PackageManifestUrl .Package }}
-              <a class="icon-link text-reset me-2 d-inline" href="{{ PackageManifestUrl .Package }}" target="_blank">
+            {{ if .PackageManifestUrl }}
+              <a class="icon-link text-reset me-2 d-inline" href="{{ .PackageManifestUrl }}" target="_blank">
                 <span class="bi bi-box-arrow-up-right"></span>
                 Glasskube Package Manifest
               </a>
@@ -118,6 +118,14 @@
             {{ template "failed-badge" . }}
           {{ else }}
             {{ template "badge" . }}
+          {{ end }}
+          {{ if .Package.Spec.Suspend }}
+            <span
+              class="badge bg-warning-subtle text-warning-emphasis border border-warning border-1 p-1 fw-normal"
+              title="Go to 'Actions' to resume reconciliation">
+              <i class="bi bi-pause-circle"></i>
+              Suspended
+            </span>
           {{ end }}
         </div>
         {{ if eq .Status.Status "Failed" }}

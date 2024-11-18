@@ -25,19 +25,25 @@ var autoUpdateEnabledDisabledOptions = struct {
 }
 
 var autoUpdateEnableCmd = &cobra.Command{
-	Use:               "enable [...package]",
-	Short:             "Enable automatic updates for packages:",
-	PreRun:            cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
-	ValidArgsFunction: completeInstalledPackageNames,
+	Use:    "enable [...package]",
+	Short:  "Enable automatic updates for packages:",
+	PreRun: cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
+	ValidArgsFunction: installedPackagesCompletionFunc(
+		&autoUpdateEnabledDisabledOptions.NamespaceOptions,
+		&autoUpdateEnabledDisabledOptions.KindOptions,
+	),
 	Run: runAutoUpdateEnableOrDisable(true,
 		"Enable automatic updates for the following packages", "Automatic updates enabled"),
 }
 
 var autoUpdateDisableCmd = &cobra.Command{
-	Use:               "disable [...package]",
-	Short:             "Disable automatic updates for packages:",
-	PreRun:            cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
-	ValidArgsFunction: completeInstalledPackageNames,
+	Use:    "disable [...package]",
+	Short:  "Disable automatic updates for packages:",
+	PreRun: cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
+	ValidArgsFunction: installedPackagesCompletionFunc(
+		&autoUpdateEnabledDisabledOptions.NamespaceOptions,
+		&autoUpdateEnabledDisabledOptions.KindOptions,
+	),
 	Run: runAutoUpdateEnableOrDisable(false,
 		"Enable automatic updates for the following packages", "Automatic updates disabled"),
 }
