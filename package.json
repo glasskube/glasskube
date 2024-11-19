@@ -17,8 +17,8 @@
     "htmx-ext-response-targets": "2.0.1"
   },
   "devDependencies": {
-    "@commitlint/cli": "19.5.0",
-    "@commitlint/config-conventional": "19.5.0",
+    "@commitlint/cli": "19.6.0",
+    "@commitlint/config-conventional": "19.6.0",
     "esbuild": "0.24.0",
     "prettier": "3.3.3",
     "prettier-plugin-go-template": "0.0.15"
