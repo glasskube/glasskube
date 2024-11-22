@@ -12,6 +12,7 @@ import Install from '../src/partials/_install.mdx';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
+![thumbnail](https://github.com/user-attachments/assets/dc644481-5271-4685-85d9-cd107a55887b)
 
 We recently wrote about how, since late 2019, the landscape for running PostgreSQL on Kubernetes has transformed. Today, it’s not just a bold choice for those risky DBAs with nothing else to lose. Running PostgreSQL on Kubernetes has become not just a viable but even potentially a superior way to manage database workloads, especially if you are already invested in Kubernetes.
 
@@ -27,7 +28,7 @@ Originally developed by [EDB](https://www.enterprisedb.com/) and released as ope
 
 ## Main CloudNativePG features
 
-We’ve already covered some of the main features in part [one](https://glasskube.dev/blog/postgres-on-kubernetes/) of this blog series. Here are some additional features though:
+We’ve already covered some of the main features in part [one](/blog/postgres-on-kubernetes/) of this blog series. Here are some additional features though:
 
 -   **Cross-Cluster Replication**: Enables high availability and disaster recovery across multiple Kubernetes clusters.   
 -   **Multi-Tenancy Support**: Allows multiple PostgreSQL clusters to run within a single Kubernetes environment, efficiently sharing resources.   
@@ -44,7 +45,9 @@ In this blog post we will configure these last three features. But for instructi
 
 I like to think of myself as a quick learner, but as a relative novice to PostgreSQL database management and seeing as how there are so many different use cases and feature CloudNativePG has to offer, if we explored them all this blog post it would surely turn into a brick of a book. So in the spirit of keeping it simple, actionable, and realistic, let’s focus on setting up a straightforward PostgreSQL cluster using Glasskube.
 
-> This cluster will be set up from scratch using a straightforward Cluster definition file. It will automatically create a `postgres` superuser, which you can use to connect to and manage the PostgreSQL instances. We'll also configure access and authentication control to allow connections from any host to the `app` database, requiring SSL certificates for secure authentication. Along the way, we'll explore the purpose of WAL (Write-Ahead Log) files and set up backups to an AWS S3 bucket. Additionally, we'll enable pod metric exports to integrate with the `kube-prometheus-stack`, and import the pre-built CloudNativePG Grafana dashboard to get a great overview of the inner workings of out database cluster right out of the box. All installation needed will be done with Glasskube for simplicity. This setup serves as an excellent starting point for anyone new to CloudNativePG.
+:::note
+This cluster will be set up from scratch using a straightforward Cluster definition file. It will automatically create a `postgres` superuser, which you can use to connect to and manage the PostgreSQL instances. We'll also configure access and authentication control to allow connections from any host to the `app` database, requiring SSL certificates for secure authentication. Along the way, we'll explore the purpose of WAL (Write-Ahead Log) files and set up backups to an AWS S3 bucket. Additionally, we'll enable pod metric exports to integrate with the `kube-prometheus-stack`, and import the pre-built CloudNativePG Grafana dashboard to get a great overview of the inner workings of out database cluster right out of the box. All installation needed will be done with Glasskube for simplicity. This setup serves as an excellent starting point for anyone new to CloudNativePG.
+:::
 
 ## Prerequisites
 
@@ -305,7 +308,7 @@ kubectl logs <CLUSTER_POD_NAME>
 
 If configured correctly, you can expect to find a new folder which is named the same of the cluster name created in the S3 bucket.
 
-![](https://wiki.glasskube.eu/api/attachments.redirect?id=d3a304c2-2c49-4391-959d-9e651b040b0d)
+![WAL backup in S3 bucket](https://github.com/user-attachments/assets/7238f707-f12d-4e05-a067-b3d3c3821ce0)
 
 ## The complete Cluster definition file looks like this
 
@@ -352,14 +355,16 @@ glasskube install kube-prometheus-stack
 
 Or by using the Glasskube console.
 
-> Grafana authentication: Once installed you can access the Grafana dashboard with default user `admin` and password `prom-operator`
+:::note
+Grafana authentication: Once installed you can access the Grafana dashboard with default user `admin` and password `prom-operator`
+:::
 
 Once inside Grafana then create a new dashboard and import an existing dashboard using the community-maintained CloudNativePG dashboard with ID 20417
 
-![](https://wiki.glasskube.eu/api/attachments.redirect?id=9e095a7b-054f-4775-8a07-480286d218be)
+![grafana dashboard import](https://github.com/user-attachments/assets/acb429bf-8da3-424a-aba2-a46dc57fefcb)
 
 Give it a name, and after a few minutes you should see something similar to this
 
-![](https://wiki.glasskube.eu/api/attachments.redirect?id=5f7ccc76-059a-4477-b852-c8b0ddfbe2a1)
+![cloudnative-pg dashboard](https://github.com/user-attachments/assets/f1b56ba9-957c-4db7-b510-9add2cd78e60)
 
 In this CloudNativePG guide, we walked through the initial setup of the CloudNativePG operator and introduced the basics of managing PostgreSQL clusters. We covered key features like enabling WAL file backups for disaster recovery, configuring TLS for secure database authentication, and deploying a monitoring stack to keep a close eye on your database cluster's health. Hopefully, this guide has been helpful and gives you a solid starting point for managing PostgreSQL clusters on Kubernetes with the CloudNativePG operator.
