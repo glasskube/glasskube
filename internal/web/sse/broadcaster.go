@@ -56,6 +56,7 @@ func (b *Broadcaster) UpdatesAvailable(headerOnly refresh.RefreshTriggerHeaderOn
 }
 
 func (b *Broadcaster) UpdatesAvailableForPackage(oldPkg ctrlpkg.Package, newPkg ctrlpkg.Package) {
+	// TODO rename and separate to three functions: package added, changed and removed
 	if oldPkg != nil && !oldPkg.IsNil() && newPkg != nil && !newPkg.IsNil() {
 		if !reflect.DeepEqual(oldPkg.GetSpec(), newPkg.GetSpec()) {
 			b.UpdatesAvailable(refresh.RefreshTriggerAll, newPkg)

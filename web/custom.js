@@ -62,7 +62,7 @@ function handleGiscusMessage(ev) {
     const githubUrl = giscusData['viewer']['url'];
     const formData = new FormData();
     formData.append('githubUrl', githubUrl);
-    fetch('', {
+    fetch('/giscus', {
       method: 'POST',
       body: formData,
     });

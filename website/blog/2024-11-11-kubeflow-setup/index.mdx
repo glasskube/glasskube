@@ -1,0 +1,470 @@
+---
+slug: kubeflow-setup-guide
+title: Getting Started with Cloud-native AI using Kubeflow
+description: |
+  In this article, I would like to introduce to you Kubeflow: A complete and cloud-native platform that simplifies AI operations.
+  Join me in setting up Kubeflow on GKE for your organization and get started with cloud-native AI today.
+authors:
+  - kosmoz
+tags: [guide, ai, mlops, kubernetes, eks, gcp, azure]
+image: https://github.com/user-attachments/assets/3a0efa8f-98fb-4cc7-a407-594aa3878551
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import BlogCTA from '@site/src/components/BlogCTA/blogCTA';
+
+![Kubeflow setup thumbnail](https://github.com/user-attachments/assets/3a0efa8f-98fb-4cc7-a407-594aa3878551)
+
+
+In this article, I would like to introduce to you Kubeflow: A complete and cloud-native platform that simplifies AI operations.
+Join me in setting up Kubeflow on GKE for your organization and get started with cloud-native AI **today**.
+
+{/* truncate */}
+
+## Prerequisites
+
+- Up-to-date version of `git`, `kubectl` and `kustomize` installed
+- Up-to-date version of `gcloud` and the `gke-gcloud-auth-plugin` component installed and initialized
+- A Google Cloud project with sufficient funds to host the GKE cluster
+- A domain name and the capabilities to create DNS records for that domain
+
+## Background
+
+### AI on Kubernetes
+
+Over the course of the last decade, Kubernetes has established itself as one of the foundational pillars of modern cloud computing.
+Countless enterprises and organizations have adopted it as a platform to serve their internal and external IT infrastructure, benefiting from its declarative management, self-healing and scaling capabilities.
+But the advance of Artificial Intelligence (AI) in recent years has presented the community with several challenges.
+
+While containerization, workload scheduling, horizontal scaling and the general abstraction for compute resources are all relevant to AI engineers,
+Kubernetes was designed first and foremost with web applications in mind, and not machine learning tasks and inference serving.
+For this reason, the primitives Kubernetes provides for users to manage workloads have turned out to be unintuitive for individuals tasked with managing AI workloads if they don't already have a deep understanding of the system.
+Furthermore, AI workloads have very different performance characteristics compared to the web servers and database servers we are used to.
+They are, generally, very resource demanding, tightly coupled and often short-lived.
+
+While advanced techniques, like cluster autoscaling, can help with some of these challenges, there is a clear need for Kubernetes primitives representing higher level concepts that AI researchers and data scientists are more familiar with.
+
+### Why Kubeflow
+
+This is where [Kubeflow](https://www.kubeflow.org/docs/started/introduction/) enters the picture.
+Originally developed by Google, Kubeflow is, essentially, a collective of open-source projects that each provide a solution for different steps in a machine-learning workflow.
+However, Kubeflow also positions itself as a complete platform, integrating all of those projects into a cohesive and easy to use solution while providing additional features and security.
+
+Kubeflow makes it easy to train and serve models, supporting most of the commonly used machine learning frameworks.
+It also helps researchers to reify their machine-learning workflows using "pipelines", leading to faster and more reproducible model development cycles.
+
+### Kubeflow Platform Architecture
+
+If all of that sounds to you like a very complex system with a lot of moving parts, for better or for worse, you are right.
+Kubeflow is composed of several components and is built on a base of quite a few third-party projects:
+
+- cert-manager (generating TLS certificates for admission webhooks)
+- Istio (internal routing, authorization)
+- OAuth2-Proxy (provide OIDC client)
+- Dex (authentication)
+- Knative (serving models)
+
+While distributions tailored for specific cloud environments exist, I have found that those actually add even more complexity to this already complex system.
+Therefore, we are going to deploy a “vanilla” distribution, which is maintained by the Kubeflow contributors at https://github.com/kubeflow/manifests.
+
+## Cluster Setup
+
+:::warning[Disclaimer]
+In the following steps, we will create a Kubernetes cluster with several nodes including some with GPUs.
+Please make sure you are familiar with the costs involved and ensure that you are authorized to spend the required funds, before you continue.
+:::
+
+### Considerations
+
+But before we can install anything in a Kubernetes cluster, we will need, well, a cluster!
+So, let's head over to the Google Cloud Console and create one.
+
+Google cloud makes it very easy to create Kubernetes clusters with the Google Kubernetes Engine (GKE), but our installation has some special requirements that need to be taken care of. Here are our considerations:
+
+- **Resource requirements:** Kubeflow itself is quite resource heavy, and the specific requirements will change over time, because workloads will be created and deleted as your users work with it.
+- **Accelerators:** You will probably need to expose one or more GPUs or TPUs in your cluster, but you probably don't want one on all of your general-purpose nodes.
+- **Permissions:** In order to store model artifacts in Google Cloud Storage (GCS), at least some of your nodes need the WRITE permission for GCS.
+
+### Configuration
+
+To create your cluster using the Google Cloud Console UI, go to https://console.cloud.google.com/kubernetes/add and make sure the correct project is selected in the top left.
+Then, choose a name and region and configure your node pools:
+
+1. The first node pool (let's call it `default`) should be configured with
+
+   - “Number of nodes (per zone)” set to 4 (12 nodes total is a good start for a Kubeflow installation)
+   - “Enable cluster autoscaler” checked
+   - “Size limit type” set to “Total limits”
+   - “Minimum number of nodes” set to 0
+   - “Maximum number of nodes” set to 16
+   - Machine type `e2-medium` (or use a different one if desired)
+   - “Enable nodes on spot VMs” checked (recommended)
+
+2. Add a second node pool using the button in the top bar (let's call this one `gpu`) and configure it with
+
+   - “Number of nodes (per zone)” set to 0 (nodes in this group should only be provisioned on-demand)
+   - “Enable cluster autoscaler” checked
+   - “Size limit type” set to “Total limits”
+   - “Minimum number of nodes” set to 0
+   - “Maximum number of nodes” set to 3 (or more, depending on anticipated load)
+   - “Machine configuration family” set to “GPUs”
+   - “GPU type” set to L4 and “Number of GPUs” set to 1
+   - “GPU Driver installation” set to “Google-managed” and driver version set to “Latest”
+   - Machine type `g2-standard-4` (or use a different one if desired)
+   - “Enable nodes on spot VMs” checked (again, recommended)
+   - Under “Security” on the left navigation, select “Set access for each API” and change “Storage” to “Read Write”.
+
+To provision your cluster, click “Create” on the bottom of the page and wait for your cluster to be ready.
+
+:::note
+If you get an error like “accelerator l4 is not available in region X”, go back to the “Cluster basics” page and check “Specify default node locations”.
+Then, check all the regions except for the one mentioned in the error message and try creating the cluster again.
+:::
+
+### Connect to Your Cluster
+
+Finally, to add the new cluster to your `kubectl` configuration, run
+
+```sh
+gcloud container clusters get-credentials "<cluster name>" \
+  --region "<cluster region>" \
+  --project "<cluster project id>"
+```
+
+Verify that the configuration works, by running any command such as `kubectl get nodes`.
+
+<BlogCTA />
+
+## Kubeflow Installation
+
+### Basic Installation
+
+Although Kubeflow is a very complex system, they provide a Kustomize manifest that contains everything required.
+You can find it [here](https://github.com/kubeflow/manifests).
+To use this manifest, you need to clone the repository locally.
+Additionally, make sure to check out a tagged release of the repository.
+At the time of writing this article, the latest release is `v1.9.1`, so let's use that version.
+
+```sh
+git clone git@github.com:kubeflow/manifests.git
+cd manifests
+git checkout v1.9.1
+```
+
+Since this manifest contains several Custom Resource Definitions (CRDs), related controllers, webhook configurations and Custom Resources (CRs),
+simply applying it usually does not work, because once a webhook configuration exists for a CRD, the appropriate controller must be running before a CR can be created.
+A simple workaround for this issue is to just apply the manifests multiple times until there is no error.
+To do this conveniently, you can execute the command in a loop, until it terminates with exit code 0:
+
+<Tabs groupId="shells">
+  <TabItem value="Bash">
+
+    ```sh
+    while ! kustomize build example | kubectl apply -f -; do echo "Retrying to apply resources"; sleep 20; done
+    ```
+
+  </TabItem>
+  <TabItem value="Fish">
+
+    ```fish
+    while not kustomize build example | kubectl apply -f -
+      echo "Retrying to apply resources"
+      sleep 20
+    end
+    ```
+
+  </TabItem>
+</Tabs>
+
+After this command has finished, it may take several minutes for the complete platform to become available.
+You can observe the status of all components by running `kubectl get pods -A` or `kubectl get pods -n kubeflow`.
+Once all pods are reported as running and ready, Kubeflow has been successfully installed!
+
+:::tip[Try it out]
+In a terminal, run `kubectl port-forward -n istio-system svc/istio-ingressgateway 8080:80`.
+Then, open http://localhost:8080/ in a browser.
+Sign in with username `user@example.com` and password `12341234`.
+:::
+
+### Exposing Via Ingress
+
+If you just want to see what Kubeflow looks like or experiment a little, you can already stop here.
+Kubeflow is usable behind `kubectl port-forward`.
+However, you probably intend other users to join the platform and expecting everyone to install `kubectl` and have access to the cluster API would be unreasonable.
+Fortunately, exposing Kubeflow is pretty straight-forward with an `Ingress`, we just need to jump through some extra hoops to make everything work in GCP.
+Specifically, we will also need:
+
+- A `BackendConfig` that tells GCP how to health-check the service,
+- a `ManagedCertificate` to provide a TLS certificate signed by a trusted Certificate Authority (CA) and
+- a `FrontendConfig` to configure the load balancer to automatically redirect HTTP to HTTPS.
+
+Finally, we need to patch the `istio-ingressgateway` service to use the `BackendConfig` and change its type to `NodePort`.
+
+At this point you should decide what DNS name you assign to your Kubeflow installation.
+For this example, I'm going to use `kf.example-company.com`, so make sure to replace it with your chosen name.
+
+To start with, we will create a new directory in the directory where you cloned the `kubeflow/manifests` repository before: `mkdir custom`.
+We do this because it is best practice to not modify any resources in-place but instead create a new overlay and make changes there.
+In this directory, create the following files:
+
+```yaml title="custom/ingress/frontend-config.yaml"
+apiVersion: networking.gke.io/v1beta1
+kind: FrontendConfig
+metadata:
+  name: kubeflow
+spec:
+  redirectToHttps:
+    enabled: true
+```
+
+```yaml title="custom/ingress/managed-certificate.yaml"
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: kubeflow
+spec:
+  domains:
+    - kf.example-company.com
+```
+
+```yaml title="custom/ingress/ingress.yaml"
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kubeflow
+  annotations:
+    networking.gke.io/managed-certificates: kubeflow
+    networking.gke.io/v1beta1.FrontendConfig: kubeflow
+spec:
+  rules:
+    - host: kf.example-company.com
+      http:
+        paths:
+          - pathType: Prefix
+            path: '/'
+            backend:
+              service:
+                name: istio-ingressgateway
+                port:
+                  number: 80
+```
+
+```yaml title="custom/ingress/backend-config.yaml"
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: istio-healthcheck
+spec:
+  healthCheck:
+    type: HTTP
+    checkIntervalSec: 15
+    port: 15021
+    requestPath: /healthz/ready
+```
+
+```yaml title="custom/ingress/kustomization.yaml"
+namespace: istio-system
+resources:
+  - frontend-config.yaml
+  - managed-certificate.yaml
+  - ingress.yaml
+  - backend-config.yaml
+```
+
+```yaml title="custom/istio-ingressgateway-service-patch.yaml"
+apiVersion: v1
+kind: Service
+metadata:
+  name: istio-ingressgateway
+  namespace: istio-system
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+    beta.cloud.google.com/backend-config: '{"default": "istio-healthcheck"}'
+spec:
+  type: NodePort
+```
+
+```yaml title="custom/kustomization.yaml"
+resources:
+  - ../example
+  - ingress
+patches:
+  - path: istio-ingressgateway-service-patch.yaml
+```
+
+Apply the new manifest by running `kustomize build custom | kubectl apply -f -`.
+Since Kubeflow is already installed, there is no need to do this in a loop, but it will still take a few minutes to complete.
+After the command has completed, open https://console.cloud.google.com/kubernetes/ingresses in your web browser, and select the ingress you just created.
+Note down the IP address and use it to create a DNS record for this Kubeflow installation.
+The exact procedure for this is obviously different for each domain registrar, but in the end, your record should look something like this:
+
+```
+kf.example-company.com. 60 IN A <your ingress IP address>
+```
+
+It will take some time for GCP to register all LoadBalancer as healthy and request the TLS certificate from the CA.
+
+:::tip[Try it out]
+Once everything is done, enter the domain in your browser, and you will be able to log in, just like before.
+:::
+
+Since our Kubeflow deployment is now reachable for the public, you will probably want to set up a more robust authentication flow than the built-in default username and password.
+Of course, you can do this by extending the `staticPasswords` list located in the Dex configuration, but where Dex really shines at is delegating authentication to an external Identity Provider IdP, such as Google, GitHub, Microsoft or basically any provider that implements the OIDC protocol.
+So let's do that!
+
+### Configuring External Authentication
+
+Like many other organizations, we use several Microsoft products, so it makes sense for us to use Azure Active Directory (AAD) here.
+But Dex supports a [wide variety of SSO providers](https://dexidp.io/docs/connectors/), including generic SAML and OIDC, so feel free to pick one that works for you.
+
+First, visit [AAD App Registrations](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade) in your browser and create a new registration.
+For the redirect URI, choose the platform “Web” and enter `https://kf.example-company.com/dex/callback` (replace with your chosen domain).
+Then press “Register”.
+Note down the “Application (client) ID” and “Directory (tenant) ID”.
+In the side navigation, select “Certificates & secrets”, go to “Client secrets”, press “New client secret” and follow the directions.
+Note down the client secret _value_.
+
+Now we just need to configure Dex to act as this app registration. To do so, create the following file:
+
+```yaml title="custom/microsoft-auth/kustomization.yaml"
+kind: Component
+patches:
+  - path: config-map.yaml
+```
+
+Next, copy `common/dex/overlays/oauth2-proxy/config-map.yaml` to `custom/microsoft-auth/config-map.yaml`.
+In your copy, make the following changes:
+
+- Change `issuer` to `https://kf.example-company.com/dex`
+- Change `enablePasswordDB` to `false`
+- Remove the `staticPasswords`
+- Add the `microsoft` connector, as seen below (replace the client ID, tenant ID and client secret with the ones you noted down before), or add your own connector if you chose to use a different IdP
+
+```yaml
+connectors:
+  - type: microsoft
+    id: microsoft
+    name: Microsoft
+    config:
+      clientID: xxx
+      clientSecret: xxx
+      tenant: xxx
+      redirectURI: https://kf.example-company.com/dex/callback
+```
+
+This is enough for Dex to work with the Microsoft IdP, but because we changed the `issuer` field in the Dex configuration, it now identifies as a different issuer internally.
+So, we have to update the `oauth2-proxy` configuration to accept the new issuer name.
+For this, update the file you created before, adding a patch for the `RequestAuthentication` resource:
+
+```yaml title="custom/microsoft-auth/kustomization.yaml"
+kind: Component
+patches:
+  - path: config-map.yaml
+  - target:
+      kind: RequestAuthentication
+      name: dex-jwt
+      namespace: istio-system
+    patch: |
+      - op: replace
+        path: /spec/jwtRules/0/issuer
+        value: "https://kf.example-company.com/dex"
+```
+
+Then, copy `common/oauth2-proxy/base/oauth2_proxy.cfg` to `custom/oauth2_proxy.cfg` and replace `http://dex.auth.svc.cluster.local:5556/dex` with `https://kf.example-company.com/dex` everywhere.
+Finally, update the root kustomization file:
+
+```yaml title="custom/kustomization.yaml"
+resources:
+  - ../example
+  - ingress
+components:
+  # import the dex config we just created as a *component*
+  - microsoft-auth
+patches:
+  - path: istio-ingressgateway-service-patch.yaml
+# make sure to specify the *merge* behavior here, otherwise Kustomize will report a name conflict error
+configMapGenerator:
+  - name: oauth2-proxy
+    namespace: oauth2-proxy
+    files:
+      - oauth2_proxy.cfg
+    behavior: merge
+```
+
+Again, apply the changes by running `kustomize build custom | kubectl apply -f -`.
+Finally, restart the `dex` deployments:
+
+```sh
+kubectl rollout restart -n auth deployment dex
+```
+
+:::tip[Try it out]
+Open the site in your browser (make sure to clear your cookies if you have signed in with the example credentials before) and log in.
+On first try, you will be prompted to authorize Dex to access personal information stored in your Microsoft account, which you must agree to.
+:::
+
+### Enabling Registration Flow
+
+You should now be able to log in to Kubeflow with you Microsoft account, but as you will quickly realize, you can't access any namespaces!
+RBAC in Kubeflow is an evolving topic and one solution likely won't work for every use-case, but the simplest way to give users access to a namespace is by enabling the “Registration Flow” feature on the `centraldashboard` component.
+To do this, add the following file:
+
+```yaml title="custom/centraldashboard-deployment-patch.yaml"
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: centraldashboard
+  namespace: kubeflow
+spec:
+  template:
+    spec:
+      containers:
+        - name: centraldashboard
+          env:
+            - name: REGISTRATION_FLOW
+              value: 'true'
+```
+
+Don't forget to add this patch to your `kustomization.yaml`:
+
+```yaml title="custom/kustomization.yaml (final version)"
+resources:
+  - ../example
+  - ingress
+components:
+  - microsoft-auth
+patches:
+  - path: istio-ingressgateway-service-patch.yaml
+  # here we enable the registration flow feature
+  - path: centraldashboard-deployment-patch.yaml
+configMapGenerator:
+  - name: oauth2-proxy
+    namespace: oauth2-proxy
+    files:
+      - oauth2_proxy.cfg
+    behavior: merge
+```
+
+And apply the changes by running `kustomize build custom | kubectl apply -f -`.
+
+Once the command has completed, reload the page in your browser, and you should be presented with the Kubeflow registration flow.
+Complete it, and you will see that you are now “owner” of a namespace!
+
+## Excursion: Exploring distributed training with Kubeflow
+
+We provide some additional information on how one can use Kubeflow in our [glasskube/label-prediction](https://github.com/glasskube/label-prediction) repo,
+where we tried to create a small machine learning project ourselves.
+
+## Final Thoughts
+
+This concludes our guide on how to set up vanilla Kubeflow on GCP.
+If you followed along, you now have a complete and functional Kubeflow installation running on a Kubernetes cluster that automatically scales up or down to accommodate your users CPU and GPU requirements.
+We exposed the deployment using a GCP load balancer and secured it using Microsoft as our IdP.
+
+While the instance we created might be opinionated in some respects, I believe that it should serve as a reasonable foundation on which you can build your own variant.
+Check out our [dedicated Kustomize tutorial](../patching-with-kustomize) if you want to learn more about how you can further customize your Kubeflow deployment.
+If you want to learn more about Kubeflow, why not check out one of the official user-guides: https://www.kubeflow.org/docs/started/introduction/
+
+
+<BlogCTA />

@@ -1,4 +1,4 @@
-package pkg_config_input
+package components
 
 import (
 	"fmt"

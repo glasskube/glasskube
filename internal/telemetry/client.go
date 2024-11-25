@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	listerv1 "k8s.io/client-go/listers/core/v1"
+
 	"github.com/glasskube/glasskube/internal/config"
 
 	"github.com/denisbrodbeck/machineid"
@@ -30,6 +32,14 @@ type clientsetNamespaceGetter struct {
 
 func (g clientsetNamespaceGetter) GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
 	return g.client.CoreV1().Namespaces().Get(ctx, name, v1.GetOptions{})
+}
+
+type listerNamespaceGetter struct {
+	lister *listerv1.NamespaceLister
+}
+
+func (l listerNamespaceGetter) GetNamespace(ctx context.Context, name string) (*corev1.Namespace, error) {
+	return (*l.lister).Get(name)
 }
 
 type clientsetNodeLister struct {
@@ -54,8 +64,8 @@ func Init() {
 	instance = ForClient()
 }
 
-func InitClient(config *rest.Config) {
-	instance.InitClient(config)
+func InitClient(config *rest.Config, namespaceLister *listerv1.NamespaceLister) {
+	instance.InitClient(config, namespaceLister)
 }
 
 func BootstrapAttempt() {
@@ -128,11 +138,15 @@ func ForClient() *ClientTelemetry {
 	return &ct
 }
 
-func (t *ClientTelemetry) InitClient(config *rest.Config) {
+func (t *ClientTelemetry) InitClient(config *rest.Config, namespaceLister *listerv1.NamespaceLister) {
 	if config != nil {
 		t.restConfig = config
 		if client, err := kubernetes.NewForConfig(config); err == nil {
-			t.properties.NamespaceGetter = clientsetNamespaceGetter{client}
+			if namespaceLister != nil {
+				t.properties.NamespaceGetter = listerNamespaceGetter{namespaceLister}
+			} else {
+				t.properties.NamespaceGetter = clientsetNamespaceGetter{client}
+			}
 			t.properties.NodeLister = clientsetNodeLister{client}
 			t.properties.DiscoveryClient = client
 		}
