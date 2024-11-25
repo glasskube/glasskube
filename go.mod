@@ -21,10 +21,10 @@ require (
 	github.com/yuin/goldmark v1.7.8
 	go.uber.org/multierr v1.11.0
 	golang.org/x/term v0.26.0
-	k8s.io/api v0.31.2
-	k8s.io/apiextensions-apiserver v0.31.2
-	k8s.io/apimachinery v0.31.2
-	k8s.io/client-go v0.31.2
+	k8s.io/api v0.31.3
+	k8s.io/apiextensions-apiserver v0.31.3
+	k8s.io/apimachinery v0.31.3
+	k8s.io/client-go v0.31.3
 	k8s.io/klog/v2 v2.130.1
 	sigs.k8s.io/controller-runtime v0.19.2
 	sigs.k8s.io/kustomize/api v0.18.0
