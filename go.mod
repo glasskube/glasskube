@@ -3,7 +3,7 @@ module github.com/glasskube/glasskube
 go 1.23.0
 
 require (
-	github.com/Masterminds/semver/v3 v3.3.0
+	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/evanphx/json-patch/v5 v5.9.0
 	github.com/fatih/color v1.18.0
@@ -13,7 +13,7 @@ require (
 	github.com/go-logr/logr v1.4.2
 	github.com/google/go-containerregistry v0.20.2
 	github.com/invopop/jsonschema v0.12.0
-	github.com/onsi/ginkgo/v2 v2.21.0
+	github.com/onsi/ginkgo/v2 v2.22.0
 	github.com/onsi/gomega v1.35.1
 	github.com/posthog/posthog-go v1.2.24
 	github.com/schollz/progressbar/v3 v3.17.1
@@ -21,10 +21,10 @@ require (
 	github.com/yuin/goldmark v1.7.8
 	go.uber.org/multierr v1.11.0
 	golang.org/x/term v0.26.0
-	k8s.io/api v0.31.2
-	k8s.io/apiextensions-apiserver v0.31.2
-	k8s.io/apimachinery v0.31.2
-	k8s.io/client-go v0.31.2
+	k8s.io/api v0.31.3
+	k8s.io/apiextensions-apiserver v0.31.3
+	k8s.io/apimachinery v0.31.3
+	k8s.io/client-go v0.31.3
 	k8s.io/klog/v2 v2.130.1
 	sigs.k8s.io/controller-runtime v0.19.2
 	sigs.k8s.io/kustomize/api v0.18.0
