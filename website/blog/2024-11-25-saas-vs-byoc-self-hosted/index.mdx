@@ -18,12 +18,12 @@ I’ll admit upfront, this blog post may include a few opinionated takes. Since 
 
 Throughout the article, we’ll reference the following terms multiple times. Defining them upfront will help avoid any confusion.
 
--   **Software Vendor**: A company that creates a software product, providing it to customers who use it within their own operations.  
+-   **Software Vendor**: A company that creates a software product, providing it to customers who use it within their own operations.
 -   **Software Customer**: A company that has a contractual agreement to purchase and use a vendor's software.
 -   **Infrastructure Management**: This is the process of configuring, maintaining, troubleshooting, and provisioning the infrastructure on which a given software runs.
 -   **Infrastructure Ownership**: Refers to the entity that owns the infrastructure itself. Ownership is distinct from management, in some cases, customer-owned infrastructure may still be managed by the vendor.
 -   **Deployment Method/Model**: The process of deploying software, with each method selected based on the level of responsibility sharing for infrastructure management and ownership. Compliance, security concerns, and customer preferences influence the chosen deployment method.
--   **Deployment Target**: This describes the physical environment where vendor-supplied software will run, focusing on the infrastructure characteristics rather than the shared responsibilities between the vendor and customer. 
+-   **Deployment Target**: This describes the physical environment where vendor-supplied software will run, focusing on the infrastructure characteristics rather than the shared responsibilities between the vendor and customer.
 
 ## Deployment methods
 
@@ -33,7 +33,7 @@ The key confusion I usually find is that deployment methods are mistaken for dep
 
 This model transfers all operational and security responsibilities to the vendor, who owns and manages both the software and the infrastructure it runs on. Customers typically access the software through a subscription fee, with minimal complexity or confusion around roles since the vendor handles nearly everything.
 
-[SaaS](/glossary/saas/) offerings are particularly attractive to customers who want a quick, efficient way to start using the software without dedicating time or resources to ongoing maintenance.
+[SaaS](/glossary/saas-definition/) offerings are particularly attractive to customers who want a quick, efficient way to start using the software without dedicating time or resources to ongoing maintenance.
 
 **Who is the Target User for SaaS Offerings?**
 
@@ -41,16 +41,16 @@ Companies of all sizes that prioritize ease and flexibility over data sovereignt
 
 ### Bring your own Cloud (BYOC)
 
-[BYOC](/glossary/byoc/) has emerged as a new way to deploy software over the last for year, particularly attractive to companies in highly regulated industries with strict requirements for data sovereignty, access, and security. In the BYOC model, the vendor is granted access to a VPC within the customer’s environment. Here, the vendor manages the software and infrastructure, but with permissions usually restricted to workload-specific needs. Often, a zero-trust security model complements BYOC to ensure that the vendor cannot access sensitive internal data and that no data ever leaves the VPC.
+[BYOC](/glossary/byoc-definition/) has emerged as a new way to deploy software over the last for year, particularly attractive to companies in highly regulated industries with strict requirements for data sovereignty, access, and security. In the BYOC model, the vendor is granted access to a VPC within the customer’s environment. Here, the vendor manages the software and infrastructure, but with permissions usually restricted to workload-specific needs. Often, a zero-trust security model complements BYOC to ensure that the vendor cannot access sensitive internal data and that no data ever leaves the VPC.
 
 This shared responsibility for infrastructure and support presents unique challenges for both vendors and customers. However, for companies lacking the resources to fully self-host, BYOC offers a great alternative and is more than likely going to grow in prominence as a deployment model in the coming years.
 
 **What you want to see in mature a BYOC offering?**
 
--   **Fine-grained Access Controls:** Ability to set granular permissions on who can access and modify data within the BYOC environment.  
+-   **Fine-grained Access Controls:** Ability to set granular permissions on who can access and modify data within the BYOC environment.
 -   **Monitoring and Logging:** Robust monitoring and logging capabilities to track usage, performance, and potential security incidents.
 -   **Clear Service Level Agreements (SLAs):** Clearly defined SLAs outlining uptime guarantees, support response times, and issue resolution processes.
--   **Dedicated Support:** Access to knowledgeable and responsive technical support.  
+-   **Dedicated Support:** Access to knowledgeable and responsive technical support.
 
 **Who is the target user for the BYOC model?**
 
