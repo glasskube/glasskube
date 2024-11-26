@@ -1,16 +1,13 @@
 ---
 title: Quickwit on Kubernetes
-slug: Quickwit
+slug: quickwit
 description: 'Learn how to install Quickwit on Kubernetes'
 authors: [ jpage ]
-tags: [ Quickwit ]
+tags: [ quickwit ]
 ---
 
 import CustomGitHubButton from '../src/components/buttons/CustomGitHubButton.tsx';
 import Discussion from '@site/src/components/GiscusWrapper';
-import Install from '../src/partials/_install.mdx';
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
 
 ![quickwit-thumbnail](https://github.com/glasskube/glasskube/assets/38757612/03478d89-1d11-4263-93ca-f80d1607cef9)
 
@@ -24,7 +21,7 @@ import TabItem from '@theme/TabItem';
 ## Install Glasskube
 
 If you've already installed glasskube you can skip this step.
-If not, glasskube can easily be installed by following your [distribution's specific instructions](https://glasskube.dev/docs/getting-started/install/).
+If not, glasskube can easily be installed by following your [distribution's specific instructions](/docs/getting-started/install/).
 
 For this demo I'll be using a MacOs distribution:
 ``` yaml
@@ -32,13 +29,13 @@ brew install glasskube/tap/glasskube # install the glasskube cli
 minikube start # start a minikube Kubernetes cluster
 glasskube bootstrap # install glasskube on the kind cluster
 ```
-For more installation [guides, find them here.](https://glasskube.dev/docs/getting-started/install/)
+For more installation [guides, find them here.](/docs/getting-started/install/)
 
-Once Glasskube has been installed access via the UI with: 
+Once Glasskube has been installed access via the UI with:
 ```
 glasskube serve
 ```
-The dashboard will open up on `http://localhost:8580/`. 
+The dashboard will open up on `http://localhost:8580/`.
 
 ## Creating an S3-Compatible Bucket
 
@@ -57,7 +54,7 @@ From the Glasskube dashboard, find the `Quickwit` pacakge and add your custom co
 
 ![quickmit-parameters](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/9ye6uqvhdwciumt65aal.png)
 
-- **defaultIndexRootUri**: for this demo it's `s3://quickwit-indexes`. 
+- **defaultIndexRootUri**: for this demo it's `s3://quickwit-indexes`.
 - **metastoreUri:** we won't use PostgreSQL so let's pick the same value we used for `defaultIndexRootUri`.
 - **s3AccessKeyId:** the `"Access Key Id"` from AWS we generated before.
 - **s3Endpoint:** Custom endpoint for use with S3-compatible providers. Not needed for S3 configuration.
@@ -65,9 +62,9 @@ From the Glasskube dashboard, find the `Quickwit` pacakge and add your custom co
 - **s3Region:** `US-east-1` in my case.
 - **s3SecretAccessKey:** the `"Secret Key"` from AWS we generated before.
 
-Here you can find the [official Quickwit documentation ](https://quickwit.io/blog/glasskube)for parameter completion. 
+Here you can find the [official Quickwit documentation ](https://quickwit.io/blog/glasskube)for parameter completion.
 
-It's also possible to install and configure Quickwit using the Glasskube CLI by running: 
+It's also possible to install and configure Quickwit using the Glasskube CLI by running:
 
 ``` bash
 glasskube install quickwit
@@ -164,7 +161,7 @@ If you like this sort of content and would like to see more of it, please consid
 [![cats-like--github-stars](https://github.com/glasskube/glasskube/assets/38757612/05a03edf-7d6a-48fd-9b24-598abcfd1e9a)](https://github.com/glasskube/glasskube)
 
 
-<div style={{ display: 'flex', justifyContent: 'right' }}>
+<div style={{display: 'flex', justifyContent: 'right'}}>
   <CustomGitHubButton
     href="https://github.com/glasskube/glasskube"
   />
