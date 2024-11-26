@@ -66,6 +66,16 @@ const config: Config = {
       },
     ],
     [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'glossary',
+        path: 'glossary',
+        routeBasePath: 'glossary',
+        sidebarPath: './sidebar-glossary.ts',
+        editUrl: 'https://github.com/glasskube/glasskube/tree/main/website/',
+      },
+    ],
+    [
       'posthog-docusaurus',
       {
         apiKey: 'phc_EloQUW6cgfbTc0pI9c5CXElhQ4gVGRoBsrUAoakJVoQ',
@@ -81,8 +91,6 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
           editUrl: 'https://github.com/glasskube/glasskube/tree/main/website/',
         },
         blog: false,
@@ -152,7 +160,7 @@ const config: Config = {
     announcementBar: {
       id: 'announcementBar-1', // Increment on change
       /* x-release-please-start-version */
-      content: `🎉 We just released v0.25.0 of our Open Source Kubernetes Package Manager on <a href="https://github.com/glasskube/glasskube/" target="_blank">⭐ GitHub ⭐</a>.`,
+      content: `🎉 We just released v0.26.0 of our Open Source Kubernetes Package Manager on <a href="https://github.com/glasskube/glasskube/" target="_blank">⭐ GitHub ⭐</a>.`,
       /* x-release-please-end */
       isCloseable: false,
     },
@@ -184,6 +192,7 @@ const config: Config = {
             {type: 'docSidebar', sidebarId: 'docs', label: 'Docs'},
             {to: '/guides/cert-manager', label: 'Guides'},
             {to: '/blog', label: 'Blog'},
+            {to: '/glossary', label: 'Glossary'},
           ]
         },
         {to: '/pricing', label: 'Pricing', position: 'left'},

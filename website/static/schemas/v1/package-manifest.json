@@ -45,9 +45,30 @@
       ]
     },
     "HelmManifest": {
+      "oneOf": [
+        {
+          "required": [
+            "releases"
+          ],
+          "title": "MultiChart"
+        },
+        {
+          "required": [
+            "chartName",
+            "chartVersion"
+          ],
+          "title": "SingleChart"
+        }
+      ],
       "properties": {
         "repositoryUrl": {
           "type": "string"
+        },
+        "releases": {
+          "items": {
+            "$ref": "#/$defs/HelmRelease"
+          },
+          "type": "array"
         },
         "chartName": {
           "type": "string"
@@ -62,7 +83,24 @@
       "additionalProperties": false,
       "type": "object",
       "required": [
-        "repositoryUrl",
+        "repositoryUrl"
+      ]
+    },
+    "HelmRelease": {
+      "properties": {
+        "chartName": {
+          "type": "string"
+        },
+        "chartVersion": {
+          "type": "string"
+        },
+        "values": {
+          "$ref": "#/$defs/JSON"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
         "chartName",
         "chartVersion"
       ]
