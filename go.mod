@@ -14,7 +14,7 @@ require (
 	github.com/google/go-containerregistry v0.20.2
 	github.com/invopop/jsonschema v0.12.0
 	github.com/onsi/ginkgo/v2 v2.22.0
-	github.com/onsi/gomega v1.35.1
+	github.com/onsi/gomega v1.36.0
 	github.com/posthog/posthog-go v1.2.24
 	github.com/schollz/progressbar/v3 v3.17.1
 	github.com/spf13/cobra v1.8.1
