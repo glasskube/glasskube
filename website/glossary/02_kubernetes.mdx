@@ -80,9 +80,9 @@ Below is a non-exhaustive list of key Kubernetes objects:
 
 ### How `kubectl` is applied to Kubernetes administration:
 
--   **Deploy and Manage Applications**: `kubectl` allows users to create, update, and delete resources like Pods, Deployments, and Services. There are multiple ways to deploy applications to Kubernetes, including using Package Managers such as [Helm](/docs/glossary/helm/) and [Glasskube](/products/glasskube/).
+-   **Deploy and Manage Applications**: `kubectl` allows users to create, update, and delete resources like Pods, Deployments, and Services. There are multiple ways to deploy applications to Kubernetes, including using Package Managers such as [Helm](/glossary/helm/) and [Glasskube](/products/package-manager/).
 -   **Monitor Cluster Resources**: Administrators can check the status of the cluster and its components by using commands like `kubectl get` or `kubectl describe`.
--   **Modify Configurations**: `kubectl` provides ways to interact with ConfigMaps, Secrets, and other configuration resources to manage environment variables and sensitive data. [Configuration management](/docs/glossary/k8s-configuration-mgmt/) in Kubernetes can be complex, additional tools like [Kustomize](/docs/glossary/kustomize/) exist to simplify and enhance this process.
+-   **Modify Configurations**: `kubectl` provides ways to interact with ConfigMaps, Secrets, and other configuration resources to manage environment variables and sensitive data. [Configuration management](/glossary/kubernetes-configuration-management/) in Kubernetes can be complex, additional tools like [Kustomize](/glossary/kustomize/) exist to simplify and enhance this process.
 -   **Scale Applications**: With commands like `kubectl scale`, users can increase or decrease the number of instances for a deployment to handle changes in traffic or resource needs.
 -   **Troubleshoot Issues**: Commands such as `kubectl logs` and `kubectl exec` help in diagnosing problems with running applications by inspecting logs or interacting with containers directly.
 

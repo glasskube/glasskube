@@ -9,7 +9,7 @@ description: 'Understanding Kustomize, its role in Kubernetes configuration mana
 ### Kustomize definition
 
 :::info
-[Kustomize](https://kustomize.io/) is a native [Kubernetes configuration management](/docs/glossary/k8s-configuration-mgmt/) tool that allows you to customize and manage Kubernetes resource configurations in a declarative, reusable manner. Unlike templating tools, Kustomize doesn't rely on injecting values into predefined templates, instead, it works directly with standard Kubernetes manifests, preserving their original structure and keeping them human-readable.
+[Kustomize](https://kustomize.io/) is a native [Kubernetes configuration management](/glossary/kubernetes-configuration-management/) tool that allows you to customize and manage Kubernetes resource configurations in a declarative, reusable manner. Unlike templating tools, Kustomize doesn't rely on injecting values into predefined templates, instead, it works directly with standard Kubernetes manifests, preserving their original structure and keeping them human-readable.
 :::
 
 ## Kustomize explained
@@ -44,7 +44,7 @@ Kustomize's fully declarative approach also makes it very GitOps-friendly. By st
 
 While other tools like [Helm](/blog/what-is-helm-in-kubernetes/) use a templating system to dynamically generate these manifests by injecting values from external data sources, Kustomize opts for a more direct un-templated approach. Kustomize ensures that configurations remain human-readable, portable, and easy to maintain.
 
-A useful characteristic of Kustomize is that from [Kubectl](/docs/glossary/kubernetes/#kubectl) version 1.14, Kustomize is integrated into the Kubectl cli tool, meaning that no additional installations are needed.
+A useful characteristic of Kustomize is that from [Kubectl](/glossary/kubernetes/#kubectl) version 1.14, Kustomize is integrated into the Kubectl cli tool, meaning that no additional installations are needed.
 
 > For a more detailed explanation of Kustomize, be sure to check out our [complete Kutomise tutorial](/blog/patching-with-kustomize/).
 
