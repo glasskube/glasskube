@@ -18,6 +18,7 @@ const sidebars: SidebarsConfig = {
         'rabbitmq',
         'quickwit',
         'kube-prom-stack',
+        'cloudnativepg'
       ],
     },
     {
