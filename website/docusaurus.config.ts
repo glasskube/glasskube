@@ -273,7 +273,7 @@ const config: Config = {
             },
             {
               label: 'Talk to founders',
-              href: 'https://cal.glasskube.eu/team/founder/30min',
+              href: 'https://cal.glasskube.com/team/founder/30min',
             },
             {
               label: 'Signup for the wait list',
