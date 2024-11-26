@@ -1,20 +1,23 @@
 ---
-title: Install CloudNativePG
-slug: cloud-native-pg
-description: 'Learn how to easily use the CloudNativePG operator to set up and manage PostgreSQL databases in Kubernetes'
+title: Deploy a PostgresSQL database on Kubernetes with CloudNativePG
+slug: deploy-postgres-kubernetes
+description: 'Learn how to easily use the CloudNativePG operator to set up and manage PostgreSQL databases on Kubernetes'
 authors: [ jpage ]
-tags: [ cloudnativepg ]
+tags: [ postgres, kubernetes, cloudnativepg ]
 ---
 
-import CustomGitHubButton from '../src/components/buttons/CustomGitHubButton.tsx';
-import Discussion from '@site/src/components/GiscusWrapper';
+
 import Install from '../src/partials/_install.mdx';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-![thumbnail](https://github.com/user-attachments/assets/dc644481-5271-4685-85d9-cd107a55887b)
+![Postgres on Kubernetes](https://github.com/user-attachments/assets/dc644481-5271-4685-85d9-cd107a55887b)
 
-We recently wrote about how, since late 2019, the landscape for running PostgreSQL on Kubernetes has transformed. Today, it’s not just a bold choice for those risky DBAs with nothing else to lose. Running PostgreSQL on Kubernetes has become not just a viable but even potentially a superior way to manage database workloads, especially if you are already invested in Kubernetes.
+We recently wrote about how, since late 2019, the landscape for running PostgreSQL on Kubernetes has transformed. Today, it’s not just a bold choice for those risky DBAs with nothing else to lose. Running PostgreSQL on Kubernetes has become not just a viable but even potentially a superior way to manage database workloads, especially if you are already invested on Kubernetes.
+
+:::info
+You read more on: ["Should you run PostgresSQL on Kubernetes?"](/blog/postgres-on-kubernetes/) in our first part of this series.
+:::
 
 Managing database workloads on Kubernetes isn’t “easy” by any stretch of the imagination but with the emergence of well-maintained open-source operators like [CloudNativePG](https://cloudnative-pg.io/), we now have the best of both worlds: the ability to run PostgreSQL, the most [admired database](https://www.enterprisedb.com/blog/postgres-most-admired-database-in-stack-overflow-2023) in 2024, alongside the automation, scalability, and benefits of Kubernetes architectures.
 
@@ -30,14 +33,14 @@ Originally developed by [EDB](https://www.enterprisedb.com/) and released as ope
 
 We’ve already covered some of the main features in part [one](/blog/postgres-on-kubernetes/) of this blog series. Here are some additional features though:
 
--   **Cross-Cluster Replication**: Enables high availability and disaster recovery across multiple Kubernetes clusters.   
--   **Multi-Tenancy Support**: Allows multiple PostgreSQL clusters to run within a single Kubernetes environment, efficiently sharing resources.   
--   **Advanced Connection Pooling**: Integrates with connection pooling tools to optimize resource usage and reduce latency for high-traffic applications.   
--   **Point-in-Time Recovery (PITR)**: Enables restoration of databases to a specific moment, crucial for recovering from data corruption or accidental deletions.  
+-   **Cross-Cluster Replication**: Enables high availability and disaster recovery across multiple Kubernetes clusters.
+-   **Multi-Tenancy Support**: Allows multiple PostgreSQL clusters to run within a single Kubernetes environment, efficiently sharing resources.
+-   **Advanced Connection Pooling**: Integrates with connection pooling tools to optimize resource usage and reduce latency for high-traffic applications.
+-   **Point-in-Time Recovery (PITR)**: Enables restoration of databases to a specific moment, crucial for recovering from data corruption or accidental deletions.
 -   **Environment Flexibility**: Compatible with various cloud environments, including private, public, and hybrid setups.
 -   **WAL File Backup on Object Stores**: Supports streaming write-ahead log (WAL) files to object storage like Amazon S3 or GCS.
--   **Client TLS/SSL Connections**: Secure communication between PostgreSQL clients and the database clusters, protecting data in transit. 
--   **Exposing Cluster Metrics for Observability Purposes**: exposing metrics that can be easily leveraged to monitor database health, performance, and resource utilization with tools like Grafana.  
+-   **Client TLS/SSL Connections**: Secure communication between PostgreSQL clients and the database clusters, protecting data in transit.
+-   **Exposing Cluster Metrics for Observability Purposes**: exposing metrics that can be easily leveraged to monitor database health, performance, and resource utilization with tools like Grafana.
 
 In this blog post we will configure these last three features. But for instructions on how to enable and configure the other CloudNativePG features, reference the official CloudNativePG [documentation](https://cloudnative-pg.io/documentation/1.24/).
 
@@ -54,7 +57,7 @@ This cluster will be set up from scratch using a straightforward Cluster definit
 -   Kubernetes cluster (You can easily create a local cluster by using [Minikube](https://minikube.sigs.k8s.io/docs/start/))
 -   [kubectl](https://kubernetes.io/docs/tasks/tools/) is strictly speaking no _dependency_ for installing packages via glasskube, but it is the recommended way to interact with the cluster. Therefore, it is highly recommended. Installation instructions are available for [macOS](https://kubernetes.io/docs/tasks/tools/install-kubectl-macos/), [Linux](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/), and [Windows](https://kubernetes.io/docs/tasks/tools/install-kubectl-windows/).
 -   [Glasskube](https://glasskube.dev/docs/getting-started/install/) installed
-    
+
 
 ## Installation
 
@@ -88,39 +91,60 @@ If not, `glasskube` can easily be installed the way you usually install packages
   </TabItem>
 </Tabs>
 
-## Getting started with CloudNativePG
+## Getting started with CloudNativePG to deploy a PostgreSQL cluster on Kubernetes
 
-**Install with Glasskube**
+We already installed the CloudNativePG operator in the previous step, so we are ready to deploy our first PostgreSQL database cluster.
 
-```
-glasskube install cloudnative-pg
-```
+### Deploy a simple 3-instance PostgreSQL cluster on Kubernetes
 
-### Deploy a simple 3-instance PostgreSQL cluster from Stratch
+We’ll create a simple 3-instance PostgreSQL cluster which will by default create a `postrgres` superuser and a normal `app` user.
 
-We’ll create a simple 3-instance PostgreSQL cluster which will by default create a `postrgres` superuser. Here’s the minimal YAML configuration needed:
+Here’s the minimal YAML configuration needed.
+Make sure to always specific a separate volume for the write-ahead-log for PostgreSQL, as we don't want to fill up all of our disk space with logs.
 
-```
+```yaml
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
-metadata: 
+metadata:
   name: pg-glasskube-cluster
 spec:
   instances: 3
- 
   storage:
+    size: 1Gi
+  walStorage:
     size: 1Gi
 ```
 
+
 Apply this configuration:
 
-```
+```shell
 kubectl apply -f pg-glasskube-cluster.yaml
 ```
 
 This creates a PostgreSQL cluster with three instances and 1Gi of storage per instance. Once the cluster is up, you can connect to it using the service created by the operator.
 
-### Let’s make it more secure
+### Connect to our PostgreSQL database on Kubernetes
+
+In order to connect to our PostgreSQL cluster we need to create a port forwarding to our databases via the Kubernetes service.
+
+```shell
+kubectl port-forward svc/pg-glasskube-cluster-rw 5432:5432
+```
+
+Next we need to extract the password generated from the secret generated automatically:
+
+```shell
+kubectl get secrets pg-glasskube-cluster-app --template={{.data.password}} | base64 -d
+```
+
+Now we can connect to our PostgreSQL database with.
+
+```shell
+psql -h localhost -U app app
+````
+
+### SSL connection for PostgreSQL on Kubernetes
 
 Let’s make sure that all connections to the `app` database in the cluster is secured with SSL certificates.
 
@@ -134,7 +158,7 @@ By adding the following to the `pg-glasskube-cluster.yaml` file
 
 Once you’ve added the segment to the cluster definition you can re-apply the definition by running:
 
-```
+```shell
 kubectl apply -f pg-glasskube-cluster.yaml
 ```
 
@@ -152,7 +176,7 @@ curl -sSfL \
 
 Once installed we can create the certificate using the plugin:
 
-```
+```shell
 kubectl cnpg certificate pg-glasskube-cluster-cert \
   --cnpg-cluster pg-glasskube-cluster \
   --cnpg-user app
@@ -160,7 +184,7 @@ kubectl cnpg certificate pg-glasskube-cluster-cert \
 
 To test that the `app` database is not protected and can only be accessed by using the generated certificate, let’s run the following `cert-test` deployment which is going to mount the needed CA and our generated certificate, once deployed we can run a test command from the `cert-test` pod to make sure it can access the `app` database.
 
-```
+```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -191,7 +215,7 @@ spec:
                 sslkey=/etc/secrets/app/tls.key
                 sslcert=/etc/secrets/app/tls.crt
                 sslrootcert=/etc/secrets/ca/ca.crt
-                host=pg-glasskube-cluster-rw.cnpg-system.svc
+                host=pg-glasskube-cluster-rw
                 dbname=app
                 user=app
                 sslmode=verify-full
@@ -209,14 +233,14 @@ spec:
         - name: secret-volume-app
           secret:
             secretName: pg-glasskube-cluster-cert
-            defaultMode: 0600 
+            defaultMode: 0600
 ```
 
-The verify that the Pod - Database connection works run:
+Then verify that the Pod - Database connection works run:
 
-```
-kubectl exec -it <POD_NAME> -- bash -c \
-"psql 'sslkey=/etc/secrets/app/tls.key sslcert=/etc/secrets/app/tls.crt sslrootcert=/etc/secrets/ca/ca.crt host=pg-glasskube-cluster-rw.cnpg-system.svc dbname=app user=app sslmode=verify-full' -c 'select version();'" 
+```shell
+kubectl exec -it deployments/cert-test -- bash -c \
+"psql 'sslkey=/etc/secrets/app/tls.key sslcert=/etc/secrets/app/tls.crt sslrootcert=/etc/secrets/ca/ca.crt host=pg-glasskube-cluster-rw dbname=app user=app sslmode=verify-full' -c 'select version();'"
 ```
 If you see the following output, you have configures SSL authentication correctly:
 ```
@@ -240,17 +264,17 @@ Fully recreating an entire PostgreSQL database typically involves combining base
 
 To back up WAL files to AWS S3, we are going to need to have the following:
 
--   An S3 bucket 
+-   An S3 bucket
 -   An IAM user with a policy attached giving the user the requisite S3 permissions
 -   A Kubernetes secret containing the AWS user credentials
-    
+
 
 1.  [Create](https://docs.aws.amazon.com/AmazonS3/latest/userguide/create-bucket-overview.html) the S3 bucket and give it a relevant name
-    
-2.  Create an [IAM user](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_users_create.html) and attach the following inline policy to the user:
-    
 
-```
+2.  Create an [IAM user](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_users_create.html) and attach the following inline policy to the user:
+
+
+```json
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -273,7 +297,7 @@ To back up WAL files to AWS S3, we are going to need to have the following:
 
 Then, create a Kubernetes secret for the S3 credentials:
 
-```
+```shell
 kubectl create secret generic aws-creds \
   --from-literal=ACCESS_KEY_ID=<ID_Value> \
   --from-literal=ACCESS_SECRET_KEY=<Secret_Key_Value>
@@ -281,7 +305,7 @@ kubectl create secret generic aws-creds \
 
 Then add the following section to the cluster spec:
 
-```
+```yaml
 backup:
   barmanObjectStore:
     destinationPath: "s3://<BUCKET_NAME>/"
@@ -296,13 +320,13 @@ backup:
 
 Reapply the updated cluster configuration:
 
-```
+```shell
 kubectl apply -f pg-glasskube-cluster.yaml
 ```
 
 You can check to see if the WAL backup is working as expected by checking the logs of any of the cluster pods.
 
-```
+```shell
 kubectl logs <CLUSTER_POD_NAME>
 ```
 
@@ -312,7 +336,7 @@ If configured correctly, you can expect to find a new folder which is named the 
 
 ## The complete Cluster definition file looks like this
 
-```
+```yaml
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
@@ -322,7 +346,9 @@ spec:
 
   storage:
     size: 1Gi
-  
+  walStorage:
+    size: 1Gi
+
   postgresql:
     pg_hba:
       - hostssl app all all cert
@@ -349,7 +375,7 @@ With the cluster up and running, we can now leverage the CloudNativePG community
 
 For detailed instructions, follow the full installation guide. You can install it via the CLI and provide the necessary value definitions when prompted.
 
-```
+```shell
 glasskube install kube-prometheus-stack
 ```
 
