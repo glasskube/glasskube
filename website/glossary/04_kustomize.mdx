@@ -16,8 +16,6 @@ import DefaultCTA from '@site/src/components/cta/DefaultCTA/defaultCTA';
 [Kustomize](https://kustomize.io/) is a native [Kubernetes configuration management](/glossary/kubernetes-configuration-management/) tool that allows you to customize and manage Kubernetes resource configurations in a declarative, reusable manner. Unlike templating tools, Kustomize doesn't rely on injecting values into predefined templates, instead, it works directly with standard Kubernetes manifests, preserving their original structure and keeping them human-readable.
 :::
 
-<DefaultCTA />
-
 ## Kustomize explained
 
 One of Kustomize's key strengths is its ability to dynamically create variations of Kubernetes resources through layering overlay file onto base kubernetes manifests. It enables you to apply patches, transformers, and generators to existing base configurations, generating environment-specific manifests while maintaining clean and separate base files. This is particularly useful in environments where maintaining a clean separation of concerns is critical, and changes to resources should not require modification of base files, simplifying long-term maintenance.
