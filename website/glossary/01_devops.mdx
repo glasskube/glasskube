@@ -1,0 +1,52 @@
+---
+title: DevOps
+slug: devops
+description: 'Understanding the DevOps methodology, best practices, and its evolution in modern software development'
+---
+
+import DefaultCTA from '@site/src/components/cta/DefaultCTA/defaultCTA';
+
+## What is DevOps? Definition and explanation
+
+### DevOps Definition
+
+:::info
+DevOps is a methodology that emerged in the late 2000s, designed to bridge the gap between development and operations teams in complex IT organizations. It emphasizes collaboration, automation, shared responsibility, and strong communication across teams. The goal of DevOps is to help organizations deliver software faster, more reliably, and with higher quality. Key practices like continuous integration, continuous delivery (CI/CD), and rapid feedback loops are central to optimizing the entire software development lifecycle.
+:::
+
+## DevOps in practice
+
+DevOps, at its core, is about breaking down the traditional silos between Development (Dev) and Operations (Ops) teams, fostering collaboration and shared responsibility for delivering software quickly, reliably, and efficiently. Historically, devs would have to wait on infrastructure provisioning from operations, leading to bottlenecks and friction. The stereotype of Ops as gatekeepers, focused on stability and resistant to frequent changes, often clashed with the dev team's desire for rapid iteration.
+
+The turning point came with the talk "[10+ Deploys Per Day](https://www.youtube.com/watch?v=LdOe18KhtT4)" from John Allspaw and Paul Hammond, which highlighted that Dev and Ops actually share the same goal: enabling the business by delivering value to customers. This meant automating infrastructure, improving collaboration, and creating a culture where both teams worked together, not against each other. The introduction of tools like automated infrastructure, feature flags, shared monitoring, and alerting, paired with a culture that values trust and collaboration, laid the foundation for what we now call DevOps.
+
+As this movement gained momentum, seminal works like _[The DevOps Handbook](https://www.amazon.com/DevOps-Handbook-World-Class-Reliability-Organizations/dp/1942788002)_ and Google's _[Site Reliability Engineering](https://sre.google/sre-book/table-of-contents/)_ (SRE) book helped to codify best practices, focusing not only on tools but on cultural shifts, such as blameless post-mortems and the idea that failure is an opportunity to learn and improve.
+
+### Key DevOps Best Practices Include:
+
+-   **Continuous Integration (CI):** Frequently merging code changes into a shared repository to detect and fix issues early.
+-   **Continuous Delivery (CD):** Automating the deployment of code to production, ensuring software can be released at any time.
+-   **Infrastructure as Code (IaC):** Managing and provisioning infrastructure using code and automation tools, making environments more consistent and scalable.
+-   **Automated Testing:** Implementing tests throughout the development pipeline to catch bugs and regressions before they reach production.
+-   **Monitoring and Observability:** Continuously monitoring applications and infrastructure to gain insights and quickly respond to issues.
+-   **Blameless Post-Mortems:** Reviewing incidents without blaming individuals, focusing instead on process improvements to prevent future failures.
+-   **Collaboration and Communication:** Encouraging open communication and close collaboration between development, operations, and other stakeholders.
+-   **Security Integration (DevSecOps):** Embedding security practices throughout the development lifecycle, from code to deployment.
+
+DevOps represents a shift from rigid, slow-moving processes to an agile, feedback-driven approach to delivering software, with automation and continuous delivery as key enablers. It's about creating a culture where the entire team owns the outcome, embracing the idea that speed and stability aren’t mutually exclusive.
+
+### Can DevOps solve every problem?
+
+DevOps isn't a magic solution or a one-size-fits-all set of tools and methodologies that guarantees the same results everywhere. It’s the latest evolution in IT work methodology that has gained prominence over the last 15 years. While it has seen the emergence of a vast ecosystem of tools, frameworks, and even new career roles grow around it, [challenges still persist](/blog/future-of-devops/). In fact, it's hard to imagine a world where challenges don’t exist in some form.
+
+Successfully implementing DevOps requires deep knowledge of cloud infrastructure, tooling, and software architecture to build robust delivery pipelines that unite teams and improve software velocity. While DevOps is not a silver bullet for solving all software delivery problems, it represents the current best practices for mature infrastructure teams, and it was the precursor the the emergence of [Platform engineering](/blog/series-a-idp/).
+
+### What is the current state of DevOps in the market?
+
+Several reputable institutions publish "State of DevOps" reports that conveniently track the latest trends and shifts in the DevOps landscape. Some of the most reputable reports to keep on your radar include:
+
+-   [DORA Accelerate State of DevOps report](https://cloud.google.com/resources/devops/state-of-devops)
+-   [Puppet](https://www.puppet.com/resources/history-of-devops-reports)
+-   [Splunk](https://www.splunk.com/en_us/blog/learn/state-of-devops.html)
+
+<DefaultCTA />

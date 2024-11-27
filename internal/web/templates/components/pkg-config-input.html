@@ -73,7 +73,7 @@
       class="form-control"
       placeholder="Namespace"
       aria-label="Namespace" />
-    {{ template "datalist" ForDatalist .ValueName "namespaces" .DatalistOptions.Namespaces }}
+    {{ template "components/datalist" ForDatalist .ValueName "namespaces" .DatalistOptions.Namespaces }}
     <input
       type="text"
       autocomplete="off"
@@ -94,7 +94,7 @@
       hx-target="#{{ .ValueName }}-names"
       hx-select="#{{ .ValueName }}-names"
       hx-trigger="change from:previous input" />
-    {{ template "datalist" ForDatalist .ValueName "names" .DatalistOptions.Names }}
+    {{ template "components/datalist" ForDatalist .ValueName "names" .DatalistOptions.Names }}
     <input
       type="text"
       autocomplete="off"
@@ -114,7 +114,7 @@
       hx-target="#{{ .ValueName }}-keys"
       hx-select="#{{ .ValueName }}-keys"
       hx-trigger="change from:previous input" />
-    {{ template "datalist" ForDatalist .ValueName "keys" .DatalistOptions.Keys }}
+    {{ template "components/datalist" ForDatalist .ValueName "keys" .DatalistOptions.Keys }}
   {{ else if eq .ValueReferenceKind "Package" }}
     <input
       type="text"
@@ -127,7 +127,7 @@
       class="form-control"
       placeholder="Package"
       aria-label="Package" />
-    {{ template "datalist" ForDatalist .ValueName "names" .DatalistOptions.Names }}
+    {{ template "components/datalist" ForDatalist .ValueName "names" .DatalistOptions.Names }}
     <input
       type="text"
       autocomplete="off"
@@ -143,7 +143,7 @@
       hx-target="#{{ .ValueName }}-keys"
       hx-select="#{{ .ValueName }}-keys"
       hx-trigger="change from:previous input" />
-    {{ template "datalist" ForDatalist .ValueName "keys" .DatalistOptions.Keys }}
+    {{ template "components/datalist" ForDatalist .ValueName "keys" .DatalistOptions.Keys }}
   {{ end }}
 {{ end }}
 
@@ -238,7 +238,7 @@
 
 
 <!-- this is the entry point for rendering the input group for one value definition -->
-{{ define "pkg-config-input" }}
+{{ define "components/pkg-config-input" }}
   <div id="{{ .ContainerId }}" class="mb-2">
     {{ if eq .ValueDefinition.Type "text" }}
       <div>

@@ -10,7 +10,7 @@ const sidebars: SidebarsConfig = {
         title: 'Package Installation Guides',
         description:
           '⚠️ Learn how to install your favorite Kubernetes add-ons using the Glasskube package manager ⚠️',
-        slug: '/categories/',
+        slug: '/',
       },
       items: [
         'cert-manager',
@@ -18,6 +18,7 @@ const sidebars: SidebarsConfig = {
         'rabbitmq',
         'quickwit',
         'kube-prom-stack',
+        'cloudnativepg'
       ],
     },
     {
@@ -28,7 +29,7 @@ const sidebars: SidebarsConfig = {
         title: 'Contributor Guides',
         description:
           '⚠️ Contributors are what make open source great, here is where we share some resources to support you. ⚠️',
-        slug: '/categories/contributors',
+        slug: '/contributors',
       },
       items: ['git-guide', 'kubectl-guide', 'package-creation'],
     },

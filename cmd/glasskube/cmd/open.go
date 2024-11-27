@@ -30,7 +30,15 @@ var openCmd = &cobra.Command{
 	Short: "Open the Web UI of a package",
 	Long: `Open the Web UI of a package.
 If the package manifest has more than one entrypoint, specify the name of the entrypoint to open.`,
-	Args:   cobra.RangeArgs(1, 2),
+	Args: cobra.RangeArgs(1, 2),
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		if len(args) == 0 {
+			delegate := installedPackagesCompletionFunc(&openCmdOptions.NamespaceOptions, &openCmdOptions.KindOptions)
+			return delegate(cmd, args, toComplete)
+		} else {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+	},
 	PreRun: cliutils.SetupClientContext(true, &rootCmdOptions.SkipUpdateCheck),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()

@@ -1,31 +1,53 @@
-{{ define "pkg-detail-uninstall" }}
-  <button
-    hx-get="{{ .PackageHref }}/uninstall"
-    hx-target="#modal-container"
-    hx-swap="innerHTML"
-    hx-select="#pkg-uninstall-modal"
-    class="btn btn-danger btn-sm"
-    data-bs-toggle="modal"
-    data-bs-target="#modal-container">
-    <i class="bi bi-trash"></i>
-  </button>
-{{ end }}
-
-{{ define "pkg-detail-update" }}
-  {{ if .UpdateAvailable }}
+{{ define "pkg-detail-actions" }}
+  <div class="dropdown d-inline">
     <button
-      hx-get="{{ .PackageHref }}/update"
-      hx-target="#modal-container"
-      hx-swap="innerHTML"
-      hx-select="#pkg-update-modal"
-      name="packageName"
-      value="{{ .PackageName }}"
-      class="btn btn-warning btn-sm"
-      data-bs-toggle="modal"
-      data-bs-target="#modal-container">
-      Update
+      class="btn btn-sm btn-primary dropdown-toggle"
+      type="button"
+      data-bs-toggle="dropdown"
+      aria-expanded="false">
+      Actions
     </button>
-  {{ end }}
+    <ul class="dropdown-menu">
+      {{ if .Pkg.Spec.Suspend }}
+        <li>
+          <button
+            class="dropdown-item"
+            hx-post="{{ .PackageHref }}/resume"
+            {{ if .GitopsMode }}
+              data-bs-toggle="modal" data-bs-target="#modal-container"
+            {{ end }}>
+            <i class="bi bi-play-circle"></i>
+            Resume
+          </button>
+        </li>
+      {{ else }}
+        <li>
+          <button
+            class="dropdown-item"
+            hx-post="{{ .PackageHref }}/suspend"
+            {{ if .GitopsMode }}
+              data-bs-toggle="modal" data-bs-target="#modal-container"
+            {{ end }}>
+            <i class="bi bi-pause-circle"></i>
+            Suspend
+          </button>
+        </li>
+      {{ end }}
+      <li>
+        <button
+          class="dropdown-item text-danger"
+          hx-get="{{ .PackageHref }}/uninstall"
+          hx-target="#modal-container"
+          hx-swap="innerHTML"
+          hx-select="#pkg-uninstall-modal"
+          data-bs-toggle="modal"
+          data-bs-target="#modal-container">
+          <i class="bi bi-trash"></i>
+          Uninstall
+        </button>
+      </li>
+    </ul>
+  </div>
 {{ end }}
 
 {{ define "pkg-detail-btns" }}
@@ -39,7 +61,7 @@
         <a class="btn btn-danger btn-sm pe-none">
           <span>Installation Failed</span>
         </a>
-        {{ template "pkg-detail-uninstall" . }}
+        {{ template "pkg-detail-actions" . }}
       {{ else if and .Manifest .Manifest.Entrypoints }}
         <button
           class="btn btn-success btn-sm"
@@ -50,15 +72,13 @@
           <i class="bi bi-box-arrow-up-right"></i>
           <span>Open</span>
         </button>
-        {{ template "pkg-detail-update" . }}
-        {{ template "pkg-detail-uninstall" . }}
+        {{ template "pkg-detail-actions" . }}
       {{ else }}
         <a class="btn btn-success btn-sm pe-none">
           <i class="bi bi-check-lg"></i>
           <span>Installed</span>
         </a>
-        {{ template "pkg-detail-update" . }}
-        {{ template "pkg-detail-uninstall" . }}
+        {{ template "pkg-detail-actions" . }}
       {{ end }}
     {{ end }}
   </span>

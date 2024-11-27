@@ -1,19 +1,7 @@
-{{ define "pkg-update-alert" }}
+{{ define "components/pkg-update-alert" }}
   <div id="packages-update-warning">
-    {{ if .UpdatesAvailable }}
-      <div class="alert alert-warning py-1 ps-2 pe-1 d-flex flex-row align-items-center" role="alert">
-        <span class="flex-grow-1">Updates for your packages are available!</span>
-        <button
-          hx-get="{{ .PackageHref }}/update"
-          hx-swap="innerHTML"
-          hx-target="#modal-container"
-          hx-select="#pkg-update-modal"
-          class="btn btn-warning btn-sm"
-          data-bs-toggle="modal"
-          data-bs-target="#modal-container">
-          Update All
-        </button>
-      </div>
-    {{ end }}
+    <div class="alert alert-warning py-1 ps-2 pe-1 d-flex flex-row align-items-center" role="alert">
+      <i class="bi bi-arrow-repeat me-1"></i><span class="flex-grow-1">Updates for your packages are available!</span>
+    </div>
   </div>
 {{ end }}

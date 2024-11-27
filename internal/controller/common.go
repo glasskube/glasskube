@@ -104,6 +104,10 @@ func (r *PackageReconcilerCommon) reconcile(ctx context.Context, pkg ctrlpkg.Pac
 	prc := &PackageReconcilationContext{PackageReconcilerCommon: r, pkg: pkg}
 	log := ctrl.LoggerFrom(ctx)
 
+	if pkg.GetSpec().Suspend {
+		return prc.reconcileSuspended(ctx)
+	}
+
 	if !pkg.GetDeletionTimestamp().IsZero() {
 		return prc.reconcileAfterDeletion(ctx)
 	}
@@ -242,6 +246,12 @@ func (r *PackageReconcilationContext) reconcilePackageInfoReady(ctx context.Cont
 		r.afterSuccess(ctx, results)
 		return r.finalize(ctx)
 	}
+}
+
+func (r *PackageReconcilationContext) reconcileSuspended(ctx context.Context) (ctrl.Result, error) {
+	log := ctrl.LoggerFrom(ctx)
+	log.Info("skipping reconciliation for suspended package")
+	return r.finalizeNoRequeue(ctx)
 }
 
 func (r *PackageReconcilationContext) reconcileAfterDeletion(ctx context.Context) (ctrl.Result, error) {
@@ -472,6 +482,8 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 		}
 	}
 
+	r.setShouldUpdate(ownerutils.Add(&r.currentOwnedPackages, ownedPackages...))
+
 	if len(failed) > 0 {
 		message := fmt.Sprintf("required package(s) not installed: %v", strings.Join(failed, ","))
 		r.setShouldUpdate(conditions.SetFailed(ctx, r.EventRecorder, r.pkg, &r.pkg.GetStatus().Conditions,
@@ -485,8 +497,6 @@ func (r *PackageReconcilationContext) ensureDependencies(ctx context.Context) bo
 			conditions.SetUnknown(ctx, &r.pkg.GetStatus().Conditions, condition.Pending, message))
 		return false
 	}
-
-	ownerutils.Add(&r.currentOwnedPackages, ownedPackages...)
 
 	return true
 }
