@@ -120,7 +120,6 @@ function LogoSlider() {
         </div>
       </div>
     </div>
-
   );
 }
 
@@ -210,7 +209,7 @@ function HomepageNewsletter() {
   );
 }
 
-class NewsletterForm extends React.Component<unknown, { value: string }> {
+class NewsletterForm extends React.Component<unknown, {value: string}> {
   constructor(props: unknown) {
     super(props);
     this.state = {value: ''};
@@ -283,14 +282,14 @@ interface HomepagePost {
   readonly metadata: {
     title: string;
     description: string;
-    frontMatter: { image: string };
+    frontMatter: {image: string};
   };
 }
 
 export default function Home({
-                               homePageBlogMetadata,
-                               recentPosts,
-                             }: HomepageProps): JSX.Element {
+  homePageBlogMetadata,
+  recentPosts,
+}: HomepageProps): JSX.Element {
   const {siteConfig} = useDocusaurusContext();
   return (
     <Layout

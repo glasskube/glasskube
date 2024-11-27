@@ -1,26 +1,26 @@
 .ctaWrapper {
-    background: var(--ifm-color-emphasis-100);
-    border-radius: var(--ifm-card-border-radius);
-  }
-  
-  .ctaContent {
-    padding: 3rem 2rem;
-    text-align: center;
-  }
-  
+  background: var(--ifm-color-emphasis-100);
+  border-radius: var(--ifm-card-border-radius);
+}
+
+.ctaContent {
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.buttonContainer {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+@media (max-width: 996px) {
   .buttonContainer {
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
+    flex-direction: column;
+    align-items: center;
   }
-  
-  @media (max-width: 996px) {
-    .buttonContainer {
-      flex-direction: column;
-      align-items: center;
-    }
-  
-    .buttonContainer > * {
-      margin-bottom: 1rem;
-    }
+
+  .buttonContainer>* {
+    margin-bottom: 1rem;
   }
+}
