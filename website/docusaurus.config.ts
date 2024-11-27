@@ -190,9 +190,9 @@ const config: Config = {
           position: 'left',
           items: [
             {type: 'docSidebar', sidebarId: 'docs', label: 'Docs'},
-            {to: '/guides/cert-manager', label: 'Guides'},
-            {to: '/blog', label: 'Blog'},
-            {to: '/glossary', label: 'Glossary'},
+            {to: '/guides/', label: 'Guides'},
+            {to: '/blog/', label: 'Blog'},
+            {to: '/glossary/', label: 'Glossary'},
           ]
         },
         {to: '/pricing', label: 'Pricing', position: 'left'},
