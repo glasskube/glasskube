@@ -15,6 +15,7 @@ import Link from '@docusaurus/Link';
 import BrowserOnly from '@docusaurus/BrowserOnly';
 import HomepageProducts from '@site/src/components/HomepageProducts';
 import HomepageTestimonials from '@site/src/components/HomepageTestimonials';
+import DefaultCTA from '../cta/DefaultCTA/defaultCTA';
 
 function HomepageHeader() {
   const {siteConfig} = useDocusaurusContext();
@@ -306,6 +307,13 @@ export default function Home({
           recentPosts={recentPosts}
         />
         <HomepageTestimonials />
+        <div className="container">
+          <div className="row">
+            <div className="col col--10 col--offset-1">
+              <DefaultCTA />
+            </div>
+          </div>
+        </div>
         <HomepageNewsletter />
       </main>
     </Layout>
