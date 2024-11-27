@@ -100,7 +100,7 @@ const config: Config = {
         sitemap: {
           changefreq: EnumChangefreq.DAILY,
           priority: 1,
-          ignorePatterns: ['/blog/archive', '/blog/tags', '/blog/tags/**'],
+          ignorePatterns: ['/blog/authors', '/blog/archive', '/blog/tags', '/blog/tags/**'],
           filename: 'sitemap.xml',
         },
       } satisfies Preset.Options,
@@ -190,9 +190,9 @@ const config: Config = {
           position: 'left',
           items: [
             {type: 'docSidebar', sidebarId: 'docs', label: 'Docs'},
-            {to: '/guides/cert-manager', label: 'Guides'},
-            {to: '/blog', label: 'Blog'},
-            {to: '/glossary', label: 'Glossary'},
+            {to: '/guides/', label: 'Guides'},
+            {to: '/blog/', label: 'Blog'},
+            {to: '/glossary/', label: 'Glossary'},
           ]
         },
         {to: '/pricing', label: 'Pricing', position: 'left'},

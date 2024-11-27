@@ -1,0 +1,32 @@
+.ctaWrapper {
+  background: var(--ifm-color-emphasis-200);
+  border-radius: var(--ifm-card-border-radius);
+}
+
+[data-theme='dark'] {
+  .ctaWrapper {
+    background: var(--ifm-background-surface-color);
+  }
+}
+
+.ctaContent {
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.buttonContainer {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: center;
+  gap: var(--ifm-global-spacing);
+}
+
+@media (max-width: 996px) {
+  .buttonContainer {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+  }
+
+}

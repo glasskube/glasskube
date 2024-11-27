@@ -6,10 +6,10 @@ authors: [ jpage ]
 tags: [ postgres, kubernetes, cloudnativepg ]
 ---
 
-
 import Install from '../src/partials/_install.mdx';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import DefaultCTA from '@site/src/components/cta/DefaultCTA/defaultCTA';
 
 ![Postgres on Kubernetes](https://github.com/user-attachments/assets/dc644481-5271-4685-85d9-cd107a55887b)
 
@@ -20,6 +20,9 @@ You read more on: ["Should you run PostgresSQL on Kubernetes?"](/blog/postgres-o
 :::
 
 Managing database workloads on Kubernetes isn’t “easy” by any stretch of the imagination but with the emergence of well-maintained open-source operators like [CloudNativePG](https://cloudnative-pg.io/), we now have the best of both worlds: the ability to run PostgreSQL, the most [admired database](https://www.enterprisedb.com/blog/postgres-most-admired-database-in-stack-overflow-2023) in 2024, alongside the automation, scalability, and benefits of Kubernetes architectures.
+
+<DefaultCTA />
+
 
 ## **What is CloudNativePG?**
 
@@ -394,3 +397,5 @@ Give it a name, and after a few minutes you should see something similar to this
 ![cloudnative-pg dashboard](https://github.com/user-attachments/assets/f1b56ba9-957c-4db7-b510-9add2cd78e60)
 
 In this CloudNativePG guide, we walked through the initial setup of the CloudNativePG operator and introduced the basics of managing PostgreSQL clusters. We covered key features like enabling WAL file backups for disaster recovery, configuring TLS for secure database authentication, and deploying a monitoring stack to keep a close eye on your database cluster's health. Hopefully, this guide has been helpful and gives you a solid starting point for managing PostgreSQL clusters on Kubernetes with the CloudNativePG operator.
+
+<DefaultCTA />

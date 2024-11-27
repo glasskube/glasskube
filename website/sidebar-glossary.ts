@@ -10,7 +10,7 @@ const sidebars: SidebarsConfig = {
         title: 'Kubernetes Glossary',
         description:
           'Learn about common Kubernetes and cloud-native terminology',
-        slug: '/categories/glossary',
+        slug: '/',
       },
       items: [
         'devops',
@@ -21,8 +21,8 @@ const sidebars: SidebarsConfig = {
         'kubernetes',
         'kubernetes-operator',
         'kustomize',
-        'BYOC-definition',
-        'SaaS-definition',
+        'byoc-definition',
+        'saas-definition',
         'self-managed-software',
       ],
     },
