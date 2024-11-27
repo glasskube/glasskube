@@ -12,7 +12,7 @@ image: https://github.com/user-attachments/assets/3a0efa8f-98fb-4cc7-a407-594aa3
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
-import BlogCTA from '@site/src/components/BlogCTA/blogCTA';
+import CustomCTA from '@site/src/components/cta/CustomCTA/customCTA';
 
 ![Kubeflow setup thumbnail](https://github.com/user-attachments/assets/3a0efa8f-98fb-4cc7-a407-594aa3878551)
 
@@ -134,7 +134,10 @@ gcloud container clusters get-credentials "<cluster name>" \
 
 Verify that the configuration works, by running any command such as `kubectl get nodes`.
 
-<BlogCTA />
+<CustomCTA
+  header="Need help running Kubeflow in production?"
+  text="Book a call with us to discuss your Kubernetes deployment and scaling needs for your Cloud-Native AI."
+/>
 
 ## Kubeflow Installation
 
@@ -467,4 +470,7 @@ Check out our [dedicated Kustomize tutorial](../patching-with-kustomize) if you 
 If you want to learn more about Kubeflow, why not check out one of the official user-guides: https://www.kubeflow.org/docs/started/introduction/
 
 
-<BlogCTA />
+<CustomCTA
+  header="Need help running Kubeflow in production?"
+  text="Book a call with us to discuss your Kubernetes deployment and scaling needs for your Cloud-Native AI."
+/>

@@ -15,6 +15,7 @@ import Link from '@docusaurus/Link';
 import BrowserOnly from '@docusaurus/BrowserOnly';
 import HomepageProducts from '@site/src/components/HomepageProducts';
 import HomepageTestimonials from '@site/src/components/HomepageTestimonials';
+import DefaultCTA from '../cta/DefaultCTA/defaultCTA';
 
 function HomepageHeader() {
   const {siteConfig} = useDocusaurusContext();
@@ -120,7 +121,6 @@ function LogoSlider() {
         </div>
       </div>
     </div>
-
   );
 }
 
@@ -210,7 +210,7 @@ function HomepageNewsletter() {
   );
 }
 
-class NewsletterForm extends React.Component<unknown, { value: string }> {
+class NewsletterForm extends React.Component<unknown, {value: string}> {
   constructor(props: unknown) {
     super(props);
     this.state = {value: ''};
@@ -283,14 +283,14 @@ interface HomepagePost {
   readonly metadata: {
     title: string;
     description: string;
-    frontMatter: { image: string };
+    frontMatter: {image: string};
   };
 }
 
 export default function Home({
-                               homePageBlogMetadata,
-                               recentPosts,
-                             }: HomepageProps): JSX.Element {
+  homePageBlogMetadata,
+  recentPosts,
+}: HomepageProps): JSX.Element {
   const {siteConfig} = useDocusaurusContext();
   return (
     <Layout
@@ -307,6 +307,13 @@ export default function Home({
           recentPosts={recentPosts}
         />
         <HomepageTestimonials />
+        <div className="container">
+          <div className="row">
+            <div className="col col--10 col--offset-1">
+              <DefaultCTA />
+            </div>
+          </div>
+        </div>
         <HomepageNewsletter />
       </main>
     </Layout>

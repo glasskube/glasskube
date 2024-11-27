@@ -8,7 +8,7 @@ interface DemoButtonProps {
 const DemoButton: FC<DemoButtonProps> = ({additionalClassNames}) => (
   <Link
     className={`glasskube-telemetry-demo button button--accent ${additionalClassNames}`}
-    to="https://cal.glasskube.eu/team/founder/demo">
+    to="https://cal.glasskube.com/team/gk/demo">
     Book free demo
   </Link>
 );
