@@ -100,7 +100,7 @@ const config: Config = {
         sitemap: {
           changefreq: EnumChangefreq.DAILY,
           priority: 1,
-          ignorePatterns: ['/blog/authors', '/blog/archive', '/blog/tags', '/blog/tags/**'],
+          ignorePatterns: ['/telemetry/','/blog/authors/', '/blog/archive/', '/blog/tags/**'],
           filename: 'sitemap.xml',
         },
       } satisfies Preset.Options,
