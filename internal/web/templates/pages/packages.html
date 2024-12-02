@@ -1,4 +1,4 @@
-{{ define "content" }}
+{{ define "pages/packages" }}
   <div
     class="container-lg my-2"
     hx-trigger="htmx:historyRestore from:body"
@@ -14,7 +14,9 @@
       hx-swap="innerHTML"
       hx-select="#package-overview-swapped"
       hx-target="#package-overview-swapped">
-      {{ template "pkg-update-alert" . | ForPkgUpdateAlert }}
+      {{ if .UpdatesAvailable }}
+        {{ template "components/pkg-update-alert" }}
+      {{ end }}
       <div class="row row-cols-1 g-2">
         <div>
           <h2 class="text-reset">Installed Packages</h2>

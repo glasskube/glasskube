@@ -1,4 +1,4 @@
-{{ define "bootstrap-success" }}
+{{ define "components/bootstrap-success" }}
   <div class="col-md-8 p-lg-6 mx-auto text-center">
     <h1>It's done!</h1>
   </div>
@@ -14,7 +14,7 @@
   </div>
 {{ end }}
 
-{{ define "bootstrap-failure" }}
+{{ define "components/bootstrap-failure" }}
   <div class="col-md-8 p-lg-6 mx-auto text-center">
     <h1>You're almost there!</h1>
   </div>
@@ -62,7 +62,7 @@
   </small>
 {{ end }}
 
-{{ define "content" }}
+{{ define "pages/bootstrap" }}
   <div class="position-relative overflow-hidden p-3 p-md-5 m-md-3" id="bootstrap-content">
     <div class="col-md-8 p-lg-6 mx-auto text-center">
       <h1>You're almost there!</h1>
@@ -72,7 +72,7 @@
       {{ if eq .Err nil }}
         <p class="text-center pt-2">
           Glasskube is not yet installed in your current context
-          <b>{{ .CurrentContext }}</b>. You can do so now by clicking the Bootstrap button:
+          <b>{{ .Ctx.CurrentContext }}</b>. You can do so now by clicking the Bootstrap button:
         </p>
 
         {{ template "bootstrap-button" "Bootstrap Glasskube" }}

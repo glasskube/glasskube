@@ -20,7 +20,7 @@ That's why [kube-prometheus-stack](https://github.com/prometheus-community/helm-
 
 This sounds like good news, and it is, but the stack is bundled in a Helm chart, and just the `values.yaml` file has _over 4000 lines_. Configuring and maintaining the Helm chart isn’t necessarily straightforward or “fun.”
 
-With so many configuration options, we must be getting something good right? Well yeah, we are, by deploying kube-prometheus-stack we get all of this right out of the box: 
+With so many configuration options, we must be getting something good right? Well yeah, we are, by deploying kube-prometheus-stack we get all of this right out of the box:
 
 ![stack-diagram](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/2fcquzgd73xf9cc83ap1.png)
 
@@ -47,9 +47,9 @@ With so many configuration options, we must be getting something good right? Wel
 
 Luckily, [Glasskube](https://github.com/glasskube/glasskube) now supports the `kube-prometheus-stack`. Package configuration, lifecycle management, and installation can be done in record time.
 
-In this blog post, we will explore the steps to configure and install the `kube-prometheus-stack` using [Glasskube](https://glasskube.dev/), wasting no unnecessary time wrestling with never-ending values files and getting you working dashboards and alerts quicker than ever before.
+In this blog post, we will explore the steps to configure and install the `kube-prometheus-stack` using [Glasskube](/), wasting no unnecessary time wrestling with never-ending values files and getting you working dashboards and alerts quicker than ever before.
 
-### Requirements: 
+### Requirements:
 
 - Access to a **Kubernetes cluster** ([Minikube](https://minikube.sigs.k8s.io/docs/start) will be fine)
 - [Glasskube](https://github.com/glasskube/glasskube) installed
@@ -57,7 +57,7 @@ In this blog post, we will explore the steps to configure and install the `kube-
 
 ### Create a cluster
 
-Install [Minikube](https://minikube.sigs.k8s.io/docs/start) then run: 
+Install [Minikube](https://minikube.sigs.k8s.io/docs/start) then run:
 ```
 minikube start
 ```
@@ -107,19 +107,19 @@ If not, `glasskube` can easily be installed the way you usually install packages
 
 ## Package Customization
 
-Glasskube offers a series of customisations that we can be tweaked and adjusted from the CLI or GUI, saving you from having to render and configure the `values.yaml` file directly. 
+Glasskube offers a series of customisations that we can be tweaked and adjusted from the CLI or GUI, saving you from having to render and configure the `values.yaml` file directly.
 
 ![parameter config](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/w7txd2o9vw0mxvrebj3g.png)
 
-Let’s take them one by one. 
+Let’s take them one by one.
 
 ### Enable Alertmanager 🚨
 
-We want `Alertmanager` to be enabled so we can leverage the metrics prometheus exposes to create helpful alerts.  
+We want `Alertmanager` to be enabled so we can leverage the metrics prometheus exposes to create helpful alerts.
 
 ### Grafana Domain 📊
 
-We will leave this empty for this demo since we would need to deploy an ingress controller to our cluster to handle the ingress object associated with the grafana service. We could use [kube-prometheus-stack](https://glasskube.dev/guides/kube-prometheus-stack/) or [caddy-ingress](https://github.com/caddyserver/ingress) which are also supported by Glasskube for this. 
+We will leave this empty for this demo since we would need to deploy an ingress controller to our cluster to handle the ingress object associated with the grafana service. We could use [kube-prometheus-stack](/guides/kube-prometheus-stack/) or [caddy-ingress](https://github.com/caddyserver/ingress) which are also supported by Glasskube for this.
 > Glasskube will automatically port-forward the Grafana pod so we can access the dashboard via the `Open` button.
 
 ### Node Exporter host network 💽
@@ -132,7 +132,7 @@ This is a duration in days for how long we want to persist the collected metrics
 
 ### Prometheus storage size
 
-The amount of storage requests we consider the package will need. 
+The amount of storage requests we consider the package will need.
 
 ### Parameter input methods 🗄️
 
@@ -145,9 +145,9 @@ Glasskube allows for various methods of parameter input:
 
 ![data input methods](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/e8dd9vj10hqw13qk98td.png)
 
-By choosing to inject data via **Kubernetes Secrets**, **ConfigMaps** and **Package configuration** we can maintain simplicity without compromising security. 
+By choosing to inject data via **Kubernetes Secrets**, **ConfigMaps** and **Package configuration** we can maintain simplicity without compromising security.
 
-Here is the example of how we would reference a specific `configMap` we have already created and deployed to our cluster. 
+Here is the example of how we would reference a specific `configMap` we have already created and deployed to our cluster.
 
 ![Value from ConfigMap](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/67dqnt7cxgpeq1zvdea4.png)
 
@@ -165,7 +165,7 @@ Upon installation you can see that the `kube-prometheus-stack` namespace has bee
 
 ## Access the dashboards
 
-> _In next weeks blog post we will access the dashboard via a custom dedicated Grafana URL_ 
+> _In next weeks blog post we will access the dashboard via a custom dedicated Grafana URL_
 
 ![open command](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/mnt9zl5qxuq8cd54qwni.gif)
 
@@ -180,7 +180,7 @@ kubectl get secret kube-prometheus-stack-kube-prometheus-stack-grafana  -o go-te
 {{range $k,$v := .data}}{{printf "%s: " $k}}{{if not $v}}{{$v}}{{else}}{{$v | base64decode}}{{end}}{{"\n"}}{{end}}'
 ```
 
-Which will output something like: 
+Which will output something like:
 ```
 admin-password: <password>
 admin-user: admin
@@ -200,7 +200,7 @@ Upon access you we be greeted by a long list of powerful pre-configured Grafana 
 
 ## Alerting
 
-We already get many useful alerts created for us right out of the box. 
+We already get many useful alerts created for us right out of the box.
 
 ![alerting rules](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/ptnr7vl5hux0hur8tzh3.png)
 
@@ -208,7 +208,7 @@ In this snippet you can see that some of the preconfigured alerts are already fi
 
 ![firing alerts](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/0dguekqv6cg5yox9ofq4.png)
 
-If you want to be notified in via **email**, **PagerDuty** or any number of third party supported you will just need to add your [contact points](https://grafana.com/docs/grafana/latest/alerting/fundamentals/notifications/contact-points/#:~:text=A%20contact%20point%20is%20a,custom%20message%2C%20or%20notification%20templates.) of preference and then add them as destination inside [custom notification policies](https://grafana.com/docs/grafana/latest/alerting/configure-notifications/create-notification-policy/). 
+If you want to be notified in via **email**, **PagerDuty** or any number of third party supported you will just need to add your [contact points](https://grafana.com/docs/grafana/latest/alerting/fundamentals/notifications/contact-points/#:~:text=A%20contact%20point%20is%20a,custom%20message%2C%20or%20notification%20templates.) of preference and then add them as destination inside [custom notification policies](https://grafana.com/docs/grafana/latest/alerting/configure-notifications/create-notification-policy/).
 
 The `kube-prometheus-stack` offers tremendous **"out-of-the-box"** value for Kubernetes cluster monitoring, eliminating the need to start from scratch. It bundles essential components for metrics exposure, extraction, alerting, and visualization, helping you establish a robust monitoring posture from the get-go. With official support from `Glasskube`, managing and updating a comprehensive, best practice-compliant monitoring stack has never been easier.
 
