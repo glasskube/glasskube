@@ -1,18 +1,18 @@
 ---
-slug: saas-vs-byoc-self-hosted
-title: "Choosing the Right Software Deployment Model: Self-Service, BYOC, or Self Managed"
-description: Software vendors and customers have to navigate a complex landscape of deployment models and target environments. In this piece we explore the key differences between SaaS, BYOC, and Self-Managed deployments.
+slug: on-premises-vs-cloud-vs-byoc
+title: "Choosing the Right Software Deployment Model: On-Premises, Cloud (SaaS) or  BYOC"
+description: Software vendors and customers have to navigate a complex landscape of deployment models and target environments. In this piece we explore the key differences between SaaS, BYOC, and On-Premises deployments.
 authors: [ jpage, pmig ]
-tags: [ BYOC, SaaS, Self-managed ]
+tags: [ BYOC, SaaS, On-Premises ]
 image: https://github.com/user-attachments/assets/d250ea77-d105-4aaf-9d02-5e425f1ed4a6
 ---
 ![thumbnail-new](https://github.com/user-attachments/assets/d250ea77-d105-4aaf-9d02-5e425f1ed4a6)
 
-Anyone who’s ever had to research and source technical B2B tooling is well used to deciphering the [pricing](/pricing/) sections of products websites. These pages are filled with recurring terms like [SaaS](/glossary/saas-definition/), On-Prem, [BYOC](/glossary/byoc-definition/), Self-Service, and [Self-Managed](/glossary/self-managed-software/). Personally, I’ve found myself scratching my head trying to make sense of how they all fit together and how some companies use the same terms sightly differently to others, especially since there’s seemingly no standardized use for many of these terms, some even overlap or are used interchangeably.
+Anyone who’s ever had to research and source technical B2B tooling is well used to deciphering the [pricing](/pricing/) sections of products websites. These pages are filled with recurring terms like [SaaS](/glossary/saas-definition/), On-Prem, [BYOC](/glossary/byoc-definition/), SaaS, and [On-Premises](/glossary/On-Premises-software/). Personally, I’ve found myself scratching my head trying to make sense of how they all fit together and how some companies use the same terms sightly differently to others, especially since there’s seemingly no standardized use for many of these terms, some even overlap or are used interchangeably.
 
 <!-- truncate -->
 
-For example, while "On-Premesis" and "Self-Managed" sound similar, they don’t mean the exact same thing. As software vendors deploy to increasingly regulated and complex environments, it’s essential to get some clarity on what these terms actually mean and when they should be used. Let’s untangle this terminology nightmare and establish some clear distinctions around software acquisition and deployment.
+For example, while "On-Premesis" and "Self-managed" sound similar, they don’t mean the exact same thing. As software vendors deploy to increasingly regulated and complex environments, it’s essential to get some clarity on what these terms actually mean and when they should be used. Let’s untangle this terminology nightmare and establish some clear distinctions around software acquisition and deployment.
 
 ## Deployment Methods and Deployment Targets
 
@@ -43,7 +43,7 @@ Companies of all sizes that prioritize ease and flexibility over data sovereignt
 
 ### Bring your own Cloud (BYOC)
 
-BYOC has emerged as a new way to deploy software over the last few years, applicable to highly regulated industries with strict requirements for data sovereignty, access, and security. In the BYOC model, the vendor is granted access to a VPC within the customer’s environment. Here, the vendor manages the software and infrastructure, but with permissions usually restricted to workload-specific needs. Often, a zero-trust security model complements BYOC to ensure that the vendor cannot access sensitive internal data and that no data ever leaves the VPC.
+BYOC has emerged as a new way to deploy software over the last few years, applicable to highly regulated industries with strict requirements for data sovereignty, access, and security. In the BYOC model, the vendor is granted access to a VPC within the customer’s environment. Here, the vendor manages the software and infrastructure, but with permissions usually restricted to workload-specific needs. Often, a zero-trust security model complements BYOC to ensure that no data ever leaves the VPC and the software customer can cut out the vendor any time.
 
 This shared responsibility for infrastructure and support presents unique challenges for both vendors and customers. However, for companies lacking the resources to fully self-host, BYOC offers an alternative to those who simply cannot onboard a third-party SaaS.
 
@@ -64,17 +64,17 @@ There’s also a strong case for users who may not have the strictest compliance
 Note: The elephant in the BYOC room is that, while some companies may appreciate the convenience of having their infrastructure managed by a software provider—even within an isolated Kubernetes cluster or a dedicated set of VMs—many others will never be comfortable granting infrastructure management permissions or allowing a vendor any level of access to push software into their environments. Making BYOC an unviable option for many.
 :::
 
-### **Self-Managed**
+### On-Premises
 
-The last deployment model is Self-Managed, sometimes referred to as On-Premesis. Personally, I find the mixing of the deployment method with the deployment target environment a bit confusing, as a Self-Managed setups could be running in a private cloud environments and not necessarily in an on-premises data center.
+The last deployment model is On-Premises, sometimes referred to as Self-managed. Personally, I find the mixing of the deployment method with the deployment target environment a bit confusing, as a On-Premises setups could be running in a private cloud environments and not necessarily in an on-premises data center.
 
-Confusion aside, it's the golden standard for organizations that demand autonomy. Companies choosing Self-Managed deployment methods are often driven by a desire to fully own their environments, whether for compliance, security, or operational efficiency.
+Confusion aside, it's the golden standard for organizations that demand autonomy. Companies choosing On-Premises deployment methods are often driven by a desire to fully own their environments, whether for compliance, security, or operational efficiency.
 
 In this model, the customer takes on full responsibility for both infrastructure and software maintenance or that have reserved compute or cloud resources, potentially purchased at a discount, which they aim to maximize.. The vendor issues a license, and from there, the customer handles everything else. This model aligns with organizations that want to keep all data and operations under their control while optimizing long-term resource usage.
 
-**Who is the Target User for Self-Managed?**
+**Who is the Target User for On-Premises?**
 
-The Self-Managed model suits companies that value total control over their software and infrastructure, whether for compliance, security, or cost-efficiency reasons. These organizations typically have the internal resources for maintenance and prefer to keep their environment fully private, whether in the cloud or on-premises.
+The On-Premises model suits companies that value total control over their software and infrastructure, whether for compliance, security, or cost-efficiency reasons. These organizations typically have the internal resources for maintenance and prefer to keep their environment fully private, whether in the cloud or on-premises.
 
 Here’s a deployment model quadrant that helps organize the relationship between customer control and infrastructure management, essentially, the balancing act needed to determine the most suitable deployment method for a given use case.
 
@@ -108,27 +108,27 @@ To avoid “locking in” to a single cloud provider, many organizations adopt h
 
 Some software customers choose to deploy to privately owned data centers. While this is the most cumbersome, costly, and labor-intensive option, it offers the highest level of flexibility and privacy.
 
-![deployment-model-diagram](https://github.com/user-attachments/assets/2828bebe-4d26-4088-adcd-bcadd2895ed8)
+![deployment-model-diagram](https://github.com/user-attachments/assets/b41760c3-6b34-4eb1-ad12-274445819ce4)
 
-Apart from the Self-Service deployment model, which is always vendor-owned and controlled, the other two models can be deployed to any target environment. It’s up to the customer to determine the appropriate environment based on any specific restrictions or requirements.
+Apart from the SaaS deployment model, which is always vendor-owned and controlled, the other two models can be deployed to any target environment. It’s up to the customer to determine the appropriate environment based on any specific restrictions or requirements.
 
 ## In-Depth Comparison of Deployment Models
 
 ### Which deployment method is the most cost effective?
 
-SaaS tends to be the most cost-effective option for businesses looking for minimal maintenance and predictable costs, as it bundles infrastructure, security, and updates into a subscription. BYOC can be economical for organizations that have already committed to cloud resources, allowing them to maximize discounts from reserved instances while sharing management with the vendor. Self-Managed is typically the most costly due to the need for dedicated infrastructure and ongoing maintenance, however, it can offer savings for companies with strict control requirements and the internal resources to manage their setup.
+SaaS tends to be the most cost-effective option for businesses looking for minimal maintenance and predictable costs, as it bundles infrastructure, security, and updates into a subscription. BYOC can be economical for organizations that have already committed to cloud resources, allowing them to maximize discounts from reserved instances while sharing management with the vendor. On-Premises is typically the most costly due to the need for dedicated infrastructure and ongoing maintenance, however, it can offer savings for companies with strict control requirements and the internal resources to manage their setup.
 
 ### Which deployment method is the most secure?
 
-Self-Managed provides the highest level of security for organizations that need strict control over their data and infrastructure, as they manage all aspects internally without vendor access. BYOC offers a middle ground, allowing customers to enforce data sovereignty by keeping sensitive data within their own cloud environment while letting the vendor handle software and some levels of infrastructure management. SaaS is secure for most general cases, but it’s less ideal for highly regulated industries where the customer’s lack of control over infrastructure may be a concern.
+On-Premises provides the highest level of security for organizations that need strict control over their data and infrastructure, as they manage all aspects internally without vendor access. BYOC offers a middle ground, allowing customers to enforce data sovereignty by keeping sensitive data within their own cloud environment while letting the vendor handle software and some levels of infrastructure management. SaaS is secure for most general cases, but it’s less ideal for highly regulated industries where the customer’s lack of control over infrastructure may be a concern.
 
 ### Understanding the sliding scale of shared responsibilities
 
 In SaaS, the vendor takes on nearly all responsibilities, from security to infrastructure management, leaving the customer to manage only access. BYOC shifts some of this responsibility back to the customer, who owns and secures their cloud environment. Customers are assured that data remains within their domain, while the vendor manages the software and parts of the infrastructure within those boundaries.
 
-Self-Managed, on the other hand, places full responsibility on the customer, granting them complete control but requiring substantial internal resources. However, software vendors can still play a significant role in supporting successful Self-Managed deployments. This includes designing on-prem-ready software, securing the underlying images it’s built on, providing image-serving registries (via proxies or archive files for air-gapped environments), and ensuring simple, clear upgrade processes. While the responsibility for deploying and managing the software ultimately lies with the customer, vendors can significantly improve the chances of a smooth and healthy deployment by removing unnecessary complexity and avoiding dependency on vendor involvement at every step.
+On-Premises, on the other hand, places full responsibility on the customer, granting them complete control but requiring substantial internal resources. However, software vendors can still play a significant role in supporting successful On-Premises deployments. This includes designing on-prem-ready software, securing the underlying images it’s built on, providing image-serving registries (via proxies or archive files for air-gapped environments), and ensuring simple, clear upgrade processes. While the responsibility for deploying and managing the software ultimately lies with the customer, vendors can significantly improve the chances of a smooth and healthy deployment by removing unnecessary complexity and avoiding dependency on vendor involvement at every step.
 
-The spectrum from SaaS to Self-Managed reflects the trade-off between control and operational burden, with customers weighing vendor support against the autonomy they seek.
+The spectrum from SaaS to On-Premises reflects the trade-off between control and operational burden, with customers weighing vendor support against the autonomy they seek.
 
 ## Conclusion
 
