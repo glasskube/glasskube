@@ -1,0 +1,144 @@
+---
+slug: on-premises-vs-cloud-vs-byoc
+title: "Choosing the Right Software Deployment Model: On-Premises, Cloud (SaaS) or  BYOC"
+description: Software vendors and customers have to navigate a complex landscape of deployment models and target environments. In this piece we explore the key differences between SaaS, BYOC, and On-Premises deployments.
+authors: [ jpage, pmig ]
+tags: [ BYOC, SaaS, On-Premises ]
+image: https://github.com/user-attachments/assets/d250ea77-d105-4aaf-9d02-5e425f1ed4a6
+---
+
+import DefaultCTA from '@site/src/components/cta/DefaultCTA/defaultCTA';
+
+![self-service-vs-byoc-vs-self-managed](https://github.com/user-attachments/assets/d250ea77-d105-4aaf-9d02-5e425f1ed4a6)
+
+Anyone who’s ever had to research and source technical B2B tooling is well-used to deciphering the [pricing](/pricing/) sections of products websites. These pages are filled with recurring terms like [SaaS](/glossary/saas-definition/), [BYOC](/glossary/byoc-definition/), SaaS, and [On-Premises](/glossary/On-Premises-software/). Personally, I’ve found myself scratching my head trying to make sense of how they all fit together and how some companies use the same terms sightly differently to others, especially since there’s seemingly no standardized use for many of these terms, some even overlap or are used interchangeably.
+
+<!-- truncate -->
+
+<DefaultCTA />
+
+For example, while "On-Premises" and "Self-managed" sound similar, they don’t mean the exact same thing. As software vendors deploy to increasingly regulated and complex environments, it’s essential to get some clarity on what these terms actually mean and when they should be used. Let’s untangle this terminology nightmare and establish some clear distinctions around software acquisition and deployment.
+
+## Deployment Methods and Deployment Targets
+
+I’ll admit upfront, this blog post may include a few opinionated takes. Since there’s no official authority defining how industry terms should be used, I’m calling things as I see them. My first take? I believe it makes the most sense to distinguish between _deployment methods_ (or models) and _deployment target environments_. I’ll explain why below, but before diving in, let’s start by clarifying some key terminology.
+
+Throughout the article, we’ll reference the following terms multiple times. Defining them upfront will help avoid any confusion.
+
+-   **Software Vendor**: A company that creates a software product, providing it to customers who use it within their own operations.
+-   **Software Customer**: A company that has a contractual agreement to purchase and use a vendor's software.
+-   **Infrastructure Management**: This is the process of configuring, maintaining, troubleshooting, and provisioning the infrastructure on which a given software runs.
+-   **Infrastructure Ownership**: Refers to the entity that owns the infrastructure itself. Ownership is distinct from management, in some cases, customer-owned infrastructure may still be managed by the vendor.
+-   **Deployment Method/Model**: The process of deploying software, with each method selected based on the level of responsibility sharing for infrastructure management and ownership. Compliance, security concerns, and customer preferences influence the chosen deployment method.
+-   **Deployment Target**: This describes the physical environment where vendor-supplied software will run, focusing on the infrastructure characteristics rather than the shared responsibilities between the vendor and customer.
+
+## Deployment methods
+
+The key confusion I usually find is that deployment methods are mistaken for deployment target environments. These are the three main overarching methods.
+
+### Fully managed (Cloud) or Software as a Service (SaaS)
+
+This model transfers all operational and security responsibilities to the vendor, who owns and manages both the software and the infrastructure it runs on. Customers typically access the software through a subscription fee, with minimal complexity or confusion around roles since the vendor handles nearly everything.
+
+[SaaS](/glossary/saas-definition/) offerings are particularly attractive to customers who want a quick, efficient way to start using the software without dedicating time or resources to ongoing maintenance.
+
+**Who is the Target User for SaaS Offerings?**
+
+Companies of all sizes that prioritize ease and flexibility over data sovereignty. These customers may not have strict compliance requirements and are comfortable with a model where they don’t control availability, configurations, versioning, or security.
+
+### Bring your own Cloud (BYOC)
+
+[BYOC](/glossary/byoc-definition/) has emerged as a new way to deploy software over the last for year, particularly attractive to companies in highly regulated industries with strict requirements for data sovereignty, access, and security. In the BYOC model, the vendor is granted access to a VPC within the customer’s environment. Here, the vendor manages the software and infrastructure, but with permissions usually restricted to workload-specific needs. Often, a zero-trust security model complements BYOC to ensure that no data ever leaves the VPC and the software customer can cut out the vendor any time.
+
+This shared responsibility for infrastructure and support presents unique challenges for both vendors and customers. However, for companies lacking the resources to fully self-host, BYOC offers an alternative to those who simply cannot onboard a third-party SaaS.
+
+**What you want to see in mature a BYOC offering?**
+
+-   **Fine-grained Access Controls:** Ability to set granular permissions on who can access and modify data within the BYOC environment.
+-   **Monitoring and Logging:** Robust monitoring and logging capabilities to track usage, performance, and potential security incidents.
+-   **Clear Service Level Agreements (SLAs):** Clearly defined SLAs outlining uptime guarantees, support response times, and issue resolution processes.
+-   **Dedicated Support:** Access to knowledgeable and responsive technical support.
+
+**Who is the target user for the BYOC model?**
+
+BYOC is usually used by **large enterprises and organizations operating in highly regulated industries**, such as finance, healthcare, and government sectors who might not have a highly sophisticated infrastructure management team. These users usually have strict compliance and data sovereignty requirements that prevent them from using traditional SaaS but still seek the convenience and expertise of vendor-managed solutions within their own infrastructure.
+
+There’s also a strong case for users who may not have the strictest compliance requirements but have invested in bulk cloud resources at a discounted rate. Many companies purchase reserved instances or commit to bulk cloud usage for preferential pricing, and BYOC allows them to make the most of these resources, maximizing the value of their cloud savings.
+
+:::note
+Note: The elephant in the BYOC room is that, while some companies may appreciate the convenience of having their infrastructure managed by a software provider—even within an isolated Kubernetes cluster or a dedicated set of VMs—many others will never be comfortable granting infrastructure management permissions or allowing a vendor any level of access to push software into their environments. Making BYOC a non-viable option for many.
+:::
+
+### On-Premises
+
+The last deployment model is On-Premises, sometimes referred to as Self-managed. Personally, I find the mixing of the deployment method with the deployment target environment a bit confusing, as a On-Premises setups could be running in a private cloud environments and not necessarily in an on-premises data center.
+
+Confusion aside, it's the golden standard for organizations that demand autonomy. Companies choosing On-Premises deployment methods are often driven by a desire to fully own their environments, whether for compliance, security, or operational efficiency.
+
+In this model, the customer takes on full responsibility for both infrastructure and software maintenance or that have reserved compute or cloud resources, potentially purchased at a discount, which they aim to maximize.. The vendor issues a license, and from there, the customer handles everything else. This model aligns with organizations that want to keep all data and operations under their control while optimizing long-term resource usage.
+
+**Who is the Target User for On-Premises?**
+
+The On-Premises model suits companies that value total control over their software and infrastructure, whether for compliance, security, or cost-efficiency reasons. These organizations typically have the internal resources for maintenance and prefer to keep their environment fully private, whether in the cloud or on-premises.
+
+Here’s a deployment model quadrant that helps organize the relationship between customer control and infrastructure management, essentially, the balancing act needed to determine the most suitable deployment method for a given use case.
+
+![Quadrant](https://github.com/user-attachments/assets/22eaff69-1b09-49c5-94ba-64a01d8d677a)
+
+## Deployment target environments
+
+Unlike deployment methods, when we discuss target environments, we're focusing on the physical attributes of the logical space where the software operates. These physical characteristics can vary widely (size, fault tolerance, and resilience) but from a deployment perspective, the key factor is who owns the infrastructure.
+
+### Vendor owned infrastructure
+
+This target environment is pretty straightforward, if the software vendor hosts the product and provides access via a subscription or payment plan, we're talking about SaaS.
+
+There’s little ambiguity here because, as the creator and manager of the software and its underlying infrastructure, the vendor takes on full responsibility. SaaS is highly appealing for both users and vendors, users enjoy convenience, while vendors benefit from economies of scale, centralized monitoring, and full-control over infrastructure management.
+
+However, this model isn’t ideal for companies with strict compliance or data sovereignty requirements, or for those with existing hardware commitments they want to get the most from.
+
+### Customer owned infrastructure
+
+Customers may leverage cloud hyperscalers like AWS, Azure, or GCP. These platforms offer managed services, preferential pricing through commitments, and extensive networks that would be prohibitively expensive for most companies to create on their own.
+
+**Cloud hyperscalers**
+
+Customers might leverage cloud hyperscalers such as AWS, Azure, GCP since they have access to many managed services, they can access preferential pricing through commitments and can benefit from large networks that for most companies would be cost prohibitive to create themselves
+
+**Hybrid cloud environments**
+
+To avoid “locking in” to a single cloud provider, many organizations adopt hybrid environments, mixing cloud services from multiple providers. Hybrid environments provide more freedom for customers to choose the services, pricing, and terms that suit them best. However, there is always a level of ownership and responsibility that ultimately rests on the shoulders of the cloud provider.
+
+**On premises environments or data centers**
+
+Some software customers choose to deploy to privately owned data centers. While this is the most cumbersome, costly, and labor-intensive option, it offers the highest level of flexibility and privacy.
+
+![deployment-model-diagram](https://github.com/user-attachments/assets/b41760c3-6b34-4eb1-ad12-274445819ce4)
+
+Apart from the SaaS deployment model, which is always vendor-owned and controlled, the other two models can be deployed to any target environment. It’s up to the customer to determine the appropriate environment based on any specific restrictions or requirements.
+
+## In-Depth Comparison of Deployment Models
+
+### Which deployment method is the most cost effective?
+
+SaaS tends to be the most cost-effective option for businesses looking for minimal maintenance and predictable costs, as it bundles infrastructure, security, and updates into a subscription. BYOC can be economical for organizations that have already committed to cloud resources, allowing them to maximize discounts from reserved instances while sharing management with the vendor. On-Premises is typically the most costly due to the need for dedicated infrastructure and ongoing maintenance, however, it can offer savings for companies with strict control requirements and the internal resources to manage their setup.
+
+### Which deployment method is the most secure?
+
+On-Premises provides the highest level of security for organizations that need strict control over their data and infrastructure, as they manage all aspects internally without vendor access. BYOC offers a middle ground, allowing customers to enforce data sovereignty by keeping sensitive data within their own cloud environment while letting the vendor handle software and some levels of infrastructure management. SaaS is secure for most general cases, but it’s less ideal for highly regulated industries where the customer’s lack of control over infrastructure may be a concern.
+
+### Understanding the sliding scale of shared responsibilities
+
+In SaaS, the vendor takes on nearly all responsibilities, from security to infrastructure management, leaving the customer to manage only access. BYOC shifts some of this responsibility back to the customer, who owns and secures their cloud environment. Customers are assured that data remains within their domain, while the vendor manages the software and parts of the infrastructure within those boundaries.
+
+On-Premises, on the other hand, places full responsibility on the customer, granting them complete control but requiring substantial internal resources. However, software vendors can still play a significant role in supporting successful On-Premises deployments. This includes designing on-prem-ready software, securing the underlying images it’s built on, providing image-serving registries (via proxies or archive files for air-gapped environments), and ensuring simple, clear upgrade processes. While the responsibility for deploying and managing the software ultimately lies with the customer, vendors can significantly improve the chances of a smooth and healthy deployment by removing unnecessary complexity and avoiding dependency on vendor involvement at every step.
+
+The spectrum from SaaS to On-Premises reflects the trade-off between control and operational burden, with customers weighing vendor support against the autonomy they seek.
+
+## Conclusion
+
+There's a clear distinction between how customers choose to consume software and the environment where it runs. While some software vendors may prefer certain deployment models, it’s ultimately the evolving needs of customers that dictate the options vendors should offer. Vendors have to keep an ear to the ground and stay up to date with these shifting requirements and recognize that not every customer can simply enter a credit card number and subscribe to a SaaS plan.
+
+And for software vendors lacking expertise in robust deployment models beyond SaaS, partnering with third parties can be a smart move, ensuring that they can effectively respond to varied customer needs and not having to let any potential customer go unattended.
+
+<DefaultCTA />
