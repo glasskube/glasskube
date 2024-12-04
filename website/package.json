@@ -34,7 +34,6 @@
     "@giscus/react": "^3.0.0",
     "@lottiefiles/react-lottie-player": "^3.5.3",
     "@mdx-js/react": "^3.0.0",
-    "@trieve/docusaurus-search-theme": "^0.1.17",
     "clsx": "^2.0.0",
     "docusaurus-plugin-matomo": "0.0.8",
     "posthog-docusaurus": "^2.0.0",

@@ -15,7 +15,7 @@ type ScreenshotItem = {
 
 const ScreenshotList: ScreenshotItem[] = [
   {
-    title: 'Application Delivery Platform',
+    title: 'Software Distributor Platform',
     description: (
       <>
         Deliver software to private infrastructure, different cloud
@@ -28,14 +28,14 @@ const ScreenshotList: ScreenshotItem[] = [
         </Link>
       </>
     ),
-    screenshotAltText: 'Glasskube settings page',
+    screenshotAltText: 'Software distribution platform',
     lightScreenshotUrl:
       'https://github.com/glasskube/glasskube/assets/3041752/e8565cf7-6089-4b82-b169-91f5b3ef4c33',
     darkScreenshotUrl:
       'https://github.com/glasskube/glasskube/assets/3041752/cf1f1983-78c8-4bb4-9d47-86dbf3a16c4e',
   },
   {
-    title: 'Open Source Kubernetes Package Manager',
+    title: 'Software consumer portal',
     description: (
       <>
         Use our GUI, CLI or GitOps integration and get started for free on
@@ -86,8 +86,7 @@ export default function HomepageProducts(): JSX.Element {
         <div className="row">
           <div className="col text--center">
             <Heading as="h2">
-              Our products help you distribute software even in the most
-              challenging environments
+              Form onboarding to update distribution, and support—all in one platform.
             </Heading>
           </div>
         </div>
