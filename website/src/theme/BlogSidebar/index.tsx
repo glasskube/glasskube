@@ -9,7 +9,7 @@ export default function BlogSidebar(): JSX.Element {
     <div className={clsx('card__header', styles.sidebar)}>
       <h3>About Glasskube</h3>
       <p>
-        We a the creators of the Glasskube Open-Source Package Manager for Kubernetes and offering a comprehensive
+        We are the creators of the Glasskube Open-Source Package Manager for Kubernetes and offering a comprehensive
         yet easy to use software distribution platform.
       </p>
       <div className={styles.buttons}>
