@@ -13,7 +13,7 @@ function PricingHeader() {
   return (
     <section className="margin-top--lg margin-bottom--lg text--center">
       <Heading as="h1">{TITLE}</Heading>
-      <p>{DESCRIPTION}</p>
+      <p><strong>{DESCRIPTION}</strong></p>
     </section>
   );
 }
