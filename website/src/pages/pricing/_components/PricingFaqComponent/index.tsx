@@ -16,9 +16,7 @@ function FAQ({faq}: {faq: PricingFAQ}) {
         <div className="card__header">
           <h3 className="anchor">
             {faq.question}
-            <Link className="hash-link" href={'#' + faq.id}>
-              #
-            </Link>
+            <Link className="hash-link" href={'#' + faq.id} />
           </h3>
         </div>
         <div className="card__body">
