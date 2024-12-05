@@ -43,8 +43,8 @@ func (obj *uninstaller) UninstallBlocking(ctx context.Context, pkg ctrlpkg.Packa
 		if err != nil {
 			return err
 		}
-	} else {
-		cliutils.ExitWithError()
+	} else if !validateDeletion {
+		return fmt.Errorf("Namespace deletion cannot be validated")
 	}
 	err = obj.delete(ctx, pkg, isDryRun)
 	if err != nil {
