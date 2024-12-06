@@ -24,6 +24,7 @@ const sidebars: SidebarsConfig = {
         'byoc-definition',
         'saas-definition',
         'self-managed-software',
+        'on-premises'
       ],
     },
   ],
