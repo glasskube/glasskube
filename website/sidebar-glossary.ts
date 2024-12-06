@@ -23,8 +23,8 @@ const sidebars: SidebarsConfig = {
         'kustomize',
         'byoc-definition',
         'saas-definition',
+        'on-premises-definition',
         'self-managed-software',
-        'on-premises'
       ],
     },
   ],
