@@ -5,10 +5,12 @@ import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {IconDefinition} from '@fortawesome/free-regular-svg-icons';
 import React from 'react';
 import {
+  faArrowTrendUp,
   faChartLine,
-  faCheckDouble,
-  faKey,
+  faCheckDouble, faClock, faHandsBubbles,
+  faKey, faLightbulb,
 } from '@fortawesome/free-solid-svg-icons';
+import {faSpeakerDeck, faTiktok} from '@fortawesome/free-brands-svg-icons';
 
 type FeatureItem = {
   title: string;
@@ -18,32 +20,29 @@ type FeatureItem = {
 
 const FeatureList: FeatureItem[] = [
   {
-    title: 'Manage Licensing',
-    icon: faKey,
+    title: 'Reduce onboarding time',
+    icon: faClock,
     description: (
       <>
-        Restrict and permit access to your software with built in license
-        management and validation.
+        Your customers receive a guided installation experience, even for diverse customer environments.
       </>
     ),
   },
   {
-    title: 'Compatibility testing',
-    icon: faCheckDouble,
+    title: 'Increase Update velocity',
+    icon: faArrowTrendUp,
     description: (
       <>
-        Ensure compatibility across different environments like AWS, GCP and
-        on-prem.
+        Glasskube Cloud notifies your customers about new updates and empowers them to update whenever they are ready.
       </>
     ),
   },
   {
-    title: 'Insights',
-    icon: faChartLine,
+    title: 'Simplify Troubleshooting',
+    icon: faLightbulb,
     description: (
       <>
-        Monitor uptime, usage, configuration, and issues of your enterprise
-        deployments.
+        Receive metrics and heart beat information and let your customers share additional support insights if needed.
       </>
     ),
   },
@@ -70,10 +69,10 @@ export default function HomepageFeatures(): JSX.Element {
     <section className={styles.features}>
       <div className="container">
         <div className="row">
-          <div className="col text--center">
+          <div className="col text--center margin-top--xl">
             <Heading as="h2">
-              Sell software to enterprises and deploy to private infrastructure,
-              different cloud environments, and on-premises.
+              The Glasskube Cloud Software Distribution Platform is the central place to manage all your on-prem,
+              vpc and air-gapped customers.
             </Heading>
           </div>
         </div>

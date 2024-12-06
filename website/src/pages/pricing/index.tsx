@@ -4,17 +4,17 @@ import Heading from '@theme/Heading';
 import Pricing from './_components/PricingComponent';
 import PricingFaq from '@site/src/pages/pricing/_components/PricingFaqComponent';
 
-const TITLE = translate({message: 'Glasskube Pricing'});
+const TITLE = translate({message: 'Glasskube Cloud'});
 const DESCRIPTION = translate({
   message:
-    'Our products help you distribute software even in the most challenging environments',
+    'Software Distribution Platform',
 });
 
 function PricingHeader() {
   return (
     <section className="margin-top--lg margin-bottom--lg text--center">
       <Heading as="h1">{TITLE}</Heading>
-      <p>{DESCRIPTION}</p>
+      <p><strong>{DESCRIPTION}</strong></p>
     </section>
   );
 }

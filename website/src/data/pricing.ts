@@ -1,33 +1,40 @@
 export const PricingFAQs: PricingFAQ[] = [
   {
-    id: 'free-trial',
-    question: 'Do you offer free trials?',
+    id: 'glasskube-cloud',
+    question: 'What is Glasskube Cloud?',
     answer:
-      'Please <a href="https://cal.glasskube.com/team/gk/demo" target="_blank">contact us</a> regarding the enterprise mode for an individual offer.',
+      'Glasskube Cloud is the easiest way for ISVs to distribute their software to their customers. It has multiple modules: E.g. the Software Distribution Platform and Customer Portal',
   },
   {
-    id: 'free-tier',
-    question: 'How are 5 customer deployments defined?',
+    id: 'software-distribution-platform',
+    question: 'What is the Glasskube Cloud Software Distribution Platform?',
     answer:
-      'Only deployments with different license keys are counting towards your included license quota.',
+      'A platform for ISVs to manage their software application, release channels, versions, customers, and their deployment targets.',
   },
   {
-    id: 'invoice',
-    question: 'Do you also support pay by invoice?',
+    id: 'customer-portal',
+    question: 'What is the Glasskube Cloud Customer Portal?',
     answer:
-      'Yes, individual offers from the enterprise plan can also be paid by invoice.',
+      'The customer portal is a white labeled or co-branded portal for your customers to receive installation instructions, updates, and support.',
   },
   {
-    id: 'currency',
-    question: 'Do you also support other currencies than US Dollar?',
+    id: 'application',
+    question: 'What is an application?',
     answer:
-      'Yes, individual offers from the enterprise plan can be created in different currencies.',
+      'An ISV might distribute multiple applications. E.g. a monitoring platform and data collection agent.',
   },
   {
-    id: 'gitops',
-    question: 'Does Glasskube integrate with existing GitOps solutions?',
+    id: 'release-channel',
+    question: 'What is a release channel?',
     answer:
-      'Yes, Glasskube integrates with popular GitOps solution, by creating pull requests for package upgrades.',
+      'An application can have multiple release channels. E.g. a stable and a beta channel. Each channel can have multiple versions.' +
+      'A channel is assigned to a deployment target.',
+  },
+  {
+    id: 'deployment-target',
+    question: 'What is a deployment target?',
+    answer:
+      'Your customers can have multiple deployment targets. Deployment targets are usually associated with a release channel.',
   },
 ];
 

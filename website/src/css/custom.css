@@ -35,6 +35,7 @@
   --ifm-color-primary-lightest: var(--glasskube-main-4);
   --ifm-code-font-size: 95%;
   --ifm-font-color-base: var(--glasskube-grey-0);
+  --ifm-heading-h1-font-size: 3rem;
   --ifm-pre-background: rgba(255, 255, 255, 0.1);
   --ifm-menu-color-background-active: var(--glasskube-main-light);
   --ifm-font-family-base: Inter, system-ui, sans-serif;
@@ -185,6 +186,7 @@ a.button--outline.light, .light {
 }
 
 h1 {
+  font-size: 3rem;
   background: linear-gradient(60deg, var(--glasskube-main-3), var(--glasskube-pink));
   background-clip: text;
   -webkit-text-fill-color: transparent;

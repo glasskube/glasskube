@@ -9,8 +9,8 @@ export default function BlogSidebar(): JSX.Element {
     <div className={clsx('card__header', styles.sidebar)}>
       <h3>About Glasskube</h3>
       <p>
-        Glasskube is the easiest way to distribute and manage your software to
-        your enterprise customers and edge locations.
+        We are the creators of the Glasskube Open-Source Package Manager for Kubernetes and offering a comprehensive
+        yet easy to use software distribution platform.
       </p>
       <div className={styles.buttons}>
         <SignupForWaitlistButton additionalClassNames="" />

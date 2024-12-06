@@ -6,7 +6,7 @@ import {EnumChangefreq} from 'sitemap';
 
 const config: Config = {
   title: 'Glasskube',
-  tagline: 'Enabling private infra and on-prem deployments',
+  tagline: 'The easiest way to distribute enterprise software',
   favicon: 'img/favicon.png',
   trailingSlash: true,
 
@@ -36,11 +36,7 @@ const config: Config = {
     '@docusaurus/theme-mermaid',
     [
       './custom-blog-plugin',
-      {
-        id: 'blog',
-        routeBasePath: 'blog',
-        path: './blog',
-      },
+      {id: 'blog', routeBasePath: 'blog', path: './blog'},
     ],
     [
       '@docusaurus/plugin-ideal-image',
@@ -100,48 +96,10 @@ const config: Config = {
         sitemap: {
           changefreq: EnumChangefreq.DAILY,
           priority: 1,
-          ignorePatterns: ['/telemetry/','/blog/authors/', '/blog/archive/', '/blog/tags/**'],
+          ignorePatterns: ['/telemetry/', '/blog/authors/', '/blog/archive/', '/blog/tags/**'],
           filename: 'sitemap.xml',
         },
       } satisfies Preset.Options,
-    ],
-  ],
-  themes: [
-    [
-      require.resolve('@trieve/docusaurus-search-theme'),
-      {
-        apiKey: 'tr-wSPKOWp63V42oepLRWQqOfg8lWo0QCAR',
-        datasetId: 'd5d098bd-fe59-4a16-86e7-7085add427f4',
-        defaultSearchQueries: [
-          'RabbitMQ installation',
-          'Glasskube Gitops Template',
-          'Difference between helm?',
-        ],
-        defaultAiQuestions: [
-          'How to make custom Glasskube Package?',
-          'How to install cert-manager on Glasskube',
-          'How to install Glasskube cli',
-        ],
-        brandLogoImgSrcUrl: 'https://glasskube.dev/img/glasskube-logo.svg',
-        brandName: 'Glasskube',
-        brandColor: '#3c8dcc',
-        responsive: true,
-        tags: [
-          {
-            tag: 'docs',
-            label: 'Docs',
-          },
-          {
-            tag: 'guides',
-            label: 'Guides',
-          },
-          {
-            tag: 'blog',
-            label: 'Blog',
-          },
-        ],
-        debounceMs: 350,
-      },
     ],
   ],
   markdown: {
@@ -150,6 +108,7 @@ const config: Config = {
   themeConfig: {
     colorMode: {
       defaultMode: 'dark',
+      respectPrefersColorScheme: true,
     },
     docs: {
       sidebar: {
@@ -173,116 +132,53 @@ const config: Config = {
         src: 'img/glasskube-logo.svg',
       },
       items: [
-        {
-          sidebarId: 'products',
-          label: 'Products',
-          position: 'left',
-          items: [
-            {to: '/products/hub', label: 'Application Delivery Platform'},
-            // {to: '/products/kcl', label: 'Glasskube Native Packages (coming soon)'},
-            {to: '/products/package-manager', label: 'Kubernetes Package Manager'},
-            // {to: '/products/cloud', label: 'Glasskube Cloud (coming soon)'},
-          ],
-        },
-        {
-          sidebarId: 'resources',
-          label: 'Resources',
-          position: 'left',
-          items: [
-            {type: 'docSidebar', sidebarId: 'docs', label: 'Docs'},
-            {to: '/guides/', label: 'Guides'},
-            {to: '/blog/', label: 'Blog'},
-            {to: '/glossary/', label: 'Glossary'},
-          ]
-        },
-        {to: '/pricing', label: 'Pricing', position: 'left'},
-        {
-          type: 'search',
-          position: 'left',
-        },
-        {
-          type: 'custom-wrapper',
-          position: 'right',
-        },
+        {label: 'Software Distribution', to: '/software-distribution/'},
+        {label: 'Blog', to: '/blog/'},
+        {label: 'Pricing', to: '/pricing'},
+        {type: 'custom-wrapper', position: 'right'},
+        // {label: 'Login', to: 'https://glasskube.cloud/', position: 'right'},
       ],
     },
     footer: {
       style: 'dark',
       links: [
         {
-          title: 'Docs',
+          title: 'Products',
           items: [
-            {
-              label: 'Architecture',
-              to: '/docs/',
-            },
-            {
-              label: 'Getting started',
-              to: '/docs/getting-started/install',
-            },
+            {label: 'Glasskube Cloud', to: '/'},
+            {label: 'Package Manager', to: '/products/package-manager/'},
+            {label: 'Private Package Repository', to: '/products/hub/'},
           ],
         },
         {
-          title: 'Comparisons',
+          title: 'Resources',
           items: [
-            {
-              label: 'Glasskube vs Helm',
-              to: '/docs/comparisons/helm',
-            },
-            {
-              label: 'Glasskube vs Timoni',
-              to: '/docs/comparisons/timoni',
-            },
-            {
-              label: 'Glasskube vs OLM',
-              to: '/docs/comparisons/olm',
-            },
+            {label: 'Blog', to: '/blog/'},
+            {label: 'Glossary', to: '/glossary/'},
+            {label: 'Package Manager Docs', to: '/docs/'},
+            {label: 'Package Manager Guides', to: '/guides/'},
           ],
         },
         {
           title: 'Community',
           items: [
-            {
-              label: 'Discord',
-              href: 'https://discord.gg/SxH6KUCGH7',
-            },
-            {
-              label: 'Twitter / X',
-              href: 'https://x.com/glasskube',
-            },
-            {
-              label: 'LinkedIn',
-              href: 'https://www.linkedin.com/company/glasskube/',
-            },
-            {
-              label: 'GitHub',
-              href: 'https://github.com/glasskube/glasskube',
-            },
+            {label: 'GitHub', href: 'https://github.com/glasskube/glasskube'},
+            {label: 'Discord', href: 'https://discord.gg/SxH6KUCGH7'},
+            {label: 'LinkedIn', href: 'https://www.linkedin.com/company/glasskube/'},
+            {label: 'Twitter / X', href: 'https://x.com/glasskube'},
           ],
         },
         {
           title: 'More',
           items: [
-            {
-              label: 'Blog',
-              to: '/blog',
-            },
-            {
-              label: 'Roadmap',
-              to: '/roadmap',
-            },
-            {
-              label: 'Talk to founders',
-              href: 'https://cal.glasskube.com/team/founder/30min',
-            },
-            {
-              label: 'Signup for the wait list',
-              href: 'https://glasskube.cloud/',
-            },
+            {label: 'Blog', to: '/blog/'},
+            {label: 'Contact', to: '/contact/'},
+            {label: 'Talk to founders', href: 'https://cal.glasskube.com/team/founder/30min'},
+            {label: 'Signup for the wait list', href: 'https://glasskube.cloud/'},
           ],
         },
       ],
-      copyright: `<img src="/img/glasskube-logo-white.png" class="footer-logo"/><br>Copyright © ${new Date().getFullYear()} Glasskube, Inc.<br>Built with Docusaurus.`,
+      copyright: `<img src="/img/glasskube-logo-white.png" class="footer-logo" alt="Glasskube Logo"/><br>Copyright © ${new Date().getFullYear()} Glasskube, Inc.<br>Built with Docusaurus.`,
     },
     prism: {
       theme: prismThemes.github,
