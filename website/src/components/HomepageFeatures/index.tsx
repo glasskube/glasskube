@@ -42,7 +42,7 @@ const FeatureList: FeatureItem[] = [
     icon: faLightbulb,
     description: (
       <>
-        Receive metrics and heart beat information and let your customers share additional support insights if needed.
+        Receive metrics, heart beat information and let your customers share additional support insights if needed.
       </>
     ),
   },
