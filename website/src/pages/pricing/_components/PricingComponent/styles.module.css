@@ -1,3 +1,46 @@
+
+.pricingCardSide {
+  margin-top: 4rem;
+  min-height: 47rem;
+}
+
+.pricingCardMain {
+  margin-top: 0;
+  min-height: 55rem;
+}
+
+@media (max-width: 996px) {
+  .pricingCardMain {
+    margin-top: 4rem;
+  }
+}
+
+.pricingCardHeader {
+  display: flex;
+  justify-content: center;
+  align-content: center;
+  flex-direction: column
+}
+
+.pricingCardHeaderSide {
+  min-height: 5rem;
+}
+
+.pricingCardHeaderMain {
+  min-height: 9rem;
+}
+
+
 .pricingItemList > li {
   margin-bottom: 0.5rem;
+}
+
+.pricingSectionHeader {
+  margin-top: 2rem;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.hr {
+  margin-bottom: 0;
 }
