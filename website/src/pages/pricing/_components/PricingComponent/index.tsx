@@ -55,8 +55,8 @@ function Pricing() {
               <div className="card__footer">
                 <Link
                   className="button button--secondary button--block button--lg"
-                  to="https://discord.gg/p7uYfnxZFd">
-                  Submit on Discord
+                  to="https://glasskube.cloud/">
+                  Free forever
                 </Link>
               </div>
             </div>
