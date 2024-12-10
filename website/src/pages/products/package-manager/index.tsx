@@ -7,6 +7,9 @@ import Link from '@docusaurus/Link';
 import clsx from 'clsx';
 import Typewriter from 'typewriter-effect';
 import PackageManagerFeatures from '@site/src/pages/products/package-manager/_components/PackageManagerFeatures';
+import Testimonials from '@site/src/components/Testimonials';
+import DefaultCTA from '@site/src/components/cta/DefaultCTA/defaultCTA';
+import NewsletterSignup from '@site/src/components/NewsletterSignup';
 
 function PackageManagerHeader() {
   return (
@@ -87,6 +90,15 @@ export default function Home(): JSX.Element {
         </section>
         <PackageManagerFeatures />
         <PackageManagerScreenshots />
+        <Testimonials />
+        <div className="container">
+          <div className="row">
+            <div className="col col--10 col--offset-1">
+              <DefaultCTA />
+            </div>
+          </div>
+        </div>
+        <NewsletterSignup />
       </main>
     </Layout>
   );

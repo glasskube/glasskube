@@ -4,6 +4,7 @@ import SignupForWaitlistButton from '@site/src/components/buttons/SignupForWaitl
 import React from 'react';
 import styles from './styles.module.css';
 import ContactSalesButton from '@site/src/components/buttons/ContactSalesButton';
+import clsx from 'clsx';
 
 function Pricing() {
   return (
@@ -11,29 +12,44 @@ function Pricing() {
       <div className="container">
         <div className="row">
           <div className="col col--4">
-            <div className="card margin-top--lg shadow--md">
-              <div className="card__header text--center">
-                <h3>Open Source Kubernetes Package Manager</h3>
-                <h4>Distribute your community edition for free</h4>
+            <div className={clsx('card', 'shadow--md', styles.pricingCardSide)}>
+              <div
+                className={clsx(
+                  'card__header',
+                  'text--center',
+                  styles.pricingCardHeader,
+                  styles.pricingCardHeaderSide,
+                )}>
+                <h3>Free Forever</h3>
+                (no Credit Card required)
               </div>
-              <hr />
+              <hr className={styles.hr} />
               <div className="card__body">
-                <p>
-                  Get your open-source project ready for Kubernetes and easily
-                  deploy across clusters.
-                </p>
+                <h4 className={styles.pricingSectionHeader}>
+                  Easy Customer Onboarding
+                </h4>
                 <ul className={styles.pricingItemList}>
-                  <li>Never maintain Helm charts ever again</li>
+                  <li>Application & Customer Management</li>
                   <li>
-                    Compatibility across different Kubernetes environments
+                    Co-branded Customer Portal with interactive installation
+                    instructions
                   </li>
-                  <li>Installation and configuration via CLI and UI</li>
-                  <li>
-                    Utilize managed dependencies like PostgreSQL, Redis and many
-                    more
-                  </li>
-                  <li>Distribute updates and patches via Glasskube</li>
-                  <li>GitHub & Discord community support</li>
+                </ul>
+                <h4 className={styles.pricingSectionHeader}>
+                  Software Distribution
+                </h4>
+                <ul>
+                  <li>Support for docker-compose based application</li>
+                  <li>Support for Helm based applications</li>
+                  <li>Customer configurations & secrets</li>
+                  <li>Release Channels</li>
+                </ul>
+                <h4 className={styles.pricingSectionHeader}>
+                  Monitoring & Customer Support
+                </h4>
+                <ul>
+                  <li>Deployment Target Healthcheck</li>
+                  <li>Installed versions overview</li>
                 </ul>
               </div>
               <div className="card__footer">
@@ -46,27 +62,43 @@ function Pricing() {
             </div>
           </div>
           <div className="col col--4">
-            <div className="card shadow--md">
-              <div className="card__header text--center">
-                <h3>Application Delivery Platform for Kubernetes</h3>
-                First 5 customer deployments included
-                <br />
-                <h4>Starting at $18k Platform fee per year</h4>
+            <div className={clsx('card', 'shadow--md', styles.pricingCardMain)}>
+              <div
+                className={clsx(
+                  'card__header',
+                  'text--center',
+                  styles.pricingCardHeader,
+                  styles.pricingCardHeaderMain,
+                )}>
+                <h3>Pro</h3>
+                Coming soon
               </div>
-              <hr />
+              <hr className={styles.hr} />
               <div className="card__body">
-                <p>
-                  Distribute your commercial software into customer managed
-                  Kubernetes environments in private infrastructure, different
-                  cloud environments, and on-premises (even air-gapped).
-                </p>
-                <p>Everything from the free plan and:</p>
+                <h4 className={styles.pricingSectionHeader}>
+                  Easy Customer Onboarding
+                </h4>
+                All Free features and:
                 <ul className={styles.pricingItemList}>
-                  <li>Integrated license management</li>
-                  <li>Insights and Reporting</li>
-                  <li>Advanced Compatibility Testing</li>
-                  <li>Resolve Technical Issues with Playbooks</li>
-                  <li>BYOC</li>
+                  <li>API Integration</li>
+                  <li>License dependent features</li>
+                </ul>
+                <h4 className={styles.pricingSectionHeader}>
+                  Software Distribution
+                </h4>
+                All Free features and:
+                <ul>
+                  <li>Support for Glasskube Kubernetes packages</li>
+                  <li>
+                    Pre-flight checks to ensure deployment target integrity
+                  </li>
+                </ul>
+                <h4 className={styles.pricingSectionHeader}>
+                  Monitoring & Customer Support
+                </h4>
+                All Free features and:
+                <ul>
+                  <li>Customers can collect and send support insights</li>
                 </ul>
               </div>
               <div className="card__footer">
@@ -79,23 +111,45 @@ function Pricing() {
             </div>
           </div>
           <div className="col">
-            <div className="card col--4 margin-top--lg shadow--md">
-              <div className="card__header text--center">
-                <h3>Enterprise hardened Kubernetes Packages</h3>
-                <h4>Custom quote</h4>
+            <div className={clsx('card', 'shadow--md', styles.pricingCardSide)}>
+              <div
+                className={clsx(
+                  'card__header',
+                  'text--center',
+                  styles.pricingCardHeader,
+                  styles.pricingCardHeaderSide,
+                )}>
+                <h3>Enterprise</h3>
               </div>
-              <hr />
+              <hr className={styles.hr} />
               <div className="card__body">
-                <p>
-                  Tailor-made solutions for the highest level of cloud security
-                  and reliability and personal support.
-                </p>
-                <p>Glasskube offers:</p>
+                <h4 className={styles.pricingSectionHeader}>
+                  Easy Customer Onboarding
+                </h4>
+                All Free & Pro features and:
                 <ul className={styles.pricingItemList}>
-                  <li>Free DevOps assessment call</li>
-                  <li>SLAs and personal onboarding</li>
-                  <li>Dedicated success manager</li>
+                  <li>Single-Sign-On</li>
+                  <li>White Label Customer Portal</li>
                 </ul>
+                <h4 className={styles.pricingSectionHeader}>
+                  Software Distribution
+                </h4>
+                All Free & Pro features and:
+                <ul>
+                  <li>Software vulnerability scanning & reporting</li>
+                  <li>Air-Gapped software distribution</li>
+                  <li>Scheduled updates</li>
+                </ul>
+                <h4 className={styles.pricingSectionHeader}>
+                  Monitoring & Customer Support
+                </h4>
+                All Free & Pro features and:
+                <ul>
+                  <li>Customer support SLAs</li>
+                </ul>
+                <h4 className={styles.pricingSectionHeader}>On-premises</h4>
+                You can also self host Glasskube Cloud on your own
+                infrastructure.
               </div>
               <div className="card__footer">
                 <ContactSalesButton

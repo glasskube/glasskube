@@ -3,10 +3,9 @@ import CustomCTA from '../CustomCTA/customCTA';
 export default function DefaultCTA(): JSX.Element {
   return (
     <CustomCTA
-      header="Are you deploying your software to customer-managed on-premises environments or your own edge locations?"
-      text="Try Glasskube Cloud to get on top of your deployments, manage updates, handle communications of required infrastructure updates,
-       perform pre-flight checks and automate your software delivery."
+      header="Do you still think that offering on-premises installations is hard?"
+      text="Glasskube Cloud is a battle tested software distribution platform that helps you scale from your first
+       on-premises customers to dozens and even thousands."
     />
   );
-
 }

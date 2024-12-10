@@ -13,10 +13,10 @@ const LatestBlogPosts = ({recentPosts}: HomepageProps) => {
           <div className="col text--center">
             <h2>Recent blog posts</h2>
             <p>
-              We are regularly writing{' '}
-              <Link to={useBaseUrl('/blog')}>blog posts</Link> and publish{' '}
-              <Link to={useBaseUrl('/guides/categories/')}>guides</Link>. Find
-              our latest blog posts below.
+              We regularly write{' '}
+              <Link to={useBaseUrl('/blog/')}>blog posts</Link> and publish{' '}
+              <Link to={useBaseUrl('/guides/')}>guides</Link>. Find our latest
+              blog posts below.
             </p>
           </div>
         </div>
