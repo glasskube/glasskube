@@ -28,7 +28,7 @@ export const PricingFAQs: PricingFAQ[] = [
     question: 'What is a release channel?',
     answer:
       'An application can have multiple release channels. E.g. a stable and a beta channel. Each channel can have multiple versions.' +
-      'A channel is assigned to a deployment target.',
+      ' A channel is assigned to a deployment target.',
   },
   {
     id: 'deployment-target',
