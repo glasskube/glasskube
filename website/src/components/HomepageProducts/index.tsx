@@ -39,7 +39,7 @@ const ScreenshotList: ScreenshotItem[] = [
     description: (
       <>
         Give your customers a simple, but powerful portal to simplify their
-        installation stay on top of their deployments.
+        installations and stay on top of their deployments.
         <br />
         <Link
           className="button button--secondary margin-top--md"
@@ -87,7 +87,7 @@ export default function HomepageProducts(): JSX.Element {
         <div className="row">
           <div className="col text--center">
             <Heading as="h2">
-              Form onboarding to update distribution, and support—all in one
+              From onboarding to update distribution, and support—all in one
               platform.
             </Heading>
           </div>
