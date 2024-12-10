@@ -8,5 +8,4 @@ export default function DefaultCTA(): JSX.Element {
        on-premises customers to dozens and even thousands."
     />
   );
-
 }

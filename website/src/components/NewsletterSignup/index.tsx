@@ -2,7 +2,6 @@ import Heading from '@theme/Heading';
 import React, {ChangeEvent} from 'react';
 import styles from '@site/src/components/Home/index.module.css';
 
-
 function loadScript() {
   if (typeof window === 'undefined') {
     return null;
@@ -17,7 +16,6 @@ function loadScript() {
     document.head.appendChild(script);
   }
 }
-
 
 class NewsletterForm extends React.Component<unknown, {value: string}> {
   constructor(props: unknown) {
@@ -97,4 +95,3 @@ export default function NewsletterSignup() {
     </div>
   );
 }
-

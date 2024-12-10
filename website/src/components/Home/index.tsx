@@ -128,18 +128,54 @@ function LogoSlider() {
 function LogoGrid() {
   return (
     <div className={styles.sliderGrid}>
-      <img src="https://github.com/user-attachments/assets/5e08ab88-1cfd-4854-8e8d-c9dc0c75c0b7" width={200} />
-      <img src="https://github.com/user-attachments/assets/c4e055e2-4a12-48e6-91a7-5b812a775881" width={200} />
-      <img src="https://github.com/user-attachments/assets/5104fce0-b156-456f-83ac-480cedb42516" width={200} />
-      <img src="https://github.com/user-attachments/assets/69532438-7ca7-4085-9fa2-9f20b1ea7a60" width={200} />
-      <img src="https://github.com/user-attachments/assets/7e94c101-2b63-4432-ac80-a00ceeca8309" width={200} />
-      <img src="https://github.com/user-attachments/assets/59a281a7-651b-43fd-93ea-6ad5a0661ccb" width={200} />
-      <img src="https://github.com/user-attachments/assets/bfd56186-2538-41ab-b2a9-3d3fb64b878f" width={200} />
-      <img src="https://github.com/user-attachments/assets/ad8628e4-b866-4d31-992c-3b12633b3538" width={200} />
-      <img src="https://github.com/user-attachments/assets/a7648681-0145-4ee3-a94c-b0b596d81979" width={200} />
-      <img src="https://github.com/user-attachments/assets/e3cf517a-add2-47cb-81fc-b7bd136f08dc" width={200} />
-      <img src="https://github.com/user-attachments/assets/008137ed-ee3a-43b9-be8b-8c96aaefc170" width={200} />
-      <img src="https://github.com/user-attachments/assets/4bc5298d-6b14-4d56-ba1b-c82c27711bdc" width={200} />
+      <img
+        src="https://github.com/user-attachments/assets/5e08ab88-1cfd-4854-8e8d-c9dc0c75c0b7"
+        width={200}
+      />
+      <img
+        src="https://github.com/user-attachments/assets/c4e055e2-4a12-48e6-91a7-5b812a775881"
+        width={200}
+      />
+      <img
+        src="https://github.com/user-attachments/assets/5104fce0-b156-456f-83ac-480cedb42516"
+        width={200}
+      />
+      <img
+        src="https://github.com/user-attachments/assets/69532438-7ca7-4085-9fa2-9f20b1ea7a60"
+        width={200}
+      />
+      <img
+        src="https://github.com/user-attachments/assets/7e94c101-2b63-4432-ac80-a00ceeca8309"
+        width={200}
+      />
+      <img
+        src="https://github.com/user-attachments/assets/59a281a7-651b-43fd-93ea-6ad5a0661ccb"
+        width={200}
+      />
+      <img
+        src="https://github.com/user-attachments/assets/bfd56186-2538-41ab-b2a9-3d3fb64b878f"
+        width={200}
+      />
+      <img
+        src="https://github.com/user-attachments/assets/ad8628e4-b866-4d31-992c-3b12633b3538"
+        width={200}
+      />
+      <img
+        src="https://github.com/user-attachments/assets/a7648681-0145-4ee3-a94c-b0b596d81979"
+        width={200}
+      />
+      <img
+        src="https://github.com/user-attachments/assets/e3cf517a-add2-47cb-81fc-b7bd136f08dc"
+        width={200}
+      />
+      <img
+        src="https://github.com/user-attachments/assets/008137ed-ee3a-43b9-be8b-8c96aaefc170"
+        width={200}
+      />
+      <img
+        src="https://github.com/user-attachments/assets/4bc5298d-6b14-4d56-ba1b-c82c27711bdc"
+        width={200}
+      />
     </div>
   );
 }
@@ -154,11 +190,14 @@ interface HomepagePost {
   readonly metadata: {
     title: string;
     description: string;
-    frontMatter: { image: string };
+    frontMatter: {image: string};
   };
 }
 
-export default function Home({homePageBlogMetadata, recentPosts,}: HomepageProps): JSX.Element {
+export default function Home({
+  homePageBlogMetadata,
+  recentPosts,
+}: HomepageProps): JSX.Element {
   const {siteConfig} = useDocusaurusContext();
   return (
     <Layout

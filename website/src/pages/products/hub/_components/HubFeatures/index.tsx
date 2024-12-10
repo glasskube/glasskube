@@ -3,7 +3,14 @@ import Heading from '@theme/Heading';
 import styles from './styles.module.css';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {IconDefinition} from '@fortawesome/free-regular-svg-icons';
-import {faChartLine, faCheckDouble, faCloud, faCubes, faGears, faKey,} from '@fortawesome/free-solid-svg-icons';
+import {
+  faChartLine,
+  faCheckDouble,
+  faCloud,
+  faCubes,
+  faGears,
+  faKey,
+} from '@fortawesome/free-solid-svg-icons';
 import React from 'react';
 
 type FeatureItem = {
@@ -18,9 +25,8 @@ const FeatureList: FeatureItem[] = [
     icon: faCloud,
     description: (
       <>
-        Integrate your private package repositories with Glasskube Cloud, to distribute your software to Kubernetes
-        clusters.
-
+        Integrate your private package repositories with Glasskube Cloud, to
+        distribute your software to Kubernetes clusters.
       </>
     ),
   },
@@ -30,8 +36,8 @@ const FeatureList: FeatureItem[] = [
     description: (
       <>
         Gain valuable insights with our comprehensive reporting dashboard.
-        Monitor usage, and configuration of all private packages. Stay
-        informed with notifications and maintain visibility into your software`s
+        Monitor usage, and configuration of all private packages. Stay informed
+        with notifications and maintain visibility into your software`s
         performance. Interested in implementing usage-based pricing? We can help
         with that too.
       </>

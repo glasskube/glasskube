@@ -41,7 +41,6 @@ export default function Home(): JSX.Element {
               <DefaultCTA />
             </div>
           </div>
-
         </div>
         <NewsletterSignup />
       </main>

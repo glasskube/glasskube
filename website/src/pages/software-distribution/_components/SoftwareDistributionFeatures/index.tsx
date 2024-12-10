@@ -25,7 +25,8 @@ const FeatureList: FeatureItem[] = [
     icon: faHeartbeat,
     description: (
       <>
-        Monitoring ensures customers maintain visibility into the health status of their applications and infrastructure.
+        Monitoring ensures customers maintain visibility into the health status
+        of their applications and infrastructure.
       </>
     ),
   },
@@ -34,7 +35,8 @@ const FeatureList: FeatureItem[] = [
     icon: faSync,
     description: (
       <>
-        Installation & Update Distribution simplifies deployment processes and empowers customers with update control.
+        Installation & Update Distribution simplifies deployment processes and
+        empowers customers with update control.
       </>
     ),
   },
@@ -43,8 +45,9 @@ const FeatureList: FeatureItem[] = [
     icon: faWalkieTalkie,
     description: (
       <>
-        Communication establishes the tools and methods needed to build reliable support channels. It bridges the gap between vendors
-        and end customers, ensuring alignment and increasing the likelihood of mutual success.
+        Communication establishes the tools and methods needed to build reliable
+        support channels. It bridges the gap between vendors and end customers,
+        ensuring alignment and increasing the likelihood of mutual success.
       </>
     ),
   },
@@ -53,8 +56,9 @@ const FeatureList: FeatureItem[] = [
     icon: faPaintbrush,
     description: (
       <>
-        Application Design forms the foundation of the entire structure. Without a solid “on-prem ready” application, the deployment
-        process has few chances of succeeding.
+        Application Design forms the foundation of the entire structure. Without
+        a solid “on-prem ready” application, the deployment process has few
+        chances of succeeding.
       </>
     ),
   },
@@ -63,8 +67,9 @@ const FeatureList: FeatureItem[] = [
     icon: faCheckDouble,
     description: (
       <>
-        Deployment target validation is the step which if done correctly ensures that end-customers regardless of what environments they happen to
-        call production will be compatible with the vendors software.
+        Deployment target validation is the step which if done correctly ensures
+        that end-customers regardless of what environments they happen to call
+        production will be compatible with the vendors software.
       </>
     ),
   },
@@ -73,9 +78,10 @@ const FeatureList: FeatureItem[] = [
     icon: faKey,
     description: (
       <>
-        Licensing gives vendors control over how features are enabled or disabled for end-customers. Effective licensing
-        mechanisms should reflect contract agreements in real-time, providing flexibility while safeguarding the
-        vendor's interests.
+        Licensing gives vendors control over how features are enabled or
+        disabled for end-customers. Effective licensing mechanisms should
+        reflect contract agreements in real-time, providing flexibility while
+        safeguarding the vendor`s interests.
       </>
     ),
   },

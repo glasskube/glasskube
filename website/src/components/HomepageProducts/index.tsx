@@ -18,7 +18,8 @@ const ScreenshotList: ScreenshotItem[] = [
     title: 'Software Distributor Platform',
     description: (
       <>
-        Onboard customers faster, distribute updates easily and troubleshoot issues with confidence.
+        Onboard customers faster, distribute updates easily and troubleshoot
+        issues with confidence.
         <br />
         <Link
           className="button button--secondary margin-top--md"
@@ -28,15 +29,17 @@ const ScreenshotList: ScreenshotItem[] = [
       </>
     ),
     screenshotAltText: 'Software distribution platform',
-    lightScreenshotUrl: '/img/screenshots/glasskube-cloud-software-distributor-platform-light.png',
-    darkScreenshotUrl: '/img/screenshots/glasskube-cloud-software-distributor-platform-dark.png',
+    lightScreenshotUrl:
+      '/img/screenshots/glasskube-cloud-software-distributor-platform-light.png',
+    darkScreenshotUrl:
+      '/img/screenshots/glasskube-cloud-software-distributor-platform-dark.png',
   },
   {
     title: 'Customer Portal',
     description: (
       <>
-        Give your customers a simple, but powerful portal to simplify their installation stay on top of their
-        deployments.
+        Give your customers a simple, but powerful portal to simplify their
+        installation stay on top of their deployments.
         <br />
         <Link
           className="button button--secondary margin-top--md"
@@ -46,8 +49,10 @@ const ScreenshotList: ScreenshotItem[] = [
       </>
     ),
     screenshotAltText: 'Glasskube overview page',
-    lightScreenshotUrl: '/img/screenshots/glasskube-cloud-customer-portal-light.png',
-    darkScreenshotUrl: '/img/screenshots/glasskube-cloud-customer-portal-dark.png',
+    lightScreenshotUrl:
+      '/img/screenshots/glasskube-cloud-customer-portal-light.png',
+    darkScreenshotUrl:
+      '/img/screenshots/glasskube-cloud-customer-portal-dark.png',
   },
 ];
 
@@ -82,7 +87,8 @@ export default function HomepageProducts(): JSX.Element {
         <div className="row">
           <div className="col text--center">
             <Heading as="h2">
-              Form onboarding to update distribution, and support—all in one platform.
+              Form onboarding to update distribution, and support—all in one
+              platform.
             </Heading>
           </div>
         </div>

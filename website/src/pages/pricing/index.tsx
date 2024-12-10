@@ -7,15 +7,16 @@ import NewsletterSignup from '@site/src/components/NewsletterSignup';
 
 const TITLE = translate({message: 'Glasskube Cloud'});
 const DESCRIPTION = translate({
-  message:
-    'Software Distribution Platform',
+  message: 'Software Distribution Platform',
 });
 
 function PricingHeader() {
   return (
     <section className="margin-top--lg margin-bottom--lg text--center">
       <Heading as="h1">{TITLE}</Heading>
-      <p><strong>{DESCRIPTION}</strong></p>
+      <p>
+        <strong>{DESCRIPTION}</strong>
+      </p>
     </section>
   );
 }

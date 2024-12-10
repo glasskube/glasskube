@@ -6,11 +6,9 @@ import {IconDefinition} from '@fortawesome/free-regular-svg-icons';
 import React from 'react';
 import {
   faArrowTrendUp,
-  faChartLine,
-  faCheckDouble, faClock, faHandsBubbles,
-  faKey, faLightbulb,
+  faClock,
+  faLightbulb,
 } from '@fortawesome/free-solid-svg-icons';
-import {faSpeakerDeck, faTiktok} from '@fortawesome/free-brands-svg-icons';
 
 type FeatureItem = {
   title: string;
@@ -24,7 +22,8 @@ const FeatureList: FeatureItem[] = [
     icon: faClock,
     description: (
       <>
-        Your customers receive a guided installation experience, even for diverse customer environments.
+        Your customers receive a guided installation experience, even for
+        diverse customer environments.
       </>
     ),
   },
@@ -33,7 +32,8 @@ const FeatureList: FeatureItem[] = [
     icon: faArrowTrendUp,
     description: (
       <>
-        Glasskube Cloud notifies your customers about new updates and empowers them to update whenever they are ready.
+        Glasskube Cloud notifies your customers about new updates and empowers
+        them to update whenever they are ready.
       </>
     ),
   },
@@ -42,7 +42,8 @@ const FeatureList: FeatureItem[] = [
     icon: faLightbulb,
     description: (
       <>
-        Receive metrics, heart beat information and let your customers share additional support insights if needed.
+        Receive metrics, heart beat information and let your customers share
+        additional support insights if needed.
       </>
     ),
   },
@@ -71,8 +72,8 @@ export default function HomepageFeatures(): JSX.Element {
         <div className="row">
           <div className="col text--center margin-top--xl">
             <Heading as="h2">
-              The Glasskube Cloud Software Distribution Platform is the central place to manage all your on-prem,
-              vpc and air-gapped customers.
+              The Glasskube Cloud Software Distribution Platform is the central
+              place to manage all your on-prem, vpc and air-gapped customers.
             </Heading>
           </div>
         </div>

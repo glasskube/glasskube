@@ -6,8 +6,7 @@ import styles from './index.module.css';
 import DefaultCTA from '@site/src/components/cta/DefaultCTA/defaultCTA';
 import Testimonials from '@site/src/components/Testimonials';
 import NewsletterSignup from '@site/src/components/NewsletterSignup';
-import SoftwareDistributionFeatures
-  from '@site/src/pages/software-distribution/_components/SoftwareDistributionFeatures';
+import SoftwareDistributionFeatures from '@site/src/pages/software-distribution/_components/SoftwareDistributionFeatures';
 
 function Header() {
   return (
@@ -42,7 +41,6 @@ export default function Home(): JSX.Element {
               <DefaultCTA />
             </div>
           </div>
-
         </div>
         <NewsletterSignup />
       </main>
