@@ -6,15 +6,20 @@ authors: [ jpage, pmig ]
 tags: [ helm, guide ]
 image: https://github.com/user-attachments/assets/dd0c743a-684d-476d-a904-34c10cef48c3
 ---
+
+import DefaultCTA from '@site/src/components/cta/DefaultCTA/defaultCTA';
+
 ![helm-guide-thumbnail](https://github.com/user-attachments/assets/dd0c743a-684d-476d-a904-34c10cef48c3)
 
 ## What is Helm?
 
-A simple way to define Helm is as a templating tool that generates Kubernetes resources. It’s a package manager that can install, update, and generally manage the lifecycle of applications packaged as "charts" in Kubernetes environments. These charts contain all the necessary configuration files and setting options needed, so deploying complex applications can be done with relative ease. 
+A simple way to define Helm is as a templating tool that generates Kubernetes resources. It’s a package manager that can install, update, and generally manage the lifecycle of applications packaged as "charts" in Kubernetes environments. These charts contain all the necessary configuration files and setting options needed, so deploying complex applications can be done with relative ease.
 
 It’s a widely adopted CLI tool that has evolved over time, with Helm v3 being the current major version. A key difference between Helm 2 and Helm 3 is the removal of "[Tiller](https://helm.sh/docs/faq/changes_since_helm2/)", a server-side component in Helm 2 that raised major security concerns. Now Helm v3 is solely a client-side CLI tool.
 
 <!-- truncate -->
+
+<DefaultCTA />
 
 ## Helm architecture
 
@@ -22,36 +27,36 @@ Helm v3 is made up of two main parts:
 
 **The Helm Client:** This is the part you interact with directly via the CLI.
 
-Used to:    
--   Package, and manage charts locally.  
--   Find pre-built charts (applications) in Helm repositories.  
--   Install, update, or uninstall applications in your Kubernetes cluster.  
+Used to:
+-   Package, and manage charts locally.
+-   Find pre-built charts (applications) in Helm repositories.
+-   Install, update, or uninstall applications in your Kubernetes cluster.
 -   Manage local repositories.
-    
+
 **The Helm Library:** This part does the heavy lifting behind the scenes.
 
 Used to:
--   Communicate with the Kubernetes API to deploy and manage your applications.  
--   Combines Helm templates with the user-defined `values.yaml` file to create a running application.  
+-   Communicate with the Kubernetes API to deploy and manage your applications.
+-   Combines Helm templates with the user-defined `values.yaml` file to create a running application.
 -   It stores information about your applications, so there's no need for a separate database.
-    
+
 Essentially, the **Helm Client** is the interface for managing applications, while the **Helm Library** handles the technical details of making those applications run on Kubernetes.
 
 ## Why use Helm?
-How long would manually deploying a complex application across multiple environments take? Without a solid package manager, it’s no easy task. Despite its limitations, Helm simplifies this process by making it easier to deploy complex applications made up of multiple Kubernetes objects. 
+How long would manually deploying a complex application across multiple environments take? Without a solid package manager, it’s no easy task. Despite its limitations, Helm simplifies this process by making it easier to deploy complex applications made up of multiple Kubernetes objects.
 
 It packages applications into charts (which will be covered in detail in the upcoming section). These charts include dynamic configuration templates, eliminating the need to manually define each YAML file individually. They come with default, pre-configured settings, which can easily be customized by adding dynamically injected values.
 
 Here are some of the reasons why Helm is worth using:
 
--   Helm [charts](https://helm.sh/docs/topics/charts/) provide pre-configured application packages, reducing manual configuration.  
--   Helm charts are versioned, so tracking changes and reverting to previous releases can be easily done. Upgrading standalone Helm charts (without dependencies) is also relatively straightforward.  
--   Charts were designed with reusability in mind, they can be easily shared and used across different projects and environments. 
+-   Helm [charts](https://helm.sh/docs/topics/charts/) provide pre-configured application packages, reducing manual configuration.
+-   Helm charts are versioned, so tracking changes and reverting to previous releases can be easily done. Upgrading standalone Helm charts (without dependencies) is also relatively straightforward.
+-   Charts were designed with reusability in mind, they can be easily shared and used across different projects and environments.
 -   With widespread adoption over the last decade, you can find a vast [library](https://artifacthub.io/) of pre-built charts for many popular applications.
-    
 
-## How does Helm work? 
-Helm is used to package applications into charts, which serve as templates for deploying resources to a Kubernetes cluster through the Kubernetes API. These charts define the structure and configuration of the application, simplifying deployment by automating the creation and management of Kubernetes objects. 
+
+## How does Helm work?
+Helm is used to package applications into charts, which serve as templates for deploying resources to a Kubernetes cluster through the Kubernetes API. These charts define the structure and configuration of the application, simplifying deployment by automating the creation and management of Kubernetes objects.
 
 In the next section, a deeper exploration of Helm’s components will be provided, along with a detailed tutorial and key commands to better understand its functionality.
 
@@ -81,20 +86,20 @@ mychart/
 ### Key Components of a Helm Chart:
 
 1.  **Templates**:
-    -   Template files define the Kubernetes resources required for your application, such as Deployments, Services, ConfigMaps, and more.  
+    -   Template files define the Kubernetes resources required for your application, such as Deployments, Services, ConfigMaps, and more.
     -   They use the [Go templating language](https://pkg.go.dev/text/template), allowing for dynamic configuration. It's thanks to Go templating that the customization of aspects of kubernetes objects, like the number of replicas, container images, and resource limits, is possible. Allowing for the insertion of specific values at the time of installation.
-        
+
 2.  **Values**:
-    -   The `values.yaml` file contains default configuration settings for your application. This file serves as a centralized place for defining values that can be injected into the template files.  
+    -   The `values.yaml` file contains default configuration settings for your application. This file serves as a centralized place for defining values that can be injected into the template files.
     -   When installing a chart, you can override these defaults to adapt the deployment to your specific environment and requirements.
-        
+
 3.  **Chart.yaml**:
     -   This metadata file provides essential information about the chart, including its name, version, description, and any dependencies on other charts it might have.
     -   The `Chart.yaml` file helps manage versions and maintain compatibility with other charts.
-        
-4.  **values.schema.json:** 
+
+4.  **values.schema.json:**
     -   An optional file that defines a schema for validating the structure and types of values provided in `values.yaml` or during installation.
-        
+
 
 ### Dependencies in Helm Charts
 
@@ -120,7 +125,7 @@ dependencies:
 
 You can use the `helm dependency` subcommand to manage these dependencies. For example:
 
-``` 
+```
 # Update dependencies
 helm dependency update [CHART]
 # List dependencies
@@ -201,13 +206,13 @@ helm install [RELEASE_NAME] [CHART] [flags]
 ```
 
 A selection of some useful available flags:
--   `--atomic`**:** Rolls back the installation if any part of it fails. This ensures that you don't end up with a partially installed release.  
--   `--dependency-update`**:** Updates the dependencies of the chart before installing.   
--   `--dry-run`**:** Simulates an installation without actually deploying the chart. This allows you to preview the changes that would be made.   
--   `--namespace <namespace>`**:** Installs the release into the specified namespace.  
--   `--set <key>=<value>`**:** Overrides a value in the chart's `values.yaml` file.  
--   `--values <values.yaml>`**:** Uses a different values file for the installation. 
--   For more: use `helm install -h` to find all of the other available flags.   
+-   `--atomic`**:** Rolls back the installation if any part of it fails. This ensures that you don't end up with a partially installed release.
+-   `--dependency-update`**:** Updates the dependencies of the chart before installing.
+-   `--dry-run`**:** Simulates an installation without actually deploying the chart. This allows you to preview the changes that would be made.
+-   `--namespace <namespace>`**:** Installs the release into the specified namespace.
+-   `--set <key>=<value>`**:** Overrides a value in the chart's `values.yaml` file.
+-   `--values <values.yaml>`**:** Uses a different values file for the installation.
+-   For more: use `helm install -h` to find all of the other available flags.
 
 #### How to upgrade an existing Helm release?
 
@@ -216,12 +221,12 @@ helm upgrade [RELEASE_NAME] [CHART] [flags]
 ```
 
 A selection of some useful available flags: (the `helm install` flags are applicable here too)
--   `--cleanup-on-fail`**:** Deletes resources created during an upgrade if it fails.  
--   `--force`**:** Forces the upgrade even if there are no changes to the chart or values.   
--   `--install`**:** Installs the chart if a release with the specified name doesn't already exist. 
--   `--reset-values`**:** Resets any previously overridden values to the defaults defined in the chart.   
--   `--reuse-values`**:** Reuses the existing values from the current release and merges in any new values provided. 
--   `--version <version-number>`**:** Specifies the chart version to upgrade to.   
+-   `--cleanup-on-fail`**:** Deletes resources created during an upgrade if it fails.
+-   `--force`**:** Forces the upgrade even if there are no changes to the chart or values.
+-   `--install`**:** Installs the chart if a release with the specified name doesn't already exist.
+-   `--reset-values`**:** Resets any previously overridden values to the defaults defined in the chart.
+-   `--reuse-values`**:** Reuses the existing values from the current release and merges in any new values provided.
+-   `--version <version-number>`**:** Specifies the chart version to upgrade to.
 -   `--wait`**:** Waits for all resources to be in a ready state before marking the upgrade as successful.
 
 #### How to uninstall a Helm release?
@@ -230,10 +235,10 @@ A selection of some useful available flags: (the `helm install` flags are applic
 helm uninstall [RELEASE_NAME] [flags]
 ```
 A selection of some useful available flags:
--   `--keep-history`**:** Retains the release history even after uninstalling. 
--   `--no-hooks`**:** Prevents hooks from running during uninstallation. 
+-   `--keep-history`**:** Retains the release history even after uninstalling.
+-   `--no-hooks`**:** Prevents hooks from running during uninstallation.
 -   `--timeout <duration>`**:** Sets a timeout for the uninstallation process.
-    
+
 
 #### How to list installed Helm releases?
 ```
@@ -242,11 +247,11 @@ helm list [flags]
 
 A selection of some useful available flags: (also applicable for `helm list`, `helm history`, `helm status`, `helm show`)
 
--   `--all-namespaces`**:** Shows releases across all namespaces. 
--   `--max <number>`**:** Limits the number of releases to show.  
--   `--namespace <namespace>`**:** Filters releases by namespace. 
+-   `--all-namespaces`**:** Shows releases across all namespaces.
+-   `--max <number>`**:** Limits the number of releases to show.
+-   `--namespace <namespace>`**:** Filters releases by namespace.
 -   `--output <format>`**:** Outputs the results in a specific format (e.g., table, json, yaml).
-    
+
 
 #### How to view the history of a Helm release?
 ```
@@ -271,8 +276,8 @@ helm rollback [RELEASE_NAME] [REVISION] [flags]
 
 A selection of some useful available flags:
 
--   `--cleanup-on-fail`**:** If the rollback fails, this flag allows Helm to delete new resources that were created during the rollback process. 
--   `--history-max <int>`**:** Limits the maximum number of revisions saved per release. By default, Helm keeps a history of the last 10 revisions. Use 0 for no limit.   
+-   `--cleanup-on-fail`**:** If the rollback fails, this flag allows Helm to delete new resources that were created during the rollback process.
+-   `--history-max <int>`**:** Limits the maximum number of revisions saved per release. By default, Helm keeps a history of the last 10 revisions. Use 0 for no limit.  
 -   `--recreate-pods`**:** Performs a pod restart for the resources in the release.
 
 #### How to add a Helm chart repository?
@@ -282,10 +287,10 @@ helm repo add [REPO_NAME] [REPO_URL] [flags]
 ```
 
 A selection of some useful available flags:
--   `--no-update`**:** Prevents automatic updates of the repository index.  
--   `--username <username>`**:** Specifies a username for authentication. 
+-   `--no-update`**:** Prevents automatic updates of the repository index.
+-   `--username <username>`**:** Specifies a username for authentication.
 -   `--password <password>`**:** Specifies a password for authentication.
-    
+
 
 #### How to update Helm repositories?
 ```
@@ -293,7 +298,7 @@ helm repo update [flags]
 ```
 A useful flag:
 -   `--debug`: Enables verbose output, providing more detailed information about the update process.
-    
+
 
 #### How to manage Helm chart dependencies?
 
@@ -302,7 +307,7 @@ helm dependency [build|list|update] [CHART] [flags]
 ```
 
 A useful flag:
--   `--verify`: Verifies the integrity of the dependencies.   
+-   `--verify`: Verifies the integrity of the dependencies.
 
 #### How to package a Helm chart?
 
@@ -311,9 +316,9 @@ helm package [CHART_DIRECTORY] [flags]
 ```
 
 A selection of some useful available flags:
--   `--destination <path>`**:** Specifies the directory to save the packaged chart.   
--   `--sign`**:** Signs the chart with a PGP key.   
--   `--version <version>`**:** Overrides the chart version specified in `Chart.yaml`.   
+-   `--destination <path>`**:** Specifies the directory to save the packaged chart.
+-   `--sign`**:** Signs the chart with a PGP key.
+-   `--version <version>`**:** Overrides the chart version specified in `Chart.yaml`.
 
 #### How to lint a Helm chart?
 
@@ -323,8 +328,8 @@ helm lint [CHART_DIRECTORY] [flags]
 
 A selection of some useful available flags:
 
--   `--strict`**:** Enables stricter linting rules. 
--   `--values <values.yaml>`**:** Lints the chart with the specified values file.  
+-   `--strict`**:** Enables stricter linting rules.
+-   `--values <values.yaml>`**:** Lints the chart with the specified values file.
 
 #### How to sign a Helm chart?
 
@@ -334,7 +339,7 @@ First, ensure you have [GnuPG](https://gnupg.org/download/) installed for creati
 helm package [CHART_NAME] --sign --key [KEY_ID] --keyring [KEYRING]
 ```
 -   The `--sign` flag will sign your chart using your GPG key, and the `--key` flag specifies the ID of the key you want to use.
-    
+
 ### How to debug Helm charts?
 
 Debugging Helm charts can be challenging, more than likely you are going to have to approach any given issue from multiple angles, there are several steps you can use to identify and fix issues that might arise during deployment, upgrade, or rollback. Here are some of the main methods for debugging Helm charts:
@@ -348,16 +353,16 @@ Example:
 helm install my-release ./my-chart --debug --dry-run
 ```
 
--   `--debug` provides verbose output for troubleshooting.   
+-   `--debug` provides verbose output for troubleshooting.
 -   `--dry-run` renders the templates without actually deploying, showing what will be deployed in Kubernetes.
-    
+
 
 2\. **Inspect rendered templates**
 
 You can use the `helm template` command to view the fully rendered Kubernetes manifests allowing you to check for errors or inconsistencies in the resource definitions before deploying.
 
 Example:
-    
+
 ```
 helm template my-release ./my-chart
 ```
@@ -370,7 +375,7 @@ Sometimes, the issue isn’t with Helm but with the Kubernetes resources created
 
 Misconfigurations in the YAML will always cause issues. Use `kubectl apply --dry-run=client -f` to test your YAML files.
 
-> Reference our comphrensive [kubectl guide](/guides/kubectl/) here. 
+> Reference our comphrensive [kubectl guide](/guides/kubectl/) here.
 
 Example:
 
@@ -418,17 +423,17 @@ With so many attack vectors in modern software, security is crucial when creatin
 
 **Secure your Helm environment**
 
--   Implement Role-Based Access Control (RBAC) in your Kubernetes cluster to restrict who can install, modify, or delete Helm releases. The principle of least principle is the rule of thumb here.  
+-   Implement Role-Based Access Control (RBAC) in your Kubernetes cluster to restrict who can install, modify, or delete Helm releases. The principle of least principle is the rule of thumb here. 
 -   Only grant the necessary permissions to Helm. Avoid using `cluster-admin` privileges unless absolutely necessary.  
 -   Use network policies to control communication between Helm components and other services in your cluster. Limit access to only what's essential.
-    
+
 
 **Harden your Helm charts**
 
--   Avoid hardcoding sensitive information like passwords and API keys directly in your Helm templates. Instead, use secrets and environment variables. 
--   Regularly scan your Helm charts for security vulnerabilities with tools like [Trivy](https://trivy.dev/). 
+-   Avoid hardcoding sensitive information like passwords and API keys directly in your Helm templates. Instead, use secrets and environment variables.
+-   Regularly scan your Helm charts for security vulnerabilities with tools like [Trivy](https://trivy.dev/).
 -   Don't trust user input blindly. Validate and sanitize any values provided by users to prevent injection attacks and ensure data integrity.
-    
+
 
 ### Helm best practices
 
@@ -436,17 +441,17 @@ Many of the security tips above are good rules to abide by when working with Hel
 
 **When creating Helm charts:**
 
--   **Treat your charts like code:** Just as you wouldn't deploy untested code, don't deploy untested charts. Diligently version your charts using [SemVer2](https://semver.org/), and keep a detailed changelog. Before unleashing your chart to the public, validate its functionality with thorough tests. 
+-   **Treat your charts like code:** Just as you wouldn't deploy untested code, don't deploy untested charts. Diligently version your charts using [SemVer2](https://semver.org/), and keep a detailed changelog. Before unleashing your chart to the public, validate its functionality with thorough tests.
 -   **Secure your Helm charts:** In the world of software, trust is paramount. [Sign](https://helm.sh/docs/topics/provenance/) your Helm charts to guarantee their integrity and authenticity, ensuring that what you deploy is exactly what you intended to deploy.
 -   **Automate for consistency:** Manual processes are prone to errors. Integrate these best practices into a robust CI/CD pipeline to enforce consistency and eliminate human fallibility. Automate linting with `helm lint` to catch errors early, and automate the signing and publishing of your charts to maintain a secure and reliable workflow.
-    
+
 
 **Deploying third-party Helm charts:**
 
 -   **Trust but verify:** While Helm charts are convenient, don’t deploy too quickly. Before deploying a chart, especially one from a third-party source, take the time to understand the Kubernetes objects it creates. Verify the authenticity of downloaded charts using `helm verify` to ensure they haven't been compromised.
 -   **Stay ahead of the curve:** The Kubernetes ecosystem is constantly evolving. Keep your Helm charts, the `helm` binary itself, and any associated plugins up-to-date to benefit from the latest bug fixes and security patches. Regularly review and update your deployed charts to minimize vulnerabilities and ensure optimal performance.
 -   **Secrets deserve extra protection:** Kubernetes secrets, despite their name, require additional safeguards. Employ like [helm-secrets](https://github.com/jkroepke/helm-secrets) or [sealed-secrets](https://github.com/glasskube/packages/tree/main/packages/sealed-secrets) to encrypt and manage your sensitive data, adding an extra layer of security to your deployments.
-    
+
 
 ## FAQ’s
 
@@ -463,13 +468,13 @@ Helm charts can be stored in a few different places:
 **OCI Registries:** [OCI (Open Container Initiative) registries](https://docs.oracle.com/en-us/iaas/Content/artifacts/overview.htm), like Docker Hub and Azure Container Registry, can also store Helm charts as OCI artifacts. This allows you to manage your charts alongside your container images in a centralized location.
 
 ### In what language are Helm charts written?
--   The core templating engine within Helm charts is based on [Golang's templating language](https://pkg.go.dev/text/template). This allows you to dynamically generate Kubernetes manifest files (YAML) by embedding variables, using control structures, and calling functions.     
+-   The core templating engine within Helm charts is based on [Golang's templating language](https://pkg.go.dev/text/template). This allows you to dynamically generate Kubernetes manifest files (YAML) by embedding variables, using control structures, and calling functions.  
 -   The final output of Helm templates are Kubernetes manifest files, which are written in [YAML](https://www.redhat.com/en/topics/automation/what-is-yaml#:~:text=YAML%20is%20a%20human%2Dreadable,is%20for%20data%2C%20not%20documents.) (Yet Another Markup Language). These files define the desired state of your Kubernetes objects, such as deployments, services, and pods.
 
 ### What’s the difference between Helm and Kustomize?
 
 Helm and [Kustomize](https://kustomize.io/) are both Kubernetes configuration management tools, but they take two different approaches:
--   **Helm:** Uses templates to generate manifests. They are like blueprints with parameters you can customize. It's great for packaging and sharing complex applications.   
+-   **Helm:** Uses templates to generate manifests. They are like blueprints with parameters you can customize. It's great for packaging and sharing complex applications.
 -   **Kustomize:** Uses overlays to customize existing manifests. It's like having layers of customizations you can apply on top of a base configuration. It's simpler for basic customization but can be less flexible for complex applications.
 
 Essentially, Helm is better for packaging and distributing applications, while Kustomize is better for customizing existing configurations.
@@ -490,15 +495,15 @@ Helm hooks are special Kubernetes resources defined within a Helm chart that all
 
 Here are some of the various hooks Helm provides to cater to different needs:
 
--   pre-install   
--   post-install   
--   pre-upgrade     
--   post-upgrade    
--   pre-delete    
--   post-delete    
--   pre-rollback  
+-   pre-install
+-   post-install
+-   pre-upgrade  
+-   post-upgrade  
+-   pre-delete 
+-   post-delete 
+-   pre-rollback
 -   post-rollback
-    
+
 
 Hooks are defined as Kubernetes manifests (YAML files) within your chart's templates directory. They are identified by a special `“helm.sh/hook“` annotation, here is an example of how to use Helm hooks:
 
@@ -553,45 +558,47 @@ spec:
 
 ### What’s the difference between Helm install vs upgrade?
 
--   `helm install` is used to install a _new_ Helm chart into your Kubernetes cluster. It creates a new release, which is essentially an instance of a deployed chart.   
+-   `helm install` is used to install a _new_ Helm chart into your Kubernetes cluster. It creates a new release, which is essentially an instance of a deployed chart.
 -   `helm upgrade` is used to _update_ an _existing_ Helm release. It takes an existing release and applies any changes from the updated chart or configuration.
-    
+
 
 ### Is Helm only used in Kubernetes environments?
 Yes, Helm is specifically designed for Kubernetes environments.
 
 ### Where does Helm fall short?
 
--   Managing and updating charts that include many sub-charts is a difficult and manual process.  
--   Upgrading Custom Resource Definitions (CRDs) is not possible in Helm v3. 
--   Managing dependencies between charts can be quite inefficient, and there’s a lack of standardization around it.  
+-   Managing and updating charts that include many sub-charts is a difficult and manual process.
+-   Upgrading Custom Resource Definitions (CRDs) is not possible in Helm v3.
+-   Managing dependencies between charts can be quite inefficient, and there’s a lack of standardization around it.
 -   Helm often requires tools like [Kustomize](https://kustomize.io/) for advanced customization, adding another layer of complexity.
 -   Helm doesn’t have a server-side component to actively monitor deployed applications for health issues, making it difficult to detect application degradation or "drift."
 -   The Go templating language can be difficult to debug, making troubleshooting complex charts a nightmare.
-    
+
 
 ### Which are the most common Helm errors?
 ![common-helm-error](https://github.com/user-attachments/assets/791f892d-6f48-44ac-a378-df30c5f2e56f)
 
 Helm users frequently encounter a few common errors, and here are some of the most notable ones along with possible solutions:
 
--   **Error: "installation failed: cannot re-use a name that is still in use"**   
-    -   **Cause:** this occurs when trying to install a release with a name that is already taken by an existing release.      
+-   **Error: "installation failed: cannot re-use a name that is still in use"**
+    -   **Cause:** this occurs when trying to install a release with a name that is already taken by an existing release.
     -   **Solution:** Either delete the existing release with `helm delete <release-name>` or choose a new, unique name for the new release.
-        
--   **Error: "upgrade failed: another operation (install/upgrade/rollback) is in progress"** 
-    -   **Cause:** this happens when Helm is already performing an action, and a new operation is triggered before the current one finishes.  
+
+-   **Error: "upgrade failed: another operation (install/upgrade/rollback) is in progress"**
+    -   **Cause:** this happens when Helm is already performing an action, and a new operation is triggered before the current one finishes.
     -   **Solution:** Wait for the ongoing operation to complete or manually clean up any stuck resources with `kubectl`, especially if resources like pods or deployments are causing a blockage.
-        
--   **Error: "installation failed: must either provide a name or specify --generate-name"** 
-    -   **Cause:** this occurs when no release name is provided during installation and the `--generate-name` flag isn't used.     
+
+-   **Error: "installation failed: must either provide a name or specify --generate-name"**
+    -   **Cause:** this occurs when no release name is provided during installation and the `--generate-name` flag isn't used.
     -   **Solution:** Either specify a release name `(helm install <release-name>)` or use the `--generate-name` flag to allow Helm to auto-generate a unique name for the release.
-        
--   **Error**: **"installation failed:** Helm release not found" 
-    -   **Cause**: this occurs when Helm is unable to locate the specified release because it’s either stored in a different namespace or doesn’t exist.    
+
+-   **Error**: **"installation failed:** Helm release not found"
+    -   **Cause**: this occurs when Helm is unable to locate the specified release because it’s either stored in a different namespace or doesn’t exist.
     -   **Solution**: Ensure that you’re operating in the correct namespace by using the `--namespace <namespace>` flag. Alternatively, use the `-A` flag (short for `--all-namespaces`) to search across all namespaces for the release.
-        
+
 
 ## Conclusion
 
 Helm is a widely adopted package manager for Kubernetes. Like most tools, it’s easy to get started with, but fully mastering it takes time. There's a lot to consider when managing complex applications in Kubernetes environments. Despite its [shortcomings](/blog/5-helm-shortcomings), Helm is here to stay, and it’s definitely worth learning how to get the most out of it.
+
+<DefaultCTA />
