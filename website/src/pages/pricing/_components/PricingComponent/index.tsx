@@ -102,6 +102,7 @@ function Pricing() {
                 <ul>
                   <li>Software vulnerability scanning & reporting</li>
                   <li>Air-Gapped software distribution</li>
+                  <li>Scheduled updates</li>
                 </ul>
                 <h4 className={styles.pricingSectionHeader}>Monitoring & Customer Support</h4>
                 All Free & Pro features and:

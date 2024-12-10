@@ -96,7 +96,7 @@ function Testimonial({name, role, company, image, text}: TestimonialItem) {
   );
 }
 
-export default function HomepageTestimonials(): JSX.Element {
+export default function Testimonials(): JSX.Element {
   return (
     <section className={styles.testimonials}>
       <div className="container">

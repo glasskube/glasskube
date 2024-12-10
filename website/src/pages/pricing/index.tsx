@@ -3,6 +3,7 @@ import Layout from '@theme/Layout';
 import Heading from '@theme/Heading';
 import Pricing from './_components/PricingComponent';
 import PricingFaq from '@site/src/pages/pricing/_components/PricingFaqComponent';
+import NewsletterSignup from '@site/src/components/NewsletterSignup';
 
 const TITLE = translate({message: 'Glasskube Cloud'});
 const DESCRIPTION = translate({
@@ -27,7 +28,8 @@ export default function PackagePage(): JSX.Element {
         <Pricing />
         <div className="margin-vert--xl" />
         <PricingFaq />
-        <div className="margin-vert--md" />
+        <div className="margin-vert--xl" />
+        <NewsletterSignup />
       </main>
     </Layout>
   );

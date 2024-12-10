@@ -3,14 +3,7 @@ import Heading from '@theme/Heading';
 import styles from './styles.module.css';
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
 import {IconDefinition} from '@fortawesome/free-regular-svg-icons';
-import {
-  faChartLine,
-  faCheckDouble,
-  faComments,
-  faCubes,
-  faGears,
-  faKey,
-} from '@fortawesome/free-solid-svg-icons';
+import {faChartLine, faCheckDouble, faCloud, faCubes, faGears, faKey,} from '@fortawesome/free-solid-svg-icons';
 import React from 'react';
 
 type FeatureItem = {
@@ -21,12 +14,23 @@ type FeatureItem = {
 
 const FeatureList: FeatureItem[] = [
   {
+    title: 'Integrate with Glasskube Cloud',
+    icon: faCloud,
+    description: (
+      <>
+        Integrate your private package repositories with Glasskube Cloud, to distribute your software to Kubernetes
+        clusters.
+
+      </>
+    ),
+  },
+  {
     title: 'Insights and Reporting',
     icon: faChartLine,
     description: (
       <>
         Gain valuable insights with our comprehensive reporting dashboard.
-        Monitor uptime, usage, and configuration of all private packages. Stay
+        Monitor usage, and configuration of all private packages. Stay
         informed with notifications and maintain visibility into your software`s
         performance. Interested in implementing usage-based pricing? We can help
         with that too.
@@ -54,17 +58,6 @@ const FeatureList: FeatureItem[] = [
         across various cloud environments and Kubernetes versions. Whether your
         customer uses AWS, GCP, or on-premises, we ensure your application
         works!
-      </>
-    ),
-  },
-  {
-    title: 'Resolve Technical Issues with Playbooks',
-    icon: faComments,
-    description: (
-      <>
-        Easily troubleshoot with shared support bundles between you and your
-        customers. Integrated playbooks can trigger automated processes like
-        database major version upgrades.
       </>
     ),
   },

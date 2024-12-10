@@ -18,40 +18,36 @@ const ScreenshotList: ScreenshotItem[] = [
     title: 'Software Distributor Platform',
     description: (
       <>
-        Deliver software to private infrastructure, different cloud
-        environments, and on-premises.
+        Onboard customers faster, distribute updates easily and troubleshoot issues with confidence.
         <br />
         <Link
           className="button button--secondary margin-top--md"
-          to="/products/hub">
-          Learn more
+          to="https://glasskube.cloud/">
+          Try for free
         </Link>
       </>
     ),
     screenshotAltText: 'Software distribution platform',
-    lightScreenshotUrl:
-      'https://github.com/glasskube/glasskube/assets/3041752/e8565cf7-6089-4b82-b169-91f5b3ef4c33',
-    darkScreenshotUrl:
-      'https://github.com/glasskube/glasskube/assets/3041752/cf1f1983-78c8-4bb4-9d47-86dbf3a16c4e',
+    lightScreenshotUrl: '/img/screenshots/glasskube-cloud-software-distributor-platform-light.png',
+    darkScreenshotUrl: '/img/screenshots/glasskube-cloud-software-distributor-platform-dark.png',
   },
   {
-    title: 'Software consumer portal',
+    title: 'Customer Portal',
     description: (
       <>
-        Use our GUI, CLI or GitOps integration and get started for free on
-        GitHub. <br />
+        Give your customers a simple, but powerful portal to simplify their installation stay on top of their
+        deployments.
+        <br />
         <Link
           className="button button--secondary margin-top--md"
-          to="/products/package-manager">
-          Learn more
+          to="https://glasskube.cloud/">
+          Try for free
         </Link>
       </>
     ),
     screenshotAltText: 'Glasskube overview page',
-    lightScreenshotUrl:
-      'https://github.com/glasskube/glasskube/assets/3041752/d3e764e4-7ee0-4ad8-b0eb-d0ebf219160f',
-    darkScreenshotUrl:
-      'https://github.com/glasskube/glasskube/assets/3041752/323994d6-6b08-4dca-ac59-d29ae6b37f94',
+    lightScreenshotUrl: '/img/screenshots/glasskube-cloud-customer-portal-light.png',
+    darkScreenshotUrl: '/img/screenshots/glasskube-cloud-customer-portal-dark.png',
   },
 ];
 
