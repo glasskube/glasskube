@@ -32,7 +32,7 @@ const FeatureList: FeatureItem[] = [
     icon: faArrowTrendUp,
     description: (
       <>
-        Glasskube Cloud notifies your customers about new updates and empowers
+        Notify your customers about new updates and empowers
         them to update whenever they are ready.
       </>
     ),
