@@ -4,9 +4,11 @@ title: "5 Ways Vendors Can Succeed Without Access to Customer Environments"
 description: Software vendors and customers have to navigate a complex landscape of deployment models and target environments. In this piece we explore the key differences between SaaS, BYOC, and On-Premises deployments.
 authors: [ jpage, pmig ]
 tags: [ On-Premises, ISV, Software Distribution Platform ]
-image: https://github.com/user-attachments/assets/d250ea77-d105-4aaf-9d02-5e425f1ed4a6
+image: https://github.com/user-attachments/assets/789b7bc4-b507-4c38-8e11-27d4dc61b8ef
 ---
 import DefaultCTA from '@site/src/components/cta/DefaultCTA/defaultCTA';
+
+![5-ways thumbnail](https://github.com/user-attachments/assets/789b7bc4-b507-4c38-8e11-27d4dc61b8ef)
 
 What do B2B and B2C companies have in common? Even though they use different letters, they essentially do the same thing, sell something to customers. As a software vendor, I’m not convinced that your top priority should be to adopt Amazon’s mantra of being “customer obsessed,” nor do I believe that the customer always knows best. What I am sure of, however, is that times have changed. Traditional B2B software end-customers now operate under more restrictions, tighter regulations, and stricter limitations on the third-party software they can adopt. In short, software delivery is much more complicated than it once was.
 
@@ -14,7 +16,7 @@ What do B2B and B2C companies have in common? Even though they use different let
 
 <DefaultCTA />
 
-Even if you, as a software vendor, might in many cases prefer to onboard a new customer onto your comfortably centralised SaaS offering, the reality is that not all end-customer are in a place to take you up on that offer. Many companies in certain industries like healthcare, banking and government don’t have the luxury of handing over a credit card number and giving Independent software vendors (ISVs) access to their internal infrastructure. Their constraints demand a different approach.
+Even if you, as a software vendor, might in many cases prefer to onboard a new customer onto your comfortably centralised [SaaS offering](/blog/on-premises-vs-cloud-vs-byoc/), the reality is that not all end-customer are in a place to take you up on that offer. Many companies in certain industries like healthcare, banking and government don’t have the luxury of handing over a credit card number and giving Independent software vendors (ISVs) access to their internal infrastructure. Their constraints demand a different approach.
 
 So what’s the takeaway? There is no need to be obsessed about your customer, you just need to understand them. Understand the restrictions they face, the environments they use to host software, and what you, as an ISV, can do to make their decision to self-host your software an easy one.
 
@@ -22,15 +24,15 @@ Regardless of the end-customer's environment, there are certain responsibilities
 
 There is much to talk about, but for now let’s look at the 5 things software vendors can do to succeed without access to their end-customers’ environments.
 
-### 1\. Build Software that is “On-Prem Ready”
+## 1\. Build Software that is “On-Prem Ready”
 
-![](https://wiki.glasskube.eu/api/attachments.redirect?id=0557c089-a4e9-429e-82b0-d8fe395f9ab6)
+![On-prem ready software](https://github.com/user-attachments/assets/43c37646-9c33-4591-9cb9-5d100429ffe7)
 
-The first key consideration to keep in mind is that you have to build software that, for lack of a better way of putting it, is “on-prem ready“. End-customer’s should not be expected to have more than the minimal knowledge of how your software works, they should be given a set of installation steps to get up and running that simply work. Beyond installation, your software must be architected for easy updates, seamless rollbacks, and compliance with modern safety, performance, and reliability standards. Let’s break down what “on-prem ready” entails and the components that make it possible.
+The first key consideration to keep in mind is that you have to build software that, for lack of a better way of putting it, is “[on-prem ready](/glossary/on-premises-definition/)". End-customer’s should not be expected to have more than the minimal knowledge of how your software works, they should be given a set of installation steps to get up and running that simply work. Beyond installation, your software must be architected for easy updates, seamless rollbacks, and compliance with modern safety, performance, and reliability standards. Let’s break down what “on-prem ready” entails and the components that make it possible.
 
 So how can this be achieved:
 
-**Consistent versioning**
+### Consistent versioning
 
 A consistent, and what many consider to be a software versioning best practice is to use a method like Semantic Versioning (SemVer), which has intuitive and inherently encoded information that helps customers understand what to expect with each release. Use the MAJOR.MINOR.PATCH format to communicate changes clearly:
 
@@ -39,7 +41,7 @@ A consistent, and what many consider to be a software versioning best practice i
 -   **Patch** for bug fixes.
     
 
-**Well-Packaged Solutions**
+### Well-Packaged Solutions
 
 Deployments across varied environments have to have optimized packaging prepared for each target:
 
@@ -48,7 +50,7 @@ Deployments across varied environments have to have optimized packaging prepared
 -   Create clear templates for common deployment scenarios to minimize setup time.
     
 
-**Cloud-Native Portability**
+### Cloud-Native Portability
 
 Portability as mentioned before is hugely beneficial as application might be dynamic and change environmnets over time, consider adopting the principles of the 12-Factor App to enhance adaptability across environments, some useful tips are to:
 
@@ -57,16 +59,15 @@ Portability as mentioned before is hugely beneficial as application might be dyn
 -   Offer deployment methods compatible with VMs, bare-metal, and Kubernetes.
     
 
-**SBOM (Software Bill of Materials)**
+### SBOM (Software Bill of Materials)
 
 Security is paramount in on-prem environments and any environment for that matter. So, include an SBOM in your build pipeline to:
 
 -   Document dependencies and licensing for compliance.
 -   Identify vulnerabilities through automated CVE scans.
--   Build trust by providing customers with transparent software component details.
-    
+-   Build trust by providing customers with transparent software component details.  
 
-**Secure Base Images**
+### Secure Base Images
 
 Have security in mind a the deepest base level of your software. Start with secure, minimal base images:
 
@@ -75,15 +76,15 @@ Have security in mind a the deepest base level of your software. Start with secu
 -   Regularly scan images for vulnerabilities and host them in trusted registries.
     
 
-### 2\. Perform Deployment Target Validations
+## 2\. Perform Deployment Target Validations
 
-![](https://wiki.glasskube.eu/api/attachments.redirect?id=bc4fc818-3115-4211-992c-11e7bbecb2fa)
+![Deployment target validations](https://github.com/user-attachments/assets/cdaab8a5-37c9-40e2-a29e-7149766db6b8)
 
 What makes a sommelier such a valuable resource at a restaurant? When they stand at your table, describing the rolling hills of Tuscany or the ancient open-air vats of Georgian natural wine producers, they’re speaking from experience. That’s why you’re willing to pay for their expertise: they’ve tested what they’re recommending so you don’t have to.
 
 This is exactly the role software vendors must play when it comes to deployment targets. As an Independent Software Vendor (ISV), you need to know, from hands-on experience, how your software behaves in a variety of environments and platforms. If an end user asks, “Can I run your software on this version of Kubernetes, these operating systems, or my niche regional cloud provider?” you must be able to confidently say, “Yes,” because you’ve already done the groundwork.
 
-**How to Ensure Deployment Readiness**
+### How to Ensure Deployment Readiness
 
 To provide this level of assurance, ISVs need to rigorously test their software across diverse deployment targets. Here’s how to approach it:
 
@@ -93,13 +94,13 @@ To provide this level of assurance, ISVs need to rigorously test their software 
     Tools like Pulumi or Terraform can be used to create infrastructure simulations that mimic customer environments. These Infrastructure as Code (IaC) templates allow you to test your software in controlled replicas of varied environments, ensuring compatibility across different configurations.
     
 
-### 3\. Simplify Licensing
+## 3\. Simplify Licensing
 
-![](https://wiki.glasskube.eu/api/attachments.redirect?id=640d041f-f6b9-4d35-8fea-4e7ec9243893)
+![Licensing](https://github.com/user-attachments/assets/325b4937-fc0d-45f5-b065-8470365a1b08)
 
 Licensing is the mechanism through which vendors control the access and define the feature set of the software that is sold to end-customers. A well-designed licensing system codifies software contracts and integrates seamlessly with the application, often via a license server during startup or runtime. For on-premises deployments, this system has to account for the fact that vendors won’t have direct access to the end customer’s environment. This makes it essential for licensing to be built-in, unobtrusive, and highly targeted.
 
-#### **Two Primary Approaches to Licensing**
+### Two Primary Approaches to Licensing
 
 1.  **Simple On/Off Licensing**:  
     This straightforward approach uses a license key to activate or deactivate an entire deployment. While it’s easy to implement and manage, it offers limited flexibility. Essentially, the license acts as a switch, either granting or denying access to the entire application.
@@ -108,7 +109,7 @@ Licensing is the mechanism through which vendors control the access and define t
     This approach uses a more granular licensing system, where individual features within an application deployment can be unlocked or restricted via feature flags. While this method provides greater flexibility to tailor features to customer needs, it requires more effort to implement and maintain due to the complexity of managing feature states and dependencies. 
     
 
-#### **Licensing as a Tool for Insights**
+### Licensing as a Tool for Insights
 
 The right licensing mechanism can go beyond access control, offering valuable insights into software usage. By incorporating usage tracking and reporting into the licensing process, vendors can monitor adoption patterns, identify opportunities for contract expansion, and address overages during renewal cycles.
 
@@ -118,13 +119,13 @@ The right licensing mechanism can go beyond access control, offering valuable in
     Detailed usage reports allow customers to visualize their software utilization, helping them avoid contract violations and better plan for future needs. This transparency fosters trust and encourages smoother renewals or expansions.
     
 
-### 4\. Provide Unified Installers and Self-Service Updates
+## 4\. Provide Unified Installers and Self-Service Updates
 
 Just as a parent might lay out their child’s clothes and pack their backpack the night before to simplify the morning routine, software vendors must do the same for their end-customers by eliminating unnecessary decisions. This principle lies at the heart of serving on-prem customers: simplifying critical processes like installation and updates.
 
 These are processes that can be completely bespoke and will always be dictated by how you have previously architected your software, having said that, there is a lot vendors can do to guarantee that these two crucial steps are reliable, predictable and not prone to error. Unified installers and lightweight agent-based components play a crucial role in this, forming the foundation for a seamless software lifecycle.
 
-#### Installers and Lightweight Agents
+### Installers and Lightweight Agents
 
 Unified installers, or installer components, are vendor-provided tools installed in the end customer’s environment to assist with deploying and managing the vendor’s software. Think of them like a trusted chaperone on a school trip: someone who ensures the kid gets on the bus (handles installation errors), looks after them if they’re feeling sick (manages drift detection), and keeps track of updates (this is where the metaphor starts to wobble—but you get the idea). Unified installers act as reliable intermediaries, ensuring the smooth operation and lifecycle management of the vendor’s software in the customer’s environment.
 
@@ -137,15 +138,15 @@ Incorporating lightweight agent-based components into these installers can furth
 
 These components can help be a proxy for vendor processes that ensure the smooth and successful lifecycle, starting with installation, of the vendor’s software in the end-customers environment.
 
-#### Self-Service updates
+### Self-Service updates
 
 Once the software is installed, the inevitable need for routine updates will arise at some point. It’s on the vendor to ensure that end-customers are properly notified when updates are available and that these updates are delivered in a safe and reliable way. Since vendors lack direct access to customer environments, their role is limited to providing updates that are easy to apply and designed with safety in mind. Ultimately, it’s the end-customers who decide when and how updates will occur.
 
 Initially, customers may be reluctant to update their software too often. They know all too well that changes to a stable system are when outages are most likely to happen. However, vendors can overcome this reluctance over time by building trust. Delivering a consistently smooth and reliable self-update process reassures customers, demonstrating that updates won’t compromise their systems but instead enhance their stability and performance.
 
-### 5\. Focus on High-Quality Communication
+## 5\. Focus on High-Quality Communication
 
-![](https://wiki.glasskube.eu/api/attachments.redirect?id=fca86a6c-f12b-4791-a283-e0e559a4c5bb)
+![Communication](https://github.com/user-attachments/assets/b952526a-fe7b-4256-858b-8f2f3b666d82)
 
 When vendors are dealing with end-customers who are not at liberty to grant access to their infrastructure. You must be able to build out or leverage software delivery platforms that bridge the gap between you and them. “Bridging the gap“ is a saying at times admitadely overused, but really what are we referring to? We are talking about processes and platforms that are conducive to one thing, **clear communication**.  
 Communication, just to clarify isn’t only jumping on a call and chatting directly to each other. If it were that simple, exchanging phone numbers would solve all your problems. Here are the elements I believe lead to truly effective communication with end-customers:
@@ -154,12 +155,11 @@ Communication, just to clarify isn’t only jumping on a call and chatting direc
 -   **Expose health endpoints:** Provide software with health endpoints that both the vendor and customer can monitor, ensuring everyone operates with the same base data.
 -   **Share key metrics and logs:** If possible and always with the consent of the end customer, implement processes to expose or share non-sensitive but essential metrics or logs, enabling more effective troubleshooting when errors occur.
 -   **Deliver thorough documentation:** Offer well-organized, easily accessible, and comprehensive documentation to reduce ambiguity and save time.
--   **Check in routinely:** Schedule regular usage, performance, and satisfaction check-ins to identify what can be improved to enhance customer success and satisfaction.
-    
+-   **Check in routinely:** Schedule regular usage, performance, and satisfaction check-ins to identify what can be improved to enhance customer success and satisfaction.  
 
 Of course, there are many other ways to improve communication with end-customers. Remember that one of the very first things we mentioned in this piece is the unescapable base requirement of understanding your customer. As time goes by, customer needs change and previously reached understanding might need updating. The only way to achieve it is by being commited to high-quality communication and treat it as if it was a feature of your product.
 
-### Common Pitfalls: Things to Avoid When Applying These Methods
+## Common Pitfalls: Things to Avoid When Applying These Methods
 
 1.  **Neglecting Thorough Deployment Testing**  
     Insufficient validation of deployment targets can lead to compatibility issues, unexpected failures, and frustrated customers. Not testing enough or not testing the right way can hugely impact your customer trust 
@@ -173,12 +173,12 @@ Of course, there are many other ways to improve communication with end-customers
     Relying on too many external components or locking into opinionated third-party services can make deployments brittle and harder to support, especially in diverse environments.
     
 
-### Conclusion
+## Conclusion
 
 As you can probably tell from everything covered above, there’s no silver bullet or golden framework that fits every on-premises customer. Getting the delicate and synchronized dance between an ISV and their end-customers right, requires a process that’s carefully tailored to the specifics of your software and the unique needs of the customers you serve.
 
-It all starts with building software designed with on-prem readiness in mind. Simply lifting and shifting a SaaS offering to an on-premises customer isn’t a viable option in almost any case. Instead, by starting with a solid foundation of portable software, tested to run in diverse environments, and built with security, compliance, installation infrastructure, and updates as core considerations, you set yourself and your customers up for success.
+It all starts with building software designed with [on-prem readiness](/glossary/self-managed-software/) in mind. Simply lifting and shifting a SaaS offering to an on-premises customer isn’t a viable option in almost any case. Instead, by starting with a solid foundation of portable software, tested to run in diverse environments, and built with security, compliance, installation infrastructure, and updates as core considerations, you set yourself and your customers up for success.
 
-When you get it right be it by building the internal processes individually or by leveraging a software delivery management software like Glasskube cloud, serving your on-prem customers doesn’t just become manageable, it might even open doors to new deployment methods and help you grow your business. And really, who wouldn’t want that?
+When you get it right be it by building the internal processes individually or by leveraging a software delivery management software like [Glasskube cloud](/), serving your on-prem customers doesn’t just become manageable, it might even open doors to new deployment methods and help you grow your business. And really, who wouldn’t want that?
 
 <DefaultCTA />
