@@ -1,5 +1,48 @@
 # Changelog
 
+## [0.26.1](https://github.com/glasskube/glasskube/compare/v0.26.0...v0.26.1) (2024-12-11)
+
+
+### Bug Fixes
+
+* **deps:** update dependency posthog-docusaurus to v2.0.2 ([#1449](https://github.com/glasskube/glasskube/issues/1449)) ([5fab3d2](https://github.com/glasskube/glasskube/commit/5fab3d2aa913d479912fde456249cdf366df51ad))
+* **deps:** update dependency prism-react-renderer to v2.4.1 ([#1453](https://github.com/glasskube/glasskube/issues/1453)) ([2bd05a1](https://github.com/glasskube/glasskube/commit/2bd05a1eb379f4b3b07f0f441c2cd23518af4fa7))
+* **deps:** update module github.com/onsi/gomega to v1.36.0 ([#1420](https://github.com/glasskube/glasskube/issues/1420)) ([4570816](https://github.com/glasskube/glasskube/commit/4570816ae28d25b44f936662c71193c2cdb73933))
+* **deps:** update module github.com/onsi/gomega to v1.36.1 ([#1444](https://github.com/glasskube/glasskube/issues/1444)) ([aa5fc53](https://github.com/glasskube/glasskube/commit/aa5fc53bf98f7bd8511f18310724b803c9c9a910))
+* **deps:** update module golang.org/x/term to v0.27.0 ([#1436](https://github.com/glasskube/glasskube/issues/1436)) ([03f678f](https://github.com/glasskube/glasskube/commit/03f678f6d7f219d764323f14635d415e9c49d73e))
+* **deps:** update module sigs.k8s.io/controller-runtime to v0.19.3 ([#1433](https://github.com/glasskube/glasskube/issues/1433)) ([ef98c38](https://github.com/glasskube/glasskube/commit/ef98c383bee283e617897be21c8b9bc15f5bab06))
+
+
+### Other
+
+* **deps:** bump nanoid from 3.3.7 to 3.3.8 in /website ([#1446](https://github.com/glasskube/glasskube/issues/1446)) ([f103f60](https://github.com/glasskube/glasskube/commit/f103f60392798915228fd24ef75f5c6ecb65e240))
+* **deps:** bump path-to-regexp and express in /website ([#1442](https://github.com/glasskube/glasskube/issues/1442)) ([0fb2687](https://github.com/glasskube/glasskube/commit/0fb2687fac191722ed38fd9f44e185f709a1793e))
+* **deps:** update actions/cache action to v4.2.0 ([#1438](https://github.com/glasskube/glasskube/issues/1438)) ([af1b8f4](https://github.com/glasskube/glasskube/commit/af1b8f4a26915bdae26ba007548858168a5f6069))
+* **deps:** update dependency @eslint/js to v9.15.0 ([#1417](https://github.com/glasskube/glasskube/issues/1417)) ([6432f06](https://github.com/glasskube/glasskube/commit/6432f06221d6967c7ea992472da91740dbe3e441))
+* **deps:** update dependency @eslint/js to v9.16.0 ([#1429](https://github.com/glasskube/glasskube/issues/1429)) ([146e0bf](https://github.com/glasskube/glasskube/commit/146e0bfe213bb3bd31e77563ada49e111d82097b))
+* **deps:** update dependency globals to v15.13.0 ([#1434](https://github.com/glasskube/glasskube/issues/1434)) ([ca52513](https://github.com/glasskube/glasskube/commit/ca5251325af6ee7a468254bdefd6dff336aaf444))
+* **deps:** update dependency prettier to v3.4.1 ([#1424](https://github.com/glasskube/glasskube/issues/1424)) ([3ad6959](https://github.com/glasskube/glasskube/commit/3ad69592858a99a71867c744e72b738290979bb3))
+* **deps:** update dependency prettier to v3.4.1 ([#1425](https://github.com/glasskube/glasskube/issues/1425)) ([bbd58ee](https://github.com/glasskube/glasskube/commit/bbd58eec82a82fb15b67df00a0a8a056b4b3a408))
+* **deps:** update dependency prettier to v3.4.2 ([#1430](https://github.com/glasskube/glasskube/issues/1430)) ([f7c22a6](https://github.com/glasskube/glasskube/commit/f7c22a6f31a8ac7ccf06d541d153af8942b99d2d))
+* **deps:** update dependency prettier to v3.4.2 ([#1431](https://github.com/glasskube/glasskube/issues/1431)) ([2dec7c8](https://github.com/glasskube/glasskube/commit/2dec7c8c7eacdb769686cfbe31a81ac8ea79237a))
+* **deps:** update dependency typescript-eslint to v8.16.0 ([#1418](https://github.com/glasskube/glasskube/issues/1418)) ([04ae20c](https://github.com/glasskube/glasskube/commit/04ae20c8a2e615568d6e19ccb6aabdbf9a1088ce))
+* **deps:** update dependency typescript-eslint to v8.17.0 ([#1435](https://github.com/glasskube/glasskube/issues/1435)) ([2e592f2](https://github.com/glasskube/glasskube/commit/2e592f2b782cb42bded4a7af03ddf1d31d05a01c))
+* **deps:** update dependency typescript-eslint to v8.18.0 ([#1443](https://github.com/glasskube/glasskube/issues/1443)) ([38c18ab](https://github.com/glasskube/glasskube/commit/38c18aba42a1547dcf08ba1d764358caab3e1bea))
+
+
+### Docs
+
+* **webiste:** fix link ([#1448](https://github.com/glasskube/glasskube/issues/1448)) ([c151eb2](https://github.com/glasskube/glasskube/commit/c151eb2f0d79e78563bbdd6ae018810b472c99c4))
+* **website:** adapt website for glasskube cloud launch ([#1437](https://github.com/glasskube/glasskube/issues/1437)) ([5b976f0](https://github.com/glasskube/glasskube/commit/5b976f0ee102127e21a89c0619385efb4323db70))
+* **website:** add cloudnativepg guide guide ([#1414](https://github.com/glasskube/glasskube/issues/1414)) ([56de576](https://github.com/glasskube/glasskube/commit/56de576a05affb325b94fea983393f4a92dc6738))
+* **website:** add cta components ([#1427](https://github.com/glasskube/glasskube/issues/1427)) ([18a2227](https://github.com/glasskube/glasskube/commit/18a22272a7341fa07947d81663be11b66e5d344d))
+* **website:** add on-prem glossary piece and fix broken link ([#1441](https://github.com/glasskube/glasskube/issues/1441)) ([c769634](https://github.com/glasskube/glasskube/commit/c769634e908d6c360264532a9f55e1c309023dc2))
+* **website:** cloud vs on-premises vs byoc blog post ([#1382](https://github.com/glasskube/glasskube/issues/1382)) ([769301e](https://github.com/glasskube/glasskube/commit/769301ececb0aea4d8345a0d660670442e7d1e0c))
+* **website:** fix broken link ([#1440](https://github.com/glasskube/glasskube/issues/1440)) ([4c1b05a](https://github.com/glasskube/glasskube/commit/4c1b05a690b3ce1102f12aca940df84e6211166e))
+* **website:** fix broken links ([#1426](https://github.com/glasskube/glasskube/issues/1426)) ([4db8755](https://github.com/glasskube/glasskube/commit/4db8755a5636627b3471b9e05eefe085281f30cd))
+* **website:** fixed broken glossary links ([#1419](https://github.com/glasskube/glasskube/issues/1419)) ([b5aca6b](https://github.com/glasskube/glasskube/commit/b5aca6b7592ffc08209bce7829602a3217b20cbf))
+* **website:** remove orphan pages from sitemap, fix broken link ([#1428](https://github.com/glasskube/glasskube/issues/1428)) ([2d22faa](https://github.com/glasskube/glasskube/commit/2d22faadf7ae9b6c232bee9c9efea955d470d57a))
+
 ## [0.26.0](https://github.com/glasskube/glasskube/compare/v0.25.0...v0.26.0) (2024-11-26)
 
 
