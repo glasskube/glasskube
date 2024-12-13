@@ -25,6 +25,7 @@ const sidebars: SidebarsConfig = {
         'saas-definition',
         'on-premises-definition',
         'self-managed-software',
+        'isv',
       ],
     },
   ],
