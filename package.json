@@ -17,7 +17,7 @@
     "htmx-ext-response-targets": "2.0.2"
   },
   "devDependencies": {
-    "@commitlint/cli": "19.6.0",
+    "@commitlint/cli": "19.6.1",
     "@commitlint/config-conventional": "19.6.0",
     "esbuild": "0.24.0",
     "prettier": "3.4.2",
