@@ -10,19 +10,19 @@ import DefaultCTA from '@site/src/components/cta/DefaultCTA/defaultCTA';
 
 ![5-ways thumbnail](https://github.com/user-attachments/assets/789b7bc4-b507-4c38-8e11-27d4dc61b8ef)
 
-What do B2B and B2C companies have in common? Even though they use different letters, they essentially do the same thing, sell something to customers. As a software vendor, I’m not convinced that your top priority should be to adopt Amazon’s mantra of being “customer obsessed,” nor do I believe that the customer always knows best. What I am sure of, however, is that times have changed. Traditional B2B software end-customers now operate under more restrictions, tighter regulations, and stricter limitations on the third-party software they can adopt. In short, software delivery is much more complicated than it once was.
+In recent years, companies of all sizes have faced a wave of new regulations and compliance demands, reshaping the landscape of software procurement. Enterprises customers now face heightened scrutiny over the tools they integrate, with each new application needing to meet strict security, regulatory, and data protection standards. It’s no longer just about onboarding any awl technology in-house, it’s about ensuring that every new piece of software can withstand regulatory scrutiny.
 
 <!-- truncate -->
 
 <DefaultCTA />
 
-Even if you, as a software vendor, might in many cases prefer to onboard a new customer onto your comfortably centralised [SaaS offering](/blog/on-premises-vs-cloud-vs-byoc/), the reality is that not all end-customer are in a place to take you up on that offer. Many companies in certain industries like healthcare, banking and government don’t have the luxury of handing over a credit card number and giving Independent software vendors (ISVs) access to their internal infrastructure. Their constraints demand a different approach.
+For [Independent Software Vendors (ISVs)](/glossary/isv-meaning/), this shift means the days of simply convincing a single decision-maker with a product demo and  only needing a credit card number are gone. Today’s enterprise customers have to deal with internal controls, legal reviews, and compliance checks before they can approve any new software. As a vendor, understanding exactly in which ways their end-customers hands are tied and preparing for their specific constraints is crucial if you want to sell software they can actually adopt.
 
-So what’s the takeaway? There is no need to be obsessed about your customer, you just need to understand them. Understand the restrictions they face, the environments they use to host software, and what you, as an ISV, can do to make their decision to self-host your software an easy one.
+In industries like healthcare, banking, and government, customers can’t just [hand over a credit card](/glossary/saas-definition/) and grant access to their infrastructure. Vednor have to offer a more thoughtful approach to software delivery.
 
-Regardless of the end-customer's environment, there are certain responsibilities that fall squarely on the vendor’s shoulders. These include ensuring software portability, making sure that scaling your software is a straightforward process without unexpected roadblocks and more.
+So, what’s the takeaway? You don’t need to obsess over your customers—you just need to understand them. Recognizing their restrictions, the environments they host software in, and how you can make self-hosting easier is key.
 
-There is much to talk about, but for now let’s look at the 5 things software vendors can do to succeed without access to their end-customers’ environments.
+Let’s explore five ways software vendors can succeed without direct access to their end-customers’ environments.
 
 ## 1\. Build Software that is “On-Prem Ready”
 
@@ -43,12 +43,11 @@ A consistent, and what many consider to be a software versioning best practice i
 
 ### Well-Packaged Solutions
 
-Deployments across varied environments have to have optimized packaging prepared for each target:
+Examples across varied environments of optimized packaging prepared for each potential target:
 
 -   Use **multi-architecture Docker images** to support diverse systems. 
 -   Provide **metadata-rich Helm charts** with versioning and repository links for transparency. 
 -   Create clear templates for common deployment scenarios to minimize setup time.
-    
 
 ### Cloud-Native Portability
 
@@ -61,7 +60,7 @@ Portability as mentioned before is hugely beneficial as application might be dyn
 
 ### SBOM (Software Bill of Materials)
 
-Security is paramount in on-prem environments and any environment for that matter. So, include an SBOM in your build pipeline to:
+Security is paramount in on-prem environments and any environment for that matter. So, generate an SBOM during building your application in your CI/CD pipeline to:
 
 -   Document dependencies and licensing for compliance.
 -   Identify vulnerabilities through automated CVE scans.
@@ -103,10 +102,10 @@ Licensing is the mechanism through which vendors control the access and define t
 ### Two Primary Approaches to Licensing
 
 1.  **Simple On/Off Licensing**:  
-    This straightforward approach uses a license key to activate or deactivate an entire deployment. While it’s easy to implement and manage, it offers limited flexibility. Essentially, the license acts as a switch, either granting or denying access to the entire application.
+    This straightforward approach uses a license key to activate or deactivate an entire deployment or by simply giving access to a private container registry. While it’s easy to implement and manage, it offers limited flexibility. Essentially, the license acts as a switch, either granting or denying access to the entire application.
     
 2.  **Feature-Flag Licensing**:
-    This approach uses a more granular licensing system, where individual features within an application deployment can be unlocked or restricted via feature flags. While this method provides greater flexibility to tailor features to customer needs, it requires more effort to implement and maintain due to the complexity of managing feature states and dependencies. 
+    This approach uses a more granular licensing system, where individual features within an application deployment can be unlocked or restricted via feature flags, this method also allows for dynamic pricing based on users, data usage or storage. While this method provides greater flexibility to tailor features to customer needs, it requires more effort to implement and maintain due to the complexity of managing feature states and dependencies. 
     
 
 ### Licensing as a Tool for Insights
