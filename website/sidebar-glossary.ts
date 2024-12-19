@@ -26,6 +26,7 @@ const sidebars: SidebarsConfig = {
         'on-premises-definition',
         'self-managed-software',
         'isv',
+        'airgapped',
       ],
     },
   ],
