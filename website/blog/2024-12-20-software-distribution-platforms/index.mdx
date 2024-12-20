@@ -1,0 +1,126 @@
+---
+slug: comparing-platforms-for-distributing-commercial-software
+title: "Evaluating Software Distribution Platforms: What ISVs Need to Know"
+description: 
+authors: [ jpage, pmig ]
+tags: [ SaaS, On-Premises, Software Distribution Platforms ]
+image:
+---
+import DefaultCTA from '@site/src/components/cta/DefaultCTA/defaultCTA';
+
+When independent software vendors (ISVs) come up with the concept for a new software product intended for enterprise customer, I’m doubtful that the software _distribution_ plan ranks too highly in their priorities. Chances are, many start out hoping their customers will be able to simply subscribe and get going with very little fisction. For some enterprise customers, this might be an option. But in today’s complex enterprise software procurement landscape, many industries face heightened compliance regulations and cybersecurity restrictions. It’s only a matter of time before ISVs realize that building a product customers want to buy is one thing, but delivering it in a way they can actually use is an entirely different challenge.
+
+<!-- truncate -->
+
+<DefaultCTA />
+
+ISVs have the option to build bespoke internal systems to handle distribution for on-premises, cloud, and air-gapped environments, and some of them do quite successfully . However, this approach demands significant time, effort, and expertise to make sure that the software is build it a way to execute distribution to complex environments correctly. That’s where software distribution platforms come in. There’s a wide array of these platforms on the market, each offering different features and integrating at various points in the CI/CD pipeline.
+
+In this post, we’ll dive into four platforms, uncover the features they share, and, most importantly, draw a clear line between two distinct subsets of these tools. With so much information out there, ISVs can find it hard to sift through the options. Hopefully, by the end of this piece, you’ll have a clearer sense of what to look for when evaluating software distribution platforms.
+
+## **The Shared DNA of Software Distribution Platforms**
+
+When you break down what’s needed for modern software distribution to almost any type of consumer, certain core features start to emerge across the different app distribution platforms. At its core, the process is surprisingly simple, when we are talking about software distribution we are talking about a “hand-off” of commercial software. The vendor builds something and hands it off to the end customer, who then consumes it.
+
+Of course, it’s not as simple as it sounds. Software distribution platforms have to be equipped to cater to a wide range of diverse end customers with varying target environment configurations. By "diverse," I mean customers who might deploy to heir own on-premises hardware, across various cloud providers, in hybrid setups, or even within highly secure, air-gapped environments. These platforms have to be capable of addressing these challenges, and while they may use different names for their features, they generally provide solutions that take the rough shape of the following:
+
+-   **Release Channels**: Which are logical distribution channels for organizing and delivering different versions of software.   
+-   **CI Pipeline Integration**: Allowing the distribution platform to seamlessly extend the vendor's CI/CD process, often becoming the “CD” component itself.   
+-   **Package Configuration**: Offering customizable software packages that adapt to varied deployment requirements and target environments.
+-   **Owner/Vendor and Customer/Tenant Relationship**: Bridging the gap between vendors and customers. Especially crucial in moments of software unreliability and failure when troubleshooting and collaboration is needed to avoid downtime and unfulfilled SLAs.
+-   **License management:** this might not be a basic feature in all distribution platforms but many enterprise solutions work through issuing either access licences or feature flag licenses so it not rare to see them.
+    
+
+While most software distribution platforms share features like the ones mentioned above, the key for software vendors is to consider what each platform takes for granted or assumes about the end customer. These assumptions can reveal the working principles behind a platform’s design. Here are some critical questions to consider:
+
+-   Does the platform assume the software vendor has (or should have) management access to the end customer’s infrastructure?
+-   Does it assume the end customer can simply accept software updates as they become available?
+-   Does it assume the end customer will need or want management features as part of the package?
+-   Have package formats and registries been assumed to work universally across all end customers?
+
+From our perspective, these questions highlight a distinct line that separates one subset of software distribution platforms from another.
+
+:::note
+Just a note to say that it’s not about one being better than the other, it’s about recognizing that, while all these platforms fall under the same category of platform, not all end customers are in a position to consume both.
+:::
+
+## The Key Differentiator: Push vs. Pull Deployments
+
+The defining factor that seems to draw a clear and often unbridgeable line between software distribution platforms is whether they support _push_ or _pull_ deployments.
+
+In a push deployment model, software installations and updates are pushed directly to the customer’s environment. This approach requires a significant level of trust, something not all end customers can or should place in software vendors. From the end customer’s perspective, push deployments can make them more vulnerable to exploits, instability, and hacks. There’s also an implicit sharing of infrastructure management responsibilities. While the vendor might not be provisioning new infrastructure, they’re still initiating changes that could unintentionally cause instability or outages in the customer’s environment.
+
+On the other hand, a pull deployment model requires far less implicit trust and grants significantly more autonomy to the end customer. Customers can decide _where_, _how_, and _when_ to install updates. They’re notified when updates become available, but the final decision about applying them remains firmly in their hands.
+
+Push deployments are often better suited for scenarios where the “end customer” isn’t a completely independent entity. For example, a hotel software vendor company distributing updates to hundreds of edge devices across various hotel locations. In this case, those devices might not even be managed by dedicated infrastructure teams, making push deployments both practical and necessary.
+
+On the other hand, the pull model is ideal when the end customer operates entirely outside the vendor’s trust circle. These customers, often with DevOps engineers, SREs, or infrastructure teams on hand value autonomy and control over what runs in their environment.
+
+It’s a simple distinction, but one with drastic implications for the type of customers your platform can reliably and safely serve.
+
+## **Examples of Software Distribution Platforms**
+
+Let’s look at some examples of Software distribution platforms which can be placed on other side of the push/pull divide.
+
+:::note
+Here we are only covering four but there are many others on the market.
+:::
+
+### Push Deployment Platforms
+
+**Octopus Deploy**  
+Octopus Deploy is a highly regarded and feature-rich distribution platform. It offers a range of CI/CD features that enable software vendors to manage critical software lifecycle tasks from a single interface. One of its standout distribution features is its tenant-based deployment model. This setup allows vendors to define target environments and push code directly to deployment targets, which are then applied to the end customer’s infrastructure.
+
+Octopus Deploy is an excellent choice for platform teams serving internal developers within their organization or for specific use cases, such as those mentioned earlier. For example, it has successfully helped hotel software vendors significantly reduce the time and effort required to manage deployments across hotel locations.
+
+**Apollo by Palantir**  
+Apollo by Palantir operates on a similar assumption: that end customers place a high level of trust in the software being pushed to their environments. Apollo introduces the concept of _release channels_, which end customers subscribe to based on their “risk tolerance.” These channels, whether stable, production, beta, or others, allow vendors to deploy updates as needed. However, this approach inherently requires a degree of trust, as subscribing to a release channel means updates can be applied whenever the vendor deems them necessary.
+
+### Pull Deployment Platforms
+
+**Replicated**
+
+Replicated is the most seasoned offering in the category of pull deployment software distribution platforms. It operates on the assumption that the software vendor neither has nor wants control over the end customer’s environment. This approach has earned Replicated a solid reputation among enterprise customers working in complex on-premises or self-managed environments, where vendors who prioritize customer autonomy are highly valued.
+
+Replicated alleviates much of the pain associated with running and managing software in these intricate setups. One of its standout features is a compatibility matrix, which enables vendors to test software packages across various platforms and architectures. This ensures the package will run reliably in whatever environment the customer chooses to deploy it. It also help easy the Kubernetes learning curve by embedding lightweight cluster in the packages themselves.
+
+**Glasskube Cloud**
+
+Glasskube Cloud is the newest software distribution platform to embrace the pull deployment model. Designed specifically for ISVs, it focuses on providing end customers with the smoothest possible experience for consuming enterprise software.
+
+Some standout features of Glasskube Cloud include:
+
+-   **Faster Customer Onboarding**: Dramatically reducing the time it takes to onboard new customers, even for proof-of-concept (POC) deployments.
+    
+-   **Unified Management**: Easily manage all customer deployments, whether Docker Compose in VMs or Helm charts in Kubernetes, from a single, centralized platform.
+    
+-   **Out-of-the-Box Analytics**: Offering instant visibility into deployed versions, configurations, and update statuses.
+    
+-   **Seamless Updates**: Automated update workflows to keep customers in sync with minimal effort and time investment.
+    
+-   **Efficient Support**: Standardized configurations simplify troubleshooting, making support faster and more effective.
+    
+
+Glasskube Cloud is an open-core platform with a generous free tier, enabling vendors to onboard and manage customers, even in complex target environments, without barriers. As customer pools grow and more advanced, granular features become necessary, Glasskube is ready to scale alongside them.
+
+## The Glasskube Cloud Advantage
+
+Glasskube Cloud is a platform that fully embodies the strengths of the pull deployment model, never assuming or requiring control over an end customer’s infrastructure. In addition to core features like deployment and user management, as well as vendor and customer portals, Glasskube is rapidly expanding to include capabilities such as advanced package configurations and air-gapped support. Its adaptability to the unique challenges modern and complex target environments pose, is a testament to its early commitment to user feedback and continuous improvement.
+
+What truly sets Glasskube apart is its open-core approach. It is designed to serve a wide range of vendors, whether through its SaaS offering or as a self-hosted solution.
+
+:::note
+When referring to ISVs, we also include SaaS distributors who may not offer their product as fully self-hosted but provide a standalone agent component designed to run in the end customer’s environment.
+:::
+
+While still in its early iterations, Glasskube is growing in capabilities and functionality every single week, making it a platform that evolves alongside its users’ needs.
+
+## Conclusion
+
+As ISVs and therfore software distributors, one of the most crucial things you can do, something we emphasize repeatedly on this blog, is to truly understand your customer. The goal of this comparison isn’t to pass judgment on software distribution platforms that adopt either the push or pull deployment model. Instead, the key takeaway is recognizing that some end customers will never accept external parties pushing changes to their infrastructure.
+
+The level of trust required for push deployments is typically only found within large enterprises with dispersed teams, where a hub-and-spoke software distribution architecture makes sense, or in vendor-edge scenarios where trust is inherently established. For any other situation, platforms built on the pull model, where customers are notified of updates and changes but retain control over deployment, are the only viable option.
+
+Understanding these nuances will help you choose the right platform for your customers’ needs and ensure a smoother, more reliable software delivery experience.
+
+<DefaultCTA />
