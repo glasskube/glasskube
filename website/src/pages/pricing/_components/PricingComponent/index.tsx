@@ -102,11 +102,11 @@ function Pricing() {
                 </ul>
               </div>
               <div className="card__footer">
+                <DemoButton additionalClassNames={'button--lg button--block'} />
+                <div className="margin-top--md" />
                 <SignupForWaitlistButton
                   additionalClassNames={'button--lg button--block'}
                 />
-                <div className="margin-top--md" />
-                <DemoButton additionalClassNames={'button--lg button--block'} />
               </div>
             </div>
           </div>

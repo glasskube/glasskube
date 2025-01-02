@@ -13,9 +13,9 @@ function Index() {
       </div>
       <div className={styles.ctaWrapper}>
         <div className={styles.center}>
-          <SignupForWaitlistButton additionalClassNames={''} />
-          &nbsp;&nbsp;
           <DemoButton additionalClassNames={''} />
+          &nbsp;&nbsp;
+          <SignupForWaitlistButton additionalClassNames={''} />
         </div>
       </div>
     </>
