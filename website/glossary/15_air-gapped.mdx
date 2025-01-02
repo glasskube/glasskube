@@ -1,0 +1,72 @@
+---
+title: Air gapped
+slug: air-gapped-meaning
+description: 'Understanding \ air gapped systems, networks, and environments. Their purpose, use cases, and practical applications.'
+---
+
+import DefaultCTA from '@site/src/components/cta/DefaultCTA/defaultCTA';
+
+### Air gapped Meaning
+:::note
+You might have seen the term written in various ways, airgapped, air-gapped, or even referring to a system with an air gap. Regardless of how it's phrased, it all describes the same concept: systems or networks that are completely isolated from external internet connectivity, with the primary goal of enhancing security. This isolation prevents unauthorized access, for companies in highly regulated industries this is the only way of safeguarding sensitive data and protecting critical systems from cyber threats.
+:::
+### What does Air gapped usually refer to? 
+
+What does "air gapped" really mean? At its core, the term refers to isolating systems, networks, or devices to create a secure environment. This isolation can be achieved in different ways, including logical separation through software levels of abstraction or physical separation between connected and isolated systems. Essentially, an air gapped environment is designed to ensure nothing can flow in or out, providing a real barrier against unauthorized access. By eliminating direct connections to external networks, airgapping significantly reduces the risk of data breaches and cyberattacks. Further details on how this works are explained below.
+
+### What is an Air Gapped Network?
+
+An air gapped network is a system that is completely isolated from external connections, such as the public internet or untrusted local area networks. This disconnection ensures devices within the network are invisible to remote attackers who scan the internet for vulnerable machines. Air gapped networks or environments, which is often used as a network synonym, can also block remote code execution (RCE) attacks, as communication or data transfer outside the network requires manual physical interaction, typically through USB drives or other removable media.
+
+### Air Gapped Systems: How Do They Work?
+
+Air gapped systems work by being physically or logically disconnected from external networks. Data transfer in and out typically requires manual processes, like using USB drives or other removable media. In some cases, a liberal air gapped setup might allow restricted access to protected private registries, but such configurations are exceptions rather than the norm. For a system to be truly air gapped, all wireless connectivity, such as WiFi and Bluetooth, must be disabled, and physical connections to non-air-gapped networks must be avoided.
+
+### How Secure Are Air Gapped Environments?
+
+While air gapped networks offer strong protection against remote cyberattacks, they are not invulnerable. High-profile incidents like the [Stuxnet](https://www.trellix.com/security-awareness/ransomware/what-is-stuxnet/) attack on Iran's nuclear program have demonstrated how sophisticated malware can infiltrate these systems through removable media, such as USB drives. Other advanced techniques exploit electromagnetic signals or hardware implants to breach air gaps. These examples show how maintaining an air gapped network's security requires rigorous protocols, advanced threat detection, and vigilance against insider threats and physical access.
+
+### What is Air Gapped Backup?
+
+Air gapped backups, by their very nature, require specialized solutions to keep backups safely stored and isolated from external networks. For robust disaster recovery strategies spanning multiple air gapped networks, it’s essential to have a solution that operates without internet access yet can securely access and apply backups in a resilient and reliable way.
+
+### Air Gapped Cloud: Is It Possible?
+
+An air gapped cloud is the same concept as presented above yet applied to cloud environments, where cloud services operate with the same isolation principles as traditional on-prem air gapped systems. While challenging to implement, this approach is gaining traction since over the last decade cloud adoption has been growing at a rapid rate in all industries, including those that require both security and scalability.
+
+### Air Gapped Computers: Why Are They Used?
+
+Air gapped computers are commonly used in environments demanding the highest levels of security, such as, healthcare, government, military, or financial systems. By disconnecting these devices from external networks, they minimize the risks of unauthorized access and data breaches. In the context of distributing commercial software, however, an air gapped computer is often closer to an air gapped server operating within a data center rack rather than a standalone device.
+
+### Logical Air Gap vs. Physical Air Gap
+
+A logical air gap relies on software controls like security groups, network policies, and firewalls to enforce isolation, whereas a physical air gapping involves a complete hardware disconnection, often with significant physical distance between systems. Both approaches are designed to secure systems, but physical air gaps are typically seen as more robust, especially for environments with the highest security requirements.
+
+### Why Use an Air Gapped Network?
+
+Organizations often don't choose to use air gapped networks or environments voluntarily, instead, they implement them because they are companies in industries like healthcare, finance, or government who are tightly regulated. Technical regulations and compliance rules require them to protect sensitive data and operations from cyberattacks in the strictest ways possible. These networks play a crucial role in meeting compliance requirements, safeguarding critical infrastructure, and ensuring operational security in high-risk industries.
+
+### Should ISVs cater to customer with Air gapped environments?
+
+Absolutely! [ISVs](/glossary/isv-meaning/) should be ready to meet the needs of a diverse customer base, including those in highly regulated industries running air gapped environments. It’s a simple reality in today’s market: if you want to serve enterprise customers in these sectors, offering air gapped deployments is often essential. That said, reluctance to support air gapped setups is understandable if you’re not fully prepared. Fortunately, tools like [Glasskube Cloud](/) can simplify the process, handling many of the challenging tasks associated with maintaining software in air gapped environments. These solutions allow vendors to support air gapped customers without direct access to their environments, while still providing a comparable experience to customers in less restrictive settings.
+
+### "airgapped" vs "air gapped" vs "air-gapped"
+
+These terms are frequently encountered in discussions about secure systems. However, it’s important to note that "airgapped" is a common misspelling.
+
+### Challenges in Managing Air gapped Environments
+
+-   **Data Transfer Complexity**
+    Moving data into or out of an air gapped environment typically requires physical devices, such as USB drives or external hard drives, which can introduce security risks and logistical challenges. Even though there are more lenient environments that allow to pull data from trusted sources while never allowing pull actions to take place.
+-   **Operational Overhead**
+    The need for manual processes, such as physically connecting devices or moving media between locations, increases time and labor costs.
+-   **Limited Remote Management**
+    Without external network connectivity, traditional remote management tools are unavailable, requiring on-site personnel for maintenance and troubleshooting.
+-   **Few air-gapped ready solutions**
+    Managing air gapped environments and the software hosted within them has always been a challenge. Until now, the market has lacked proficient tools to help ISVs effectively support their air gapped customers. That’s one of the key reasons why Glasskube Cloud was created.  
+-   **Insider Threats**
+    Physical access to air gapped systems increases the risk of insider threats, as employees or contractors may inadvertently or intentionally compromise the air gap.   
+-   **Compliance and Auditing**
+    Demonstrating compliance with security regulations in an isolated environment requires detailed logging and auditing, which can be difficult without appropriate tooling.
+
+<DefaultCTA />
