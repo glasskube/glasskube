@@ -24,7 +24,7 @@ const ScreenshotList: ScreenshotItem[] = [
         <Link
           className="button button--secondary margin-top--md"
           to="https://glasskube.cloud/">
-          Try for free
+          Get started free
         </Link>
       </>
     ),
@@ -44,7 +44,7 @@ const ScreenshotList: ScreenshotItem[] = [
         <Link
           className="button button--secondary margin-top--md"
           to="https://glasskube.cloud/">
-          Try for free
+          Get started free
         </Link>
       </>
     ),

@@ -34,10 +34,10 @@ function HomepageHeader() {
         <div className="row row--no-gutters">
           <div className={clsx('col', styles.heroCol)}>
             <div className={styles.buttons}>
+              <DemoButton additionalClassNames={'button--lg light'} />
               <SignupForWaitlistButton
                 additionalClassNames={'button--lg light'}
               />
-              <DemoButton additionalClassNames={'button--lg light'} />
             </div>
             <div className={styles.yc}>
               <h4>Backed by</h4>

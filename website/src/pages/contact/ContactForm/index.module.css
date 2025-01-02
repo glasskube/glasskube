@@ -1,0 +1,32 @@
+/**
+ * CSS files with the .module.css suffix will be treated as CSS modules
+ * and scoped locally.
+ */
+
+
+.input {
+  display: block;
+  width: 100%;
+  padding: 12px 20px;
+  box-sizing: border-box;
+  border-radius: var(--ifm-button-border-radius);
+  border: 1px solid var(--glasskube-main-2);
+}
+
+.input:focus {
+  border-color: var(--glasskube-main-3);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--ifm-global-spacing);
+}
+
+@media (min-width: 997px) {
+  .form {
+    margin: 8px 0;
+  }
+}
+

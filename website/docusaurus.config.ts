@@ -172,9 +172,9 @@ const config: Config = {
           title: 'More',
           items: [
             {label: 'Blog', to: '/blog/'},
-            {label: 'Contact', to: '/contact/'},
-            {label: 'Talk to founders', href: 'https://cal.glasskube.com/team/founder/30min'},
-            {label: 'Signup for the wait list', href: 'https://glasskube.cloud/'},
+            {label: 'Contact us', to: '/contact/'},
+            {label: 'Schedule a meeting', href: 'https://cal.glasskube.com/team/founder/30min'},
+            {label: 'Get started free', href: 'https://glasskube.cloud/'},
           ],
         },
       ],

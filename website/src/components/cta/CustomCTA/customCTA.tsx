@@ -21,8 +21,8 @@ export default function CustomCTA({
               <h2>{header}</h2>
               <p className="margin-bottom--lg">{text}</p>
               <div className={styles.buttonContainer}>
-                <SignupForWaitlistButton additionalClassNames="button--lg" />
                 <DemoButton additionalClassNames="button--lg" />
+                <SignupForWaitlistButton additionalClassNames="button--lg" />
               </div>
             </div>
           </div>
