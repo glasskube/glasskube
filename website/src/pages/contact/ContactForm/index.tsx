@@ -163,7 +163,7 @@ class Form extends React.Component<unknown, {data: ContactRequest}> {
           <div className="col">
             <label htmlFor="companyName">Company Name*</label>
             <input
-              type="tel"
+              type="text"
               className={styles.input}
               id="companyName"
               placeholder="Company Name"
