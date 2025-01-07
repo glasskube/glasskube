@@ -85,7 +85,7 @@ jobs:
           --acl=public-read
       - name: Upload release.json to website
         run: >-
-          aws s3 sync release.json s3://glasskube.dev/release.json
+          aws s3 cp release.json s3://glasskube.dev/release.json
           --cache-control "max-age=60, public"
           --acl=public-read
 
