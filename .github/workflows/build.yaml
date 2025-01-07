@@ -2,16 +2,10 @@ name: Build Go Project
 
 on:
   push:
-    paths-ignore:
-      - website/**
   pull_request:
-    paths-ignore:
-      - website/**
   merge_group:
     types:
       - checks_requested
-    paths-ignore:
-      - website/**
 
 jobs:
   build:
@@ -33,7 +27,7 @@ jobs:
           path: bin
           key: ${{ runner.os }}-${{ hashFiles('Makefile', 'go.mod', 'go.sum') }}
       - name: Install dependencies
-        run: npm ci
+        run: npm i
       - run: make all
       - uses: actions/upload-artifact@6f51ac03b9356f520e9adb1b1b7802705f340c2b # v4.5.0
         with:

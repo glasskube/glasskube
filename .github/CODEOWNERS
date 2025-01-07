@@ -1,6 +1,5 @@
 * @glasskube/reviewers
 
-website/ @pmig
 *.md @pmig
 
 # no codeowners to allow auto merging dependency updates

@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /pricing/
-Disallow: /contact/
