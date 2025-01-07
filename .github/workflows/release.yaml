@@ -61,7 +61,7 @@ jobs:
           node-version: '20.9'
           cache: npm
       - name: Install dependencies
-        run: npm ci
+        run: npm i
       - name: Set up kubectl
         uses: azure/setup-kubectl@3e0aec4d80787158d308d7b364cb1b702e7feb7f # v4
         with:
@@ -73,3 +73,19 @@ jobs:
           args: release
         env:
           GITHUB_TOKEN: ${{ secrets.GLASSKUBE_BOT_SECRET }}
+      - uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4
+        with:
+          aws-access-key-id: ${{ secrets.WEBSITE_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.WEBSITE_AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+      - name: Upload schemas to website
+        run: >-
+          aws s3 sync schemas s3://glasskube.dev/schemas/
+          --cache-control "max-age=60, public"
+          --acl=public-read
+      - name: Upload release.json to website
+        run: >-
+          aws s3 sync release.json s3://glasskube.dev/release.json
+          --cache-control "max-age=60, public"
+          --acl=public-read
+
