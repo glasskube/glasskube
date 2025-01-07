@@ -21,4 +21,4 @@ jobs:
         uses: cardinalby/schema-validator-action@v3
         with:
           file: "test/package-manifest/example.yaml"
-          schema: "./website/static/schemas/v1/package-manifest.json"
+          schema: "./schemas/v1/package-manifest.json"
