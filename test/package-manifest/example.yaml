@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=../../website/static/schemas/v1/package-manifest.json
+# yaml-language-server: $schema=../../schemas/v1/package-manifest.json
 name: example
 shortDescription: |
   1-2 sentences describing your package

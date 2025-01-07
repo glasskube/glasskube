@@ -5,12 +5,12 @@ on:
     branches:
       - main
     paths:
-      - website/static/schemas/**
+      - schemas/**
   pull_request:
     branches:
       - main
     paths:
-      - website/static/schemas/**
+      - schemas/**
 
 jobs:
   validate:

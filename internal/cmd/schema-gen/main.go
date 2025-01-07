@@ -22,7 +22,7 @@ var (
 		"versions":         &repo.PackageIndex{},
 	}
 
-	outBase    = "website/static"
+	outBase    = "."
 	idBase     = "https://glasskube.dev/"
 	schemaPath = "schemas/v1"
 	outDir     = path.Join(outBase, schemaPath)
