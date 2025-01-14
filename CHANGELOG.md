@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.26.2](https://github.com/glasskube/glasskube/compare/v0.26.1...v0.26.2) (2025-01-14)
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/invopop/jsonschema to v0.13.0 ([#1474](https://github.com/glasskube/glasskube/issues/1474)) ([823372c](https://github.com/glasskube/glasskube/commit/823372cf747e1caf1d72b1cd6a5efd7ddb8fcc24))
+* **deps:** update module github.com/onsi/ginkgo/v2 to v2.22.2 ([#1472](https://github.com/glasskube/glasskube/issues/1472)) ([4b789c2](https://github.com/glasskube/glasskube/commit/4b789c2117197d0b806dbfaeb4f292c3f84c71ca))
+* **deps:** update module github.com/onsi/gomega to v1.36.2 ([#1470](https://github.com/glasskube/glasskube/issues/1470)) ([549bf50](https://github.com/glasskube/glasskube/commit/549bf50b3c9360225f95f98a89951f5743c46d03))
+* **deps:** update module github.com/schollz/progressbar/v3 to v3.18.0 ([#1484](https://github.com/glasskube/glasskube/issues/1484)) ([2339b06](https://github.com/glasskube/glasskube/commit/2339b06250d3f188c281b150e50791544818e3b6))
+* **deps:** update module sigs.k8s.io/controller-runtime to v0.19.4 ([#1483](https://github.com/glasskube/glasskube/issues/1483)) ([774092f](https://github.com/glasskube/glasskube/commit/774092f29aa09c22ecbbb92521cf7d4c59f3719b))
+
+
+### Other
+
+* **deps:** update actions/upload-artifact action to v4.6.0 ([#1485](https://github.com/glasskube/glasskube/issues/1485)) ([f9fdc5d](https://github.com/glasskube/glasskube/commit/f9fdc5d54451b15ab4e56149c635b714d3ea133d))
+
 ## [0.26.1](https://github.com/glasskube/glasskube/compare/v0.26.0...v0.26.1) (2025-01-07)
 
 
