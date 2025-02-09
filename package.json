@@ -19,7 +19,7 @@
   "devDependencies": {
     "@commitlint/cli": "19.7.1",
     "@commitlint/config-conventional": "19.7.1",
-    "esbuild": "0.24.2",
+    "esbuild": "0.25.0",
     "prettier": "3.5.0",
     "prettier-plugin-go-template": "0.0.15"
   },
