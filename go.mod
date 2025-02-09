@@ -5,7 +5,7 @@ go 1.23.0
 require (
 	github.com/Masterminds/semver/v3 v3.3.1
 	github.com/denisbrodbeck/machineid v1.0.1
-	github.com/evanphx/json-patch/v5 v5.9.0
+	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/fatih/color v1.18.0
 	github.com/fluxcd/helm-controller/api v1.1.0
 	github.com/fluxcd/source-controller/api v1.4.1
