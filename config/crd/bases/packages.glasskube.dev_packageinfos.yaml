@@ -332,6 +332,9 @@ spec:
                                 - path
                                 type: object
                               resource:
+                                description: TypedObjectReference contains enough
+                                  information to let you locate the typed referenced
+                                  object
                                 properties:
                                   apiGroup:
                                     description: |-
@@ -447,6 +450,9 @@ spec:
                                 - path
                                 type: object
                               resource:
+                                description: TypedObjectReference contains enough
+                                  information to let you locate the typed referenced
+                                  object
                                 properties:
                                   apiGroup:
                                     description: |-
