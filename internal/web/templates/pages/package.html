@@ -274,7 +274,7 @@
                   </div>
                 {{ end }}
                 {{ if and .ValidationResult.Pruned }}
-                  <div class="alert alert-danger m-0 mb-2" role="alert">
+                  <div class="alert alert-warning m-0 mb-2" role="alert">
                     <span>The following packages will be removed:</span>
                     <ul class="mb-0 mt-1">
                       {{ range .ValidationResult.Pruned }}
