@@ -259,18 +259,30 @@
                     {{ end }}
                   </ul>
                 </div>
-              {{ else if or (not .Status) .ValidationResult.Requirements }}
-                <div class="alert alert-success m-0 mb-2" role="alert">
-                  <span>The following packages will be installed:</span>
-                  <ul class="mb-0 mt-1">
-                    {{ if not .Status }}
-                      <li>{{ $.Manifest.Name }} ({{ $.SelectedVersion }})</li>
-                    {{ end }}
-                    {{ range .ValidationResult.Requirements }}
-                      <li>{{ .Name }} ({{ .Version }})</li>
-                    {{ end }}
-                  </ul>
-                </div>
+              {{ else }}
+                {{ if or (not .Status) .ValidationResult.Requirements }}
+                  <div class="alert alert-success m-0 mb-2" role="alert">
+                    <span>The following packages will be installed:</span>
+                    <ul class="mb-0 mt-1">
+                      {{ if not .Status }}
+                        <li>{{ $.Manifest.Name }} ({{ $.SelectedVersion }})</li>
+                      {{ end }}
+                      {{ range .ValidationResult.Requirements }}
+                        <li>{{ .Name }} ({{ .Version }})</li>
+                      {{ end }}
+                    </ul>
+                  </div>
+                {{ end }}
+                {{ if and .ValidationResult.Pruned }}
+                  <div class="alert alert-warning m-0 mb-2" role="alert">
+                    <span>The following packages will be removed:</span>
+                    <ul class="mb-0 mt-1">
+                      {{ range .ValidationResult.Pruned }}
+                        <li>{{ .Name }} (no longer needed)</li>
+                      {{ end }}
+                    </ul>
+                  </div>
+                {{ end }}
               {{ end }}
               {{ if or (not .Status) (and .Package .Package.DeletionTimestamp.IsZero) }}
                 {{ $extraClasses := "" }}

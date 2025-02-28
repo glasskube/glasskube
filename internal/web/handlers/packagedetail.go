@@ -156,6 +156,9 @@ func renderPackageDetailPage(w http.ResponseWriter, r *http.Request, p *packageC
 			clientadapter.NewPackageClientAdapter(pkgClient),
 			repoClientset,
 		)
+
+		// note: not using updater here since it doesn't support changing repository or downgrading (and it probably shouldn't)
+		// could maybe be refactored in the future (PackageChanger construct, which the "normal" updater is a special case of)
 		validationResult := &dependency.ValidationResult{}
 		var validationErr error
 		var lostValueDefinitions []string

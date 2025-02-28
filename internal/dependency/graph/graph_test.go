@@ -132,6 +132,15 @@ var _ = Describe("DependencyGraph", func() {
 			Expect(graph.Prune()).To(ConsistOf(PackageRef{bar, "", bar}))
 			Expect(graph.Version(bar, "")).To(BeNil())
 		})
+
+		It("should remove orphaned vertex transitively", func() {
+			Expect(graph.AddCluster(v1alpha1.PackageManifest{Name: bar}, "v1.0.0", false)).NotTo(HaveOccurred())
+			Expect(graph.AddCluster(v1alpha1.PackageManifest{Name: foo, Dependencies: []v1alpha1.Dependency{{Name: bar}}},
+				"v1.0.0", false)).NotTo(HaveOccurred())
+			Expect(graph.Prune()).To(ConsistOf(PackageRef{bar, "", bar},
+				PackageRef{foo, "", foo}))
+			Expect(graph.Version(bar, "")).To(BeNil())
+		})
 	})
 
 	Describe("DeleteAndPrune", func() {
