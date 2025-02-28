@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/glasskube/glasskube/api/v1alpha1"
 	"github.com/glasskube/glasskube/internal/cliutils"
@@ -169,14 +170,7 @@ outer:
 						} else {
 							// all other iterations can at most delete stuff from prunedSet
 							for req := range *prunedSet {
-								prunedInCurrentIteration := false
-								for _, prunedLocal := range result.Pruned {
-									if prunedLocal == req {
-										prunedInCurrentIteration = true
-										break
-									}
-								}
-								if !prunedInCurrentIteration {
+								if !slices.Contains(result.Pruned, req) {
 									delete(*prunedSet, req)
 								}
 							}
