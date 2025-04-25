@@ -6,6 +6,7 @@
   "extends": [
     "config:recommended"
   ],
+  "dependencyDashboard": false,
   "packageRules": [
     {
       "matchManagers": [
