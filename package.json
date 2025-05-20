@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@glasskube/theme": "0.1.2",
-    "bootstrap": "5.3.4",
+    "bootstrap": "5.3.6",
     "giscus": "^1.5.0",
     "htmx.org": "2.0.4",
     "htmx-ext-sse": "2.2.3",
