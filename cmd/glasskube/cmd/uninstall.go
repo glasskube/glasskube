@@ -14,8 +14,9 @@ import (
 )
 
 var uninstallCmdOptions = struct {
-	NoWait bool
-	Yes    bool
+	NoWait          bool
+	Yes             bool
+	DeleteNamespace bool
 	KindOptions
 	NamespaceOptions
 	DryRunOptions
@@ -65,7 +66,7 @@ var uninstallCmd = &cobra.Command{
 				fmt.Fprintf(os.Stderr, "❌ %v can not be uninstalled for the following reason: %v\n", pkgName, err)
 				cliutils.ExitWithError()
 			} else {
-				showUninstallDetails(currentContext, pkgName, pruned)
+				showUninstallDetails(currentContext, pkgName, pruned, pkg.GetNamespace())
 				if !uninstallCmdOptions.Yes && !cliutils.YesNoPrompt("Do you want to continue?", false) {
 					fmt.Println("❌ Uninstallation cancelled.")
 					cliutils.ExitSuccess()
@@ -80,16 +81,20 @@ var uninstallCmd = &cobra.Command{
 			}
 			fmt.Fprintln(os.Stderr, "Uninstallation started in background")
 		} else {
-			if err := uninstaller.UninstallBlocking(ctx, pkg, uninstallCmdOptions.DryRun); err != nil {
+			if err := uninstaller.UninstallBlocking(ctx, pkg, uninstallCmdOptions.DryRun,
+				uninstallCmdOptions.DeleteNamespace); err != nil {
 				fmt.Fprintf(os.Stderr, "\n❌ An error occurred during uninstallation:\n\n%v\n", err)
 				cliutils.ExitWithError()
+			}
+			if uninstallCmdOptions.DeleteNamespace {
+				fmt.Printf("Namespace %v has been deleted.\n", color.New(color.Bold).Sprint(pkg.GetNamespace()))
 			}
 			fmt.Fprintf(os.Stderr, "🗑️  %v uninstalled successfully.\n", pkgName)
 		}
 	},
 }
 
-func showUninstallDetails(context, name string, pruned []graph.PackageRef) {
+func showUninstallDetails(context, name string, pruned []graph.PackageRef, namespace string) {
 	fmt.Fprintf(os.Stderr,
 		"The following packages will be %v from your cluster (%v):\n",
 		color.New(color.Bold).Sprint("removed"),
@@ -97,6 +102,9 @@ func showUninstallDetails(context, name string, pruned []graph.PackageRef) {
 	fmt.Fprintf(os.Stderr, " * %v (requested by user)\n", name)
 	for _, dep := range pruned {
 		fmt.Fprintf(os.Stderr, " * %+v (no longer needed)\n", dep)
+	}
+	if namespace != "" && uninstallCmdOptions.DeleteNamespace {
+		fmt.Fprintf(os.Stderr, "Namespace %v will also be deleted.\n", color.New(color.Bold).Sprint(namespace))
 	}
 }
 
@@ -107,6 +115,8 @@ func init() {
 		"Perform non-blocking uninstall")
 	uninstallCmd.PersistentFlags().BoolVarP(&uninstallCmdOptions.Yes, "yes", "y", false,
 		"Do not ask for any confirmation")
+	uninstallCmd.PersistentFlags().BoolVar(&uninstallCmdOptions.DeleteNamespace, "delete-namespace", false,
+		"Delete the namespace when uninstalling the package")
 	RootCmd.AddCommand(uninstallCmd)
 	uninstallCmdOptions.DryRunOptions.AddFlagsToCommand(uninstallCmd)
 }
