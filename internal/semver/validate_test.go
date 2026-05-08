@@ -72,8 +72,11 @@ var _ = Describe("ValidateConstraint", func() {
 		Entry("When a prerelease is the minimum", ">= 1.0.0-alpha.1", "1.0.0+0", true),
 		Entry("When a prerelease is the minimum", ">= 1.0.0-alpha.1", "3.0.0", true),
 		Entry("When a prerelease is the minimum", ">= 1.0.0-alpha.1", "1.0.0-alpha.0", false),
-
-		Entry("When a minimum contains a build number", ">= 1.0.0+3", "1.0.0+3", true),
-		Entry("When a minimum contains a build number", ">= 1.0.0+3", "1.0.0+2", true), // TODO to be fixed with #405
 	)
+
+	It("rejects constraints with build metadata", func() {
+		Expect(ValidateConstraint("1.0.0+2", ">= 1.0.0+3")).To(MatchError(ContainSubstring(
+			"build metadata is not supported in version constraints",
+		)))
+	})
 })

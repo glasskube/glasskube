@@ -276,7 +276,7 @@ func (g *DependencyGraph) add(
 
 		var constraint *semver.Constraints
 		if len(dep.Version) > 0 {
-			if c, err := semver.NewConstraint(dep.Version); err != nil {
+			if c, err := isemver.NewConstraint(dep.Version); err != nil {
 				return err
 			} else {
 				constraint = c
@@ -297,7 +297,7 @@ func (g *DependencyGraph) add(
 
 		var constraint *semver.Constraints
 		if len(cmp.Version) > 0 {
-			if c, err := semver.NewConstraint(cmp.Version); err != nil {
+			if c, err := isemver.NewConstraint(cmp.Version); err != nil {
 				return err
 			} else {
 				constraint = c
