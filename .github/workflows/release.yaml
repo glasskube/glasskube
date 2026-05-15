@@ -73,7 +73,7 @@ jobs:
           args: release
         env:
           GITHUB_TOKEN: ${{ secrets.GLASSKUBE_BOT_SECRET }}
-      - uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4
+      - uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
         with:
           aws-access-key-id: ${{ secrets.WEBSITE_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.WEBSITE_AWS_SECRET_ACCESS_KEY }}
